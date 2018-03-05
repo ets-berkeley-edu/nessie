@@ -1,0 +1,13 @@
+sudo: required
+language: python
+python: "3.6"
+
+before_install:
+  - cd ${TRAVIS_BUILD_DIR}
+
+install:
+  - pip3 install -r requirements.txt
+  - pip3 install tox
+
+script:
+  - tox
