@@ -29,7 +29,20 @@ import nessie.factory
 import pytest
 
 
-os.environ['NESSIE_ENV'] = 'test'
+# Test environment defaults to 'test' unless 'testext' is explicitly specified.
+
+if os.environ.get('NESSIE_ENV') != 'testext':
+    os.environ['NESSIE_ENV'] = 'test'
+
+
+# When NESSIE_ENV is 'testext', only tests marked @pytest.mark.testext will run. Otherwise,
+# all other tests will run.
+
+def pytest_cmdline_preparse(args):
+    if os.environ['NESSIE_ENV'] == 'testext':
+        args[:] = ['-m', 'testext'] + args
+    else:
+        args[:] = ['-m', 'not testext'] + args
 
 
 # Because app and db fixtures are only created once per pytest run, individual tests

@@ -41,4 +41,12 @@ tox -e test -- tests/test_externals/
 
 # Lint specific file(s)
 tox -e lint-py -- scripts/cohort_fixtures.py
+
+# Run testext tests
+
+Tests marked `@pytest.mark.testext` require actual connections to external services, and are not run as part of a normal tox execution. They can be run by directly invoking PyTest with the 'testext' environment specified.
+
+NESSIE_ENV=testext pytest
+
+Configuration for testext runs can be placed in a testext-local.py file under your NESSIE_LOCAL_CONFIGS directory. See config/testext.py for a model.
 ```

@@ -58,9 +58,6 @@ LOCH_CANVAS_DATA_REQUESTS_TERM_REGEXP = 'regexp for requests file url parsing'
 LOCH_S3_BUCKET = 'bucket name'
 LOCH_S3_REGION = 'aws region'
 
-LOCH_SCHEMA_BOAC = 'BOAC schema name'
-LOCH_SCHEMA_CANVAS = 'Canvas schema name'
-
 LOGGING_FORMAT = '[%(asctime)s] - %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 LOGGING_LOCATION = 'nessie.log'
 LOGGING_LEVEL = logging.DEBUG
@@ -70,6 +67,9 @@ REDSHIFT_HOST = 'redshift cluster'
 REDSHIFT_PASSWORD = 'password'
 REDSHIFT_PORT = 1234
 REDSHIFT_USER = 'username'
+
+REDSHIFT_SCHEMA_BOAC = 'BOAC schema name'
+REDSHIFT_SCHEMA_CANVAS = 'Canvas schema name'
 
 WORKER_HOST = 'app url'
 WORKER_USERNAME = 'username'
