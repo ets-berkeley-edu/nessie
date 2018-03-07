@@ -25,3 +25,50 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 
 """Client code to run queries against Redshift."""
+
+
+from contextlib import contextmanager
+from flask import current_app as app
+import psycopg2
+import psycopg2.extras
+
+
+def execute(sql, cursor_factory=None):
+    """Execute SQL, returning results if any in raw psycopg2 format (an array of unnamed tuples)."""
+    result = None
+    try:
+        with get_cursor(cursor_factory) as cursor:
+            cursor.execute(sql)
+            result = cursor.fetchall()
+    except psycopg2.Error as e:
+        error_str = str(e)
+        if e.pgcode:
+            error_str += f'{e.pgcode}: {e.pgerror}\n'
+        error_str += f'on SQL: {sql}'
+        app.logger.debug({'message': error_str})
+    return result
+
+
+def fetch_tuples(sql):
+    """Return results, if any, as named tuples."""
+    return execute(sql, psycopg2.extras.NamedTupleCursor)
+
+
+@contextmanager
+def get_cursor(cursor_factory=None):
+    connection = None
+    cursor = None
+    try:
+        connection = psycopg2.connect(
+            dbname=app.config.get('REDSHIFT_DATABASE'),
+            host=app.config.get('REDSHIFT_HOST'),
+            port=app.config.get('REDSHIFT_PORT'),
+            user=app.config.get('REDSHIFT_USER'),
+            password=app.config.get('REDSHIFT_PASSWORD'),
+        )
+        yield connection.cursor(cursor_factory=cursor_factory)
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if connection is not None:
+            connection.close()
