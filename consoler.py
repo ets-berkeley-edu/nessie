@@ -39,7 +39,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 * Click the bug icon to start a debugging session:
 
 >>> from nessie.externals import redshift
->>> assignments = redshift.fetch_tuples('select * from canvas.assignment_dim limit 10')
+>>> assignments = redshift.fetch('select * from canvas.assignment_dim limit 10')
 >>> pp(assignments)
 [
     Record(id=12340000001234567, canvas_id=1234567 course_id=12340000009876564, title='Diagnostic Essay'...

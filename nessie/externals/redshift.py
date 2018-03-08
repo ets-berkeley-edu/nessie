@@ -31,15 +31,34 @@ from contextlib import contextmanager
 from flask import current_app as app
 import psycopg2
 import psycopg2.extras
+import psycopg2.sql
 
 
-def execute(sql, cursor_factory=None):
-    """Execute SQL, returning results if any in raw psycopg2 format (an array of unnamed tuples)."""
+def execute(sql, **kwargs):
+    """Execute SQL write operation with optional keyword arguments for formatting, returning a status string."""
+    return _execute(sql, 'write', **kwargs)
+
+
+def fetch(sql, **kwargs):
+    """Execute SQL read operation with optional keyword arguments for formatting, returning an array of named tuples."""
+    return _execute(sql, 'read', **kwargs)
+
+
+def _execute(sql, operation, **kwargs):
+    """Execute SQL string with optional keyword arguments for formatting.
+
+    If 'operation' is set to 'write', a transaction is enforced and a status string is returned. If 'operation' is
+    set to 'read', results are returned as an array of named tuples.
+    """
     result = None
     try:
-        with get_cursor(cursor_factory) as cursor:
+        sql = psycopg2.sql.SQL(sql).format(**kwargs)
+        with get_cursor(operation) as cursor:
             cursor.execute(sql)
-            result = cursor.fetchall()
+            if operation == 'read':
+                result = [row for row in cursor]
+            else:
+                result = cursor.statusmessage
     except psycopg2.Error as e:
         error_str = str(e)
         if e.pgcode:
@@ -49,15 +68,14 @@ def execute(sql, cursor_factory=None):
     return result
 
 
-def fetch_tuples(sql):
-    """Return results, if any, as named tuples."""
-    return execute(sql, psycopg2.extras.NamedTupleCursor)
-
-
 @contextmanager
-def get_cursor(cursor_factory=None):
+def get_cursor(operation='read'):
     connection = None
     cursor = None
+    if operation == 'write':
+        cursor_factory = None
+    else:
+        cursor_factory = psycopg2.extras.NamedTupleCursor
     try:
         connection = psycopg2.connect(
             dbname=app.config.get('REDSHIFT_DATABASE'),
@@ -71,4 +89,6 @@ def get_cursor(cursor_factory=None):
         if cursor is not None:
             cursor.close()
         if connection is not None:
+            if operation == 'write':
+                connection.commit()
             connection.close()
