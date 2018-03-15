@@ -67,6 +67,16 @@ def app(request):
     return _app
 
 
+@pytest.fixture()
+def ensure_s3_bucket_empty(app):
+    yield
+    import nessie.externals.s3
+    client = nessie.externals.s3.get_client()
+    contents = client.list_objects(Bucket=app.config['LOCH_S3_BUCKET'])['Contents']
+    keys = [c['Key'] for c in contents]
+    nessie.externals.s3.delete_objects(keys)
+
+
 def pytest_itemcollected(item):
     """Print docstrings during test runs for more readable output."""
     par = item.parent.obj

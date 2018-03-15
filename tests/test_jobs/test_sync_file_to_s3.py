@@ -23,21 +23,25 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Logic for file sync to S3."""
-
-
-from flask import current_app as app
-from nessie.externals import s3
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.sync_file_to_s3 import SyncFileToS3
+import pytest
+from tests.util import capture_app_logs
 
 
-class SyncFileToS3(BackgroundJob):
+@pytest.mark.testext
+class TestSyncFileToS3:
 
-    def run(self, url, key):
-        if s3.file_exists(key):
-            app.logger.info(f'Key {key} exists, skipping upload')
-            return False
-        else:
-            app.logger.info(f'Key {key} does not exist, starting upload')
-            return s3.upload_from_url(url, key)
+    def test_file_upload_and_skip(self, app, caplog, ensure_s3_bucket_empty):
+        """Uploads files to S3, skipping duplicates."""
+        url = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
+        key = '00001/sonnet-xlv.html'
+
+        with capture_app_logs(app):
+            result = SyncFileToS3().run(url=url, key=key)
+            assert result is True
+            assert 'Key 00001/sonnet-xlv.html does not exist, starting upload' in caplog.text
+            assert 'S3 upload complete' in caplog.text
+
+            result = SyncFileToS3().run(url=url, key=key)
+            assert result is False
+            assert 'Key 00001/sonnet-xlv.html exists, skipping upload' in caplog.text

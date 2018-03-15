@@ -61,13 +61,10 @@ def sync_file_to_s3():
     url = request.form.get('url')
     if url is None:
         raise BadRequestError('Required "url" parameter missing.')
-    table = request.form.get('table')
-    if table is None:
-        raise BadRequestError('Required "table" parameter missing.')
-    filename = request.form.get('filename')
-    if filename is None:
-        raise BadRequestError('Required "filename" parameter missing.')
-    job_started = SyncFileToS3(url=url, table=table, filename=filename).run_async()
+    key = request.form.get('key')
+    if key is None:
+        raise BadRequestError('Required "key" parameter missing.')
+    job_started = SyncFileToS3(url=url, key=key).run_async()
     return respond_with_status(job_started)
 
 
