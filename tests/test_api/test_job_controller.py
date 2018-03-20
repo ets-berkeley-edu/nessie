@@ -92,32 +92,21 @@ class TestJobControllerSyncFileToS3:
             client,
             '/api/job/sync_file_to_s3',
             credentials(app),
-            {'table': 'requests', 'filename': 'requests.tar.gz'},
+            {'key': 'requests/requests.tar.gz'},
         )
         assert response.status_code == 400
         assert response.json['message'] == 'Required "url" parameter missing.'
 
-    def test_requires_table(self, app, client):
-        """Requires table parameter."""
+    def test_requires_key(self, app, client):
+        """Requires key parameter."""
         response = post_basic_auth(
             client,
             '/api/job/sync_file_to_s3',
             credentials(app),
-            {'url': 'https://foo.instructure.com', 'filename': 'requests.tar.gz'},
+            {'url': 'https://foo.instructure.com'},
         )
         assert response.status_code == 400
-        assert response.json['message'] == 'Required "table" parameter missing.'
-
-    def test_requires_filename(self, app, client):
-        """Requires filename parameter."""
-        response = post_basic_auth(
-            client,
-            '/api/job/sync_file_to_s3',
-            credentials(app),
-            {'url': 'https://foo.instructure.com', 'table': 'requests'},
-        )
-        assert response.status_code == 400
-        assert response.json['message'] == 'Required "filename" parameter missing.'
+        assert response.json['message'] == 'Required "key" parameter missing.'
 
     def test_status(self, app, client):
         """Returns job status."""
@@ -125,7 +114,7 @@ class TestJobControllerSyncFileToS3:
             client,
             '/api/job/sync_file_to_s3',
             credentials(app),
-            {'url': 'https://foo.instructure.com', 'table': 'requests', 'filename': 'requests.tar.gz'},
+            {'url': 'https://foo.instructure.com', 'key': 'requests/requests.tar.gz'},
         )
         assert response.status_code == 200
         assert response.json['status'] == 'started'

@@ -1,8 +1,10 @@
 Flask==0.12.2
 Werkzeug==0.12.2
+boto3==1.6.10
 psycopg2==2.7.4
 requests==2.18.4
 simplejson==3.13.2
+smart-open==1.5.6
 
 # For testing
 
