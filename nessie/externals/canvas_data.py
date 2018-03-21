@@ -25,3 +25,55 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 
 """Client code to connect to the Canvas Data API."""
+
+import base64
+from datetime import datetime
+import hashlib
+import hmac
+from urllib.parse import urlparse, urlunparse
+
+from flask import current_app as app
+from nessie.lib import http
+from nessie.lib.mockingbird import fixture
+
+
+@fixture('canvas_data_file_sync')
+def get_snapshots(mock=None):
+    url = build_url('file/sync')
+    with mock(url):
+        response = request(url)
+        if response:
+            return response.json()
+
+
+def request(url):
+    timestamp = datetime.utcnow().isoformat()[:-3] + 'Z'
+    signature = generate_hmac_signature(url, timestamp)
+    authorization = 'HMACAuth ' + app.config['CANVAS_DATA_API_KEY'] + ':' + signature
+    headers = {
+        'Authorization': authorization,
+        'Date': timestamp,
+    }
+    return http.request(url, headers=headers)
+
+
+def build_url(path):
+    return urlunparse(['https', app.config['CANVAS_DATA_HOST'], f'/api/account/self/{path}', '', '', ''])
+
+
+def generate_hmac_signature(url, timestamp, method='GET', content_type='', content_md5=''):
+    parsed = urlparse(url)
+    secret = app.config['CANVAS_DATA_API_SECRET']
+    message = '\n'.join([
+        method,
+        parsed.netloc,
+        content_type,
+        content_md5,
+        parsed.path,
+        parsed.query,
+        timestamp,
+        secret,
+    ])
+    m = hmac.new(secret.encode('utf-8'), digestmod=hashlib.sha256)
+    m.update(message.encode('utf-8'))
+    return base64.b64encode(m.digest()).decode('utf-8')

@@ -47,7 +47,7 @@ AWS_REGION = 'aws region'
 
 CANVAS_DATA_API_KEY = 'some key'
 CANVAS_DATA_API_SECRET = 'some secret'
-CANVAS_DATA_BASE_URL = 'https://foo.instructure.com'
+CANVAS_DATA_HOST = 'foo.instructure.com'
 
 LOCH_CANVAS_DATA_BUCKET_CURRENT_TERM = 's3/path/to/current/term/bucket'
 LOCH_CANVAS_DATA_BUCKET_DAILY = 's3/path/to/daily/bucket'
@@ -55,8 +55,8 @@ LOCH_CANVAS_DATA_BUCKET_HISTORICAL = 's3/path/to/historical/bucket'
 LOCH_CANVAS_DATA_IAM_ROLE = 'iam role'
 LOCH_CANVAS_DATA_REQUESTS_TERM_REGEXP = 'regexp for requests file url parsing'
 
-LOCH_S3_BUCKET = 'bucket name'
-LOCH_S3_REGION = 'aws region'
+LOCH_S3_BUCKET = 'bucket_name'
+LOCH_S3_REGION = 'aws_region'
 
 LOGGING_FORMAT = '[%(asctime)s] - %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 LOGGING_LOCATION = 'nessie.log'
