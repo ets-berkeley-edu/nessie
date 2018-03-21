@@ -71,6 +71,6 @@ REDSHIFT_USER = 'username'
 REDSHIFT_SCHEMA_BOAC = 'BOAC schema name'
 REDSHIFT_SCHEMA_CANVAS = 'Canvas schema name'
 
-WORKER_HOST = 'app url'
+WORKER_HOST = 'hard-working-nessie.berkeley.edu'
 WORKER_USERNAME = 'username'
 WORKER_PASSWORD = 'password'
