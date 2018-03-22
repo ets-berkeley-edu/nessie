@@ -91,12 +91,14 @@ def request(url, headers={}, method='get', auth=None, auth_params=None, data=Non
             saved_level = urllib_logger.level
             urllib_logger.setLevel(logging.INFO)
         http_method = getattr(requests, method)
-        response = http_method(url, headers=headers, auth=auth, params=auth_params, data=data)
+        response = http_method(url, headers=headers, auth=auth, params=auth_params, json=data)
         if auth_params:
             urllib_logger.setLevel(saved_level)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         app.logger.error(e)
+        if hasattr(response, 'content'):
+            app.logger.error(response.content)
         return ResponseExceptionWrapper(e, response)
     else:
         return response

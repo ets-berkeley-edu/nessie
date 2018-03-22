@@ -37,7 +37,7 @@ class TestCanvasData:
         response = canvas_data.get_snapshots()
         assert response['incomplete'] is False
         assert response['schemaVersion'] == '2.0.0'
-        assert len(response['files']) == 679
+        assert len(response['files']) == 348
         assert response['files'][0]['filename'] == 'account_dim-00000-5eb7ee9e.gz'
         assert response['files'][0]['table'] == 'account_dim'
         assert response['files'][0]['partial'] is False

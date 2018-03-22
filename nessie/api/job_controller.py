@@ -23,13 +23,14 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import json
 
 from flask import current_app as app, request
 from nessie.api.auth_helper import auth_required
 from nessie.api.errors import BadRequestError
 from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
-from nessie.jobs.sync_canvas_dumps import SyncCanvasDumps
+from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
 from nessie.lib.http import tolerant_jsonify
 
@@ -48,21 +49,22 @@ def generate_boac_analytics():
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/sync_canvas_dumps', methods=['POST'])
+@app.route('/api/job/sync_canvas_snapshots', methods=['POST'])
 @auth_required
-def sync_canvas_dumps():
-    job_started = SyncCanvasDumps().run_async()
+def sync_canvas_snapshots():
+    job_started = SyncCanvasSnapshots().run_async()
     return respond_with_status(job_started)
 
 
 @app.route('/api/job/sync_file_to_s3', methods=['POST'])
 @auth_required
 def sync_file_to_s3():
-    url = request.form.get('url')
-    if url is None:
+    data = json.loads(request.data)
+    url = data and data.get('url')
+    if not url:
         raise BadRequestError('Required "url" parameter missing.')
-    key = request.form.get('key')
-    if key is None:
+    key = data and data.get('key')
+    if not key:
         raise BadRequestError('Required "key" parameter missing.')
     job_started = SyncFileToS3(url=url, key=key).run_async()
     return respond_with_status(job_started)

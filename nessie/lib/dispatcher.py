@@ -44,7 +44,12 @@ def dispatch(command, data=None, mock=None):
 
 
 def build_url(command):
-    return urlunparse(['https', app.config['WORKER_HOST'], f'/api/{command}', '', '', ''])
+    # Dispatch goes over https unless testing locally.
+    if app.config['WORKER_HOST'].startswith('localhost'):
+        scheme = 'http'
+    else:
+        scheme = 'https'
+    return urlunparse([scheme, app.config['WORKER_HOST'], f'/api/job/{command}', '', '', ''])
 
 
 def request(url, data=None):
