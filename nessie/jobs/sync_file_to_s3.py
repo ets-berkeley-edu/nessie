@@ -35,7 +35,7 @@ from nessie.jobs.background_job import BackgroundJob
 class SyncFileToS3(BackgroundJob):
 
     def run(self, url, key):
-        if s3.file_exists(key):
+        if s3.object_exists(key):
             app.logger.info(f'Key {key} exists, skipping upload')
             return False
         else:

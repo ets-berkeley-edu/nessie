@@ -56,11 +56,11 @@ class TestS3:
             assert f'url={url}' in caplog.text
             assert f'key={key}' in caplog.text
 
-    def test_s3_file_exists_error_handling(self, app, caplog, bad_bucket):
+    def test_s3_object_exists_error_handling(self, app, caplog, bad_bucket):
         """Handles and logs connection errors on S3 existence check."""
         with capture_app_logs(app):
             key = '00001/sonnet-xlv.html'
-            response = s3.file_exists(key)
+            response = s3.object_exists(key)
             assert response is False
             assert 'Error on S3 existence check' in caplog.text
             assert 'An error occurred (404) when calling the HeadObject operation' in caplog.text
@@ -83,13 +83,15 @@ class TestS3:
         url2 = 'http://shakespeare.mit.edu/Poetry/sonnet.LXII.html'
         key2 = '00002/sonnet-xlii.html'
 
-        assert s3.file_exists(key1) is False
+        assert s3.object_exists(key1) is False
         assert s3.upload_from_url(url1, key1) is True
-        assert s3.file_exists(key1) is True
+        assert s3.object_exists(key1) is True
+        assert s3.get_keys_with_prefix('00001') == ['00001/sonnet-xlv.html']
 
-        assert s3.file_exists(key2) is False
+        assert s3.object_exists(key2) is False
         assert s3.upload_from_url(url2, key2) is True
-        assert s3.file_exists(key2) is True
+        assert s3.object_exists(key2) is True
+        assert s3.get_keys_with_prefix('00002') == ['00002/sonnet-xlii.html']
 
         client = s3.get_client()
         contents1 = client.get_object(Bucket=app.config['LOCH_S3_BUCKET'], Key=key1)['Body'].read().decode('utf-8')

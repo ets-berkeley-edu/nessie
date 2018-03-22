@@ -53,7 +53,31 @@ def delete_objects(keys):
         return False
 
 
-def file_exists(key):
+def get_client():
+    return boto3.client(
+        's3',
+        aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
+        aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY'],
+    )
+
+
+def get_keys_with_prefix(prefix):
+    client = get_client()
+    bucket = app.config['LOCH_S3_BUCKET']
+    objects = []
+    paginator = client.get_paginator('list_objects')
+    page_iterator = paginator.paginate(Bucket=bucket, Prefix=prefix)
+    try:
+        for page in page_iterator:
+            if 'Contents' in page:
+                objects += [object.get('Key') for object in page['Contents']]
+    except (ClientError, ConnectionError, ValueError) as e:
+        app.logger.error(f'Error listing S3 keys with prefix: bucket={bucket}, prefix={prefix}, error={e}')
+        return None
+    return objects
+
+
+def object_exists(key):
     client = get_client()
     bucket = app.config['LOCH_S3_BUCKET']
     try:
@@ -64,20 +88,13 @@ def file_exists(key):
         return False
 
 
-def get_client():
-    return boto3.client(
-        's3',
-        aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
-        aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY'],
-    )
-
-
 def upload_from_url(url, s3_key):
     s3_url = build_s3_url(s3_key)
     with requests.get(url, stream=True) as response:
         if response.status_code != 200:
-            app.logger.error(f'Received unexpected status code, aborting S3 upload\
-                               (status={response.status_code}, body={response.text}, key={s3_key} url={url})')
+            app.logger.error(
+                f'Received unexpected status code, aborting S3 upload '
+                f'(status={response.status_code}, body={response.text}, key={s3_key} url={url})')
             return False
         try:
             # smart_open needs to be told to ignore the .gz extension, or it will smartly attempt to double-compress it.
