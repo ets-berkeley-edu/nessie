@@ -28,6 +28,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 
 from flask import current_app as app
+from nessie.externals import s3
 from nessie.jobs.background_job import BackgroundJob
 
 
@@ -35,3 +36,20 @@ class SyncCanvasDumps(BackgroundJob):
 
     def run(self):
         app.logger.info(f'Starting Canvas dump sync job...')
+
+    def delete_objects_with_prefix(self, prefix, whitelist=[]):
+        keys_to_delete = []
+        existing_keys = s3.get_keys_with_prefix(prefix)
+        if existing_keys is None:
+            app.logger.error('Error listing keys, aborting job.')
+            return False
+        for key in existing_keys:
+            filename = key.split('/')[-1]
+            if filename not in whitelist:
+                keys_to_delete.append(key)
+        app.logger.info(
+            f'Found {len(existing_keys)} key(s) matching prefix "{prefix}", {len(existing_keys) - len(keys_to_delete)} '
+            f'key(s) in whitelist, will delete {len(keys_to_delete)} object(s)')
+        if not keys_to_delete:
+            return True
+        return s3.delete_objects(keys_to_delete)
