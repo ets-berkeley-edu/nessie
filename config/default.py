@@ -49,14 +49,14 @@ CANVAS_DATA_API_KEY = 'some key'
 CANVAS_DATA_API_SECRET = 'some secret'
 CANVAS_DATA_HOST = 'foo.instructure.com'
 
-LOCH_CANVAS_DATA_BUCKET_CURRENT_TERM = 's3/path/to/current/term/bucket'
-LOCH_CANVAS_DATA_BUCKET_DAILY = 's3/path/to/daily/bucket'
-LOCH_CANVAS_DATA_BUCKET_HISTORICAL = 's3/path/to/historical/bucket'
-LOCH_CANVAS_DATA_IAM_ROLE = 'iam role'
-LOCH_CANVAS_DATA_REQUESTS_TERM_REGEXP = 'regexp for requests file url parsing'
-
 LOCH_S3_BUCKET = 'bucket_name'
-LOCH_S3_REGION = 'aws_region'
+LOCH_S3_REGION = 'us-west-2'
+
+LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM = 's3/path/to/current/term'
+LOCH_S3_CANVAS_DATA_PATH_DAILY = 's3/path/to/daily'
+LOCH_S3_CANVAS_DATA_PATH_HISTORICAL = 's3/path/to/historical'
+
+LOCH_CANVAS_DATA_REQUESTS_CUTOFF_DATE = '20180101'
 
 LOGGING_FORMAT = '[%(asctime)s] - %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 LOGGING_LOCATION = 'nessie.log'
@@ -67,6 +67,8 @@ REDSHIFT_HOST = 'redshift cluster'
 REDSHIFT_PASSWORD = 'password'
 REDSHIFT_PORT = 1234
 REDSHIFT_USER = 'username'
+
+REDSHIFT_IAM_ROLE = 'iam role'
 
 REDSHIFT_SCHEMA_BOAC = 'BOAC schema name'
 REDSHIFT_SCHEMA_CANVAS = 'Canvas schema name'

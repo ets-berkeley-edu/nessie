@@ -26,7 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import httpretty
 from nessie.externals import s3
 import pytest
-from tests.util import capture_app_logs
+from tests.util import capture_app_logs, mock_s3
 
 
 @pytest.fixture
@@ -37,9 +37,30 @@ def bad_bucket(app):
     app.config['LOCH_S3_BUCKET'] = _bucket
 
 
-@pytest.mark.testext
 class TestS3:
-    """S3 client."""
+    """S3 client with mocked external connections."""
+
+    def test_list_keys_matching_prefix(self, app):
+        """Lists keys matching prefix."""
+        bucket = app.config['LOCH_S3_BUCKET']
+        prefix = app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'] + '/requests'
+
+        with mock_s3(app) as m:
+            m.Object(bucket, f'{prefix}/requests-aaa.gz').put(Body=b'some data')
+            m.Object(bucket, f'{prefix}/requests-bbb.gz').put(Body=b'some more data')
+            m.Object(bucket, f'{prefix}/requests-ccc.gz').put(Body=b'yet more data')
+            m.Object(bucket, 'another-prefix/requests-ddd.gz').put(Body=b'utterly unrelated data')
+
+            response = s3.get_keys_with_prefix(prefix)
+            assert len(response) == 3
+            assert f'{prefix}/requests-aaa.gz' in response
+            assert f'{prefix}/requests-bbb.gz' in response
+            assert f'{prefix}/requests-ccc.gz' in response
+
+
+@pytest.mark.testext
+class TestS3Testext:
+    """S3 client with live external connections."""
 
     @httpretty.activate
     def test_source_url_error_handling(self, app, caplog):

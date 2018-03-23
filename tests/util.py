@@ -26,6 +26,9 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from contextlib import contextmanager
 import logging
 
+import boto3
+import moto
+
 
 @contextmanager
 def capture_app_logs(app):
@@ -38,3 +41,11 @@ def capture_app_logs(app):
     app.logger.addHandler(capture_handler)
     yield
     app.logger.removeHandler(capture_handler)
+
+
+@contextmanager
+def mock_s3(app):
+    with moto.mock_s3():
+        s3 = boto3.resource('s3', app.config['LOCH_S3_REGION'])
+        s3.create_bucket(Bucket=app.config['LOCH_S3_BUCKET'])
+        yield s3

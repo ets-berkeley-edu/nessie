@@ -24,14 +24,25 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from nessie.externals import s3
-from nessie.jobs.sync_canvas_dumps import SyncCanvasDumps
+from nessie.jobs.sync_canvas_snapshots import delete_objects_with_prefix, SyncCanvasSnapshots
 import pytest
 from tests.util import capture_app_logs
 
 
-@pytest.mark.testext
-class TestSyncCanvasDumps:
+class TestSyncCanvasSnapshots:
+    """Sync Canvas snapshots job."""
 
+    def test_sync_canvas_snapshots(self, app, caplog):
+        """Dispatches a complete sync job against fixtures."""
+        with capture_app_logs(app):
+            # The cleanup job requires an S3 connection. Since our mock S3 library (moto) doesn't play well with our
+            # mock HTTP library (httpretty), disable it for tests.
+            SyncCanvasSnapshots().run(cleanup=False)
+            assert 'Dispatched S3 sync of snapshot quiz_dim-00000-0ab80c7c.gz' in caplog.text
+            assert 'Dispatched S3 sync of snapshot requests-00098-b14782f5.gz' in caplog.text
+            assert '311 successful dispatches, 0 failures' in caplog.text
+
+    @pytest.mark.testext
     def test_remove_obsolete_files(self, app, caplog, ensure_s3_bucket_empty):
         """Removes files from S3 following prefix and whitelist rules."""
         with capture_app_logs(app):
@@ -42,7 +53,7 @@ class TestSyncCanvasDumps:
 
             prefix = '001'
             whitelist = ['sonnet-xxi.html', 'sonnet-xxii.html']
-            assert SyncCanvasDumps().delete_objects_with_prefix(prefix, whitelist) is True
+            assert delete_objects_with_prefix(prefix, whitelist) is True
 
             assert '3 key(s) matching prefix "001"' in caplog.text
             assert '2 key(s) in whitelist' in caplog.text

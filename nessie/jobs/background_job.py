@@ -27,7 +27,9 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """Simple parent class for background jobs."""
 
 
+import os
 from threading import Thread
+
 from flask import current_app as app
 
 
@@ -37,9 +39,14 @@ class BackgroundJob(object):
         self.job_args = kwargs
 
     def run_async(self):
-        app.logger.info('About to start background thread')
+        app.logger.info('About to start background thread.')
         app_arg = app._get_current_object()
         thread = Thread(target=self.run_in_app_context, args=[app_arg], kwargs=self.job_args, daemon=True)
+
+        if os.environ.get('NESSIE_ENV') in ['test', 'testext']:
+            app.logger.info('Test run in progress; will not muddy the waters by actually kicking off a background thread.')
+            return True
+
         thread.start()
         return True
 

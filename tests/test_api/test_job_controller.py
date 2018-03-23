@@ -25,6 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 
 import base64
+import json
 import pytest
 
 
@@ -35,7 +36,7 @@ def credentials(app):
 def post_basic_auth(client, path, credentials, data=None):
     auth_string = bytes(credentials[0] + ':' + credentials[1], 'utf-8')
     encoded_credentials = base64.b64encode(auth_string).decode('utf-8')
-    return client.post(path, data=data, headers={'Authorization': 'Basic ' + encoded_credentials})
+    return client.post(path, data=json.dumps(data), headers={'Authorization': 'Basic ' + encoded_credentials})
 
 
 @pytest.mark.parametrize(
@@ -43,7 +44,7 @@ def post_basic_auth(client, path, credentials, data=None):
     [
         '/api/job/create_canvas_schema',
         '/api/job/generate_boac_analytics',
-        '/api/job/sync_canvas_dumps',
+        '/api/job/sync_canvas_snapshots',
         '/api/job/sync_file_to_s3',
     ],
 )
@@ -70,7 +71,7 @@ class TestJobControllerAuthentication:
     [
         '/api/job/create_canvas_schema',
         '/api/job/generate_boac_analytics',
-        '/api/job/sync_canvas_dumps',
+        '/api/job/sync_canvas_snapshots',
     ],
 )
 class TestJobControllerNoParams:
