@@ -25,6 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 
 from nessie.externals import redshift
+from nessie.jobs.background_job import resolve_sql_template
 import psycopg2.sql
 import pytest
 from tests.util import capture_app_logs
@@ -72,46 +73,15 @@ class TestRedshift:
             assert result == 'DROP SCHEMA'
 
     @pytest.mark.testext
-    def test_complex_query(self, app, schema):
-        """Can execute complex queries against Redshift."""
-        schema = psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_BOAC'])
-        query = """CREATE TABLE {schema}.students (
-                  sid character varying(80) NOT NULL,
-                  uid character varying(80),
-                  first_name character varying(255) NOT NULL,
-                  last_name character varying(255) NOT NULL,
-                  in_intensive_cohort boolean DEFAULT false NOT NULL,
-                  is_active_asc boolean DEFAULT true NOT NULL,
-                  status_asc character varying(80),
-                  created_at timestamp with time zone NOT NULL,
-                  updated_at timestamp with time zone NOT NULL
-                );
-                INSERT INTO {schema}.students
-                  VALUES ('11667051', '61889', 'Brigitte', 'Lin', true, true, NULL,
-                          '2018-03-07 15:19:17.18972-08', '2018-03-07 15:19:17.189727-08');
-                INSERT INTO {schema}.students
-                  VALUES ('8901234567', '1022796', 'John', 'Crossman', true, true, NULL,
-                          '2018-03-07 15:19:17.200198-08', '2018-03-07 15:19:17.200205-08');
-                INSERT INTO {schema}.students
-                  VALUES ('2345678901', '2040', 'Oliver', 'Heyer', false, true, NULL,
-                          '2018-03-07 15:19:17.204676-08', '2018-03-07 15:19:17.204682-08');
-                INSERT INTO {schema}.students
-                  VALUES ('3456789012', '242881', 'Paul', 'Kerschen', true, true, NULL,
-                          '2018-03-07 15:19:17.214502-08', '2018-03-07 15:19:17.214507-08');
-                INSERT INTO {schema}.students
-                  VALUES ('5678901234', '1133399', 'Sandeep', 'Jayaprakash', false, true, NULL,
-                          '2018-03-07 15:19:17.220223-08', '2018-03-07 15:19:17.220229-08');
-                INSERT INTO {schema}.students
-                  VALUES ('7890123456', '1049291', 'Paul', 'Farestveit', true, true, NULL,
-                          '2018-03-07 15:19:17.228017-08', '2018-03-07 15:19:17.228024-08');
-                INSERT INTO {schema}.students
-                  VALUES ('838927492', '211159', 'Siegfried', 'Schlemiel', true, false, 'Trouble',
-                          '2018-03-07 15:19:17.234875-08', '2018-03-07 15:19:17.240878-08');
-                ALTER TABLE {schema}.students ADD CONSTRAINT students_pkey PRIMARY KEY (sid);
-            """
-        result = redshift.execute(query, schema=schema)
-        assert result == 'ALTER TABLE'
+    def test_execute_ddl_script(self, app, ensure_drop_schema):
+        """Executes filled SQL template files one statement at a time."""
 
+        # TODO Test CREATE EXTERNAL SCHEMA and CREATE EXTERNAL TABLE statements.
+
+        resolved_ddl = resolve_sql_template('test_db.template.sql')
+        redshift.execute_ddl_script(resolved_ddl)
+
+        schema = psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_BOAC'])
         result = redshift.fetch('SELECT COUNT(*) FROM {schema}.students', schema=schema)
         assert len(result) == 1
         assert result[0].count == 7
