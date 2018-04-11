@@ -82,7 +82,7 @@ def _execute(sql, operation, **kwargs):
         if e.pgcode:
             error_str += f'{e.pgcode}: {e.pgerror}\n'
         error_str += f'on SQL: {sql}'
-        app.logger.debug({'message': error_str})
+        app.logger.warn({'message': error_str})
     return result
 
 

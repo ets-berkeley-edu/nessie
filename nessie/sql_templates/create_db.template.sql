@@ -29,11 +29,11 @@
 
 -- Contrary to the documentation, this statement does not actually drop external database tables.
 -- When the external schema is re-created, the table definitions will return as they were.
-DROP SCHEMA IF EXISTS {externalSchema} CASCADE;
-CREATE EXTERNAL SCHEMA {externalSchema}
+DROP SCHEMA IF EXISTS {redshift_schema_canvas} CASCADE;
+CREATE EXTERNAL SCHEMA {redshift_schema_canvas}
 FROM data catalog
-DATABASE '{externalSchema}'
-IAM_ROLE '{iamRole}'
+DATABASE '{redshift_schema_canvas}'
+IAM_ROLE '{redshift_iam_role}'
 CREATE EXTERNAL DATABASE IF NOT EXISTS;
 
 --------------------------------------------------------------------
@@ -41,8 +41,8 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 --------------------------------------------------------------------
 
 -- user_dim
-DROP TABLE IF EXISTS {externalSchema}.user_dim CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.user_dim (
+DROP TABLE IF EXISTS {redshift_schema_canvas}.user_dim CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.user_dim (
     id BIGINT,
     canvas_id BIGINT,
     root_account_id BIGINT,
@@ -63,11 +63,11 @@ CREATE EXTERNAL TABLE {externalSchema}.user_dim (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/user_dim';
+LOCATION '{loch_s3_canvas_data_path_today}/user_dim';
 
 -- pseudonym_dim
-DROP TABLE IF EXISTS {externalSchema}.pseudonym_dim CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.pseudonym_dim (
+DROP TABLE IF EXISTS {redshift_schema_canvas}.pseudonym_dim CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.pseudonym_dim (
     id BIGINT,
     canvas_id BIGINT,
     user_id BIGINT,
@@ -91,11 +91,11 @@ CREATE EXTERNAL TABLE {externalSchema}.pseudonym_dim (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/pseudonym_dim';
+LOCATION '{loch_s3_canvas_data_path_today}/pseudonym_dim';
 
 -- course_dim
-DROP TABLE IF EXISTS {externalSchema}.course_dim CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.course_dim (
+DROP TABLE IF EXISTS {redshift_schema_canvas}.course_dim CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.course_dim (
     id BIGINT,
     canvas_id BIGINT,
     root_account_id BIGINT,
@@ -115,11 +115,11 @@ CREATE EXTERNAL TABLE {externalSchema}.course_dim (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/course_dim';
+LOCATION '{loch_s3_canvas_data_path_today}/course_dim';
 
 -- course_section_dim
-DROP TABLE IF EXISTS {externalSchema}.course_section_dim CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.course_section_dim (
+DROP TABLE IF EXISTS {redshift_schema_canvas}.course_section_dim CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.course_section_dim (
     id BIGINT,
     canvas_id BIGINT,
     name VARCHAR,
@@ -140,11 +140,11 @@ CREATE EXTERNAL TABLE {externalSchema}.course_section_dim (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/course_section_dim';
+LOCATION '{loch_s3_canvas_data_path_today}/course_section_dim';
 
 -- enrollment_fact
-DROP TABLE IF EXISTS {externalSchema}.enrollment_fact CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.enrollment_fact(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.enrollment_fact CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.enrollment_fact(
     enrollment_id BIGINT,
     user_id BIGINT,
     course_id BIGINT,
@@ -157,11 +157,11 @@ CREATE EXTERNAL TABLE {externalSchema}.enrollment_fact(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/enrollment_fact';
+LOCATION '{loch_s3_canvas_data_path_today}/enrollment_fact';
 
 -- enrollment_dim
-DROP TABLE IF EXISTS {externalSchema}.enrollment_dim CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.enrollment_dim(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.enrollment_dim CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.enrollment_dim(
     id BIGINT,
     canvas_id BIGINT,
     root_account_id BIGINT,
@@ -182,11 +182,11 @@ CREATE EXTERNAL TABLE {externalSchema}.enrollment_dim(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/enrollment_dim';
+LOCATION '{loch_s3_canvas_data_path_today}/enrollment_dim';
 
 -- assignment_fact
-DROP TABLE IF EXISTS {externalSchema}.assignment_fact CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.assignment_fact(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.assignment_fact CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.assignment_fact(
     assignment_id BIGINT,
     course_id BIGINT,
     course_account_id VARCHAR,
@@ -198,11 +198,11 @@ CREATE EXTERNAL TABLE {externalSchema}.assignment_fact(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/assignment_fact';
+LOCATION '{loch_s3_canvas_data_path_today}/assignment_fact';
 
 -- assignment_dim
-DROP TABLE IF EXISTS {externalSchema}.assignment_dim CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.assignment_dim(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.assignment_dim CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.assignment_dim(
     id BIGINT,
     canvas_id BIGINT,
     course_id BIGINT,
@@ -235,11 +235,11 @@ CREATE EXTERNAL TABLE {externalSchema}.assignment_dim(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/assignment_dim';
+LOCATION '{loch_s3_canvas_data_path_today}/assignment_dim';
 
 -- assignment_override_fact
-DROP TABLE IF EXISTS {externalSchema}.assignment_override_fact CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.assignment_override_fact(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.assignment_override_fact CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.assignment_override_fact(
   assignment_override_id BIGINT,
   account_id BIGINT,
   assignment_id BIGINT,
@@ -257,11 +257,11 @@ CREATE EXTERNAL TABLE {externalSchema}.assignment_override_fact(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/assignment_override_fact';
+LOCATION '{loch_s3_canvas_data_path_today}/assignment_override_fact';
 
 -- assignment_override_dim
-DROP TABLE IF EXISTS {externalSchema}.assignment_override_dim CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.assignment_override_dim(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.assignment_override_dim CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.assignment_override_dim(
   id BIGINT,
   canvas_id BIGINT,
   assignment_id BIGINT,
@@ -287,11 +287,11 @@ CREATE EXTERNAL TABLE {externalSchema}.assignment_override_dim(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/assignment_override_dim';
+LOCATION '{loch_s3_canvas_data_path_today}/assignment_override_dim';
 
 -- assignment_override_user_fact
-DROP TABLE IF EXISTS {externalSchema}.assignment_override_user_fact CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.assignment_override_user_fact(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.assignment_override_user_fact CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.assignment_override_user_fact(
   assignment_override_user_id BIGINT,
   account_id BIGINT,
   assignment_group_id BIGINT,
@@ -305,11 +305,11 @@ CREATE EXTERNAL TABLE {externalSchema}.assignment_override_user_fact(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/assignment_override_user_fact';
+LOCATION '{loch_s3_canvas_data_path_today}/assignment_override_user_fact';
 
 -- assignment_override_user_dim
-DROP TABLE IF EXISTS {externalSchema}.assignment_override_user_dim CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.assignment_override_user_dim(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.assignment_override_user_dim CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.assignment_override_user_dim(
   id BIGINT,
   canvas_id BIGINT,
   assignment_id BIGINT,
@@ -322,11 +322,11 @@ CREATE EXTERNAL TABLE {externalSchema}.assignment_override_user_dim(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/assignment_override_user_dim';
+LOCATION '{loch_s3_canvas_data_path_today}/assignment_override_user_dim';
 
 -- assignment_override_user_rollup_fact
-DROP TABLE IF EXISTS {externalSchema}.assignment_override_user_rollup_fact CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.assignment_override_user_rollup_fact(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.assignment_override_user_rollup_fact CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.assignment_override_user_rollup_fact(
   assignment_id BIGINT,
   assignment_override_id BIGINT,
   assignment_override_user_adhoc_id BIGINT,
@@ -347,11 +347,11 @@ CREATE EXTERNAL TABLE {externalSchema}.assignment_override_user_rollup_fact(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/assignment_override_user_rollup_fact';
+LOCATION '{loch_s3_canvas_data_path_today}/assignment_override_user_rollup_fact';
 
 -- discussion_entry_dim
-DROP TABLE IF EXISTS {externalSchema}.discussion_entry_dim CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.discussion_entry_dim(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.discussion_entry_dim CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.discussion_entry_dim(
     id BIGINT,
     canvas_id BIGINT,
     message VARCHAR,
@@ -364,11 +364,11 @@ CREATE EXTERNAL TABLE {externalSchema}.discussion_entry_dim(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/discussion_entry_dim';
+LOCATION '{loch_s3_canvas_data_path_today}/discussion_entry_dim';
 
 -- discussion_entry_fact
-DROP TABLE IF EXISTS {externalSchema}.discussion_entry_fact CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.discussion_entry_fact(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.discussion_entry_fact CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.discussion_entry_fact(
     discussion_entry_id BIGINT,
     parent_discussion_entry_id BIGINT,
     user_id BIGINT,
@@ -385,11 +385,11 @@ CREATE EXTERNAL TABLE {externalSchema}.discussion_entry_fact(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/discussion_entry_fact';
+LOCATION '{loch_s3_canvas_data_path_today}/discussion_entry_fact';
 
 -- discussion_topic_dim
-DROP TABLE IF EXISTS {externalSchema}.discussion_topic_dim CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.discussion_topic_dim(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.discussion_topic_dim CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.discussion_topic_dim(
     id BIGINT,
     canvas_id BIGINT,
     title VARCHAR,
@@ -411,11 +411,11 @@ CREATE EXTERNAL TABLE {externalSchema}.discussion_topic_dim(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/discussion_topic_dim';
+LOCATION '{loch_s3_canvas_data_path_today}/discussion_topic_dim';
 
 -- discussion_topic_fact
-DROP TABLE IF EXISTS {externalSchema}.discussion_topic_fact CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.discussion_topic_fact(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.discussion_topic_fact CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.discussion_topic_fact(
     discussion_topic_id BIGINT,
     course_id BIGINT,
     enrollment_term_id BIGINT,
@@ -433,11 +433,11 @@ CREATE EXTERNAL TABLE {externalSchema}.discussion_topic_fact(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/discussion_topic_fact';
+LOCATION '{loch_s3_canvas_data_path_today}/discussion_topic_fact';
 
 -- submission_fact
-DROP TABLE IF EXISTS {externalSchema}.submission_fact CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.submission_fact(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.submission_fact CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.submission_fact(
     submission_id BIGINT,
     assignment_id BIGINT,
     course_id BIGINT,
@@ -460,11 +460,11 @@ CREATE EXTERNAL TABLE {externalSchema}.submission_fact(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/submission_fact';
+LOCATION '{loch_s3_canvas_data_path_today}/submission_fact';
 
 -- submission_dim
-DROP TABLE IF EXISTS {externalSchema}.submission_dim CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.submission_dim(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.submission_dim CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.submission_dim(
     id BIGINT,
     canvas_id BIGINT,
     body TEXT,
@@ -494,11 +494,11 @@ CREATE EXTERNAL TABLE {externalSchema}.submission_dim(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/submission_dim';
+LOCATION '{loch_s3_canvas_data_path_today}/submission_dim';
 
 -- submission_comment_fact
-DROP TABLE IF EXISTS {externalSchema}.submission_comment_fact CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.submission_comment_fact(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.submission_comment_fact CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.submission_comment_fact(
     submission_comment_id BIGINT,
     submission_id BIGINT,
     recipient_id BIGINT,
@@ -515,11 +515,11 @@ CREATE EXTERNAL TABLE {externalSchema}.submission_comment_fact(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/submission_comment_fact';
+LOCATION '{loch_s3_canvas_data_path_today}/submission_comment_fact';
 
 -- submission_comment_participant_fact
-DROP TABLE IF EXISTS {externalSchema}.submission_comment_participant_fact CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.submission_comment_participant_fact(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.submission_comment_participant_fact CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.submission_comment_participant_fact(
     submission_comment_participant_id BIGINT,
     submission_comment_id BIGINT,
     user_id BIGINT,
@@ -533,11 +533,11 @@ CREATE EXTERNAL TABLE {externalSchema}.submission_comment_participant_fact(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/submission_comment_participant_fact';
+LOCATION '{loch_s3_canvas_data_path_today}/submission_comment_participant_fact';
 
 -- submission_comment_dim
-DROP TABLE IF EXISTS {externalSchema}.submission_comment_dim CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.submission_comment_dim(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.submission_comment_dim CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.submission_comment_dim(
     id BIGINT,
     canvas_id BIGINT,
     submission_id BIGINT,
@@ -556,11 +556,11 @@ CREATE EXTERNAL TABLE {externalSchema}.submission_comment_dim(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3DailyLocation}/submission_comment_dim';
+LOCATION '{loch_s3_canvas_data_path_today}/submission_comment_dim';
 
 -- requests
-DROP TABLE IF EXISTS {externalSchema}.requests CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.requests(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.requests CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.requests(
     id VARCHAR,
     timestamp TIMESTAMP,
     timestamp_year VARCHAR,
@@ -592,11 +592,11 @@ CREATE EXTERNAL TABLE {externalSchema}.requests(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3RequestsTermLocation}/requests';
+LOCATION '{loch_s3_canvas_data_path_current_term}/requests';
 
 -- historical requests in gzip format
-DROP TABLE IF EXISTS {externalSchema}.historical_requests CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.historical_requests(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.historical_requests CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.historical_requests(
     id VARCHAR,
     timestamp TIMESTAMP,
     timestamp_year VARCHAR,
@@ -628,11 +628,11 @@ CREATE EXTERNAL TABLE {externalSchema}.historical_requests(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3RequestsHistoricalLocation}/requests';
+LOCATION '{loch_s3_canvas_data_path_historical}/requests';
 
 -- historical requests in parquet compression format
-DROP TABLE IF EXISTS {externalSchema}.historical_requests_parquet CASCADE;
-CREATE EXTERNAL TABLE {externalSchema}.historical_requests_parquet(
+DROP TABLE IF EXISTS {redshift_schema_canvas}.historical_requests_parquet CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.historical_requests_parquet(
     id VARCHAR,
     timestamp TIMESTAMP,
     timestamp_year VARCHAR,
@@ -664,4 +664,4 @@ CREATE EXTERNAL TABLE {externalSchema}.historical_requests_parquet(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{s3RequestsHistoricalLocation}/requests-parquet-snappy';
+LOCATION '{loch_s3_canvas_data_path_historical}/requests-parquet-snappy';
