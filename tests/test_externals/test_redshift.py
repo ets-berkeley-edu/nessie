@@ -75,9 +75,7 @@ class TestRedshift:
     @pytest.mark.testext
     def test_execute_ddl_script(self, app, ensure_drop_schema):
         """Executes filled SQL template files one statement at a time."""
-
         # TODO Test CREATE EXTERNAL SCHEMA and CREATE EXTERNAL TABLE statements.
-
         resolved_ddl = resolve_sql_template('test_db.template.sql')
         redshift.execute_ddl_script(resolved_ddl)
 

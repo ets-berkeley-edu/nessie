@@ -28,10 +28,14 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 
 from flask import current_app as app
-from nessie.jobs.background_job import BackgroundJob
+from nessie.externals import redshift
+from nessie.jobs.background_job import BackgroundJob, resolve_sql_template
 
 
 class GenerateBoacAnalytics(BackgroundJob):
 
     def run(self):
         app.logger.info(f'Starting BOAC analytics job...')
+        resolved_ddl = resolve_sql_template('create_boac_schema.template.sql')
+        redshift.execute_ddl_script(resolved_ddl)
+        app.logger.info(f'BOAC analytics creation job completed')
