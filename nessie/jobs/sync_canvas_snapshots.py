@@ -27,20 +27,12 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """Logic for Canvas snapshot sync job."""
 
 
-from datetime import datetime
-import hashlib
 import re
 
 from flask import current_app as app
 from nessie.externals import canvas_data, s3
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, get_s3_canvas_daily_path
 from nessie.lib.dispatcher import dispatch
-
-
-def generate_daily_prefix():
-    today = datetime.utcnow().strftime('%Y-%m-%d')
-    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
-    return today_hash + '-' + today
 
 
 def delete_objects_with_prefix(prefix, whitelist=[]):
@@ -86,12 +78,11 @@ class SyncCanvasSnapshots(BackgroundJob):
         success = 0
         failure = 0
 
-        daily_prefix = generate_daily_prefix()
         for snapshot in snapshots_to_sync:
             if snapshot['table'] == 'requests':
                 key_components = [app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'], snapshot['table'], snapshot['filename']]
             else:
-                key_components = [app.config['LOCH_S3_CANVAS_DATA_PATH_DAILY'], daily_prefix, snapshot['table'], snapshot['filename']]
+                key_components = [get_s3_canvas_daily_path(), snapshot['table'], snapshot['filename']]
             response = dispatch('sync_file_to_s3', data={'url': snapshot['url'], 'key': '/'.join(key_components)})
             if not response:
                 app.logger.error('Failed to dispatch S3 sync of snapshot ' + snapshot['filename'])

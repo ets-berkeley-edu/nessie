@@ -27,10 +27,36 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """Simple parent class for background jobs."""
 
 
+from datetime import datetime
+import hashlib
 import os
 from threading import Thread
 
 from flask import current_app as app
+
+
+def get_s3_canvas_daily_path():
+    # TODO Temporarily share Data Loch's existing hash algorithm, even if it doesn't match PDG standard practice.
+    # today = datetime.utcnow().strftime('%Y-%m-%d')
+    today = datetime.utcnow().strftime('%m-%d-%Y')
+    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
+    return app.config['LOCH_S3_CANVAS_DATA_PATH_DAILY'] + '/' + today_hash + '-' + today
+
+
+def resolve_sql_template(sql_filename):
+    """Our DDL template files are simple enough to use standard Python string formatting."""
+    s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
+    template_data = {
+        'redshift_schema_boac': app.config['REDSHIFT_SCHEMA_BOAC'],
+        'redshift_schema_canvas': app.config['REDSHIFT_SCHEMA_CANVAS'],
+        'redshift_iam_role': app.config['REDSHIFT_IAM_ROLE'],
+        'loch_s3_canvas_data_path_today': s3_prefix + get_s3_canvas_daily_path(),
+        'loch_s3_canvas_data_path_historical': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_HISTORICAL'],
+        'loch_s3_canvas_data_path_current_term': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'],
+    }
+    with open(app.config['BASE_DIR'] + f'/nessie/sql_templates/{sql_filename}') as file:
+        template_string = file.read()
+    return template_string.format(**template_data)
 
 
 class BackgroundJob(object):
