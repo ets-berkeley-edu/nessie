@@ -23,15 +23,15 @@
  * ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-CREATE SCHEMA IF NOT EXISTS <%= boacAnalyticsSchema %>;
+CREATE SCHEMA IF NOT EXISTS {boacAnalyticsSchema};
 
-DROP TABLE IF EXISTS <%= boacAnalyticsSchema %>.page_views_zscore;
+DROP TABLE IF EXISTS {boacAnalyticsSchema}.page_views_zscore;
 
-CREATE TABLE <%= boacAnalyticsSchema %>.page_views_zscore
+CREATE TABLE {boacAnalyticsSchema}.page_views_zscore
 AS (
 WITH
     /*
-     * Get all active student enrollments on <%= externalSchema %>.
+     * Get all active student enrollments on {externalSchema}.
      * The aggregation helps in de-duplication of enrollments
      * as there can be multiple records arising due to StudentEnrollment
      * memberships to different sections. Also, aggregation is faster than
@@ -44,7 +44,7 @@ WITH
             type,
             count(*)
         FROM
-            <%= externalSchema %>.enrollment_dim
+            {externalSchema}.enrollment_dim
         WHERE
             workflow_state IN ('active', 'completed')
             AND type = 'StudentEnrollment'
@@ -65,7 +65,7 @@ WITH
             e1.type AS enrollment_type
         FROM
             e1
-        LEFT OUTER JOIN <%= externalSchema %>.requests r ON r.user_id = e1.user_id
+        LEFT OUTER JOIN {externalSchema}.requests r ON r.user_id = e1.user_id
             AND r.course_id = e1.course_id
             AND r.url LIKE '/courses/%'
             AND r.url NOT LIKE '/courses/%/files/%module_item_id%'
@@ -154,8 +154,8 @@ WITH
             p.unique_name,
             p.workflow_state as active_state
         FROM
-            <%= externalSchema %>.user_dim u
-        LEFT JOIN <%= externalSchema %>.pseudonym_dim p ON u.id = p.user_id
+            {externalSchema}.user_dim u
+        LEFT JOIN {externalSchema}.pseudonym_dim p ON u.id = p.user_id
         WHERE
             p.workflow_state = 'active'
     )
@@ -180,12 +180,12 @@ WITH
     FROM
         w4
     LEFT JOIN w5 ON w4.user_id = w5.global_user_id
-    LEFT JOIN <%= externalSchema %>.course_dim c ON w4.course_id = c.id
+    LEFT JOIN {externalSchema}.course_dim c ON w4.course_id = c.id
 );
 
-DROP TABLE IF EXISTS <%= boacAnalyticsSchema %>.assignment_submissions_scores;
+DROP TABLE IF EXISTS {boacAnalyticsSchema}.assignment_submissions_scores;
 
-CREATE TABLE <%= boacAnalyticsSchema %>.assignment_submissions_scores
+CREATE TABLE {boacAnalyticsSchema}.assignment_submissions_scores
 INTERLEAVED SORTKEY (user_id, course_id, assignment_id)
 AS (
     /*
@@ -194,29 +194,29 @@ AS (
      */
     WITH most_lenient_override AS (
         SELECT
-            <%= externalSchema %>.assignment_override_user_rollup_fact.assignment_id AS assignment_id,
-            <%= externalSchema %>.assignment_override_user_rollup_fact.user_id AS user_id,
-            MAX(<%= externalSchema %>.assignment_override_dim.due_at) AS due_at
-        FROM <%= externalSchema %>.assignment_override_user_rollup_fact
-        LEFT JOIN <%= externalSchema %>.assignment_override_dim
-            ON <%= externalSchema %>.assignment_override_dim.id = <%= externalSchema %>.assignment_override_user_rollup_fact.assignment_override_id
-            AND <%= externalSchema %>.assignment_override_dim.workflow_state = 'active'
+            {externalSchema}.assignment_override_user_rollup_fact.assignment_id AS assignment_id,
+            {externalSchema}.assignment_override_user_rollup_fact.user_id AS user_id,
+            MAX({externalSchema}.assignment_override_dim.due_at) AS due_at
+        FROM {externalSchema}.assignment_override_user_rollup_fact
+        LEFT JOIN {externalSchema}.assignment_override_dim
+            ON {externalSchema}.assignment_override_dim.id = {externalSchema}.assignment_override_user_rollup_fact.assignment_override_id
+            AND {externalSchema}.assignment_override_dim.workflow_state = 'active'
         GROUP BY
-            <%= externalSchema %>.assignment_override_user_rollup_fact.assignment_id,
-            <%= externalSchema %>.assignment_override_user_rollup_fact.user_id
+            {externalSchema}.assignment_override_user_rollup_fact.assignment_id,
+            {externalSchema}.assignment_override_user_rollup_fact.user_id
     )
     SELECT
-        <%= externalSchema %>.user_dim.canvas_id AS user_id,
-        <%= externalSchema %>.course_dim.canvas_id AS course_id,
-        <%= externalSchema %>.assignment_dim.canvas_id AS assignment_id,
+        {externalSchema}.user_dim.canvas_id AS user_id,
+        {externalSchema}.course_dim.canvas_id AS course_id,
+        {externalSchema}.assignment_dim.canvas_id AS assignment_id,
         CASE
             /*
              * An unsubmitted assignment is "missing" if it has a known due date in the past.
              */
-            WHEN <%= externalSchema %>.submission_dim.workflow_state = 'unsubmitted'
+            WHEN {externalSchema}.submission_dim.workflow_state = 'unsubmitted'
             AND (
                 most_lenient_override.due_at < getdate() OR
-                (most_lenient_override.due_at IS NULL AND <%= externalSchema %>.assignment_dim.due_at < getdate())
+                (most_lenient_override.due_at IS NULL AND {externalSchema}.assignment_dim.due_at < getdate())
             )
             THEN
                 'missing'
@@ -224,25 +224,25 @@ AS (
              * Other unsubmitted assignments, with due dates in the future or unknown, are simply "unsubmitted".
              * (This seems to correspond to the usage of "floating" in the Canvas analytics API.)
              */
-            WHEN <%= externalSchema %>.submission_dim.workflow_state = 'unsubmitted'
+            WHEN {externalSchema}.submission_dim.workflow_state = 'unsubmitted'
             THEN
                 'unsubmitted'
             /*
              * Submitted assignments with a known submission date after a known due date are late.
              */
             WHEN
-                most_lenient_override.due_at < <%= externalSchema %>.submission_dim.submitted_at
+                most_lenient_override.due_at < {externalSchema}.submission_dim.submitted_at
                 OR (
                     most_lenient_override.due_at IS NULL
-                    AND <%= externalSchema %>.assignment_dim.due_at < <%= externalSchema %>.submission_dim.submitted_at
+                    AND {externalSchema}.assignment_dim.due_at < {externalSchema}.submission_dim.submitted_at
                 )
             THEN
                 'late'
             /*
              * Submitted assignments with an unknown submission date or unknown due date are simply "submitted."
              */
-            WHEN <%= externalSchema %>.submission_dim.submitted_at IS NULL
-                OR (most_lenient_override.due_at IS NULL AND <%= externalSchema %>.assignment_dim.due_at IS NULL)
+            WHEN {externalSchema}.submission_dim.submitted_at IS NULL
+                OR (most_lenient_override.due_at IS NULL AND {externalSchema}.assignment_dim.due_at IS NULL)
             THEN
                 'submitted'
             /*
@@ -252,25 +252,25 @@ AS (
                 'on_time'
         END AS assignment_status,
         CASE
-            WHEN most_lenient_override.due_at IS NULL THEN <%= externalSchema %>.assignment_dim.due_at
+            WHEN most_lenient_override.due_at IS NULL THEN {externalSchema}.assignment_dim.due_at
             ELSE most_lenient_override.due_at
         END AS due_at,
-        <%= externalSchema %>.submission_dim.submitted_at AS submitted_at,
-        <%= externalSchema %>.submission_fact.score AS score,
-        <%= externalSchema %>.submission_dim.grade AS grade,
-        <%= externalSchema %>.assignment_dim.points_possible AS points_possible
+        {externalSchema}.submission_dim.submitted_at AS submitted_at,
+        {externalSchema}.submission_fact.score AS score,
+        {externalSchema}.submission_dim.grade AS grade,
+        {externalSchema}.assignment_dim.points_possible AS points_possible
     FROM
-        <%= externalSchema %>.submission_fact
-        JOIN <%= externalSchema %>.submission_dim
-            ON <%= externalSchema %>.submission_fact.submission_id = <%= externalSchema %>.submission_dim.id
-        JOIN <%= externalSchema %>.user_dim
-            ON <%= externalSchema %>.user_dim.id = <%= externalSchema %>.submission_fact.user_id
-        JOIN <%= externalSchema %>.assignment_dim
-            ON <%= externalSchema %>.assignment_dim.id = <%= externalSchema %>.submission_fact.assignment_id
-        JOIN <%= externalSchema %>.course_dim
-            ON <%= externalSchema %>.course_dim.id = <%= externalSchema %>.submission_fact.course_id
+        {externalSchema}.submission_fact
+        JOIN {externalSchema}.submission_dim
+            ON {externalSchema}.submission_fact.submission_id = {externalSchema}.submission_dim.id
+        JOIN {externalSchema}.user_dim
+            ON {externalSchema}.user_dim.id = {externalSchema}.submission_fact.user_id
+        JOIN {externalSchema}.assignment_dim
+            ON {externalSchema}.assignment_dim.id = {externalSchema}.submission_fact.assignment_id
+        JOIN {externalSchema}.course_dim
+            ON {externalSchema}.course_dim.id = {externalSchema}.submission_fact.course_id
         LEFT JOIN most_lenient_override
-            ON most_lenient_override.user_id = <%= externalSchema %>.submission_fact.user_id
-            AND most_lenient_override.assignment_id = <%= externalSchema %>.submission_fact.assignment_id
-    WHERE <%= externalSchema %>.assignment_dim.workflow_state = 'published'
+            ON most_lenient_override.user_id = {externalSchema}.submission_fact.user_id
+            AND most_lenient_override.assignment_id = {externalSchema}.submission_fact.assignment_id
+    WHERE {externalSchema}.assignment_dim.workflow_state = 'published'
 );

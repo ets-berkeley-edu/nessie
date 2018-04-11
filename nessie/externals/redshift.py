@@ -39,6 +39,24 @@ def execute(sql, **kwargs):
     return _execute(sql, 'write', **kwargs)
 
 
+def execute_ddl_script(sql):
+    """Handle Redshift DDL scripts, which are exceptional in a number of ways.
+
+    * CREATE EXTERNAL SCHEMA must be executed separately from any later references to that schema.
+      The simplest way to enforce that requirement is to split the multi-statement SQL string by semicolon,
+      and execute each statement in turn.
+    * DROP EXTERNAL TABLE and CREATE EXTERNAL TABLE will fail with a 'cannot run inside a transaction block'
+      message unless autocommit is enabled.
+
+    WARNING: This will break horribly if a semicolon terminated statement is inside a block quote.
+    """
+    statements = sql.split(';')
+    # Remove any trailing debris after the last SQL statement.
+    del statements[-1]
+    for statement in statements:
+        execute(statement)
+
+
 def fetch(sql, **kwargs):
     """Execute SQL read operation with optional keyword arguments for formatting, returning an array of named tuples."""
     return _execute(sql, 'read', **kwargs)
@@ -84,11 +102,11 @@ def get_cursor(operation='read'):
             user=app.config.get('REDSHIFT_USER'),
             password=app.config.get('REDSHIFT_PASSWORD'),
         )
+        # Autocommit is required for EXTERNAL TABLE creation and deletion.
+        connection.autocommit = True
         yield connection.cursor(cursor_factory=cursor_factory)
     finally:
         if cursor is not None:
             cursor.close()
         if connection is not None:
-            if operation == 'write':
-                connection.commit()
             connection.close()

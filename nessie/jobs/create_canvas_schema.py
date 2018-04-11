@@ -28,10 +28,14 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 
 from flask import current_app as app
-from nessie.jobs.background_job import BackgroundJob
+from nessie.externals import redshift
+from nessie.jobs.background_job import BackgroundJob, resolve_sql_template
 
 
 class CreateCanvasSchema(BackgroundJob):
 
     def run(self):
         app.logger.info(f'Starting Canvas schema creation job...')
+        resolved_ddl = resolve_sql_template('create_db.template.sql')
+        redshift.execute_ddl_script(resolved_ddl)
+        app.logger.info(f'Canvas schema creation job completed')
