@@ -36,6 +36,6 @@ class CreateCanvasSchema(BackgroundJob):
 
     def run(self):
         app.logger.info(f'Starting Canvas schema creation job...')
-        resolved_ddl = resolve_sql_template('create_db.template.sql')
+        resolved_ddl = resolve_sql_template('create_canvas_schema.template.sql')
         redshift.execute_ddl_script(resolved_ddl)
         app.logger.info(f'Canvas schema creation job completed')
