@@ -349,6 +349,24 @@ FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
 LOCATION '{loch_s3_canvas_data_path_today}/assignment_override_user_rollup_fact';
 
+-- course_score_fact
+DROP TABLE IF EXISTS {redshift_schema_canvas}.course_score_fact CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.course_score_fact(
+    score_id BIGINT,
+    canvas_id BIGINT,
+    account_id BIGINT,
+    course_id BIGINT,
+    enrollment_id BIGINT,
+    current_score DOUBLE PRECISION,
+    final_score DOUBLE PRECISION,
+    muted_current_score DOUBLE PRECISION,
+    muted_final_score DOUBLE PRECISION
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+STORED AS TEXTFILE
+LOCATION '{loch_s3_canvas_data_path_today}/course_score_fact';
+
 -- discussion_entry_dim
 DROP TABLE IF EXISTS {redshift_schema_canvas}.discussion_entry_dim CASCADE;
 CREATE EXTERNAL TABLE {redshift_schema_canvas}.discussion_entry_dim(
