@@ -27,6 +27,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import json
 from flask import current_app as app
 from nessie import __version__ as version
+from nessie.externals import redshift
 from nessie.lib.http import tolerant_jsonify
 
 
@@ -40,8 +41,10 @@ def app_config():
 
 @app.route('/api/ping')
 def app_status():
+    redshift_row = redshift.fetch('SELECT tablename FROM SVV_EXTERNAL_TABLES LIMIT 1')
     resp = {
         'app': True,
+        'db': redshift_row is not None,
     }
     return tolerant_jsonify(resp)
 
