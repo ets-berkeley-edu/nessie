@@ -33,12 +33,13 @@ import os
 from threading import Thread
 
 from flask import current_app as app
+from nessie.lib.util import localize_datetime
 
 
 def get_s3_canvas_daily_path():
     # TODO Temporarily share Data Loch's existing hash algorithm, even if it doesn't match PDG standard practice.
-    # today = datetime.utcnow().strftime('%Y-%m-%d')
-    today = datetime.utcnow().strftime('%m-%d-%Y')
+    # today = localize_datetime(datetime.now()).strftime('%Y-%m-%d')
+    today = localize_datetime(datetime.now()).strftime('%m-%d-%Y')
     today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
     return app.config['LOCH_S3_CANVAS_DATA_PATH_DAILY'] + '/' + today_hash + '-' + today
 
