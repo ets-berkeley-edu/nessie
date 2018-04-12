@@ -26,6 +26,9 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import inspect
 
+from flask import current_app as app
+import pytz
+
 
 """Generic utilities."""
 
@@ -39,3 +42,7 @@ def get_args_dict(func, *args, **kw):
     resp = dict(zip(arg_names, args))
     resp.update(kw)
     return resp
+
+
+def localize_datetime(dt):
+    return dt.astimezone(pytz.timezone(app.config['TIMEZONE']))

@@ -31,6 +31,8 @@ import os
 # Base directory for the application (one level up from this config file).
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
+TIMEZONE = 'America/Los_Angeles'
+
 # Some defaults.
 CSRF_ENABLED = True
 CSRF_SESSION_KEY = 'secret'
