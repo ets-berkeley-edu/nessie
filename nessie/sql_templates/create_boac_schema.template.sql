@@ -25,6 +25,123 @@
 
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_boac};
 
+DROP TABLE IF EXISTS {redshift_schema_boac}.assignment_submissions_scores;
+
+CREATE TABLE {redshift_schema_boac}.assignment_submissions_scores
+INTERLEAVED SORTKEY (user_id, course_id, assignment_id)
+AS (
+    /*
+     * Following Canvas code, in cases where multiple assignment overrides associate a student with an assignment,
+     * the override with the latest due date controls.
+     */
+    WITH most_lenient_override AS (
+        SELECT
+            {redshift_schema_canvas}.assignment_override_user_rollup_fact.assignment_id AS assignment_id,
+            {redshift_schema_canvas}.assignment_override_user_rollup_fact.user_id AS user_id,
+            MAX({redshift_schema_canvas}.assignment_override_dim.due_at) AS due_at
+        FROM {redshift_schema_canvas}.assignment_override_user_rollup_fact
+        LEFT JOIN {redshift_schema_canvas}.assignment_override_dim
+            ON {redshift_schema_canvas}.assignment_override_dim.id = {redshift_schema_canvas}.assignment_override_user_rollup_fact.assignment_override_id
+            AND {redshift_schema_canvas}.assignment_override_dim.workflow_state = 'active'
+        GROUP BY
+            {redshift_schema_canvas}.assignment_override_user_rollup_fact.assignment_id,
+            {redshift_schema_canvas}.assignment_override_user_rollup_fact.user_id
+    )
+    SELECT
+        {redshift_schema_canvas}.user_dim.canvas_id AS user_id,
+        {redshift_schema_canvas}.course_dim.canvas_id AS course_id,
+        {redshift_schema_canvas}.assignment_dim.canvas_id AS assignment_id,
+        CASE
+            /*
+             * An unsubmitted assignment is "missing" if it has a known due date in the past.
+             */
+            WHEN {redshift_schema_canvas}.submission_dim.workflow_state = 'unsubmitted'
+            AND (
+                most_lenient_override.due_at < getdate() OR
+                (most_lenient_override.due_at IS NULL AND {redshift_schema_canvas}.assignment_dim.due_at < getdate())
+            )
+            THEN
+                'missing'
+            /*
+             * Other unsubmitted assignments, with due dates in the future or unknown, are simply "unsubmitted".
+             * (This seems to correspond to the usage of "floating" in the Canvas analytics API.)
+             */
+            WHEN {redshift_schema_canvas}.submission_dim.workflow_state = 'unsubmitted'
+            THEN
+                'unsubmitted'
+            /*
+             * Submitted assignments with a known submission date after a known due date are late.
+             */
+            WHEN
+                most_lenient_override.due_at < {redshift_schema_canvas}.submission_dim.submitted_at
+                OR (
+                    most_lenient_override.due_at IS NULL
+                    AND {redshift_schema_canvas}.assignment_dim.due_at < {redshift_schema_canvas}.submission_dim.submitted_at
+                )
+            THEN
+                'late'
+            /*
+             * Submitted assignments with an unknown submission date or unknown due date are simply "submitted."
+             */
+            WHEN {redshift_schema_canvas}.submission_dim.submitted_at IS NULL
+                OR (most_lenient_override.due_at IS NULL AND {redshift_schema_canvas}.assignment_dim.due_at IS NULL)
+            THEN
+                'submitted'
+            /*
+             * Remaining assignments have a known submission date before or equal to a known due date, and are on time.
+             */
+            ELSE
+                'on_time'
+        END AS assignment_status,
+        CASE
+            WHEN most_lenient_override.due_at IS NULL THEN {redshift_schema_canvas}.assignment_dim.due_at
+            ELSE most_lenient_override.due_at
+        END AS due_at,
+        {redshift_schema_canvas}.submission_dim.submitted_at AS submitted_at,
+        {redshift_schema_canvas}.submission_fact.score AS score,
+        {redshift_schema_canvas}.submission_dim.grade AS grade,
+        {redshift_schema_canvas}.assignment_dim.points_possible AS points_possible
+    FROM
+        {redshift_schema_canvas}.submission_fact
+        JOIN {redshift_schema_canvas}.submission_dim
+            ON {redshift_schema_canvas}.submission_fact.submission_id = {redshift_schema_canvas}.submission_dim.id
+        JOIN {redshift_schema_canvas}.user_dim
+            ON {redshift_schema_canvas}.user_dim.id = {redshift_schema_canvas}.submission_fact.user_id
+        JOIN {redshift_schema_canvas}.assignment_dim
+            ON {redshift_schema_canvas}.assignment_dim.id = {redshift_schema_canvas}.submission_fact.assignment_id
+        JOIN {redshift_schema_canvas}.course_dim
+            ON {redshift_schema_canvas}.course_dim.id = {redshift_schema_canvas}.submission_fact.course_id
+        LEFT JOIN most_lenient_override
+            ON most_lenient_override.user_id = {redshift_schema_canvas}.submission_fact.user_id
+            AND most_lenient_override.assignment_id = {redshift_schema_canvas}.submission_fact.assignment_id
+    WHERE {redshift_schema_canvas}.assignment_dim.workflow_state = 'published'
+);
+
+DROP TABLE IF EXISTS {redshift_schema_boac}.user_course_scores;
+
+CREATE TABLE {redshift_schema_boac}.user_course_scores
+SORTKEY (course_id)
+AS (
+    SELECT
+        {redshift_schema_canvas}.user_dim.canvas_id AS user_id,
+        {redshift_schema_canvas}.course_dim.canvas_id AS course_id,
+        {redshift_schema_canvas}.course_score_fact.current_score AS current_score,
+        {redshift_schema_canvas}.course_score_fact.final_score AS final_score
+    FROM
+        {redshift_schema_canvas}.enrollment_fact
+        JOIN {redshift_schema_canvas}.enrollment_dim
+            ON {redshift_schema_canvas}.enrollment_dim.id = {redshift_schema_canvas}.enrollment_fact.enrollment_id
+        JOIN {redshift_schema_canvas}.course_score_fact
+            ON {redshift_schema_canvas}.course_score_fact.enrollment_id = {redshift_schema_canvas}.enrollment_fact.enrollment_id
+        JOIN {redshift_schema_canvas}.user_dim
+            ON {redshift_schema_canvas}.user_dim.id = {redshift_schema_canvas}.enrollment_fact.user_id
+        JOIN {redshift_schema_canvas}.course_dim
+            ON {redshift_schema_canvas}.course_dim.id = {redshift_schema_canvas}.enrollment_fact.course_id
+    WHERE
+        {redshift_schema_canvas}.enrollment_dim.type = 'StudentEnrollment'
+        AND {redshift_schema_canvas}.enrollment_dim.workflow_state = 'active'
+);
+
 DROP TABLE IF EXISTS {redshift_schema_boac}.page_views_zscore;
 
 CREATE TABLE {redshift_schema_boac}.page_views_zscore
@@ -181,96 +298,4 @@ WITH
         w4
     LEFT JOIN w5 ON w4.user_id = w5.global_user_id
     LEFT JOIN {redshift_schema_canvas}.course_dim c ON w4.course_id = c.id
-);
-
-DROP TABLE IF EXISTS {redshift_schema_boac}.assignment_submissions_scores;
-
-CREATE TABLE {redshift_schema_boac}.assignment_submissions_scores
-INTERLEAVED SORTKEY (user_id, course_id, assignment_id)
-AS (
-    /*
-     * Following Canvas code, in cases where multiple assignment overrides associate a student with an assignment,
-     * the override with the latest due date controls.
-     */
-    WITH most_lenient_override AS (
-        SELECT
-            {redshift_schema_canvas}.assignment_override_user_rollup_fact.assignment_id AS assignment_id,
-            {redshift_schema_canvas}.assignment_override_user_rollup_fact.user_id AS user_id,
-            MAX({redshift_schema_canvas}.assignment_override_dim.due_at) AS due_at
-        FROM {redshift_schema_canvas}.assignment_override_user_rollup_fact
-        LEFT JOIN {redshift_schema_canvas}.assignment_override_dim
-            ON {redshift_schema_canvas}.assignment_override_dim.id = {redshift_schema_canvas}.assignment_override_user_rollup_fact.assignment_override_id
-            AND {redshift_schema_canvas}.assignment_override_dim.workflow_state = 'active'
-        GROUP BY
-            {redshift_schema_canvas}.assignment_override_user_rollup_fact.assignment_id,
-            {redshift_schema_canvas}.assignment_override_user_rollup_fact.user_id
-    )
-    SELECT
-        {redshift_schema_canvas}.user_dim.canvas_id AS user_id,
-        {redshift_schema_canvas}.course_dim.canvas_id AS course_id,
-        {redshift_schema_canvas}.assignment_dim.canvas_id AS assignment_id,
-        CASE
-            /*
-             * An unsubmitted assignment is "missing" if it has a known due date in the past.
-             */
-            WHEN {redshift_schema_canvas}.submission_dim.workflow_state = 'unsubmitted'
-            AND (
-                most_lenient_override.due_at < getdate() OR
-                (most_lenient_override.due_at IS NULL AND {redshift_schema_canvas}.assignment_dim.due_at < getdate())
-            )
-            THEN
-                'missing'
-            /*
-             * Other unsubmitted assignments, with due dates in the future or unknown, are simply "unsubmitted".
-             * (This seems to correspond to the usage of "floating" in the Canvas analytics API.)
-             */
-            WHEN {redshift_schema_canvas}.submission_dim.workflow_state = 'unsubmitted'
-            THEN
-                'unsubmitted'
-            /*
-             * Submitted assignments with a known submission date after a known due date are late.
-             */
-            WHEN
-                most_lenient_override.due_at < {redshift_schema_canvas}.submission_dim.submitted_at
-                OR (
-                    most_lenient_override.due_at IS NULL
-                    AND {redshift_schema_canvas}.assignment_dim.due_at < {redshift_schema_canvas}.submission_dim.submitted_at
-                )
-            THEN
-                'late'
-            /*
-             * Submitted assignments with an unknown submission date or unknown due date are simply "submitted."
-             */
-            WHEN {redshift_schema_canvas}.submission_dim.submitted_at IS NULL
-                OR (most_lenient_override.due_at IS NULL AND {redshift_schema_canvas}.assignment_dim.due_at IS NULL)
-            THEN
-                'submitted'
-            /*
-             * Remaining assignments have a known submission date before or equal to a known due date, and are on time.
-             */
-            ELSE
-                'on_time'
-        END AS assignment_status,
-        CASE
-            WHEN most_lenient_override.due_at IS NULL THEN {redshift_schema_canvas}.assignment_dim.due_at
-            ELSE most_lenient_override.due_at
-        END AS due_at,
-        {redshift_schema_canvas}.submission_dim.submitted_at AS submitted_at,
-        {redshift_schema_canvas}.submission_fact.score AS score,
-        {redshift_schema_canvas}.submission_dim.grade AS grade,
-        {redshift_schema_canvas}.assignment_dim.points_possible AS points_possible
-    FROM
-        {redshift_schema_canvas}.submission_fact
-        JOIN {redshift_schema_canvas}.submission_dim
-            ON {redshift_schema_canvas}.submission_fact.submission_id = {redshift_schema_canvas}.submission_dim.id
-        JOIN {redshift_schema_canvas}.user_dim
-            ON {redshift_schema_canvas}.user_dim.id = {redshift_schema_canvas}.submission_fact.user_id
-        JOIN {redshift_schema_canvas}.assignment_dim
-            ON {redshift_schema_canvas}.assignment_dim.id = {redshift_schema_canvas}.submission_fact.assignment_id
-        JOIN {redshift_schema_canvas}.course_dim
-            ON {redshift_schema_canvas}.course_dim.id = {redshift_schema_canvas}.submission_fact.course_id
-        LEFT JOIN most_lenient_override
-            ON most_lenient_override.user_id = {redshift_schema_canvas}.submission_fact.user_id
-            AND most_lenient_override.assignment_id = {redshift_schema_canvas}.submission_fact.assignment_id
-    WHERE {redshift_schema_canvas}.assignment_dim.workflow_state = 'published'
 );
