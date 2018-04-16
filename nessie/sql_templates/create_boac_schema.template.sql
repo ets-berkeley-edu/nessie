@@ -32,7 +32,7 @@ INTERLEAVED SORTKEY (user_id, course_id, assignment_id)
 AS (
     /*
      * Following Canvas code, in cases where multiple assignment overrides associate a student with an assignment,
-     * the override with the latest due date controls.
+     * we prefer the override with the latest due date.
      */
     WITH most_lenient_override AS (
         SELECT
@@ -54,44 +54,91 @@ AS (
         CASE
             /*
              * An unsubmitted assignment is "missing" if it has a known due date in the past.
+             * TODO : Canvas's recently added late_policy_status feature can override this logic.
              */
-            WHEN {redshift_schema_canvas}.submission_dim.workflow_state = 'unsubmitted'
-            AND (
-                most_lenient_override.due_at < getdate() OR
-                (most_lenient_override.due_at IS NULL AND {redshift_schema_canvas}.assignment_dim.due_at < getdate())
-            )
+            WHEN {redshift_schema_canvas}.submission_dim.submission_type IS NULL
+                AND {redshift_schema_canvas}.submission_dim.submitted_at IS NULL
+                AND {redshift_schema_canvas}.submission_dim.excused != 'excused_submission'
+                AND (
+                    most_lenient_override.due_at < getdate()
+                    OR (most_lenient_override.due_at IS NULL
+                        AND {redshift_schema_canvas}.assignment_dim.due_at IS NOT NULL
+                        AND {redshift_schema_canvas}.assignment_dim.due_at < getdate())
+                )
+                AND COALESCE(NULLIF({redshift_schema_canvas}.assignment_dim.submission_types, ''), 'none') not similar to
+                    '%(none|not\_graded|on\_paper|wiki\_page|external\_tool)%'
             THEN
                 'missing'
             /*
-             * Other unsubmitted assignments, with due dates in the future or unknown, are simply "unsubmitted".
+             * Other ungraded unsubmitted submittable assignments, with due dates in the future or unknown, are simply "unsubmitted".
              * (This seems to correspond to the usage of "floating" in the Canvas analytics API.)
+             * We check for a grade because the instructor may have allowed the student to handle the assignment
+             * outside expected digital-submission channels. If so, it would be misleading to flag it "unsubmitted".
+             * TODO : The count will include any "excused" submittable assignments, which may not be what we want.
              */
-            WHEN {redshift_schema_canvas}.submission_dim.workflow_state = 'unsubmitted'
+            WHEN {redshift_schema_canvas}.submission_dim.submission_type IS NULL
+                AND {redshift_schema_canvas}.submission_dim.submitted_at IS NULL
+                AND COALESCE(NULLIF({redshift_schema_canvas}.assignment_dim.submission_types, ''), 'none') not similar to
+                    '%(none|not\_graded|on\_paper|wiki\_page|external\_tool)%'
+                AND (
+                    {redshift_schema_canvas}.submission_fact.score IS NULL
+                    OR {redshift_schema_canvas}.submission_fact.score = 0.0
+                 )
             THEN
                 'unsubmitted'
             /*
              * Submitted assignments with a known submission date after a known due date are late.
+             * TODO : Canvas's recently added late_policy_status feature can override this logic.
              */
-            WHEN
-                most_lenient_override.due_at < {redshift_schema_canvas}.submission_dim.submitted_at
+            WHEN {redshift_schema_canvas}.submission_dim.submitted_at IS NOT NULL
+                AND {redshift_schema_canvas}.assignment_dim.due_at IS NOT NULL
+                AND COALESCE(NULLIF({redshift_schema_canvas}.assignment_dim.submission_types, ''), 'none') not similar to
+                    '%(none|not\_graded|on\_paper|wiki\_page|external\_tool)%'
+                AND most_lenient_override.due_at < {redshift_schema_canvas}.submission_dim.submitted_at
                 OR (
                     most_lenient_override.due_at IS NULL
-                    AND {redshift_schema_canvas}.assignment_dim.due_at < {redshift_schema_canvas}.submission_dim.submitted_at
+                    AND {redshift_schema_canvas}.assignment_dim.due_at <
+                        {redshift_schema_canvas}.submission_dim.submitted_at +
+                        CASE {redshift_schema_canvas}.submission_dim.submission_type WHEN 'online_quiz' THEN interval '1 minute' ELSE interval '0 minutes' END
                 )
             THEN
                 'late'
             /*
-             * Submitted assignments with an unknown submission date or unknown due date are simply "submitted."
+             * Submitted assignments with a known submission date before or equal to a known due date are on time.
              */
-            WHEN {redshift_schema_canvas}.submission_dim.submitted_at IS NULL
-                OR (most_lenient_override.due_at IS NULL AND {redshift_schema_canvas}.assignment_dim.due_at IS NULL)
+            WHEN {redshift_schema_canvas}.submission_dim.submitted_at IS NOT NULL
+                AND {redshift_schema_canvas}.assignment_dim.due_at IS NOT NULL
+                AND COALESCE(NULLIF({redshift_schema_canvas}.assignment_dim.submission_types, ''), 'none') not similar to
+                    '%(none|not\_graded|on\_paper|wiki\_page|external\_tool)%'
+                AND most_lenient_override.due_at >= {redshift_schema_canvas}.submission_dim.submitted_at
+                OR (
+                    most_lenient_override.due_at IS NULL
+                    AND {redshift_schema_canvas}.assignment_dim.due_at >=
+                        {redshift_schema_canvas}.submission_dim.submitted_at +
+                        CASE {redshift_schema_canvas}.submission_dim.submission_type WHEN 'online_quiz' THEN interval '1 minute' ELSE interval '0 minutes' END
+                )
+            THEN
+                'on_time'
+            /*
+             * Remaining submittable assignments are simply "submitted."
+             */
+            WHEN COALESCE(NULLIF({redshift_schema_canvas}.assignment_dim.submission_types, ''), 'none') not similar to
+                    '%(none|not\_graded|on\_paper|wiki\_page|external\_tool)%'
             THEN
                 'submitted'
             /*
-             * Remaining assignments have a known submission date before or equal to a known due date, and are on time.
+             * Non-digital (or unsubmittable) assignments are either graded or ungraded. They may have due_at dates,
+             * and may even have submitted_at dates, but lag times are difficult to interpret. However, zero scores
+             * generally indicate undone work.
              */
+            WHEN {redshift_schema_canvas}.submission_fact.score = 0.0
+            THEN
+                'zero_graded'
+            WHEN {redshift_schema_canvas}.submission_fact.score IS NOT NULL
+            THEN
+                'graded'
             ELSE
-                'on_time'
+                'ungraded'
         END AS assignment_status,
         CASE
             WHEN most_lenient_override.due_at IS NULL THEN {redshift_schema_canvas}.assignment_dim.due_at
@@ -115,6 +162,7 @@ AS (
             ON most_lenient_override.user_id = {redshift_schema_canvas}.submission_fact.user_id
             AND most_lenient_override.assignment_id = {redshift_schema_canvas}.submission_fact.assignment_id
     WHERE {redshift_schema_canvas}.assignment_dim.workflow_state = 'published'
+        AND {redshift_schema_canvas}.submission_dim.workflow_state != 'deleted'
 );
 
 DROP TABLE IF EXISTS {redshift_schema_boac}.user_course_scores;
