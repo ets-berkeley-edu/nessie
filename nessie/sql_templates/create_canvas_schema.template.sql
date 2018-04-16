@@ -496,6 +496,7 @@ CREATE EXTERNAL TABLE {redshift_schema_canvas}.submission_dim(
     processed BOOLEAN,
     process_attempts INT,
     grade_matches_current_submission BOOLEAN,
+    published_grade VARCHAR,
     graded_at TIMESTAMP,
     has_rubric_assessment BOOLEAN,
     attempt INT,
