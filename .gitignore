@@ -3,6 +3,7 @@
 
 # Local configs
 config/*-local.py
+config/build-summary.json
 
 # MacNoise
 .DS_Store
@@ -56,6 +57,7 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
+.pytest_cache/
 nosetests.xml
 coverage.xml
 *.cover
