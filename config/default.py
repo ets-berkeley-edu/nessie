@@ -54,9 +54,11 @@ CANVAS_DATA_HOST = 'foo.instructure.com'
 LOCH_S3_BUCKET = 'bucket_name'
 LOCH_S3_REGION = 'us-west-2'
 
-LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM = 's3/path/to/current/term'
-LOCH_S3_CANVAS_DATA_PATH_DAILY = 's3/path/to/daily'
-LOCH_S3_CANVAS_DATA_PATH_HISTORICAL = 's3/path/to/historical'
+LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM = 'canvas/path/to/current/term'
+LOCH_S3_CANVAS_DATA_PATH_DAILY = 'canvas/path/to/daily'
+LOCH_S3_CANVAS_DATA_PATH_HISTORICAL = 'canvas/path/to/historical'
+
+LOCH_S3_SIS_DATA_PATH_DAILY = 'sis/path/to/daily'
 
 LOCH_CANVAS_DATA_REQUESTS_CUTOFF_DATE = '20180101'
 
@@ -74,6 +76,7 @@ REDSHIFT_IAM_ROLE = 'iam role'
 
 REDSHIFT_SCHEMA_BOAC = 'BOAC schema name'
 REDSHIFT_SCHEMA_CANVAS = 'Canvas schema name'
+REDSHIFT_SCHEMA_SIS = 'SIS schema name'
 
 WORKER_HOST = 'hard-working-nessie.berkeley.edu'
 WORKER_USERNAME = 'username'

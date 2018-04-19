@@ -43,6 +43,7 @@ def post_basic_auth(client, path, credentials, data=None):
     'api_path_authenticated',
     [
         '/api/job/create_canvas_schema',
+        '/api/job/create_sis_schema',
         '/api/job/generate_boac_analytics',
         '/api/job/sync_canvas_snapshots',
         '/api/job/sync_file_to_s3',
@@ -70,6 +71,7 @@ class TestJobControllerAuthentication:
     'api_path_no_params',
     [
         '/api/job/create_canvas_schema',
+        '/api/job/create_sis_schema',
         '/api/job/generate_boac_analytics',
         '/api/job/sync_canvas_snapshots',
     ],
