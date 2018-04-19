@@ -67,6 +67,16 @@ AS (
                 )
                 AND COALESCE(NULLIF({redshift_schema_canvas}.assignment_dim.submission_types, ''), 'none') not similar to
                     '%(none|not\_graded|on\_paper|wiki\_page|external\_tool)%'
+                AND (
+                    {redshift_schema_canvas}.submission_fact.score IS NULL
+                    OR (
+                        {redshift_schema_canvas}.submission_fact.score = 0.0
+                        AND (
+                            {redshift_schema_canvas}.assignment_dim.points_possible > 0.0
+                            OR {redshift_schema_canvas}.submission_dim.grade != 'complete'
+                        )
+                    )
+                 )
             THEN
                 'missing'
             /*
@@ -82,7 +92,13 @@ AS (
                     '%(none|not\_graded|on\_paper|wiki\_page|external\_tool)%'
                 AND (
                     {redshift_schema_canvas}.submission_fact.score IS NULL
-                    OR {redshift_schema_canvas}.submission_fact.score = 0.0
+                    OR (
+                        {redshift_schema_canvas}.submission_fact.score = 0.0
+                        AND (
+                            {redshift_schema_canvas}.assignment_dim.points_possible > 0.0
+                            OR {redshift_schema_canvas}.submission_dim.grade != 'complete'
+                        )
+                    )
                  )
             THEN
                 'unsubmitted'
@@ -132,6 +148,10 @@ AS (
              * generally indicate undone work.
              */
             WHEN {redshift_schema_canvas}.submission_fact.score = 0.0
+                AND (
+                    {redshift_schema_canvas}.assignment_dim.points_possible > 0.0
+                    OR {redshift_schema_canvas}.submission_dim.grade != 'complete'
+                )
             THEN
                 'zero_graded'
             WHEN {redshift_schema_canvas}.submission_fact.score IS NOT NULL
