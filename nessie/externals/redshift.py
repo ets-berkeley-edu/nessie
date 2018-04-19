@@ -70,7 +70,8 @@ def _execute(sql, operation, **kwargs):
     """
     result = None
     try:
-        sql = psycopg2.sql.SQL(sql).format(**kwargs)
+        if kwargs:
+            sql = psycopg2.sql.SQL(sql).format(**kwargs)
         with get_cursor(operation) as cursor:
             cursor.execute(sql)
             if operation == 'read':

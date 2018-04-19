@@ -56,6 +56,7 @@ def resolve_sql_template(sql_filename):
     template_data = {
         'redshift_schema_boac': app.config['REDSHIFT_SCHEMA_BOAC'],
         'redshift_schema_canvas': app.config['REDSHIFT_SCHEMA_CANVAS'],
+        'redshift_schema_intermediate': app.config['REDSHIFT_SCHEMA_INTERMEDIATE'],
         'redshift_schema_sis': app.config['REDSHIFT_SCHEMA_SIS'],
         'redshift_iam_role': app.config['REDSHIFT_IAM_ROLE'],
         'loch_s3_canvas_data_path_today': s3_prefix + get_s3_canvas_daily_path(),

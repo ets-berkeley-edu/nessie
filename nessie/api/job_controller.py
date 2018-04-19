@@ -31,6 +31,7 @@ from nessie.api.errors import BadRequestError
 from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
+from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
 from nessie.lib.http import tolerant_jsonify
@@ -54,6 +55,13 @@ def create_sis_schema():
 @auth_required
 def generate_boac_analytics():
     job_started = GenerateBoacAnalytics().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/generate_intermediate_tables', methods=['POST'])
+@auth_required
+def generate_intermediate_tables():
+    job_started = GenerateIntermediateTables().run_async()
     return respond_with_status(job_started)
 
 
