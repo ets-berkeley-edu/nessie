@@ -46,6 +46,18 @@ AS (
         GROUP BY
             {redshift_schema_canvas}.assignment_override_user_rollup_fact.assignment_id,
             {redshift_schema_canvas}.assignment_override_user_rollup_fact.user_id
+    ),
+    assignment_type AS (
+        SELECT id,
+        CASE WHEN (
+            COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%none%' AND
+            COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%not_graded%' AND
+            COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%on_paper%' AND
+            COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%wiki_page%' AND
+            COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%external_tool%'
+        ) THEN 1
+        ELSE NULL END AS submittable
+      FROM canvas_data_external_dev.assignment_dim
     )
     SELECT
         {redshift_schema_canvas}.user_dim.canvas_id AS user_id,
@@ -65,8 +77,7 @@ AS (
                         AND {redshift_schema_canvas}.assignment_dim.due_at IS NOT NULL
                         AND {redshift_schema_canvas}.assignment_dim.due_at < getdate())
                 )
-                AND COALESCE(NULLIF({redshift_schema_canvas}.assignment_dim.submission_types, ''), 'none') not similar to
-                    '%(none|not\_graded|on\_paper|wiki\_page|external\_tool)%'
+                AND assignment_type.submittable IS NOT NULL
                 AND (
                     {redshift_schema_canvas}.submission_fact.score IS NULL
                     OR (
@@ -88,8 +99,7 @@ AS (
              */
             WHEN {redshift_schema_canvas}.submission_dim.submission_type IS NULL
                 AND {redshift_schema_canvas}.submission_dim.submitted_at IS NULL
-                AND COALESCE(NULLIF({redshift_schema_canvas}.assignment_dim.submission_types, ''), 'none') not similar to
-                    '%(none|not\_graded|on\_paper|wiki\_page|external\_tool)%'
+                AND assignment_type.submittable IS NOT NULL
                 AND (
                     {redshift_schema_canvas}.submission_fact.score IS NULL
                     OR (
@@ -108,8 +118,7 @@ AS (
              */
             WHEN {redshift_schema_canvas}.submission_dim.submitted_at IS NOT NULL
                 AND {redshift_schema_canvas}.assignment_dim.due_at IS NOT NULL
-                AND COALESCE(NULLIF({redshift_schema_canvas}.assignment_dim.submission_types, ''), 'none') not similar to
-                    '%(none|not\_graded|on\_paper|wiki\_page|external\_tool)%'
+                AND assignment_type.submittable IS NOT NULL
                 AND most_lenient_override.due_at < {redshift_schema_canvas}.submission_dim.submitted_at
                 OR (
                     most_lenient_override.due_at IS NULL
@@ -124,8 +133,7 @@ AS (
              */
             WHEN {redshift_schema_canvas}.submission_dim.submitted_at IS NOT NULL
                 AND {redshift_schema_canvas}.assignment_dim.due_at IS NOT NULL
-                AND COALESCE(NULLIF({redshift_schema_canvas}.assignment_dim.submission_types, ''), 'none') not similar to
-                    '%(none|not\_graded|on\_paper|wiki\_page|external\_tool)%'
+                AND assignment_type.submittable IS NOT NULL
                 AND most_lenient_override.due_at >= {redshift_schema_canvas}.submission_dim.submitted_at
                 OR (
                     most_lenient_override.due_at IS NULL
@@ -138,8 +146,8 @@ AS (
             /*
              * Remaining submittable assignments are simply "submitted."
              */
-            WHEN COALESCE(NULLIF({redshift_schema_canvas}.assignment_dim.submission_types, ''), 'none') not similar to
-                    '%(none|not\_graded|on\_paper|wiki\_page|external\_tool)%'
+            WHEN
+                assignment_type.submittable IS NOT NULL
             THEN
                 'submitted'
             /*
@@ -176,6 +184,8 @@ AS (
             ON {redshift_schema_canvas}.user_dim.id = {redshift_schema_canvas}.submission_fact.user_id
         JOIN {redshift_schema_canvas}.assignment_dim
             ON {redshift_schema_canvas}.assignment_dim.id = {redshift_schema_canvas}.submission_fact.assignment_id
+        JOIN assignment_type
+            ON assignment_type.id = {redshift_schema_canvas}.submission_fact.assignment_id
         JOIN {redshift_schema_canvas}.course_dim
             ON {redshift_schema_canvas}.course_dim.id = {redshift_schema_canvas}.submission_fact.course_id
         LEFT JOIN most_lenient_override
