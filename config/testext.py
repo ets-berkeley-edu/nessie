@@ -11,3 +11,5 @@ REDSHIFT_USER = 'username'
 
 REDSHIFT_SCHEMA_BOAC = 'testext_paulkerschen_boac'
 REDSHIFT_SCHEMA_CANVAS = 'testext_paulkerschen_canvas'
+REDSHIFT_SCHEMA_INTERMEDIATE = 'testext_paulkerschen_intermediate'
+REDSHIFT_SCHEMA_SIS = 'testext_paulkerschen_sis'

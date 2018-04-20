@@ -28,7 +28,7 @@ CREATE SCHEMA IF NOT EXISTS {redshift_schema_boac};
 DROP TABLE IF EXISTS {redshift_schema_boac}.assignment_submissions_scores;
 
 CREATE TABLE {redshift_schema_boac}.assignment_submissions_scores
-INTERLEAVED SORTKEY (user_id, course_id, assignment_id)
+INTERLEAVED SORTKEY (uid, course_id, assignment_id)
 AS (
     /*
      * Following Canvas code, in cases where multiple assignment overrides associate a student with an assignment,
@@ -60,7 +60,8 @@ AS (
       FROM canvas_data_external_dev.assignment_dim
     )
     SELECT
-        {redshift_schema_canvas}.user_dim.canvas_id AS user_id,
+        {redshift_schema_intermediate}.users.uid AS uid,
+        {redshift_schema_intermediate}.users.canvas_id AS canvas_user_id,
         {redshift_schema_canvas}.course_dim.canvas_id AS course_id,
         {redshift_schema_canvas}.assignment_dim.canvas_id AS assignment_id,
         CASE
@@ -175,13 +176,14 @@ AS (
         {redshift_schema_canvas}.submission_dim.submitted_at AS submitted_at,
         {redshift_schema_canvas}.submission_fact.score AS score,
         {redshift_schema_canvas}.submission_dim.grade AS grade,
-        {redshift_schema_canvas}.assignment_dim.points_possible AS points_possible
+        {redshift_schema_canvas}.assignment_dim.points_possible AS points_possible,
+        {redshift_schema_intermediate}.active_student_enrollments.sis_enrollment_status AS sis_enrollment_status
     FROM
         {redshift_schema_canvas}.submission_fact
         JOIN {redshift_schema_canvas}.submission_dim
             ON {redshift_schema_canvas}.submission_fact.submission_id = {redshift_schema_canvas}.submission_dim.id
-        JOIN {redshift_schema_canvas}.user_dim
-            ON {redshift_schema_canvas}.user_dim.id = {redshift_schema_canvas}.submission_fact.user_id
+        JOIN {redshift_schema_intermediate}.users
+            ON {redshift_schema_intermediate}.users.global_id = {redshift_schema_canvas}.submission_fact.user_id
         JOIN {redshift_schema_canvas}.assignment_dim
             ON {redshift_schema_canvas}.assignment_dim.id = {redshift_schema_canvas}.submission_fact.assignment_id
         JOIN assignment_type
@@ -191,6 +193,9 @@ AS (
         LEFT JOIN most_lenient_override
             ON most_lenient_override.user_id = {redshift_schema_canvas}.submission_fact.user_id
             AND most_lenient_override.assignment_id = {redshift_schema_canvas}.submission_fact.assignment_id
+        LEFT JOIN {redshift_schema_intermediate}.active_student_enrollments
+            ON {redshift_schema_canvas}.course_dim.canvas_id = {redshift_schema_intermediate}.active_student_enrollments.canvas_course_id
+            AND {redshift_schema_intermediate}.users.canvas_id = {redshift_schema_intermediate}.active_student_enrollments.canvas_user_id
     WHERE {redshift_schema_canvas}.assignment_dim.workflow_state = 'published'
         AND {redshift_schema_canvas}.submission_dim.workflow_state != 'deleted'
 );
@@ -201,23 +206,27 @@ CREATE TABLE {redshift_schema_boac}.user_course_scores
 SORTKEY (course_id)
 AS (
     SELECT
-        {redshift_schema_canvas}.user_dim.canvas_id AS user_id,
-        {redshift_schema_canvas}.course_dim.canvas_id AS course_id,
-        {redshift_schema_canvas}.course_score_fact.current_score AS current_score,
-        {redshift_schema_canvas}.course_score_fact.final_score AS final_score
+        ase.uid,
+        ase.canvas_user_id,
+        ase.canvas_course_id AS course_id,
+        ase.sis_enrollment_status,
+        csf.current_score,
+        csf.final_score
     FROM
-        {redshift_schema_canvas}.enrollment_fact
-        JOIN {redshift_schema_canvas}.enrollment_dim
-            ON {redshift_schema_canvas}.enrollment_dim.id = {redshift_schema_canvas}.enrollment_fact.enrollment_id
-        JOIN {redshift_schema_canvas}.course_score_fact
-            ON {redshift_schema_canvas}.course_score_fact.enrollment_id = {redshift_schema_canvas}.enrollment_fact.enrollment_id
-        JOIN {redshift_schema_canvas}.user_dim
-            ON {redshift_schema_canvas}.user_dim.id = {redshift_schema_canvas}.enrollment_fact.user_id
-        JOIN {redshift_schema_canvas}.course_dim
-            ON {redshift_schema_canvas}.course_dim.id = {redshift_schema_canvas}.enrollment_fact.course_id
-    WHERE
-        {redshift_schema_canvas}.enrollment_dim.type = 'StudentEnrollment'
-        AND {redshift_schema_canvas}.enrollment_dim.workflow_state = 'active'
+        {redshift_schema_intermediate}.active_student_enrollments ase
+        JOIN {redshift_schema_intermediate}.users
+            ON ase.canvas_user_id = {redshift_schema_intermediate}.users.canvas_id
+        JOIN {redshift_schema_canvas}.enrollment_fact enr
+            ON enr.user_id = {redshift_schema_intermediate}.users.global_id
+        JOIN {redshift_schema_canvas}.course_score_fact csf
+            ON csf.enrollment_id = enr.enrollment_id
+    GROUP BY
+        ase.uid,
+        ase.canvas_user_id,
+        ase.canvas_course_id,
+        ase.sis_enrollment_status,
+        csf.current_score,
+        csf.final_score
 );
 
 DROP TABLE IF EXISTS {redshift_schema_boac}.page_views_zscore;
@@ -325,45 +334,17 @@ WITH
         LEFT JOIN w3 ON w1.course_id = w3.course_id
             AND w1.user_id = w3.user_id
         LEFT JOIN w2 ON w1.course_id = w2.course_id
-    ),
-    /*
-     * Combines user_dim and pseudonym_dim tables to retrieve correct
-     * global_user_id, canvas_user_id, sis_login_id and sis_user_id
-     * There are multiple entries in the table which maps to a single canvas_user_id.
-     * So we track only the user_ids which have an active workflow_state.
-     * This also occurs when there are multiple sis_login_ids mapped to the same canvas_user_id
-     * and each of those entries are marked active. (Possible glitch while enrollment feed is sent to update Canvas tables)
-     * The numbers are fairly small (about 109 enrollments). The query factors in this deviation and presents same
-     * stats for these duplicate entries
-     */
-    w5 AS (
-        SELECT
-            u.id AS global_user_id,
-            u.canvas_id,
-            u.name,
-            u.workflow_state,
-            u.sortable_name,
-            p.user_id AS pseudo_user_id,
-            p.canvas_id as pseudo_canvas_id,
-            p.sis_user_id,
-            p.unique_name,
-            p.workflow_state as active_state
-        FROM
-            {redshift_schema_canvas}.user_dim u
-        LEFT JOIN {redshift_schema_canvas}.pseudonym_dim p ON u.id = p.user_id
-        WHERE
-            p.workflow_state = 'active'
     )
     /*
      * Add user and courses related information
-     * Instructure uses bigintergers internally as keys.
+     * Instructure uses bigintegers internally as keys.
      * Switch with canvas course_ids and user_ids
      */
     SELECT
         w4.user_id,
-        w5.canvas_id AS canvas_user_id,
-        w5.unique_name AS sis_login_id,
-        w5.sis_user_id AS sis_user_id,
+        u.canvas_id AS canvas_user_id,
+        u.sis_login_id,
+        u.sis_user_id,
         w4.course_id,
         c.canvas_id AS canvas_course_id,
         c.code AS canvas_course_code,
@@ -374,6 +355,6 @@ WITH
         w4.user_page_view_zscore AS user_page_views_zscore
     FROM
         w4
-    LEFT JOIN w5 ON w4.user_id = w5.global_user_id
+    LEFT JOIN {redshift_schema_intermediate}.users u ON w4.user_id = u.global_id
     LEFT JOIN {redshift_schema_canvas}.course_dim c ON w4.course_id = c.id
 );
