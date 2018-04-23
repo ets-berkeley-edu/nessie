@@ -39,6 +39,7 @@ def app_config():
     })
 
 
+@app.route('/')
 @app.route('/api/ping')
 def app_status():
     redshift_row = redshift.fetch('SELECT tablename FROM SVV_EXTERNAL_TABLES LIMIT 1')
