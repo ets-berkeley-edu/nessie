@@ -33,3 +33,4 @@ artifacts:
   - 'nessie/**/*'
   - 'requirements.txt'
   - 'run.py'
+  - 'scripts/**/*'
