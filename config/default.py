@@ -51,6 +51,14 @@ CANVAS_DATA_API_KEY = 'some key'
 CANVAS_DATA_API_SECRET = 'some secret'
 CANVAS_DATA_HOST = 'foo.instructure.com'
 
+JOB_SCHEDULING_ENABLED = True
+# See http://apscheduler.readthedocs.io/en/latest/modules/triggers/cron.html for supported schedule formats.
+JOB_SYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 0}
+JOB_CREATE_CANVAS_SCHEMA = {'hour': 2, 'minute': 00}
+JOB_CREATE_SIS_SCHEMA = {'hour': 14, 'minute': 2}
+JOB_GENERATE_INTERMEDIATE_TABLES = {'hour': 3, 'minute': 0}
+JOB_GENERATE_BOAC_ANALYTICS = {'hour': 3, 'minute': 30}
+
 LOCH_S3_BUCKET = 'bucket_name'
 LOCH_S3_REGION = 'us-west-2'
 
