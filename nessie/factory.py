@@ -24,8 +24,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
+import os
 from flask import Flask
 from nessie.configs import load_configs
+from nessie.jobs.scheduling import initialize_job_schedules
 from nessie.logger import initialize_logger
 from nessie.routes import register_routes
 
@@ -39,5 +41,9 @@ def create_app():
 
     with app.app_context():
         register_routes(app)
+
+    # See https://stackoverflow.com/questions/9449101/how-to-stop-flask-from-initialising-twice-in-debug-mode
+    if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        initialize_job_schedules(app)
 
     return app
