@@ -27,15 +27,45 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """Logic for SIS schema creation job."""
 
 
+import json
 from flask import current_app as app
-from nessie.externals import redshift
-from nessie.jobs.background_job import BackgroundJob, resolve_sql_template
+from nessie.externals import redshift, s3
+from nessie.jobs.background_job import BackgroundJob, get_s3_sis_daily_path, resolve_sql_template
 
 
 class CreateSisSchema(BackgroundJob):
 
     def run(self):
         app.logger.info(f'Starting SIS schema creation job...')
+        if not self.update_manifests():
+            app.logger.info('Error updating manifests, will not execute schema creation SQL')
+            return
+        app.logger.info(f'Executing SQL...')
         resolved_ddl = resolve_sql_template('create_sis_schema.template.sql')
         redshift.execute_ddl_script(resolved_ddl)
         app.logger.info(f'SIS schema creation job completed')
+
+    def update_manifests(self):
+        app.logger.info(f'Updating manifests...')
+        courses_daily = s3.get_keys_with_prefix(get_s3_sis_daily_path() + '/courses', full_objects=True)
+        courses_historical = s3.get_keys_with_prefix(app.config['LOCH_S3_SIS_DATA_PATH'] + '/historical/courses', full_objects=True)
+        enrollments_daily = s3.get_keys_with_prefix(get_s3_sis_daily_path() + '/enrollments', full_objects=True)
+        enrollments_historical = s3.get_keys_with_prefix(app.config['LOCH_S3_SIS_DATA_PATH'] + '/historical/enrollments', full_objects=True)
+
+        def to_manifest_entry(object):
+            return {
+                'url': f"s3://{app.config['LOCH_S3_BUCKET']}/{object['Key']}",
+                'meta': {'content_length': object['Size']},
+            }
+
+        def to_manifest(objects):
+            return {
+                'entries': [to_manifest_entry(object) for object in objects],
+            }
+
+        courses_manifest = json.dumps(to_manifest(courses_daily + courses_historical))
+        enrollments_manifest = json.dumps(to_manifest(enrollments_daily + enrollments_historical))
+
+        courses_result = s3.upload_data(courses_manifest, app.config['LOCH_S3_SIS_DATA_PATH'] + '/manifests/courses.json')
+        enrollments_result = s3.upload_data(enrollments_manifest, app.config['LOCH_S3_SIS_DATA_PATH'] + '/manifests/enrollments.json')
+        return courses_result and enrollments_result

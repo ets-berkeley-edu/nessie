@@ -64,7 +64,7 @@ CREATE EXTERNAL TABLE {redshift_schema_sis}.courses(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY ','
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_data_path_today}/courses';
+LOCATION '{loch_s3_sis_data_path}/manifests/courses.json';
 
 -- enrollments
 DROP TABLE IF EXISTS {redshift_schema_sis}.enrollments CASCADE;
@@ -83,4 +83,4 @@ CREATE EXTERNAL TABLE {redshift_schema_sis}.enrollments(
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY ','
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_data_path_today}/enrollments';
+LOCATION '{loch_s3_sis_data_path}/manifests/enrollments.json';

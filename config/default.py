@@ -66,7 +66,7 @@ LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM = 'canvas/path/to/current/term'
 LOCH_S3_CANVAS_DATA_PATH_DAILY = 'canvas/path/to/daily'
 LOCH_S3_CANVAS_DATA_PATH_HISTORICAL = 'canvas/path/to/historical'
 
-LOCH_S3_SIS_DATA_PATH_DAILY = 'sis/path/to/daily'
+LOCH_S3_SIS_DATA_PATH = 'sis/path'
 
 LOCH_CANVAS_DATA_REQUESTS_CUTOFF_DATE = '20180101'
 
