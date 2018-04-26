@@ -31,17 +31,17 @@ from tests.util import capture_app_logs
 @pytest.mark.testext
 class TestSyncFileToS3:
 
-    def test_file_upload_and_skip(self, app, caplog, ensure_s3_bucket_empty):
+    def test_file_upload_and_skip(self, app, caplog, cleanup_s3):
         """Uploads files to S3, skipping duplicates."""
         url = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
-        key = '00001/sonnet-xlv.html'
+        key = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001/sonnet-xlv.html'
 
         with capture_app_logs(app):
             result = SyncFileToS3().run(url=url, key=key)
             assert result is True
-            assert 'Key 00001/sonnet-xlv.html does not exist, starting upload' in caplog.text
+            assert f'Key {key} does not exist, starting upload' in caplog.text
             assert 'S3 upload complete' in caplog.text
 
             result = SyncFileToS3().run(url=url, key=key)
             assert result is False
-            assert 'Key 00001/sonnet-xlv.html exists, skipping upload' in caplog.text
+            assert f'Key {key} exists, skipping upload' in caplog.text

@@ -69,13 +69,11 @@ def app(request):
 
 
 @pytest.fixture()
-def ensure_s3_bucket_empty(app):
+def cleanup_s3(app):
     yield
-    import nessie.externals.s3
-    client = nessie.externals.s3.get_client()
-    contents = client.list_objects(Bucket=app.config['LOCH_S3_BUCKET'])['Contents']
-    keys = [c['Key'] for c in contents]
-    nessie.externals.s3.delete_objects(keys)
+    from nessie.externals import s3
+    keys = s3.get_keys_with_prefix(app.config['LOCH_S3_PREFIX_TESTEXT'])
+    s3.delete_objects(keys)
 
 
 def pytest_itemcollected(item):
