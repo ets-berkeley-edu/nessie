@@ -43,23 +43,25 @@ class TestSyncCanvasSnapshots:
             assert '311 successful dispatches, 0 failures' in caplog.text
 
     @pytest.mark.testext
-    def test_remove_obsolete_files(self, app, caplog, ensure_s3_bucket_empty):
+    def test_remove_obsolete_files(self, app, caplog, cleanup_s3):
         """Removes files from S3 following prefix and whitelist rules."""
         with capture_app_logs(app):
-            assert s3.upload_from_url('http://shakespeare.mit.edu/Poetry/sonnet.XX.html', '001/xx/sonnet-xx.html')
-            assert s3.upload_from_url('http://shakespeare.mit.edu/Poetry/sonnet.XXI.html', '001/xxi/sonnet-xxi.html')
-            assert s3.upload_from_url('http://shakespeare.mit.edu/Poetry/sonnet.XXII.html', '001/xxii/sonnet-xxii.html')
-            assert s3.upload_from_url('http://shakespeare.mit.edu/Poetry/sonnet.XLV.html', '002/xlv/sonnet-xlv.html')
+            prefix1 = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/001'
+            prefix2 = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/002'
 
-            prefix = '001'
+            assert s3.upload_from_url('http://shakespeare.mit.edu/Poetry/sonnet.XX.html', prefix1 + '/xx/sonnet-xx.html')
+            assert s3.upload_from_url('http://shakespeare.mit.edu/Poetry/sonnet.XXI.html', prefix1 + '/xxi/sonnet-xxi.html')
+            assert s3.upload_from_url('http://shakespeare.mit.edu/Poetry/sonnet.XXII.html', prefix1 + '/xxii/sonnet-xxii.html')
+            assert s3.upload_from_url('http://shakespeare.mit.edu/Poetry/sonnet.XLV.html', prefix2 + '/xlv/sonnet-xlv.html')
+
             whitelist = ['sonnet-xxi.html', 'sonnet-xxii.html']
-            assert delete_objects_with_prefix(prefix, whitelist) is True
+            assert delete_objects_with_prefix(prefix1, whitelist) is True
 
-            assert '3 key(s) matching prefix "001"' in caplog.text
+            assert f'3 key(s) matching prefix "{prefix1}"' in caplog.text
             assert '2 key(s) in whitelist' in caplog.text
             assert 'will delete 1 object(s)' in caplog.text
 
-            assert s3.object_exists('001/xx/sonnet-xx.html') is False
-            assert s3.object_exists('001/xxi/sonnet-xxi.html') is True
-            assert s3.object_exists('001/xxii/sonnet-xxii.html') is True
-            assert s3.object_exists('002/xlv/sonnet-xlv.html') is True
+            assert s3.object_exists(prefix1 + '/xx/sonnet-xx.html') is False
+            assert s3.object_exists(prefix1 + '/xxi/sonnet-xxi.html') is True
+            assert s3.object_exists(prefix1 + '/xxii/sonnet-xxii.html') is True
+            assert s3.object_exists(prefix2 + '/xlv/sonnet-xlv.html') is True

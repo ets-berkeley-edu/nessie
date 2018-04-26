@@ -67,7 +67,7 @@ class TestS3Testext:
         """Handles and logs connection errors to source URL."""
         with capture_app_logs(app):
             url = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
-            key = '00001/sonnet-xlv.html'
+            key = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001/sonnet-xlv.html'
             httpretty.register_uri(httpretty.GET, url, status=500, body='{"message": "Internal server error."}')
             response = s3.upload_from_url(url, key)
             assert response is False
@@ -80,7 +80,7 @@ class TestS3Testext:
     def test_s3_object_exists_error_handling(self, app, caplog, bad_bucket):
         """Handles and logs connection errors on S3 existence check."""
         with capture_app_logs(app):
-            key = '00001/sonnet-xlv.html'
+            key = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001/sonnet-xlv.html'
             response = s3.object_exists(key)
             assert response is False
             assert 'Error on S3 existence check' in caplog.text
@@ -90,29 +90,29 @@ class TestS3Testext:
         """Handles and logs connection errors on S3 upload."""
         with capture_app_logs(app):
             url = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
-            key = '00001/sonnet-xlv.html'
+            key = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001/sonnet-xlv.html'
             response = s3.upload_from_url(url, key)
             assert response is False
             assert 'Error on S3 upload' in caplog.text
             assert 'the bucket \'not-a-bucket-nohow\' does not exist, or is forbidden for access' in caplog.text
 
-    def test_file_upload_and_delete(self, app, ensure_s3_bucket_empty):
+    def test_file_upload_and_delete(self, app, cleanup_s3):
         """Can upload and delete files in S3."""
         url1 = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
-        key1 = '00001/sonnet-xlv.html'
+        key1 = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001/sonnet-xlv.html'
 
         url2 = 'http://shakespeare.mit.edu/Poetry/sonnet.LXII.html'
-        key2 = '00002/sonnet-xlii.html'
+        key2 = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00002/sonnet-xlii.html'
 
         assert s3.object_exists(key1) is False
         assert s3.upload_from_url(url1, key1) is True
         assert s3.object_exists(key1) is True
-        assert s3.get_keys_with_prefix('00001') == ['00001/sonnet-xlv.html']
+        assert s3.get_keys_with_prefix(app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001') == [key1]
 
         assert s3.object_exists(key2) is False
         assert s3.upload_from_url(url2, key2) is True
         assert s3.object_exists(key2) is True
-        assert s3.get_keys_with_prefix('00002') == ['00002/sonnet-xlii.html']
+        assert s3.get_keys_with_prefix(app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00002') == [key2]
 
         client = s3.get_client()
         contents1 = client.get_object(Bucket=app.config['LOCH_S3_BUCKET'], Key=key1)['Body'].read().decode('utf-8')
