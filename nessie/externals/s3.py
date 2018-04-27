@@ -129,8 +129,14 @@ def upload_from_url(url, s3_key):
                 f'(status={response.status_code}, body={response.text}, key={s3_key} url={url})')
             return False
         try:
+            s3_upload_args = {'ServerSideEncryption': 'AES256'}
+            if s3_url.endswith('.gz'):
+                s3_upload_args.update({
+                    'ContentEncoding': 'gzip',
+                    'ContentType': 'text/plain',
+                })
             # smart_open needs to be told to ignore the .gz extension, or it will smartly attempt to double-compress it.
-            with smart_open.smart_open(s3_url, 'wb', ignore_extension=True) as s3_out:
+            with smart_open.smart_open(s3_url, 'wb', ignore_extension=True, s3_upload_args=s3_upload_args) as s3_out:
                 for chunk in response.iter_content(chunk_size=1024):
                     s3_out.write(chunk)
         except (ClientError, ConnectionError, ValueError) as e:
