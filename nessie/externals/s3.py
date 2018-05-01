@@ -102,7 +102,12 @@ def object_exists(key):
     try:
         client.head_object(Bucket=bucket, Key=key)
         return True
-    except (ClientError, ConnectionError, ValueError) as e:
+    except ClientError as e:
+        # Log an error only if we get something other than the usual response for a nonexistent object.
+        if e.response.get('ResponseMetadata', {}).get('HTTPStatusCode') != 404:
+            app.logger.error(f'Unexpected error response on S3 existence check: bucket={bucket}, key={key}, error={e}')
+        return False
+    except (ConnectionError, ValueError) as e:
         app.logger.error(f'Error on S3 existence check: bucket={bucket}, key={key}, error={e}')
         return False
 
