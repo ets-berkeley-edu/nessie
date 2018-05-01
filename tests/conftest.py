@@ -69,6 +69,36 @@ def app(request):
 
 
 @pytest.fixture()
+def metadata_db(app):
+    """Use Postgres to mock the Redshift metadata schema on local test runs."""
+    from nessie.externals import redshift
+    schema = app.config['REDSHIFT_SCHEMA_METADATA']
+    redshift.execute(f'DROP SCHEMA IF EXISTS {schema} CASCADE')
+    redshift.execute(f'CREATE SCHEMA IF NOT EXISTS {schema}')
+    redshift.execute(f"""CREATE TABLE IF NOT EXISTS {schema}.canvas_sync_job_status
+    (
+       job_id VARCHAR NOT NULL,
+       filename VARCHAR NOT NULL,
+       canvas_table VARCHAR NOT NULL,
+       source_url VARCHAR NOT NULL,
+       destination_url VARCHAR,
+       status VARCHAR NOT NULL,
+       details VARCHAR,
+       created_at TIMESTAMP NOT NULL,
+       updated_at TIMESTAMP NOT NULL
+    )""")
+    redshift.execute(f"""CREATE TABLE IF NOT EXISTS {schema}.canvas_synced_snapshots
+    (
+        filename VARCHAR NOT NULL,
+        canvas_table VARCHAR NOT NULL,
+        url VARCHAR NOT NULL,
+        size BIGINT NOT NULL,
+        created_at TIMESTAMP NOT NULL,
+        deleted_at TIMESTAMP
+    )""")
+
+
+@pytest.fixture()
 def cleanup_s3(app):
     yield
     from nessie.externals import s3

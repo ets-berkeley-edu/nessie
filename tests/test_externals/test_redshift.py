@@ -28,7 +28,7 @@ from nessie.externals import redshift
 from nessie.jobs.background_job import resolve_sql_template
 import psycopg2.sql
 import pytest
-from tests.util import capture_app_logs
+from tests.util import capture_app_logs, override_config
 
 
 @pytest.fixture()
@@ -52,9 +52,9 @@ class TestRedshift:
     def test_connection_error_handling(self, app, caplog):
         """Handles and logs connection errors."""
         with capture_app_logs(app):
-            app.config['REDSHIFT_HOST'] = 'H.C. Earwicker'
-            redshift.execute('SELECT 1')
-            assert 'could not translate host name "H.C. Earwicker" to address' in caplog.text
+            with override_config(app, 'REDSHIFT_HOST', 'H.C. Earwicker'):
+                redshift.execute('SELECT 1')
+                assert 'could not translate host name "H.C. Earwicker" to address' in caplog.text
 
     @pytest.mark.testext
     def test_schema_creation_drop(self, app, caplog, ensure_drop_schema):

@@ -12,6 +12,7 @@ REDSHIFT_USER = 'username'
 REDSHIFT_SCHEMA_BOAC = 'testext_mynamehere_boac'
 REDSHIFT_SCHEMA_CANVAS = 'testext_mynamehere_canvas'
 REDSHIFT_SCHEMA_INTERMEDIATE = 'testext_mynamehere_intermediate'
+REDSHIFT_SCHEMA_METADATA = 'testext_mynamehere_metadata'
 REDSHIFT_SCHEMA_SIS = 'testext_mynamehere_sis'
 
 # S3 key prefix. Since the testext bucket is shared between users, choose something unique.

@@ -23,6 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from botocore.exceptions import ConnectionError
 import httpretty
 from nessie.externals import s3
 import pytest
@@ -69,32 +70,30 @@ class TestS3Testext:
             url = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
             key = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001/sonnet-xlv.html'
             httpretty.register_uri(httpretty.GET, url, status=500, body='{"message": "Internal server error."}')
-            response = s3.upload_from_url(url, key)
-            assert response is False
-            assert 'Received unexpected status code, aborting S3 upload' in caplog.text
-            assert 'status=500' in caplog.text
-            assert 'body={"message": "Internal server error."}' in caplog.text
-            assert f'url={url}' in caplog.text
-            assert f'key={key}' in caplog.text
+            with pytest.raises(ConnectionError):
+                s3.upload_from_url(url, key)
+                assert 'Received unexpected status code, aborting S3 upload' in caplog.text
+                assert 'status=500' in caplog.text
+                assert 'body={"message": "Internal server error."}' in caplog.text
+                assert f'url={url}' in caplog.text
+                assert f'key={key}' in caplog.text
 
-    def test_s3_object_exists_error_handling(self, app, caplog, bad_bucket):
-        """Handles and logs connection errors on S3 existence check."""
+    def test_s3_nonexistent_object(self, app, caplog, bad_bucket):
+        """Returns false on S3 checks for nonexistent objects."""
         with capture_app_logs(app):
             key = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001/sonnet-xlv.html'
             response = s3.object_exists(key)
             assert response is False
-            assert 'Error on S3 existence check' in caplog.text
-            assert 'An error occurred (404) when calling the HeadObject operation' in caplog.text
 
     def test_s3_upload_error_handling(self, app, caplog, bad_bucket):
         """Handles and logs connection errors on S3 upload."""
         with capture_app_logs(app):
             url = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
             key = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001/sonnet-xlv.html'
-            response = s3.upload_from_url(url, key)
-            assert response is False
-            assert 'Error on S3 upload' in caplog.text
-            assert 'the bucket \'not-a-bucket-nohow\' does not exist, or is forbidden for access' in caplog.text
+            with pytest.raises(ValueError):
+                s3.upload_from_url(url, key)
+                assert 'Error on S3 upload' in caplog.text
+                assert 'the bucket \'not-a-bucket-nohow\' does not exist, or is forbidden for access' in caplog.text
 
     def test_file_upload_and_delete(self, app, cleanup_s3):
         """Can upload and delete files in S3."""
@@ -105,12 +104,12 @@ class TestS3Testext:
         key2 = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00002/sonnet-xlii.html'
 
         assert s3.object_exists(key1) is False
-        assert s3.upload_from_url(url1, key1) is True
+        assert s3.upload_from_url(url1, key1)['ContentLength'] == 767
         assert s3.object_exists(key1) is True
         assert s3.get_keys_with_prefix(app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001') == [key1]
 
         assert s3.object_exists(key2) is False
-        assert s3.upload_from_url(url2, key2) is True
+        assert s3.upload_from_url(url2, key2)['ContentLength'] == 743
         assert s3.object_exists(key2) is True
         assert s3.get_keys_with_prefix(app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00002') == [key2]
 

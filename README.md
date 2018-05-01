@@ -13,6 +13,13 @@ Networked engines supply statistics in education.
 pip3 install -r requirements.txt [--upgrade]
 ```
 
+### Create Postgres user and database for local tests
+
+```
+createuser nessie --no-createdb --no-superuser --no-createrole --pwprompt
+createdb nessie_test --owner=nessie
+```
+
 ### Create local configurations
 
 If you plan to use any resources outside localhost, put your configurations in a separately encrypted area:

@@ -28,10 +28,12 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 
 import re
+import time
 
 from flask import current_app as app
 from nessie.externals import canvas_data, s3
 from nessie.jobs.background_job import BackgroundJob, get_s3_canvas_daily_path
+from nessie.lib import metadata
 from nessie.lib.dispatcher import dispatch
 
 
@@ -50,13 +52,22 @@ def delete_objects_with_prefix(prefix, whitelist=[]):
         f'key(s) in whitelist, will delete {len(keys_to_delete)} object(s)')
     if not keys_to_delete:
         return True
-    return s3.delete_objects(keys_to_delete)
+    if s3.delete_objects(keys_to_delete):
+        metadata.delete_canvas_snapshots(keys_to_delete)
+        return True
+    else:
+        return False
+
+
+def generate_job_id():
+    return str(int(time.time()))
 
 
 class SyncCanvasSnapshots(BackgroundJob):
 
     def run(self, cleanup=True):
-        app.logger.info(f'Starting Canvas snapshot sync job...')
+        job_id = generate_job_id()
+        app.logger.info(f'Starting Canvas snapshot sync job... (id={job_id})')
 
         snapshot_response = canvas_data.get_snapshots()
         if not snapshot_response:
@@ -79,13 +90,23 @@ class SyncCanvasSnapshots(BackgroundJob):
         failure = 0
 
         for snapshot in snapshots_to_sync:
+            metadata.create_canvas_sync_status(
+                job_id=job_id,
+                filename=snapshot['filename'],
+                canvas_table=snapshot['table'],
+                source_url=snapshot['url'],
+            )
             if snapshot['table'] == 'requests':
                 key_components = [app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'], snapshot['table'], snapshot['filename']]
             else:
                 key_components = [get_s3_canvas_daily_path(), snapshot['table'], snapshot['filename']]
-            response = dispatch('sync_file_to_s3', data={'url': snapshot['url'], 'key': '/'.join(key_components)})
+
+            key = '/'.join(key_components)
+            response = dispatch('sync_file_to_s3', data={'canvas_sync_job_id': job_id, 'url': snapshot['url'], 'key': key})
+
             if not response:
                 app.logger.error('Failed to dispatch S3 sync of snapshot ' + snapshot['filename'])
+                metadata.update_canvas_sync_status(job_id, key, 'error', details=f'Failed to dispatch: {response}')
                 failure += 1
             else:
                 app.logger.info('Dispatched S3 sync of snapshot ' + snapshot['filename'])

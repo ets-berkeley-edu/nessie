@@ -23,42 +23,12 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from contextlib import contextmanager
-import logging
+# The test environment mocks the Redshift interface with a local Postgres db.
 
-import boto3
-import moto
-import responses
+REDSHIFT_DATABASE = 'nessie_test'
+REDSHIFT_HOST = 'localhost'
+REDSHIFT_PASSWORD = 'nessie'
+REDSHIFT_PORT = 5432
+REDSHIFT_USER = 'nessie'
 
-
-@contextmanager
-def capture_app_logs(app):
-    """Temporarily add pytest's LogCaptureHandler to the Flask app logger.
-
-    This makes app logs avilable to the caplog fixture for testing. Due to the way that caplog is set up, this
-    logic regrettably can't go into a fixture itself.
-    """
-    capture_handler = next((h for h in logging.getLogger().handlers if 'LogCaptureHandler' in str(type(h))), None)
-    app.logger.addHandler(capture_handler)
-    yield
-    app.logger.removeHandler(capture_handler)
-
-
-@contextmanager
-def mock_s3(app):
-    # Allow calls to live external URLs during tests; currently our tests are using shakespeare.mit.edu.
-    # TODO See if we can get httpretty and/or responses to sit nicely beside moto in non-testext mode.
-    responses.add_passthru('http://')
-    with moto.mock_s3():
-        s3 = boto3.resource('s3', app.config['LOCH_S3_REGION'])
-        s3.create_bucket(Bucket=app.config['LOCH_S3_BUCKET'])
-        yield s3
-
-
-@contextmanager
-def override_config(app, key, value):
-    """Temporarily override an app config value."""
-    old_value = app.config[key]
-    app.config[key] = value
-    yield
-    app.config[key] = old_value
+REDSHIFT_SCHEMA_METADATA = 'metadata_test'

@@ -34,10 +34,13 @@ import requests
 import smart_open
 
 
-def build_s3_url(key):
-    credentials = ':'.join([app.config['AWS_ACCESS_KEY_ID'], app.config['AWS_SECRET_ACCESS_KEY']])
+def build_s3_url(key, credentials=True):
     bucket = app.config['LOCH_S3_BUCKET']
-    return f's3://{credentials}@{bucket}/{key}'
+    if credentials:
+        credentials = ':'.join([app.config['AWS_ACCESS_KEY_ID'], app.config['AWS_SECRET_ACCESS_KEY']])
+        return f's3://{credentials}@{bucket}/{key}'
+    else:
+        return f's3://{bucket}/{key}'
 
 
 def delete_objects(keys):
@@ -132,7 +135,7 @@ def upload_from_url(url, s3_key):
             app.logger.error(
                 f'Received unexpected status code, aborting S3 upload '
                 f'(status={response.status_code}, body={response.text}, key={s3_key} url={url})')
-            return False
+            raise ConnectionError(f'Response {response.status_code}: {response.text}')
         try:
             s3_upload_args = {'ServerSideEncryption': 'AES256'}
             if s3_url.endswith('.gz'):
@@ -146,6 +149,8 @@ def upload_from_url(url, s3_key):
                     s3_out.write(chunk)
         except (ClientError, ConnectionError, ValueError) as e:
             app.logger.error(f'Error on S3 upload: source_url={url}, bucket={bucket}, key={s3_key}, error={e}')
-            return False
-    app.logger.info(f'S3 upload complete: source_url={url}, bucket={bucket}, key={s3_key}')
-    return True
+            raise e
+    response = get_client().head_object(Bucket=bucket, Key=s3_key)
+    if response:
+        app.logger.info(f'S3 upload complete: source_url={url}, bucket={bucket}, key={s3_key}')
+        return response

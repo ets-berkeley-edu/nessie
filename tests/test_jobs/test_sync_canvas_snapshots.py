@@ -23,7 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from nessie.externals import s3
+from nessie.externals import redshift, s3
 from nessie.jobs.sync_canvas_snapshots import delete_objects_with_prefix, SyncCanvasSnapshots
 import pytest
 from tests.util import capture_app_logs
@@ -32,7 +32,7 @@ from tests.util import capture_app_logs
 class TestSyncCanvasSnapshots:
     """Sync Canvas snapshots job."""
 
-    def test_sync_canvas_snapshots(self, app, caplog):
+    def test_sync_canvas_snapshots(self, app, metadata_db, caplog):
         """Dispatches a complete sync job against fixtures."""
         with capture_app_logs(app):
             # The cleanup job requires an S3 connection. Since our mock S3 library (moto) doesn't play well with our
@@ -41,6 +41,22 @@ class TestSyncCanvasSnapshots:
             assert 'Dispatched S3 sync of snapshot quiz_dim-00000-0ab80c7c.gz' in caplog.text
             assert 'Dispatched S3 sync of snapshot requests-00098-b14782f5.gz' in caplog.text
             assert '311 successful dispatches, 0 failures' in caplog.text
+
+            schema = app.config['REDSHIFT_SCHEMA_METADATA']
+            results = redshift.fetch(f'SELECT count(*) FROM {schema}.canvas_sync_job_status')
+            assert results[0].count == 311
+            results = redshift.fetch(f'SELECT DISTINCT status FROM {schema}.canvas_sync_job_status')
+            assert len(results) == 1
+            assert results[0].status == 'created'
+            results = redshift.fetch(f'SELECT * FROM {schema}.canvas_sync_job_status LIMIT 1')
+            assert results[0].job_id
+            assert results[0].filename == 'account_dim-00000-5eb7ee9e.gz'
+            assert results[0].canvas_table == 'account_dim'
+            assert 'account_dim/part-00505-5c40f1f3-b611-4f64-a007-67b775e984fe.c000.txt.gz' in results[0].source_url
+            assert results[0].destination_url is None
+            assert results[0].details is None
+            assert results[0].created_at
+            assert results[0].updated_at
 
     @pytest.mark.testext
     def test_remove_obsolete_files(self, app, caplog, cleanup_s3):

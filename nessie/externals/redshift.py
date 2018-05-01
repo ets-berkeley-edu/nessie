@@ -70,10 +70,12 @@ def _execute(sql, operation, **kwargs):
     """
     result = None
     try:
+        params = None
         if kwargs:
+            params = kwargs.pop('params', None)
             sql = psycopg2.sql.SQL(sql).format(**kwargs)
         with get_cursor(operation) as cursor:
-            cursor.execute(sql)
+            cursor.execute(sql, params)
             if operation == 'read':
                 result = [row for row in cursor]
             else:
