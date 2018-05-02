@@ -47,10 +47,15 @@ class SyncFileToS3(BackgroundJob):
         else:
             app.logger.info(f'Key {key} does not exist, starting upload')
             try:
-                response = s3.upload_from_url(url, key)
+
+                def update_streaming_status(headers):
+                    update_canvas_sync_status(canvas_sync_job_id, key, 'streaming', source_size=headers.get('Content-Length'))
+
+                response = s3.upload_from_url(url, key, on_stream_opened=update_streaming_status)
                 if response and canvas_sync_job_id:
-                    update_canvas_sync_status(canvas_sync_job_id, key, 'complete')
-                    create_canvas_snapshot(key, size=response.get('ContentLength'))
+                    destination_size = response.get('ContentLength')
+                    update_canvas_sync_status(canvas_sync_job_id, key, 'complete', destination_size=destination_size)
+                    create_canvas_snapshot(key, size=destination_size)
                 return True
             except (ClientError, ConnectionError, ValueError) as e:
                 if canvas_sync_job_id:

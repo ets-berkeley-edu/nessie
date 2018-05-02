@@ -41,6 +41,9 @@ def dispatch(command, data=None, mock=None):
         response = request(url, data)
         if response:
             return response.json()
+        else:
+            # We may have gotten a falsey ResponseExceptionWrapper; pass upstream for logging.
+            return response
 
 
 def build_url(command):

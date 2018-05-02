@@ -41,6 +41,9 @@ class ResponseExceptionWrapper:
     def __bool__(self):
         return False
 
+    def __repr__(self):
+        return f'<ResponseExceptionWrapper exception={self.exception}, raw_response={self.raw_response}>'
+
 
 def add_param_to_url(url, param):
     parsed_url = urllib.parse.urlparse(url)

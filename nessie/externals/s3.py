@@ -127,7 +127,7 @@ def upload_data(data, s3_key):
     return True
 
 
-def upload_from_url(url, s3_key):
+def upload_from_url(url, s3_key, on_stream_opened=None):
     bucket = app.config['LOCH_S3_BUCKET']
     s3_url = build_s3_url(s3_key)
     with requests.get(url, stream=True) as response:
@@ -136,6 +136,8 @@ def upload_from_url(url, s3_key):
                 f'Received unexpected status code, aborting S3 upload '
                 f'(status={response.status_code}, body={response.text}, key={s3_key} url={url})')
             raise ConnectionError(f'Response {response.status_code}: {response.text}')
+        if on_stream_opened:
+            on_stream_opened(response.headers)
         try:
             s3_upload_args = {'ServerSideEncryption': 'AES256'}
             if s3_url.endswith('.gz'):
@@ -150,7 +152,7 @@ def upload_from_url(url, s3_key):
         except (ClientError, ConnectionError, ValueError) as e:
             app.logger.error(f'Error on S3 upload: source_url={url}, bucket={bucket}, key={s3_key}, error={e}')
             raise e
-    response = get_client().head_object(Bucket=bucket, Key=s3_key)
-    if response:
+    s3_response = get_client().head_object(Bucket=bucket, Key=s3_key)
+    if s3_response:
         app.logger.info(f'S3 upload complete: source_url={url}, bucket={bucket}, key={s3_key}')
-        return response
+        return s3_response
