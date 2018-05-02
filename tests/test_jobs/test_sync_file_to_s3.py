@@ -23,16 +23,18 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from nessie.externals import redshift
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
+from nessie.lib import metadata
 import pytest
-from tests.util import capture_app_logs
+from tests.util import capture_app_logs, mock_s3
 
 
-@pytest.mark.testext
 class TestSyncFileToS3:
 
+    @pytest.mark.testext
     def test_file_upload_and_skip(self, app, caplog, cleanup_s3):
-        """Uploads files to S3, skipping duplicates."""
+        """Uploads files to real S3, skipping duplicates."""
         url = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
         key = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001/sonnet-xlv.html'
 
@@ -45,3 +47,40 @@ class TestSyncFileToS3:
             result = SyncFileToS3().run(url=url, key=key)
             assert result is False
             assert f'Key {key} exists, skipping upload' in caplog.text
+
+    def test_canvas_sync_metadata(self, app, metadata_db):
+        """When given a job id, updates metadata on file sync."""
+        url = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
+        key = 'canvas/sonnet_submission_dim/sonnet-xlv.txt'
+
+        with mock_s3(app):
+            # Run two successive sync jobs on the same file. The first succeeds, the second is skipped as
+            # a duplicate.
+            metadata.create_canvas_sync_status('job_1', 'sonnet-xlv.txt', 'sonnet_submission_dim', url)
+            result = SyncFileToS3().run(url=url, key=key, canvas_sync_job_id='job_1')
+            assert result is True
+            metadata.create_canvas_sync_status('job_2', 'sonnet-xlv.txt', 'sonnet_submission_dim', url)
+            result = SyncFileToS3().run(url=url, key=key, canvas_sync_job_id='job_2')
+            assert result is False
+
+            schema = app.config['REDSHIFT_SCHEMA_METADATA']
+            job_metadata = redshift.fetch(f'SELECT * FROM {schema}.canvas_sync_job_status')
+            snapshot_metadata = redshift.fetch(f'SELECT * FROM {schema}.canvas_synced_snapshots')
+
+            assert len(job_metadata) == 2
+            assert job_metadata[0].job_id == 'job_1'
+            assert job_metadata[0].destination_url == 's3://bucket_name/canvas/sonnet_submission_dim/sonnet-xlv.txt'
+            assert job_metadata[0].status == 'complete'
+            assert job_metadata[0].updated_at > job_metadata[0].created_at
+            assert job_metadata[1].job_id == 'job_2'
+            assert job_metadata[1].destination_url == 's3://bucket_name/canvas/sonnet_submission_dim/sonnet-xlv.txt'
+            assert job_metadata[1].status == 'duplicate'
+            assert job_metadata[1].updated_at > job_metadata[1].created_at
+
+            assert len(snapshot_metadata) == 1
+            assert snapshot_metadata[0].filename == 'sonnet-xlv.txt'
+            assert snapshot_metadata[0].canvas_table == 'sonnet_submission_dim'
+            assert snapshot_metadata[0].url == 's3://bucket_name/canvas/sonnet_submission_dim/sonnet-xlv.txt'
+            assert snapshot_metadata[0].size == 767
+            assert snapshot_metadata[0].created_at
+            assert snapshot_metadata[0].deleted_at is None

@@ -85,6 +85,7 @@ REDSHIFT_IAM_ROLE = 'iam role'
 REDSHIFT_SCHEMA_BOAC = 'BOAC schema name'
 REDSHIFT_SCHEMA_CANVAS = 'Canvas schema name'
 REDSHIFT_SCHEMA_INTERMEDIATE = 'Intermediate schema name'
+REDSHIFT_SCHEMA_METADATA = 'Metadata schema name'
 REDSHIFT_SCHEMA_SIS = 'SIS schema name'
 
 WORKER_HOST = 'hard-working-nessie.berkeley.edu'

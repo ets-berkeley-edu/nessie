@@ -35,6 +35,7 @@ from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
 from nessie.lib.http import tolerant_jsonify
+from nessie.lib.metadata import update_canvas_sync_status
 
 
 @app.route('/api/job/create_canvas_schema', methods=['POST'])
@@ -82,7 +83,10 @@ def sync_file_to_s3():
     key = data and data.get('key')
     if not key:
         raise BadRequestError('Required "key" parameter missing.')
-    job_started = SyncFileToS3(url=url, key=key).run_async()
+    canvas_sync_job_id = data and data.get('canvas_sync_job_id')
+    if canvas_sync_job_id:
+        update_canvas_sync_status(canvas_sync_job_id, key, 'received')
+    job_started = SyncFileToS3(url=url, key=key, canvas_sync_job_id=canvas_sync_job_id).run_async()
     return respond_with_status(job_started)
 
 
