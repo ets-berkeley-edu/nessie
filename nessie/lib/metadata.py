@@ -44,13 +44,20 @@ def create_canvas_sync_status(job_id, filename, canvas_table, source_url):
 def update_canvas_sync_status(job_id, key, status, **kwargs):
     filename = key.split('/')[-1]
     destination_url = s3.build_s3_url(key, credentials=False)
-    details = kwargs.get('details')
+
     sql = """UPDATE {schema}.canvas_sync_job_status
-             SET destination_url=%s, status=%s, details=%s, updated_at=current_timestamp
-             WHERE job_id=%s AND filename=%s"""
+             SET destination_url=%s, status=%s, updated_at=current_timestamp"""
+    params = [destination_url, status]
+    for key in ['details', 'source_size', 'destination_size']:
+        if kwargs.get(key):
+            sql += f', {key}=%s'
+            params.append(kwargs[key])
+    sql += ' WHERE job_id=%s AND filename=%s'
+    params += [job_id, filename]
+
     return redshift.execute(
         sql,
-        params=(destination_url, status, details, job_id, filename),
+        params=tuple(params),
         schema=_schema(),
     )
 

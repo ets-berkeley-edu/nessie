@@ -71,10 +71,14 @@ class TestSyncFileToS3:
             assert job_metadata[0].job_id == 'job_1'
             assert job_metadata[0].destination_url == 's3://bucket_name/canvas/sonnet_submission_dim/sonnet-xlv.txt'
             assert job_metadata[0].status == 'complete'
+            assert job_metadata[0].source_size == 470
+            assert job_metadata[0].destination_size == 767
             assert job_metadata[0].updated_at > job_metadata[0].created_at
             assert job_metadata[1].job_id == 'job_2'
             assert job_metadata[1].destination_url == 's3://bucket_name/canvas/sonnet_submission_dim/sonnet-xlv.txt'
             assert job_metadata[1].status == 'duplicate'
+            assert job_metadata[1].source_size is None
+            assert job_metadata[1].destination_size is None
             assert job_metadata[1].updated_at > job_metadata[1].created_at
 
             assert len(snapshot_metadata) == 1
