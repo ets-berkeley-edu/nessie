@@ -54,7 +54,11 @@ def execute_ddl_script(sql):
     # Remove any trailing debris after the last SQL statement.
     del statements[-1]
     for statement in statements:
-        execute(statement)
+        result = execute(statement)
+        if not result:
+            app.logger.error('Error executing statement from DDL script; aborting remainder of script.')
+            return False
+    return True
 
 
 def fetch(sql, **kwargs):

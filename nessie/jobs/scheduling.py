@@ -39,11 +39,15 @@ def initialize_job_schedules(app):
 
     if app.config['JOB_SCHEDULING_ENABLED']:
         sched = BackgroundScheduler()
-        schedule_job(app, sched, 'JOB_CREATE_CANVAS_SCHEMA', CreateCanvasSchema)
-        schedule_job(app, sched, 'JOB_CREATE_SIS_SCHEMA', CreateSisSchema)
-        schedule_job(app, sched, 'JOB_GENERATE_BOAC_ANALYTICS', GenerateBoacAnalytics)
-        schedule_job(app, sched, 'JOB_GENERATE_INTERMEDIATE_TABLES', GenerateIntermediateTables)
         schedule_job(app, sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots)
+        schedule_chained_job(
+            app, sched, 'JOB_GENERATE_ALL_TABLES', [
+                CreateCanvasSchema,
+                CreateSisSchema,
+                GenerateIntermediateTables,
+                GenerateBoacAnalytics,
+            ],
+        )
         sched.start()
 
 
@@ -58,3 +62,18 @@ def start_background_job(app, job_class):
     app.logger.info(f'Starting scheduled {job_class.__name__} job')
     with app.app_context():
         job_class().run_async()
+
+
+def schedule_chained_job(app, sched, config_value, job_components):
+    job_schedule = app.config.get(config_value)
+    if job_schedule:
+        sched.add_job(start_chained_job, 'cron', args=(app, job_components), **job_schedule)
+        app.logger.info(f'Scheduled chained background job: {job_schedule}, ' + ', '.join([c.__name__ for c in job_components]))
+
+
+def start_chained_job(app, job_components):
+    from nessie.jobs.background_job import ChainedBackgroundJob
+    app.logger.info(f'Starting chained background job: ' + ', '.join([c.__name__ for c in job_components]))
+    with app.app_context():
+        initialized_components = [c() for c in job_components]
+        ChainedBackgroundJob(steps=initialized_components).run_async()
