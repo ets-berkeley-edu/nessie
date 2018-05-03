@@ -51,6 +51,7 @@ CANVAS_DATA_API_KEY = 'some key'
 CANVAS_DATA_API_SECRET = 'some secret'
 CANVAS_DATA_HOST = 'foo.instructure.com'
 
+# True on master node, false on worker nodes.
 JOB_SCHEDULING_ENABLED = True
 # See http://apscheduler.readthedocs.io/en/latest/modules/triggers/cron.html for supported schedule formats.
 JOB_SYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 0}
@@ -91,3 +92,7 @@ REDSHIFT_SCHEMA_SIS = 'SIS schema name'
 WORKER_HOST = 'hard-working-nessie.berkeley.edu'
 WORKER_USERNAME = 'username'
 WORKER_PASSWORD = 'password'
+
+# True on worker nodes, false on master node.
+WORKER_QUEUE_ENABLED = False
+WORKER_THREADS = 5

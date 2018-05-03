@@ -24,28 +24,35 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-import os
-from flask import Flask
-from nessie.configs import load_configs
-from nessie.jobs.queue import initialize_job_queue
-from nessie.jobs.scheduling import initialize_job_schedules
-from nessie.logger import initialize_logger
-from nessie.routes import register_routes
+"""Background job queue."""
 
 
-def create_app():
-    """Initialize app with configs."""
-    app = Flask(__name__.split('.')[0])
+from queue import Queue
+from threading import Thread
 
-    load_configs(app)
-    initialize_logger(app)
 
+job_queue = None
+
+
+def get_job_queue():
+    return job_queue
+
+
+def initialize_job_queue(app):
+    if app.config['WORKER_QUEUE_ENABLED']:
+        global job_queue
+        job_queue = Queue()
+        app.logger.info(f"Created job queue; starting {app.config['WORKER_THREADS']} worker threads.")
+        for i in range(0, app.config['WORKER_THREADS']):
+            worker_thread = Thread(target=listen_for_jobs, args=[app, job_queue], daemon=True)
+            worker_thread.start()
+
+
+def listen_for_jobs(app, queue):
     with app.app_context():
-        register_routes(app)
-
-        # See https://stackoverflow.com/questions/9449101/how-to-stop-flask-from-initialising-twice-in-debug-mode
-        if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-            initialize_job_schedules(app)
-            initialize_job_queue(app)
-
-    return app
+        while True:
+            job = queue.get()
+            args = job.job_args
+            app.logger.info('Starting queued job.')
+            job.run(**args)
+            queue.task_done()
