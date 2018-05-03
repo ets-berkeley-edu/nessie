@@ -101,3 +101,12 @@ class BackgroundJob(object):
     def run_in_app_context(self, app_arg, **kwargs):
         with app_arg.app_context():
             self.run(**kwargs)
+
+
+class ChainedBackgroundJob(BackgroundJob):
+
+    def run(self, steps):
+        for step in steps:
+            if not step.run():
+                app.logger.error('Component job returned an error; aborting remainder of chain.')
+                break

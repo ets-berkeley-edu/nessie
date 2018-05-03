@@ -39,11 +39,15 @@ class CreateSisSchema(BackgroundJob):
         app.logger.info(f'Starting SIS schema creation job...')
         if not self.update_manifests():
             app.logger.info('Error updating manifests, will not execute schema creation SQL')
-            return
+            return False
         app.logger.info(f'Executing SQL...')
         resolved_ddl = resolve_sql_template('create_sis_schema.template.sql')
-        redshift.execute_ddl_script(resolved_ddl)
-        app.logger.info(f'SIS schema creation job completed')
+        if redshift.execute_ddl_script(resolved_ddl):
+            app.logger.info(f'SIS schema creation job completed.')
+            return True
+        else:
+            app.logger.error(f'SIS schema creation job failed.')
+            return False
 
     def update_manifests(self):
         app.logger.info(f'Updating manifests...')

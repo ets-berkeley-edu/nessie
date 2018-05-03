@@ -28,6 +28,7 @@ import json
 from flask import current_app as app, request
 from nessie.api.auth_helper import auth_required
 from nessie.api.errors import BadRequestError
+from nessie.jobs.background_job import ChainedBackgroundJob
 from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
@@ -49,6 +50,21 @@ def create_canvas_schema():
 @auth_required
 def create_sis_schema():
     job_started = CreateSisSchema().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/generate_all_tables', methods=['POST'])
+@auth_required
+def generate_all_tables():
+    chained_job = ChainedBackgroundJob(
+        steps=[
+            CreateCanvasSchema(),
+            CreateSisSchema(),
+            GenerateIntermediateTables(),
+            GenerateBoacAnalytics(),
+        ],
+    )
+    job_started = chained_job.run_async()
     return respond_with_status(job_started)
 
 
