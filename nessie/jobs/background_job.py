@@ -66,7 +66,7 @@ def resolve_sql_template(sql_filename):
         'loch_s3_canvas_data_path_current_term': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'],
         'loch_s3_sis_data_path': s3_prefix + app.config['LOCH_S3_SIS_DATA_PATH'],
     }
-    with open(app.config['BASE_DIR'] + f'/nessie/sql_templates/{sql_filename}') as file:
+    with open(app.config['BASE_DIR'] + f'/nessie/sql_templates/{sql_filename}', encoding='utf-8') as file:
         template_string = file.read()
     return template_string.format(**template_data)
 
