@@ -57,7 +57,7 @@ AS (
             COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%external_tool%'
         ) THEN 1
         ELSE NULL END AS submittable
-      FROM canvas_data_external_dev.assignment_dim
+      FROM {redshift_schema_canvas}.assignment_dim
     )
     SELECT
         {redshift_schema_intermediate}.users.uid AS uid,
