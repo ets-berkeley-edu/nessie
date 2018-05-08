@@ -26,7 +26,9 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from nessie.externals import redshift
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
 from nessie.lib import metadata
+from nessie.lib.mockingbird import _get_fixtures_path
 import pytest
+import responses
 from tests.util import capture_app_logs, mock_s3
 
 
@@ -54,6 +56,9 @@ class TestSyncFileToS3:
         key = 'canvas/sonnet_submission_dim/sonnet-xlv.txt'
 
         with mock_s3(app):
+            with open(_get_fixtures_path() + '/sonnet_xlv.html', 'r') as file:
+                responses.add(responses.GET, url, body=file.read(), headers={'Content-Length': '767'})
+
             # Run two successive sync jobs on the same file. The first succeeds, the second is skipped as
             # a duplicate.
             metadata.create_canvas_sync_status('job_1', 'sonnet-xlv.txt', 'sonnet_submission_dim', url)
@@ -71,7 +76,7 @@ class TestSyncFileToS3:
             assert job_metadata[0].job_id == 'job_1'
             assert job_metadata[0].destination_url == 's3://bucket_name/canvas/sonnet_submission_dim/sonnet-xlv.txt'
             assert job_metadata[0].status == 'complete'
-            assert job_metadata[0].source_size == 470
+            assert job_metadata[0].source_size == 767
             assert job_metadata[0].destination_size == 767
             assert job_metadata[0].updated_at > job_metadata[0].created_at
             assert job_metadata[1].job_id == 'job_2'
