@@ -29,7 +29,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import redshift
-from nessie.jobs.background_job import BackgroundJob, resolve_sql_template
+from nessie.jobs.background_job import BackgroundJob, resolve_sql_template, verify_external_schema
 
 
 class CreateCanvasSchema(BackgroundJob):
@@ -39,7 +39,7 @@ class CreateCanvasSchema(BackgroundJob):
         resolved_ddl = resolve_sql_template('create_canvas_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
             app.logger.info(f'Canvas schema creation job completed.')
-            return True
+            return verify_external_schema(app.config['REDSHIFT_SCHEMA_CANVAS'], resolved_ddl)
         else:
             app.logger.error(f'Canvas schema creation job failed.')
             return False
