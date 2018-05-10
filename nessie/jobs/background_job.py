@@ -30,9 +30,11 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from datetime import datetime
 import hashlib
 import os
+import re
 from threading import Thread
 
 from flask import current_app as app
+from nessie.externals import redshift
 from nessie.jobs.queue import get_job_queue
 from nessie.lib.util import localize_datetime
 
@@ -69,6 +71,23 @@ def resolve_sql_template(sql_filename):
     with open(app.config['BASE_DIR'] + f'/nessie/sql_templates/{sql_filename}', encoding='utf-8') as file:
         template_string = file.read()
     return template_string.format(**template_data)
+
+
+def verify_external_schema(schema, resolved_ddl):
+    pattern = f'CREATE EXTERNAL TABLE ({schema}\.\w+)'
+    external_tables = re.findall(pattern, resolved_ddl)
+    for table in external_tables:
+        # The historical request tables are huge, rarely updated, and due to move to their own bucket:
+        # skip verification on them for now.
+        if 'historical_requests' in table:
+            continue
+        result = redshift.fetch(f'SELECT COUNT(*) FROM {table}')
+        if result and result[0] and result[0].count:
+            app.logger.info(f'Verified external table {table} ({result[0].count} rows).')
+        else:
+            app.logger.error(f'Failed to verify external table {table}: aborting job.')
+            return False
+    return True
 
 
 class BackgroundJob(object):

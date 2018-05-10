@@ -30,7 +30,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import json
 from flask import current_app as app
 from nessie.externals import redshift, s3
-from nessie.jobs.background_job import BackgroundJob, get_s3_sis_daily_path, resolve_sql_template
+from nessie.jobs.background_job import BackgroundJob, get_s3_sis_daily_path, resolve_sql_template, verify_external_schema
 
 
 class CreateSisSchema(BackgroundJob):
@@ -44,7 +44,7 @@ class CreateSisSchema(BackgroundJob):
         resolved_ddl = resolve_sql_template('create_sis_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
             app.logger.info(f'SIS schema creation job completed.')
-            return True
+            return verify_external_schema(app.config['REDSHIFT_SCHEMA_SIS'], resolved_ddl)
         else:
             app.logger.error(f'SIS schema creation job failed.')
             return False
