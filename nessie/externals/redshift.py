@@ -53,7 +53,8 @@ def execute_ddl_script(sql):
     statements = sql.split(';')
     # Remove any trailing debris after the last SQL statement.
     del statements[-1]
-    for statement in statements:
+    for index, statement in enumerate(statements):
+        app.logger.info(f'Executing DDL script {index + 1} of {len(statements)}')
         result = execute(statement)
         if not result:
             app.logger.error('Error executing statement from DDL script; aborting remainder of script.')

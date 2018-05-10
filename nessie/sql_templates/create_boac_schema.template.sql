@@ -200,15 +200,16 @@ AS (
         AND {redshift_schema_canvas}.submission_dim.workflow_state != 'deleted'
 );
 
-DROP TABLE IF EXISTS {redshift_schema_boac}.user_course_scores;
+DROP TABLE IF EXISTS {redshift_schema_boac}.course_enrollments;
 
-CREATE TABLE {redshift_schema_boac}.user_course_scores
+CREATE TABLE {redshift_schema_boac}.course_enrollments
 SORTKEY (course_id)
 AS (
     SELECT
         ase.uid,
         ase.canvas_user_id,
         ase.canvas_course_id AS course_id,
+        ase.last_activity_at,
         ase.sis_enrollment_status,
         csf.current_score,
         csf.final_score
@@ -224,6 +225,7 @@ AS (
         ase.uid,
         ase.canvas_user_id,
         ase.canvas_course_id,
+        ase.last_activity_at,
         ase.sis_enrollment_status,
         csf.current_score,
         csf.final_score
