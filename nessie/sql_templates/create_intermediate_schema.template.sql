@@ -149,7 +149,8 @@ AS (
             {redshift_schema_sis}.enrollments.ldap_uid = {redshift_schema_intermediate}.users.uid
     WHERE
         {redshift_schema_canvas}.enrollment_dim.type = 'StudentEnrollment'
-        AND {redshift_schema_canvas}.enrollment_dim.workflow_state = 'active'
+        AND {redshift_schema_canvas}.enrollment_dim.workflow_state in ('active', 'completed')
+        AND {redshift_schema_canvas}.course_dim.workflow_state in ('available', 'completed')
     GROUP BY
         {redshift_schema_intermediate}.users.uid,
         {redshift_schema_intermediate}.users.canvas_id,
