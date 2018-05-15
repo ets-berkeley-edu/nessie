@@ -37,6 +37,7 @@ class TestSyncCanvasSnapshots:
         with capture_app_logs(app):
             # The cleanup job requires an S3 connection. Since our mock S3 library (moto) doesn't play well with our
             # mock HTTP library (httpretty), disable it for tests.
+            # TODO resolve the incompatibility, possibly by switching from httpretty to responses.
             SyncCanvasSnapshots().run(cleanup=False)
             assert 'Dispatched S3 sync of snapshot quiz_dim-00000-0ab80c7c.gz' in caplog.text
             assert 'Dispatched S3 sync of snapshot requests-00098-b14782f5.gz' in caplog.text
@@ -49,7 +50,7 @@ class TestSyncCanvasSnapshots:
             assert len(results) == 1
             assert results[0].status == 'created'
             results = redshift.fetch(f'SELECT * FROM {schema}.canvas_sync_job_status LIMIT 1')
-            assert results[0].job_id
+            assert results[0].job_id.startswith('sync_')
             assert results[0].filename == 'account_dim-00000-5eb7ee9e.gz'
             assert results[0].canvas_table == 'account_dim'
             assert 'account_dim/part-00505-5c40f1f3-b611-4f64-a007-67b775e984fe.c000.txt.gz' in results[0].source_url

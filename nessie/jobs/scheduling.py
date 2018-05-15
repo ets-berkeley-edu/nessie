@@ -35,11 +35,13 @@ def initialize_job_schedules(app):
     from nessie.jobs.create_sis_schema import CreateSisSchema
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
     from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
+    from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
     from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 
     if app.config['JOB_SCHEDULING_ENABLED']:
         sched = BackgroundScheduler()
         schedule_job(app, sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots)
+        schedule_job(app, sched, 'JOB_RESYNC_CANVAS_SNAPSHOTS', ResyncCanvasSnapshots)
         schedule_chained_job(
             app, sched, 'JOB_GENERATE_ALL_TABLES', [
                 CreateCanvasSchema,
