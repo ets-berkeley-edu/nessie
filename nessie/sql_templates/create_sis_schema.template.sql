@@ -59,7 +59,8 @@ CREATE EXTERNAL TABLE {redshift_schema_sis}.courses(
     meeting_start_time VARCHAR,
     meeting_end_time VARCHAR,
     meeting_start_date VARCHAR,
-    meeting_end_date VARCHAR
+    meeting_end_date VARCHAR,
+    course_title VARCHAR
 )
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY ','

@@ -65,6 +65,7 @@ AS (
         extracted_section_ids.sis_term_id,
         extracted_section_ids.sis_section_id,
         sc.course_display_name AS sis_course_name,
+        sc.course_title AS sis_course_title,
         sc.instruction_format AS sis_instruction_format,
         sc.section_num AS sis_section_num,
         sc.is_primary AS sis_primary
@@ -79,7 +80,7 @@ AS (
     GROUP BY
         c.canvas_id, s.canvas_id, c.name, s.name,
         extracted_section_ids.sis_term_id, extracted_section_ids.sis_section_id,
-        sc.course_display_name, sc.instruction_format, sc.section_num, sc.is_primary
+        sc.course_display_name, sc.course_title, sc.instruction_format, sc.section_num, sc.is_primary
 );
 
 /*
