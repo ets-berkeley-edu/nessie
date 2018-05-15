@@ -55,6 +55,7 @@ CANVAS_DATA_HOST = 'foo.instructure.com'
 JOB_SCHEDULING_ENABLED = True
 # See http://apscheduler.readthedocs.io/en/latest/modules/triggers/cron.html for supported schedule formats.
 JOB_SYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 0}
+JOB_RESYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 40}
 JOB_GENERATE_ALL_TABLES = {'hour': 2, 'minute': 00}
 
 LOCH_S3_BUCKET = 'bucket_name'

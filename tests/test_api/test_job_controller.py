@@ -46,6 +46,7 @@ def post_basic_auth(client, path, credentials, data=None):
         '/api/job/create_sis_schema',
         '/api/job/generate_boac_analytics',
         '/api/job/generate_intermediate_tables',
+        '/api/job/resync_canvas_snapshots',
         '/api/job/sync_canvas_snapshots',
         '/api/job/sync_file_to_s3',
     ],
@@ -75,6 +76,7 @@ class TestJobControllerAuthentication:
         '/api/job/create_sis_schema',
         '/api/job/generate_boac_analytics',
         '/api/job/generate_intermediate_tables',
+        '/api/job/resync_canvas_snapshots',
         '/api/job/sync_canvas_snapshots',
     ],
 )

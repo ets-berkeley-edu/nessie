@@ -60,7 +60,7 @@ def delete_objects_with_prefix(prefix, whitelist=[]):
 
 
 def generate_job_id():
-    return str(int(time.time()))
+    return 'sync_' + str(int(time.time()))
 
 
 class SyncCanvasSnapshots(BackgroundJob):
