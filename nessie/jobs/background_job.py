@@ -47,8 +47,8 @@ def get_s3_canvas_daily_path():
     return app.config['LOCH_S3_CANVAS_DATA_PATH_DAILY'] + '/' + today_hash + '-' + today
 
 
-def get_s3_sis_daily_path():
-    today = localize_datetime(datetime.now()).strftime('%Y-%m-%d')
+def get_s3_sis_daily_path(cutoff=datetime.now()):
+    today = localize_datetime(cutoff).strftime('%Y-%m-%d')
     today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
     return app.config['LOCH_S3_SIS_DATA_PATH'] + '/daily/' + today_hash + '-' + today
 
