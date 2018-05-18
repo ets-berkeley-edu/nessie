@@ -27,6 +27,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """Logic for SIS schema creation job."""
 
 
+from datetime import datetime, timedelta
 import json
 from flask import current_app as app
 from nessie.externals import redshift, s3
@@ -51,9 +52,21 @@ class CreateSisSchema(BackgroundJob):
 
     def update_manifests(self):
         app.logger.info(f'Updating manifests...')
-        courses_daily = s3.get_keys_with_prefix(get_s3_sis_daily_path() + '/courses', full_objects=True)
+
+        # Because the SIS S3 copy is managed by a different application running on a different schedule,
+        # it may have been made before midnight by Nessie-time.
+        s3_sis_daily = get_s3_sis_daily_path()
+        if not s3.get_keys_with_prefix(s3_sis_daily):
+            s3_sis_daily = get_s3_sis_daily_path(datetime.now() - timedelta(days=1))
+            if not s3.get_keys_with_prefix(s3_sis_daily):
+                app.logger.error(f'No timely SIS S3 data found')
+                return False
+            else:
+                app.logger.info(f'Falling back to SIS S3 daily data for yesterday')
+
+        courses_daily = s3.get_keys_with_prefix(s3_sis_daily + '/courses', full_objects=True)
         courses_historical = s3.get_keys_with_prefix(app.config['LOCH_S3_SIS_DATA_PATH'] + '/historical/courses', full_objects=True)
-        enrollments_daily = s3.get_keys_with_prefix(get_s3_sis_daily_path() + '/enrollments', full_objects=True)
+        enrollments_daily = s3.get_keys_with_prefix(s3_sis_daily + '/enrollments', full_objects=True)
         enrollments_historical = s3.get_keys_with_prefix(app.config['LOCH_S3_SIS_DATA_PATH'] + '/historical/enrollments', full_objects=True)
 
         def to_manifest_entry(object):

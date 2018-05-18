@@ -23,6 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from datetime import datetime, timedelta
 import json
 from nessie.externals import s3
 from nessie.jobs.background_job import get_s3_sis_daily_path
@@ -36,6 +37,34 @@ class TestCreateSisSchema:
         """Updates manifests in S3."""
         with mock_s3(app):
             daily_path = get_s3_sis_daily_path()
+            historical_path = app.config['LOCH_S3_SIS_DATA_PATH'] + '/historical'
+            manifest_path = app.config['LOCH_S3_SIS_DATA_PATH'] + '/manifests'
+
+            s3.upload_data('some new course data', f'{daily_path}/courses/courses-aaa.gz')
+            s3.upload_data('some more new course data', f'{daily_path}/courses/courses-bbb.gz')
+            s3.upload_data('some new enrollment data', f'{daily_path}/enrollments/enrollments-ccc.gz')
+            s3.upload_data('some old course data', f'{historical_path}/courses/courses-ddd.gz')
+            s3.upload_data('some old enrollment data', f'{historical_path}/enrollments/enrollments-eee.gz')
+            s3.upload_data('some perfectly antique enrollment data', f'{historical_path}/enrollments/enrollments-fff.gz')
+
+            assert CreateSisSchema().update_manifests()
+
+            courses_manifest = json.loads(s3.get_object_text(manifest_path + '/courses.json'))
+            assert len(courses_manifest['entries']) == 3
+            assert courses_manifest['entries'][0]['url'] == f's3://{app.config["LOCH_S3_BUCKET"]}/{daily_path}/courses/courses-aaa.gz'
+            assert courses_manifest['entries'][0]['meta']['content_length'] == 20
+
+            enrollments_manifest = json.loads(s3.get_object_text(manifest_path + '/enrollments.json'))
+            assert len(enrollments_manifest['entries']) == 3
+            assert (enrollments_manifest['entries'][2]['url'] ==
+                    f's3://{app.config["LOCH_S3_BUCKET"]}/{historical_path}/enrollments/enrollments-fff.gz')
+            assert enrollments_manifest['entries'][2]['meta']['content_length'] == 38
+
+    def test_fallback_update_manifests(self, app):
+        """Uses yesterday's news if today's is unavailable."""
+        with mock_s3(app):
+            yesterday = datetime.now() - timedelta(days=1)
+            daily_path = get_s3_sis_daily_path(yesterday)
             historical_path = app.config['LOCH_S3_SIS_DATA_PATH'] + '/historical'
             manifest_path = app.config['LOCH_S3_SIS_DATA_PATH'] + '/manifests'
 
