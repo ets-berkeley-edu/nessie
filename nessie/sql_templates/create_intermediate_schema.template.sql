@@ -61,7 +61,9 @@ AS (
         c.canvas_id AS canvas_course_id,
         s.canvas_id AS canvas_section_id,
         c.name AS canvas_course_name,
+        c.code AS canvas_course_code,
         s.name AS canvas_section_name,
+        et.name AS canvas_course_term,
         extracted_section_ids.sis_term_id,
         extracted_section_ids.sis_section_id,
         sc.course_display_name AS sis_course_name,
@@ -70,15 +72,17 @@ AS (
         sc.section_num AS sis_section_num,
         sc.is_primary AS sis_primary
     FROM {redshift_schema_canvas}.course_section_dim s
-    LEFT JOIN {redshift_schema_canvas}.course_dim c
+    JOIN {redshift_schema_canvas}.course_dim c
         ON s.course_id = c.id
+    JOIN {redshift_schema_canvas}.enrollment_term_dim et
+         ON c.enrollment_term_id = et.id
     LEFT JOIN extracted_section_ids ON s.canvas_id = extracted_section_ids.canvas_section_id
     FULL OUTER JOIN {redshift_schema_sis}.courses sc
         ON extracted_section_ids.sis_term_id = sc.term_id
         AND extracted_section_ids.sis_section_id = sc.section_id
     /* Clear out duplicates, since SIS data will contain multiple rows for multiple meetings or instructor assignments. */
     GROUP BY
-        c.canvas_id, s.canvas_id, c.name, s.name,
+        c.canvas_id, s.canvas_id, c.name, c.code, s.name, et.name,
         extracted_section_ids.sis_term_id, extracted_section_ids.sis_section_id,
         sc.course_display_name, sc.course_title, sc.instruction_format, sc.section_num, sc.is_primary
 );

@@ -187,6 +187,22 @@ FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
 LOCATION '{loch_s3_canvas_data_path_today}/enrollment_dim';
 
+-- enrollment_term_dim
+DROP TABLE IF EXISTS {redshift_schema_canvas}.enrollment_term_dim CASCADE;
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.enrollment_term_dim(
+    id BIGINT,
+    canvas_id BIGINT,
+    root_account_id BIGINT,
+    name VARCHAR,
+    date_start TIMESTAMP,
+    date_end TIMESTAMP,
+    sis_source_id VARCHAR
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+STORED AS TEXTFILE
+LOCATION '{loch_s3_canvas_data_path_today}/enrollment_term_dim';
+
 -- assignment_fact
 DROP TABLE IF EXISTS {redshift_schema_canvas}.assignment_fact CASCADE;
 CREATE EXTERNAL TABLE {redshift_schema_canvas}.assignment_fact(
