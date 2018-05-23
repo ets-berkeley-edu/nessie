@@ -25,12 +25,34 @@
 
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_intermediate};
 
-DROP TABLE IF EXISTS {redshift_schema_intermediate}.course_sections;
+/*
+ * Copy S3 external data to Redshift table for faster client queries.
+ */
+
+DROP TABLE IF EXISTS {redshift_schema_intermediate}.sis_enrollments;
+
+CREATE TABLE {redshift_schema_intermediate}.sis_enrollments
+INTERLEAVED SORTKEY (sis_term_id, sis_section_id, ldap_uid)
+AS (
+    SELECT
+        en.term_id AS sis_term_id,
+        en.section_id AS sis_section_id,
+        en.ldap_uid,
+        en.enrollment_status AS sis_enrollment_status,
+        en.units,
+        en.grading_basis,
+        TRIM(en.grade) AS grade
+    FROM {redshift_schema_sis}.enrollments en
+    WHERE
+        en.enrollment_status != 'D'
+);
 
 /*
  * Use SIS integration IDs for Canvas sections to generate a master mapping between Canvas and SIS sections. A
  * FULL OUTER JOIN is used to include all sections from Canvas and SIS data, whether integrated or not.
  */
+
+DROP TABLE IF EXISTS {redshift_schema_intermediate}.course_sections;
 
 CREATE TABLE {redshift_schema_intermediate}.course_sections
 INTERLEAVED SORTKEY (canvas_course_id, canvas_section_id, sis_term_id, sis_section_id)
@@ -64,8 +86,8 @@ AS (
         c.code AS canvas_course_code,
         s.name AS canvas_section_name,
         et.name AS canvas_course_term,
-        extracted_section_ids.sis_term_id,
-        extracted_section_ids.sis_section_id,
+        sc.term_id AS sis_term_id,
+        sc.section_id AS sis_section_id,
         sc.course_display_name AS sis_course_name,
         sc.course_title AS sis_course_title,
         sc.instruction_format AS sis_instruction_format,
@@ -83,7 +105,7 @@ AS (
     /* Clear out duplicates, since SIS data will contain multiple rows for multiple meetings or instructor assignments. */
     GROUP BY
         c.canvas_id, s.canvas_id, c.name, c.code, s.name, et.name,
-        extracted_section_ids.sis_term_id, extracted_section_ids.sis_section_id,
+        sc.term_id, sc.section_id,
         sc.course_display_name, sc.course_title, sc.instruction_format, sc.section_num, sc.is_primary
 );
 
@@ -120,7 +142,7 @@ AS (
 );
 
 /*
- * Collect all active student enrollments and note SIS enrollment status, if any, in SIS sections integrated
+ * Collect all active student Canvas course site enrollments and note SIS enrollment status, if any, in SIS sections integrated
  * with the course site.
  */
 DROP TABLE IF EXISTS {redshift_schema_intermediate}.active_student_enrollments;
@@ -137,7 +159,7 @@ AS (
          * MIN ordering happens to match our desired precedence when reconciling enrollment status among multiple
          * sections: 'E', then 'W', then NULL.
          */
-        MIN({redshift_schema_sis}.enrollments.enrollment_status) AS sis_enrollment_status
+        MIN({redshift_schema_intermediate}.sis_enrollments.sis_enrollment_status) AS sis_enrollment_status
     FROM
         {redshift_schema_canvas}.enrollment_fact
         JOIN {redshift_schema_canvas}.enrollment_dim
@@ -148,10 +170,10 @@ AS (
             ON {redshift_schema_canvas}.course_dim.id = {redshift_schema_canvas}.enrollment_fact.course_id
         LEFT JOIN {redshift_schema_intermediate}.course_sections
             ON {redshift_schema_canvas}.course_dim.canvas_id = {redshift_schema_intermediate}.course_sections.canvas_course_id
-        LEFT JOIN {redshift_schema_sis}.enrollments ON
-            {redshift_schema_intermediate}.course_sections.sis_section_id = {redshift_schema_sis}.enrollments.section_id AND
-            {redshift_schema_intermediate}.course_sections.sis_term_id = {redshift_schema_sis}.enrollments.term_id AND
-            {redshift_schema_sis}.enrollments.ldap_uid = {redshift_schema_intermediate}.users.uid
+        LEFT JOIN {redshift_schema_intermediate}.sis_enrollments ON
+            {redshift_schema_intermediate}.course_sections.sis_section_id = {redshift_schema_intermediate}.sis_enrollments.sis_section_id AND
+            {redshift_schema_intermediate}.course_sections.sis_term_id = {redshift_schema_intermediate}.sis_enrollments.sis_term_id AND
+            {redshift_schema_intermediate}.sis_enrollments.ldap_uid = {redshift_schema_intermediate}.users.uid
     WHERE
         {redshift_schema_canvas}.enrollment_dim.type = 'StudentEnrollment'
         AND {redshift_schema_canvas}.enrollment_dim.workflow_state in ('active', 'completed')
