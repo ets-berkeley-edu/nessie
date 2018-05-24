@@ -60,10 +60,15 @@ CREATE EXTERNAL TABLE {redshift_schema_sis}.courses(
     meeting_end_time VARCHAR,
     meeting_start_date VARCHAR,
     meeting_end_date VARCHAR,
-    course_title VARCHAR
+    course_title VARCHAR,
+    allowed_units DOUBLE PRECISION
 )
-ROW FORMAT DELIMITED
-FIELDS TERMINATED BY ','
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
+WITH SERDEPROPERTIES (
+  'separatorChar' = ',',
+  'quoteChar' = '\"',
+  'escapeChar' = '\\'
+)
 STORED AS TEXTFILE
 LOCATION '{loch_s3_sis_data_path}/manifests/courses.json';
 
@@ -81,7 +86,11 @@ CREATE EXTERNAL TABLE {redshift_schema_sis}.enrollments(
     grade_points DOUBLE PRECISION,
     grading_basis VARCHAR
 )
-ROW FORMAT DELIMITED
-FIELDS TERMINATED BY ','
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
+WITH SERDEPROPERTIES (
+  'separatorChar' = ',',
+  'quoteChar' = '\"',
+  'escapeChar' = '\\'
+)
 STORED AS TEXTFILE
 LOCATION '{loch_s3_sis_data_path}/manifests/enrollments.json';
