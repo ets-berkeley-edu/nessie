@@ -184,6 +184,7 @@ AS (
         {redshift_schema_intermediate}.users.uid AS uid,
         {redshift_schema_intermediate}.users.canvas_id AS canvas_user_id,
         {redshift_schema_canvas}.course_dim.canvas_id AS canvas_course_id,
+        {redshift_schema_canvas}.enrollment_dim.id AS canvas_enrollment_id,
         {redshift_schema_canvas}.enrollment_dim.last_activity_at AS last_activity_at,
         /*
          * MIN ordering happens to match our desired precedence when reconciling enrollment status among multiple
@@ -212,5 +213,6 @@ AS (
         {redshift_schema_intermediate}.users.uid,
         {redshift_schema_intermediate}.users.canvas_id,
         {redshift_schema_canvas}.course_dim.canvas_id,
+        {redshift_schema_canvas}.enrollment_dim.id,
         {redshift_schema_canvas}.enrollment_dim.last_activity_at
 );
