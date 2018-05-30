@@ -46,7 +46,7 @@ CREATE EXTERNAL TABLE {redshift_schema_sis}.courses(
     section_id INT,
     term_id INT,
     print_in_schedule_of_classes VARCHAR,
-    is_primary VARCHAR,
+    is_primary BOOLEAN,
     instruction_format VARCHAR,
     section_num VARCHAR,
     course_display_name VARCHAR,
