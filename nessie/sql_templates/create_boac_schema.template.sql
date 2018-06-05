@@ -219,7 +219,7 @@ AS (
             ON ase.canvas_user_id = {redshift_schema_intermediate}.users.canvas_id
         JOIN {redshift_schema_canvas}.course_dim cd
             ON ase.canvas_course_id = cd.canvas_id
-        JOIN {redshift_schema_canvas}.course_score_fact csf
+        LEFT JOIN {redshift_schema_canvas}.course_score_fact csf
             ON csf.enrollment_id = ase.canvas_enrollment_id
     GROUP BY
         ase.uid,
