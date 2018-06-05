@@ -40,29 +40,49 @@ AS (
             {redshift_schema_canvas}.assignment_override_user_rollup_fact.user_id AS user_id,
             MAX({redshift_schema_canvas}.assignment_override_dim.due_at) AS due_at
         FROM {redshift_schema_canvas}.assignment_override_user_rollup_fact
-        LEFT JOIN {redshift_schema_canvas}.assignment_override_dim
-            ON {redshift_schema_canvas}.assignment_override_dim.id = {redshift_schema_canvas}.assignment_override_user_rollup_fact.assignment_override_id
-            AND {redshift_schema_canvas}.assignment_override_dim.workflow_state = 'active'
+            LEFT JOIN {redshift_schema_canvas}.assignment_override_dim
+                ON {redshift_schema_canvas}.assignment_override_dim.id = {redshift_schema_canvas}.assignment_override_user_rollup_fact.assignment_override_id
+                AND {redshift_schema_canvas}.assignment_override_dim.workflow_state = 'active'
         GROUP BY
             {redshift_schema_canvas}.assignment_override_user_rollup_fact.assignment_id,
             {redshift_schema_canvas}.assignment_override_user_rollup_fact.user_id
     ),
     assignment_type AS (
-        SELECT id,
-        CASE WHEN (
-            COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%none%' AND
-            COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%not_graded%' AND
-            COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%on_paper%' AND
-            COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%wiki_page%' AND
-            COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%external_tool%'
-        ) THEN 1
-        ELSE NULL END AS submittable
-      FROM {redshift_schema_canvas}.assignment_dim
+        SELECT
+            id,
+            CASE WHEN (
+                COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%none%' AND
+                COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%not_graded%' AND
+                COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%on_paper%' AND
+                COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%wiki_page%' AND
+                COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%external_tool%'
+              ) THEN 1
+            ELSE NULL END AS submittable
+        FROM {redshift_schema_canvas}.assignment_dim
+    ),
+    /*
+     * We are interested in assignment submissions on a course_id level rather than a section level as determined by canvas_enrollment_id.
+     * We will use a distinct to weed out any duplicates we might encountered when we ignore canvas_enrollment_id column.
+     */
+    distinct_user_enrollments AS (
+        SELECT DISTINCT
+            {redshift_schema_intermediate}.users.uid AS uid,
+            {redshift_schema_intermediate}.users.canvas_id AS canvas_user_id,
+            {redshift_schema_intermediate}.users.global_id AS canvas_global_user_id,
+            {redshift_schema_canvas}.course_dim.canvas_id AS course_id,
+            {redshift_schema_canvas}.course_dim.id AS canvas_global_course_id,
+            {redshift_schema_intermediate}.active_student_enrollments.sis_enrollment_status AS sis_enrollment_status
+        FROM
+            {redshift_schema_intermediate}.active_student_enrollments
+            LEFT JOIN {redshift_schema_intermediate}.users
+                ON {redshift_schema_intermediate}.active_student_enrollments.canvas_user_id = {redshift_schema_intermediate}.users.canvas_id
+            LEFT JOIN {redshift_schema_canvas}.course_dim
+                ON {redshift_schema_intermediate}.active_student_enrollments.canvas_course_id = {redshift_schema_canvas}.course_dim.canvas_id
     )
     SELECT
-        {redshift_schema_intermediate}.users.uid AS uid,
-        {redshift_schema_intermediate}.users.canvas_id AS canvas_user_id,
-        {redshift_schema_canvas}.course_dim.canvas_id AS course_id,
+        distinct_user_enrollments.uid AS uid,
+        distinct_user_enrollments.canvas_user_id,
+        distinct_user_enrollments.course_id,
         {redshift_schema_canvas}.assignment_dim.canvas_id AS assignment_id,
         CASE
             /*
@@ -83,9 +103,9 @@ AS (
                     {redshift_schema_canvas}.submission_fact.score IS NULL
                     OR (
                         {redshift_schema_canvas}.submission_fact.score = 0.0
-                        AND (
-                            {redshift_schema_canvas}.assignment_dim.points_possible > 0.0
-                            OR {redshift_schema_canvas}.submission_dim.grade != 'complete'
+                      AND (
+                          {redshift_schema_canvas}.assignment_dim.points_possible > 0.0
+                          OR {redshift_schema_canvas}.submission_dim.grade != 'complete'
                         )
                     )
                  )
@@ -105,12 +125,12 @@ AS (
                     {redshift_schema_canvas}.submission_fact.score IS NULL
                     OR (
                         {redshift_schema_canvas}.submission_fact.score = 0.0
-                        AND (
-                            {redshift_schema_canvas}.assignment_dim.points_possible > 0.0
-                            OR {redshift_schema_canvas}.submission_dim.grade != 'complete'
+                      AND (
+                          {redshift_schema_canvas}.assignment_dim.points_possible > 0.0
+                          OR {redshift_schema_canvas}.submission_dim.grade != 'complete'
                         )
                     )
-                 )
+                )
             THEN
                 'unsubmitted'
             /*
@@ -124,8 +144,8 @@ AS (
                 OR (
                     most_lenient_override.due_at IS NULL
                     AND {redshift_schema_canvas}.assignment_dim.due_at <
-                        {redshift_schema_canvas}.submission_dim.submitted_at +
-                        CASE {redshift_schema_canvas}.submission_dim.submission_type WHEN 'online_quiz' THEN interval '1 minute' ELSE interval '0 minutes' END
+                    {redshift_schema_canvas}.submission_dim.submitted_at +
+                    CASE {redshift_schema_canvas}.submission_dim.submission_type WHEN 'online_quiz' THEN interval '1 minute' ELSE interval '0 minutes' END
                 )
             THEN
                 'late'
@@ -139,8 +159,8 @@ AS (
                 OR (
                     most_lenient_override.due_at IS NULL
                     AND {redshift_schema_canvas}.assignment_dim.due_at >=
-                        {redshift_schema_canvas}.submission_dim.submitted_at +
-                        CASE {redshift_schema_canvas}.submission_dim.submission_type WHEN 'online_quiz' THEN interval '1 minute' ELSE interval '0 minutes' END
+                    {redshift_schema_canvas}.submission_dim.submitted_at +
+                    CASE {redshift_schema_canvas}.submission_dim.submission_type WHEN 'online_quiz' THEN interval '1 minute' ELSE interval '0 minutes' END
                 )
             THEN
                 'on_time'
@@ -177,25 +197,21 @@ AS (
         {redshift_schema_canvas}.submission_fact.score AS score,
         {redshift_schema_canvas}.submission_dim.grade AS grade,
         {redshift_schema_canvas}.assignment_dim.points_possible AS points_possible,
-        {redshift_schema_intermediate}.active_student_enrollments.sis_enrollment_status AS sis_enrollment_status
+        distinct_user_enrollments.sis_enrollment_status AS sis_enrollment_status
     FROM
         {redshift_schema_canvas}.submission_fact
-        JOIN {redshift_schema_canvas}.submission_dim
+        INNER JOIN {redshift_schema_canvas}.submission_dim
             ON {redshift_schema_canvas}.submission_fact.submission_id = {redshift_schema_canvas}.submission_dim.id
-        JOIN {redshift_schema_intermediate}.users
-            ON {redshift_schema_intermediate}.users.global_id = {redshift_schema_canvas}.submission_fact.user_id
-        JOIN {redshift_schema_canvas}.assignment_dim
-            ON {redshift_schema_canvas}.assignment_dim.id = {redshift_schema_canvas}.submission_fact.assignment_id
-        JOIN assignment_type
-            ON assignment_type.id = {redshift_schema_canvas}.submission_fact.assignment_id
-        JOIN {redshift_schema_canvas}.course_dim
-            ON {redshift_schema_canvas}.course_dim.id = {redshift_schema_canvas}.submission_fact.course_id
+        INNER JOIN {redshift_schema_canvas}.assignment_dim
+            ON {redshift_schema_canvas}.submission_fact.assignment_id = {redshift_schema_canvas}.assignment_dim.id
+        INNER JOIN assignment_type
+            ON {redshift_schema_canvas}.submission_fact.assignment_id = assignment_type.id
         LEFT JOIN most_lenient_override
-            ON most_lenient_override.user_id = {redshift_schema_canvas}.submission_fact.user_id
-            AND most_lenient_override.assignment_id = {redshift_schema_canvas}.submission_fact.assignment_id
-        LEFT JOIN {redshift_schema_intermediate}.active_student_enrollments
-            ON {redshift_schema_canvas}.course_dim.canvas_id = {redshift_schema_intermediate}.active_student_enrollments.canvas_course_id
-            AND {redshift_schema_intermediate}.users.canvas_id = {redshift_schema_intermediate}.active_student_enrollments.canvas_user_id
+            ON {redshift_schema_canvas}.submission_fact.user_id = most_lenient_override.user_id
+            AND {redshift_schema_canvas}.submission_fact.assignment_id = most_lenient_override.assignment_id
+        LEFT JOIN distinct_user_enrollments
+            ON {redshift_schema_canvas}.submission_fact.user_id = distinct_user_enrollments.canvas_global_user_id
+            AND {redshift_schema_canvas}.submission_fact.course_id = distinct_user_enrollments.canvas_global_course_id
     WHERE {redshift_schema_canvas}.assignment_dim.workflow_state = 'published'
         AND {redshift_schema_canvas}.submission_dim.workflow_state != 'deleted'
 );
@@ -333,9 +349,9 @@ WITH
             w1.course_id AS course_id, w1.user_id AS user_id, w1.user_page_views, w2.avg_course_page_views, w2.stddev_course_page_views, COALESCE(w3.user_page_view_zscore, 0) AS user_page_view_zscore
         FROM
             w1
-        LEFT JOIN w3 ON w1.course_id = w3.course_id
-            AND w1.user_id = w3.user_id
-        LEFT JOIN w2 ON w1.course_id = w2.course_id
+            LEFT JOIN w3 ON w1.course_id = w3.course_id
+                AND w1.user_id = w3.user_id
+            LEFT JOIN w2 ON w1.course_id = w2.course_id
     )
     /*
      * Add user and courses related information
@@ -357,6 +373,6 @@ WITH
         w4.user_page_view_zscore AS user_page_views_zscore
     FROM
         w4
-    LEFT JOIN {redshift_schema_intermediate}.users u ON w4.user_id = u.global_id
-    LEFT JOIN {redshift_schema_canvas}.course_dim c ON w4.course_id = c.id
+        LEFT JOIN {redshift_schema_intermediate}.users u ON w4.user_id = u.global_id
+        LEFT JOIN {redshift_schema_canvas}.course_dim c ON w4.course_id = c.id
 );
