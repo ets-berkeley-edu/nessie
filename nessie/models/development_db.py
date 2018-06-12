@@ -23,16 +23,31 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-# The test environment mocks the Redshift interface with a local Postgres db.
+from flask import current_app as app
+from nessie import db, std_commit
+from sqlalchemy.sql import text
 
-TESTING = True
 
-REDSHIFT_DATABASE = 'nessie_redshift_test'
-REDSHIFT_HOST = 'localhost'
-REDSHIFT_PASSWORD = 'nessie'
-REDSHIFT_PORT = 5432
-REDSHIFT_USER = 'nessie'
+def clear():
+    with open(app.config['BASE_DIR'] + '/scripts/db/drop_schema.sql', 'r') as ddlfile:
+        ddltext = ddlfile.read()
+    db.session().execute(text(ddltext))
+    std_commit()
 
-REDSHIFT_SCHEMA_METADATA = 'nessie_metadata_test'
 
-SQLALCHEMY_DATABASE_URI = 'postgres://nessie:nessie@localhost:5432/nessie_test'
+def load():
+    load_schemas()
+    load_development_data()
+    return db
+
+
+def load_development_data():
+    pass
+
+
+def load_schemas():
+    """Create DB schema from SQL file."""
+    with open(app.config['BASE_DIR'] + '/scripts/db/schema.sql', 'r') as ddlfile:
+        ddltext = ddlfile.read()
+    db.session().execute(text(ddltext))
+    std_commit()
