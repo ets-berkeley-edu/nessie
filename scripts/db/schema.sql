@@ -54,6 +54,30 @@ ALTER TABLE ONLY athletics
 
 --
 
+CREATE TABLE json_cache (
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    id integer NOT NULL,
+    key character varying NOT NULL,
+    json jsonb
+);
+ALTER TABLE json_cache OWNER TO nessie;
+CREATE SEQUENCE json_cache_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ALTER TABLE json_cache_id_seq OWNER TO nessie;
+ALTER SEQUENCE json_cache_id_seq OWNED BY json_cache.id;
+ALTER TABLE ONLY json_cache ALTER COLUMN id SET DEFAULT nextval('json_cache_id_seq'::regclass);
+ALTER TABLE ONLY json_cache
+    ADD CONSTRAINT json_cache_key_key UNIQUE (key);
+ALTER TABLE ONLY json_cache
+    ADD CONSTRAINT json_cache_pkey PRIMARY KEY (id);
+
+--
+
 CREATE TABLE student_athletes (
     group_code character varying(80) NOT NULL,
     sid character varying(80) NOT NULL
