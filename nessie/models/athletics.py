@@ -23,18 +23,32 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-# The test environment mocks the Redshift interface with a local Postgres db.
 
-TESTING = True
+from nessie import db
+from nessie.models.base import Base
+from nessie.models.db_relationships import student_athletes
 
-REDSHIFT_DATABASE = 'nessie_redshift_test'
-REDSHIFT_HOST = 'localhost'
-REDSHIFT_PASSWORD = 'nessie'
-REDSHIFT_PORT = 5432
-REDSHIFT_USER = 'nessie'
 
-REDSHIFT_SCHEMA_METADATA = 'nessie_metadata_test'
+class Athletics(Base):
+    __tablename__ = 'athletics'
 
-SQLALCHEMY_DATABASE_URI = 'postgres://nessie:nessie@localhost:5432/nessie_test'
+    group_code = db.Column(db.String(80), nullable=False, primary_key=True)
+    group_name = db.Column(db.String(255))
+    team_code = db.Column(db.String(80))
+    team_name = db.Column(db.String(255))
+    athletes = db.relationship('Student', secondary=student_athletes, back_populates='athletics')
 
-LOGGING_LOCATION = 'STDOUT'
+    def __repr__(self):
+        return f"""<TeamGroup {self.group_name} ({self.group_code}),
+            team {self.team_code} ({self.team_name}),
+            updated_at={self.updated_at},
+            created_at={self.created_at}>"""
+
+    def to_api_json(self):
+        return {
+            'groupCode': self.group_code,
+            'groupName': self.group_name,
+            'name': self.group_name,
+            'teamCode': self.team_code,
+            'teamName': self.team_name,
+        }

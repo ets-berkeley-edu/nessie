@@ -50,6 +50,9 @@ AWS_ACCESS_KEY_ID = 'key'
 AWS_SECRET_ACCESS_KEY = 'secret'
 AWS_REGION = 'aws region'
 
+ASC_ATHLETES_API_URL = 'https://secreturl.berkeley.edu/intensives.php?AcadYr=2017-18'
+ASC_ATHLETES_API_KEY = 'secret'
+
 CANVAS_DATA_API_KEY = 'some key'
 CANVAS_DATA_API_SECRET = 'some secret'
 CANVAS_DATA_HOST = 'foo.instructure.com'

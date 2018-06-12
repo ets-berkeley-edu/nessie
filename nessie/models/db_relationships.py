@@ -23,18 +23,13 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-# The test environment mocks the Redshift interface with a local Postgres db.
 
-TESTING = True
+from nessie import db
+from nessie.models.base import Base
 
-REDSHIFT_DATABASE = 'nessie_redshift_test'
-REDSHIFT_HOST = 'localhost'
-REDSHIFT_PASSWORD = 'nessie'
-REDSHIFT_PORT = 5432
-REDSHIFT_USER = 'nessie'
-
-REDSHIFT_SCHEMA_METADATA = 'nessie_metadata_test'
-
-SQLALCHEMY_DATABASE_URI = 'postgres://nessie:nessie@localhost:5432/nessie_test'
-
-LOGGING_LOCATION = 'STDOUT'
+student_athletes = db.Table(
+    'student_athletes',
+    Base.metadata,
+    db.Column('group_code', db.String(80), db.ForeignKey('athletics.group_code'), primary_key=True),
+    db.Column('sid', db.String(80), db.ForeignKey('students.sid'), primary_key=True),
+)
