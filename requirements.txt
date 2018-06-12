@@ -8,6 +8,7 @@ psycopg2==2.7.4
 pytz==2017.3
 requests==2.18.4
 simplejson==3.13.2
+xmltodict==0.11.0
 # ETS fork of https://github.com/RaRe-Technologies/smart_open, with added support for S3 upload arguments.
 https://github.com/ets-berkeley-edu/smart_open/archive/master.zip
 

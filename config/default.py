@@ -51,6 +51,10 @@ CANVAS_DATA_API_KEY = 'some key'
 CANVAS_DATA_API_SECRET = 'some secret'
 CANVAS_DATA_HOST = 'foo.instructure.com'
 
+DEGREE_PROGRESS_API_URL = 'https://secreturl.berkeley.edu/PSFT_CS'
+DEGREE_PROGRESS_API_USERNAME = 'secretuser'
+DEGREE_PROGRESS_API_PASSWORD = 'secretpassword'
+
 ENROLLMENTS_API_ID = 'secretid'
 ENROLLMENTS_API_KEY = 'secretkey'
 ENROLLMENTS_API_URL = 'https://secreturl.berkeley.edu/enrollments'
