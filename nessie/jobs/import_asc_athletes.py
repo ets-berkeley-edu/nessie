@@ -29,7 +29,7 @@ import csv
 from flask import current_app as app
 from nessie import db, std_commit
 from nessie.externals import asc_athletes_api
-# TODO: from nessie.externals import calnet
+from nessie.externals import calnet
 from nessie.models.athletics import Athletics
 from nessie.models.student import Student
 
@@ -158,8 +158,7 @@ def compare_tsvs(old_tsv='tmp/AscStudentsOrig.tsv', new_tsv='tmp/AscStudents.tsv
 def update_from_asc(asc_rows):
     status = merge_student_athletes(asc_rows)
     app.logger.info(f'{status}')
-    # TODO: Use CalNet integration to update_student_attributes
-    # merge_in_calnet_data()
+    merge_in_calnet_data()
     return status
 
 
@@ -385,38 +384,38 @@ def unambiguous_group_name(asc_group_name, group_code):
         return asc_group_name
 
 
-# def merge_in_calnet_data():
-#     students = Student.query.all()
-#     update_student_attributes(students)
-#     app.logger.info(f'Modified {len(db.session.dirty)} student records from calnet')
-#     std_commit()
-#
-#
-# def update_student_attributes(students=None):
-#     sid_map = {}
-#     for student in students:
-#         sid_map.setdefault(student.sid, []).append(student)
-#     sids = list(sid_map.keys())
-#
-#     all_attributes = calnet.client(app).search_csids(sids)
-#     if len(sids) != len(all_attributes):
-#         app.logger.warning(f'Looked for {len(sids)} SIDs but only found {len(all_attributes)}')
-#
-#     # Update db
-#     for a in all_attributes:
-#         # Since we searched LDAP by SID, we can be fairly sure that the results have SIDs.
-#         sid = a['csid']
-#         name_split = a['sortable_name'].split(',') if 'sortable_name' in a else ''
-#         full_name = [name.strip() for name in reversed(name_split)]
-#         for m in sid_map[sid]:
-#             new_uid = a['uid']
-#             if m.uid != new_uid:
-#                 app.logger.info(f'For SID {sid}, changing UID {m.uid} to {new_uid}')
-#                 m.uid = new_uid
-#             new_first_name = full_name[0] if len(full_name) else ''
-#             new_last_name = full_name[1] if len(full_name) > 1 else ''
-#             if (m.first_name != new_first_name) or (m.last_name != new_last_name):
-#                 app.logger.info(f'For SID {sid}, changing name "{m.first_name} {m.last_name}" to "{new_first_name} {new_last_name}"')
-#                 m.first_name = new_first_name
-#                 m.last_name = new_last_name
-#     return students
+def merge_in_calnet_data():
+    students = Student.query.all()
+    update_student_attributes(students)
+    app.logger.info(f'Modified {len(db.session.dirty)} student records from calnet')
+    std_commit()
+
+
+def update_student_attributes(students=None):
+    sid_map = {}
+    for student in students:
+        sid_map.setdefault(student.sid, []).append(student)
+    sids = list(sid_map.keys())
+
+    all_attributes = calnet.client(app).search_csids(sids)
+    if len(sids) != len(all_attributes):
+        app.logger.warning(f'Looked for {len(sids)} SIDs but only found {len(all_attributes)}')
+
+    # Update db
+    for a in all_attributes:
+        # Since we searched LDAP by SID, we can be fairly sure that the results have SIDs.
+        sid = a['csid']
+        name_split = a['sortable_name'].split(',') if 'sortable_name' in a else ''
+        full_name = [name.strip() for name in reversed(name_split)]
+        for m in sid_map[sid]:
+            new_uid = a['uid']
+            if m.uid != new_uid:
+                app.logger.info(f'For SID {sid}, changing UID {m.uid} to {new_uid}')
+                m.uid = new_uid
+            new_first_name = full_name[0] if len(full_name) else ''
+            new_last_name = full_name[1] if len(full_name) > 1 else ''
+            if (m.first_name != new_first_name) or (m.last_name != new_last_name):
+                app.logger.info(f'For SID {sid}, changing name "{m.first_name} {m.last_name}" to "{new_first_name} {new_last_name}"')
+                m.first_name = new_first_name
+                m.last_name = new_last_name
+    return students

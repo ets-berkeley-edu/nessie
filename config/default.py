@@ -72,6 +72,10 @@ JOB_SYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 0}
 JOB_RESYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 40}
 JOB_GENERATE_ALL_TABLES = {'hour': 2, 'minute': 00}
 
+LDAP_HOST = 'nds-test.berkeley.edu'
+LDAP_BIND = 'mybind'
+LDAP_PASSWORD = 'secret'
+
 LOCH_S3_BUCKET = 'bucket_name'
 LOCH_S3_REGION = 'us-west-2'
 
