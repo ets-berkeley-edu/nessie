@@ -53,3 +53,37 @@ ALTER TABLE ONLY athletics
     ADD CONSTRAINT athletics_pkey PRIMARY KEY (group_code);
 
 --
+
+CREATE TABLE student_athletes (
+    group_code character varying(80) NOT NULL,
+    sid character varying(80) NOT NULL
+);
+ALTER TABLE student_athletes OWNER TO nessie;
+ALTER TABLE ONLY student_athletes
+    ADD CONSTRAINT student_athletes_pkey PRIMARY KEY (group_code, sid);
+
+--
+
+CREATE TABLE students (
+    sid character varying(80) NOT NULL,
+    uid character varying(80),
+    first_name character varying(255) NOT NULL,
+    last_name character varying(255) NOT NULL,
+    in_intensive_cohort boolean DEFAULT false NOT NULL,
+    is_active_asc boolean DEFAULT true NOT NULL,
+    status_asc character varying(80),
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL
+);
+ALTER TABLE students OWNER TO nessie;
+ALTER TABLE ONLY students
+    ADD CONSTRAINT students_pkey PRIMARY KEY (sid);
+
+--
+
+ALTER TABLE ONLY student_athletes
+    ADD CONSTRAINT student_athletes_group_code_fkey FOREIGN KEY (group_code) REFERENCES athletics(group_code) ON DELETE CASCADE;
+ALTER TABLE ONLY student_athletes
+    ADD CONSTRAINT student_athletes_sid_fkey FOREIGN KEY (sid) REFERENCES students(sid) ON DELETE CASCADE;
+
+--

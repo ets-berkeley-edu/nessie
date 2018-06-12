@@ -34,10 +34,20 @@ SET row_security = off;
 
 --
 
+ALTER TABLE IF EXISTS ONLY public.student_athletes DROP CONSTRAINT IF EXISTS student_athletes_sid_fkey;
+ALTER TABLE IF EXISTS ONLY public.student_athletes DROP CONSTRAINT IF EXISTS student_athletes_group_code_fkey;
 ALTER TABLE IF EXISTS ONLY public.athletics DROP CONSTRAINT IF EXISTS athletics_pkey;
 
 --
 
+ALTER TABLE IF EXISTS ONLY public.students DROP CONSTRAINT IF EXISTS students_pkey;
+ALTER TABLE IF EXISTS ONLY public.student_athletes DROP CONSTRAINT IF EXISTS student_athletes_pkey;
+ALTER TABLE IF EXISTS ONLY public.athletics DROP CONSTRAINT IF EXISTS athletics_pkey;
+
+--
+
+DROP TABLE IF EXISTS public.students;
+DROP TABLE IF EXISTS public.student_athletes;
 DROP TABLE IF EXISTS public.athletics;
 
 --
