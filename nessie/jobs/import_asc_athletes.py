@@ -116,23 +116,21 @@ def update_from_asc_api(force=False):
         status['errors'].append(api_results['error'])
         return status
     feed = api_results['feed']
-    # TODO: bring in 'last_sync_date' once JsonCache work is done
-    # last_sync_date = status['last_sync_date'] = api_results['last_sync_date']
-    # sync_date = status['this_sync_date'] = api_results['this_sync_date']
-    # if last_sync_date == sync_date:
-    #     last_feed = asc_athletes_api.get_past_feed(sync_date)
-    #     app.logger.warning(f'Current and previous ASC Athletes API had the same sync date: {sync_date}')
-    #     old_only, new_only = compare_rows(last_feed, feed)
-    #     app.logger.warning(f'Previous feed differences: {old_only} ; current feed differences: {new_only}')
-    #     app.logger.warning('Overwriting previous feed in cache')
-    #     asc_athletes_api.stash_feed(feed)
+    last_sync_date = status['last_sync_date'] = api_results['last_sync_date']
+    sync_date = status['this_sync_date'] = api_results['this_sync_date']
+    if last_sync_date == sync_date:
+        last_feed = asc_athletes_api.get_past_feed(sync_date)
+        app.logger.warning(f'Current and previous ASC Athletes API had the same sync date: {sync_date}')
+        old_only, new_only = compare_rows(last_feed, feed)
+        app.logger.warning(f'Previous feed differences: {old_only} ; current feed differences: {new_only}')
+        app.logger.warning('Overwriting previous feed in cache')
+        asc_athletes_api.stash_feed(feed)
     safety = safety_check_asc_api(feed)
     if not safety['safe'] and not force:
         status['errors'].append(safety['message'])
         return status
     status['change_counts'].update(update_from_asc(feed))
-    # TODO: bring in 'last_sync_date' once JsonCache work is done
-    # asc_athletes_api.confirm_sync(sync_date)
+    asc_athletes_api.confirm_sync(sync_date)
     return status
 
 
