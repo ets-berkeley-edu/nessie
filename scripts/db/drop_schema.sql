@@ -36,6 +36,9 @@ SET row_security = off;
 
 ALTER TABLE IF EXISTS ONLY public.student_athletes DROP CONSTRAINT IF EXISTS student_athletes_sid_fkey;
 ALTER TABLE IF EXISTS ONLY public.student_athletes DROP CONSTRAINT IF EXISTS student_athletes_group_code_fkey;
+ALTER TABLE IF EXISTS ONLY public.json_cache DROP CONSTRAINT IF EXISTS json_cache_pkey;
+ALTER TABLE IF EXISTS ONLY public.json_cache DROP CONSTRAINT IF EXISTS json_cache_key_key;
+ALTER TABLE IF EXISTS public.json_cache ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE IF EXISTS ONLY public.athletics DROP CONSTRAINT IF EXISTS athletics_pkey;
 
 --
@@ -48,6 +51,8 @@ ALTER TABLE IF EXISTS ONLY public.athletics DROP CONSTRAINT IF EXISTS athletics_
 
 DROP TABLE IF EXISTS public.students;
 DROP TABLE IF EXISTS public.student_athletes;
+DROP SEQUENCE IF EXISTS public.json_cache_id_seq;
+DROP TABLE IF EXISTS public.json_cache;
 DROP TABLE IF EXISTS public.athletics;
 
 --

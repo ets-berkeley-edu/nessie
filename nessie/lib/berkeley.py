@@ -24,33 +24,30 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-"""Run Flask-wrapped code from a Python console.
+import re
 
-* From the command line:
-    ``nessie> python -i consoler.py``
 
-* In PyCharm preferences, go to "Build, Execution, Deployment"
-* For "Console", enable "Always show debug console"
-* For "Python Console", enable "Add source roots to PYTHONPATH"
-* Add this line to the starting script:
-    ``runfile('consoler.py')``
-* Save
-* Click on "Python Console"
-* Click the bug icon to start a debugging session:
+"""A utility module collecting logic specific to the Berkeley campus."""
 
->>> from nessie.externals import redshift
->>> assignments = redshift.fetch('select * from canvas.assignment_dim limit 10')
->>> pp(assignments)
-[
-    Record(id=12340000001234567, canvas_id=1234567 course_id=12340000009876564, title='Diagnostic Essay'...
-"""
 
-from nessie.factory import create_app
-from pprintpp import pprint as pp # noqa
+def sis_term_id_for_name(term_name=None):
+    if term_name:
+        match = re.match(r'\A(Spring|Summer|Fall) 20(\d{2})\Z', term_name)
+        if match:
+            season_codes = {
+                'Spring': '2',
+                'Summer': '5',
+                'Fall': '8',
+            }
+            return '2' + match.group(2) + season_codes[match.group(1)]
 
-app = create_app()
-ac = app.app_context()
-ac.push()
 
-print('You are now in a Flask app context. To run normal app teardown processes, type:')
-print('   ac.pop()')
+def term_name_for_sis_id(sis_id=None):
+    if sis_id:
+        sis_id = str(sis_id)
+        season_codes = {
+            '2': 'Spring',
+            '5': 'Summer',
+            '8': 'Fall',
+        }
+        return season_codes[sis_id[3:4]] + ' 20' + sis_id[1:3]

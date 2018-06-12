@@ -29,7 +29,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
-# TODO from nessie.models.json_cache import stow
+from nessie.models.json_cache import stow
 from requests.auth import HTTPBasicAuth
 import xmltodict
 
@@ -75,7 +75,7 @@ def merge_requirement_status(data, req):
         data[key]['status'] = status
 
 
-# TODO @stow('sis_degree_progress_api_{cs_id}')
+@stow('sis_degree_progress_api_{cs_id}')
 def get_degree_progress(cs_id):
     response = _get_degree_progress(cs_id)
     if response:

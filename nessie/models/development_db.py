@@ -29,6 +29,7 @@ from nessie.models.athletics import Athletics
 from nessie.models.student import Student
 # Models below are included so that db.create_all will find them.
 from nessie.models.db_relationships import student_athletes  # noqa
+from nessie.models.json_cache import JsonCache # noqa
 from sqlalchemy.sql import text
 
 
@@ -74,7 +75,7 @@ def clear():
     with open(app.config['BASE_DIR'] + '/scripts/db/drop_schema.sql', 'r') as ddlfile:
         ddltext = ddlfile.read()
     db.session().execute(text(ddltext))
-    std_commit()
+    std_commit(allow_test_environment=True)
 
 
 def load():
