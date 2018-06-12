@@ -87,6 +87,10 @@ REDSHIFT_SCHEMA_INTERMEDIATE = 'Intermediate schema name'
 REDSHIFT_SCHEMA_METADATA = 'Metadata schema name'
 REDSHIFT_SCHEMA_SIS = 'SIS schema name'
 
+STUDENT_API_ID = 'secretid'
+STUDENT_API_KEY = 'secretkey'
+STUDENT_API_URL = 'https://secreturl.berkeley.edu/students'
+
 WORKER_HOST = 'hard-working-nessie.berkeley.edu'
 WORKER_USERNAME = 'username'
 WORKER_PASSWORD = 'password'
