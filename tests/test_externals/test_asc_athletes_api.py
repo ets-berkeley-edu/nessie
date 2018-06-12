@@ -46,19 +46,23 @@ class TestAscAthletesApiUpdates:
 
     def test_feed_stashing(self, app):
         feed_date = '2018-01-31'
+        assert asc_athletes_api.get_past_feed(feed_date) is None
         updates = asc_athletes_api.get_updates()
-        # assert updates['last_sync_date'] is None
+        assert updates['last_sync_date'] is None
         assert updates['this_sync_date'] == feed_date
         update_feed = updates['feed']
         assert len(update_feed) == 9
         assert update_feed[0]['SyncDate'] == feed_date
+        stashed = asc_athletes_api.get_past_feed(feed_date)
+        assert len(stashed) == 9
+        assert stashed[0]['SyncDate'] == feed_date
 
-    # def test_last_sync_date(self, app):
-    #     # TODO
-    #     first_date = '2018-01-21'
-    #     updates = asc_athletes_api.get_updates()
-    #     assert updates['last_sync_date'] == first_date
-    #     assert updates['this_sync_date'] == '2018-01-31'
+    def test_last_sync_date(self, app):
+        first_date = '2018-01-21'
+        asc_athletes_api.confirm_sync(first_date)
+        updates = asc_athletes_api.get_updates()
+        assert updates['last_sync_date'] == first_date
+        assert updates['this_sync_date'] == '2018-01-31'
 
     def test_consistency_check(self, app):
         bad_date = '"It\'s not you, it\'s me"'
@@ -69,3 +73,9 @@ class TestAscAthletesApiUpdates:
                 feed = asc_athletes_api.get_updates()
                 assert feed['error']
                 assert not feed.get('feed')
+
+    def test_repeat_date_not_stashed(self, app):
+        feed_date = '2018-01-31'
+        asc_athletes_api.confirm_sync(feed_date)
+        asc_athletes_api.get_updates()
+        assert asc_athletes_api.get_past_feed(feed_date) is None

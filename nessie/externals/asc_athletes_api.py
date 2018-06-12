@@ -25,22 +25,24 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 
 from flask import current_app as app
+from nessie import db, std_commit
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
+from nessie.models.json_cache import JsonCache
 
 
-# LAST_SYNC_DATE_KEY = 'asc_athletes_last_sync'
+LAST_SYNC_DATE_KEY = 'asc_athletes_last_sync'
 
 
 def asc_feed_key(sync_date):
     return f'asc_athletes_{sync_date}'
 
 
-# def confirm_sync(sync_date):
-#     if JsonCache.query.filter_by(key=LAST_SYNC_DATE_KEY).first():
-#         db.session.query(JsonCache).filter(JsonCache.key == LAST_SYNC_DATE_KEY).delete()
-#     db.session.add(JsonCache(key=LAST_SYNC_DATE_KEY, json=sync_date))
-#     std_commit()
+def confirm_sync(sync_date):
+    if JsonCache.query.filter_by(key=LAST_SYNC_DATE_KEY).first():
+        db.session.query(JsonCache).filter(JsonCache.key == LAST_SYNC_DATE_KEY).delete()
+    db.session.add(JsonCache(key=LAST_SYNC_DATE_KEY, json=sync_date))
+    std_commit()
 
 
 def get_current_feed():
@@ -67,18 +69,18 @@ def _get_current_feed(mock=None):
         return http.request(url, headers, auth_params=auth_params)
 
 
-# def get_last_sync_date():
-#     item = JsonCache.query.filter_by(key=LAST_SYNC_DATE_KEY).first()
-#     return item and item.json
+def get_last_sync_date():
+    item = JsonCache.query.filter_by(key=LAST_SYNC_DATE_KEY).first()
+    return item and item.json
 
 
-# def get_past_feed(date):
-#     item = JsonCache.query.filter_by(key=asc_feed_key(date)).first()
-#     return item and item.json
+def get_past_feed(date):
+    item = JsonCache.query.filter_by(key=asc_feed_key(date)).first()
+    return item and item.json
 
 
 def get_updates():
-    # last_sync_date = get_last_sync_date()
+    last_sync_date = get_last_sync_date()
     current_rows = get_current_feed()
     if current_rows is None:
         return {
@@ -91,21 +93,21 @@ def get_updates():
         return {
             'error': msg,
         }
-    # if last_sync_date != sync_date:
-    #     stash_feed(current_rows)
+    if last_sync_date != sync_date:
+        stash_feed(current_rows)
     else:
         app.logger.warning(f'Current SyncDate {sync_date} matches last SyncDate; existing cache will not be overwritten')
     return {
-        # 'last_sync_date': last_sync_date,
+        'last_sync_date': last_sync_date,
         'this_sync_date': sync_date,
         'feed': current_rows,
     }
 
 
-# def stash_feed(rows):
-#     sync_date = rows[0]['SyncDate']
-#     key = asc_feed_key(sync_date)
-#     if JsonCache.query.filter_by(key=key).first():
-#         db.session.query(JsonCache).filter(JsonCache.key == key).delete()
-#     db.session.add(JsonCache(key=key, json=rows))
-#     std_commit()
+def stash_feed(rows):
+    sync_date = rows[0]['SyncDate']
+    key = asc_feed_key(sync_date)
+    if JsonCache.query.filter_by(key=key).first():
+        db.session.query(JsonCache).filter(JsonCache.key == key).delete()
+    db.session.add(JsonCache(key=key, json=rows))
+    std_commit()
