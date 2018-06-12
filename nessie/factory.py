@@ -26,6 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import os
 from flask import Flask
+from nessie import db
 from nessie.configs import load_configs
 from nessie.jobs.queue import initialize_job_queue
 from nessie.jobs.scheduling import initialize_job_schedules
@@ -39,6 +40,7 @@ def create_app():
 
     load_configs(app)
     initialize_logger(app)
+    db.init_app(app)
 
     with app.app_context():
         register_routes(app)

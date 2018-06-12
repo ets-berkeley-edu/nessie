@@ -17,6 +17,8 @@ pip3 install -r requirements.txt [--upgrade]
 
 ```
 createuser nessie --no-createdb --no-superuser --no-createrole --pwprompt
+createdb nessie_metadata_test --owner=nessie
+createdb nessie_redshift_test --owner=nessie
 createdb nessie_test --owner=nessie
 ```
 
