@@ -51,6 +51,10 @@ CANVAS_DATA_API_KEY = 'some key'
 CANVAS_DATA_API_SECRET = 'some secret'
 CANVAS_DATA_HOST = 'foo.instructure.com'
 
+ENROLLMENTS_API_ID = 'secretid'
+ENROLLMENTS_API_KEY = 'secretkey'
+ENROLLMENTS_API_URL = 'https://secreturl.berkeley.edu/enrollments'
+
 # True on master node, false on worker nodes.
 JOB_SCHEDULING_ENABLED = True
 # See http://apscheduler.readthedocs.io/en/latest/modules/triggers/cron.html for supported schedule formats.
