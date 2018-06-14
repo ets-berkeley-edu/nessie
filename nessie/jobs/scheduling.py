@@ -30,6 +30,13 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from apscheduler.schedulers.background import BackgroundScheduler
 
 
+sched = None
+
+
+def get_scheduler():
+    return sched
+
+
 def initialize_job_schedules(app):
     from nessie.jobs.create_canvas_schema import CreateCanvasSchema
     from nessie.jobs.create_sis_schema import CreateSisSchema
@@ -38,7 +45,8 @@ def initialize_job_schedules(app):
     from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
     from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 
-    if app.config['JOB_SCHEDULING_ENABLED']:
+    global sched
+    if app.config['JOB_SCHEDULING_ENABLED'] and sched is None:
         sched = BackgroundScheduler()
         schedule_job(app, sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots)
         schedule_job(app, sched, 'JOB_RESYNC_CANVAS_SNAPSHOTS', ResyncCanvasSnapshots)
