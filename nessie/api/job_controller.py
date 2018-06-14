@@ -34,10 +34,28 @@ from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
 from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
+from nessie.jobs.scheduling import get_scheduler
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
 from nessie.lib.http import tolerant_jsonify
 from nessie.lib.metadata import update_canvas_sync_status
+
+
+@app.route('/api/job/schedule', methods=['GET'])
+def job_schedule():
+    sched = get_scheduler()
+    response = []
+    for job in sched.get_jobs():
+        if hasattr(job.args[1], '__iter__'):
+            job_desc = [arg.__name__ for arg in job.args[1]]
+        else:
+            job_desc = job.args[1].__name__
+        response.append({
+            'job': job_desc,
+            'trigger': str(job.trigger),
+            'nextRun': str(job.next_run_time),
+        })
+    return tolerant_jsonify(response)
 
 
 @app.route('/api/job/create_canvas_schema', methods=['POST'])

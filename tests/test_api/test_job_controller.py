@@ -26,6 +26,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import base64
 import json
+import re
+
 import pytest
 
 
@@ -125,3 +127,16 @@ class TestJobControllerSyncFileToS3:
         )
         assert response.status_code == 200
         assert response.json['status'] == 'started'
+
+
+class TestJobControllerSchedule:
+
+    def test_job_schedule(self, app, client):
+        """Returns job schedule based on default config values."""
+        jobs = client.get('/api/job/schedule').json
+        assert len(jobs) == 3
+        assert jobs[0]['job'] == 'SyncCanvasSnapshots'
+        assert jobs[1]['job'] == 'ResyncCanvasSnapshots'
+        assert jobs[2]['job'] == ['CreateCanvasSchema', 'CreateSisSchema', 'GenerateIntermediateTables', 'GenerateBoacAnalytics']
+        assert jobs[2]['trigger'] == "cron[hour='2', minute='0']"
+        assert re.match('\d{4}-\d{2}-\d{2} 02:00:00', jobs[2]['nextRun'])
