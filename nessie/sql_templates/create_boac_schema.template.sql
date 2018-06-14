@@ -108,7 +108,8 @@ AS (
                         {redshift_schema_canvas}.submission_fact.score = 0.0
                       AND (
                           {redshift_schema_canvas}.assignment_dim.points_possible > 0.0
-                          OR {redshift_schema_canvas}.submission_dim.grade != 'complete'
+                          OR {redshift_schema_canvas}.submission_dim.grade is null
+                          OR {redshift_schema_canvas}.submission_dim.grade in ('incomplete', '0', 'I', 'NP', 'F')
                         )
                     )
                  )
@@ -130,7 +131,8 @@ AS (
                         {redshift_schema_canvas}.submission_fact.score = 0.0
                       AND (
                           {redshift_schema_canvas}.assignment_dim.points_possible > 0.0
-                          OR {redshift_schema_canvas}.submission_dim.grade != 'complete'
+                          OR {redshift_schema_canvas}.submission_dim.grade is null
+                          OR {redshift_schema_canvas}.submission_dim.grade in ('incomplete', '0', 'I', 'NP', 'F')
                         )
                     )
                 )
@@ -182,7 +184,8 @@ AS (
             WHEN {redshift_schema_canvas}.submission_fact.score = 0.0
                 AND (
                     {redshift_schema_canvas}.assignment_dim.points_possible > 0.0
-                    OR {redshift_schema_canvas}.submission_dim.grade != 'complete'
+                    OR {redshift_schema_canvas}.submission_dim.grade is null
+                    OR {redshift_schema_canvas}.submission_dim.grade in ('incomplete', '0', 'I', 'NP', 'F')
                 )
             THEN
                 'zero_graded'
