@@ -23,13 +23,16 @@
  * ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-CREATE SCHEMA IF NOT EXISTS {redshift_schema_intermediate};
+/*
+ * Drop the existing schema and its tables before redefining them.
+ */
+
+DROP SCHEMA IF EXISTS {redshift_schema_intermediate} CASCADE;
+CREATE SCHEMA {redshift_schema_intermediate};
 
 /*
  * Copy S3 external data to Redshift table for faster client queries.
  */
-
-DROP TABLE IF EXISTS {redshift_schema_intermediate}.sis_enrollments;
 
 CREATE TABLE {redshift_schema_intermediate}.sis_enrollments
 INTERLEAVED SORTKEY (sis_term_id, sis_section_id, ldap_uid)
@@ -50,8 +53,6 @@ AS (
 /*
  * Copy S3 external data to Redshift table for faster client queries.
  */
-
-DROP TABLE IF EXISTS {redshift_schema_intermediate}.sis_sections;
 
 CREATE TABLE {redshift_schema_intermediate}.sis_sections
 INTERLEAVED SORTKEY (sis_term_id, sis_section_id)
@@ -81,8 +82,6 @@ AS (
  * Use SIS integration IDs for Canvas sections to generate a master mapping between Canvas and SIS sections. A
  * FULL OUTER JOIN is used to include all sections from Canvas and SIS data, whether integrated or not.
  */
-
-DROP TABLE IF EXISTS {redshift_schema_intermediate}.course_sections;
 
 CREATE TABLE {redshift_schema_intermediate}.course_sections
 INTERLEAVED SORTKEY (canvas_course_id, canvas_section_id, sis_term_id, sis_section_id)
@@ -146,8 +145,6 @@ AS (
  * table by multiple rows.
  */
 
-DROP TABLE IF EXISTS {redshift_schema_intermediate}.users;
-
 CREATE TABLE {redshift_schema_intermediate}.users
 INTERLEAVED SORTKEY (canvas_id, uid, sis_user_id)
 AS (
@@ -175,7 +172,6 @@ AS (
  * Collect all active student Canvas course site enrollments and note SIS enrollment status, if any, in SIS sections integrated
  * with the course site.
  */
-DROP TABLE IF EXISTS {redshift_schema_intermediate}.active_student_enrollments;
 
 CREATE TABLE {redshift_schema_intermediate}.active_student_enrollments
 INTERLEAVED SORTKEY (canvas_user_id, canvas_course_id)
@@ -222,7 +218,6 @@ AS (
  * NOTE: This table is not currently referred to by other code, but it is used to support ongoing
  * data research and monitoring.
  */
-DROP TABLE IF EXISTS {redshift_schema_intermediate}.page_views_zscore;
 
 CREATE TABLE {redshift_schema_intermediate}.page_views_zscore
 AS (

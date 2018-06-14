@@ -23,9 +23,12 @@
  * ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-CREATE SCHEMA IF NOT EXISTS {redshift_schema_boac};
+/*
+ * Drop the existing schema and its tables before redefining them.
+ */
 
-DROP TABLE IF EXISTS {redshift_schema_boac}.assignment_submissions_scores;
+DROP SCHEMA IF EXISTS {redshift_schema_boac} CASCADE;
+CREATE SCHEMA {redshift_schema_boac};
 
 CREATE TABLE {redshift_schema_boac}.assignment_submissions_scores
 INTERLEAVED SORTKEY (uid, course_id, assignment_id)
@@ -215,8 +218,6 @@ AS (
     WHERE {redshift_schema_canvas}.assignment_dim.workflow_state = 'published'
         AND {redshift_schema_canvas}.submission_dim.workflow_state != 'deleted'
 );
-
-DROP TABLE IF EXISTS {redshift_schema_boac}.course_enrollments;
 
 CREATE TABLE {redshift_schema_boac}.course_enrollments
 SORTKEY (course_id)
