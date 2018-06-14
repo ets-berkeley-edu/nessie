@@ -58,7 +58,7 @@ application = create_app()
 @application.cli.command()
 def initdb():
     from nessie.models import development_db
-    development_db.load()
+    development_db.load_schemas()
 
 
 host = application.config['HOST']
