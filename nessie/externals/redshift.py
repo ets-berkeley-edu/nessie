@@ -62,6 +62,19 @@ def execute_ddl_script(sql):
     return True
 
 
+def drop_external_schema(schema_name):
+    app.logger.info(f'Dropping external schema {schema_name}')
+    sql = f'SELECT * FROM SVV_EXTERNAL_TABLES WHERE SCHEMANAME=\'{schema_name}\''
+    results = fetch(sql)
+    if results:
+        tables = [r.tablename for r in results]
+        for table in tables:
+            sql = f'DROP TABLE {schema_name}.{table} CASCADE'
+            execute(sql)
+    sql = f'DROP SCHEMA IF EXISTS {schema_name}'
+    execute(sql)
+
+
 def fetch(sql, **kwargs):
     """Execute SQL read operation with optional keyword arguments for formatting, returning an array of named tuples."""
     return _execute(sql, 'read', **kwargs)

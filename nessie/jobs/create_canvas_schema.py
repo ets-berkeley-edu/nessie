@@ -36,10 +36,12 @@ class CreateCanvasSchema(BackgroundJob):
 
     def run(self):
         app.logger.info(f'Starting Canvas schema creation job...')
+        external_schema = app.config['REDSHIFT_SCHEMA_CANVAS']
+        redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template('create_canvas_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
             app.logger.info(f'Canvas schema creation job completed.')
-            return verify_external_schema(app.config['REDSHIFT_SCHEMA_CANVAS'], resolved_ddl)
+            return verify_external_schema(external_schema, resolved_ddl)
         else:
             app.logger.error(f'Canvas schema creation job failed.')
             return False
