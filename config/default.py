@@ -52,6 +52,7 @@ AWS_REGION = 'aws region'
 
 ASC_ATHLETES_API_URL = 'https://secreturl.berkeley.edu/intensives.php?AcadYr=2017-18'
 ASC_ATHLETES_API_KEY = 'secret'
+ASC_THIS_ACAD_YR = '2017-18'
 
 CANVAS_DATA_API_KEY = 'some key'
 CANVAS_DATA_API_SECRET = 'some secret'
