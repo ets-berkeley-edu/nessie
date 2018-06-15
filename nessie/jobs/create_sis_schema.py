@@ -42,10 +42,12 @@ class CreateSisSchema(BackgroundJob):
             app.logger.info('Error updating manifests, will not execute schema creation SQL')
             return False
         app.logger.info(f'Executing SQL...')
+        external_schema = app.config['REDSHIFT_SCHEMA_SIS']
+        redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template('create_sis_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
             app.logger.info(f'SIS schema creation job completed.')
-            return verify_external_schema(app.config['REDSHIFT_SCHEMA_SIS'], resolved_ddl)
+            return verify_external_schema(external_schema, resolved_ddl)
         else:
             app.logger.error(f'SIS schema creation job failed.')
             return False

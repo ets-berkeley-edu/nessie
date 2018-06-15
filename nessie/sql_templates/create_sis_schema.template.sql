@@ -24,12 +24,9 @@
  */
 
 --------------------------------------------------------------------
--- DROP and CREATE EXTERNAL SCHEMA
+-- CREATE EXTERNAL SCHEMA
 --------------------------------------------------------------------
 
--- Contrary to the documentation, this statement does not actually drop external database tables.
--- When the external schema is re-created, the table definitions will return as they were.
-DROP SCHEMA IF EXISTS {redshift_schema_sis} CASCADE;
 CREATE EXTERNAL SCHEMA {redshift_schema_sis}
 FROM data catalog
 DATABASE '{redshift_schema_sis}'
@@ -41,7 +38,6 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 --------------------------------------------------------------------
 
 -- courses
-DROP TABLE IF EXISTS {redshift_schema_sis}.courses CASCADE;
 CREATE EXTERNAL TABLE {redshift_schema_sis}.courses(
     section_id INT,
     term_id INT,
@@ -73,7 +69,6 @@ STORED AS TEXTFILE
 LOCATION '{loch_s3_sis_data_path}/manifests/courses.json';
 
 -- enrollments
-DROP TABLE IF EXISTS {redshift_schema_sis}.enrollments CASCADE;
 CREATE EXTERNAL TABLE {redshift_schema_sis}.enrollments(
     section_id INT,
     term_id INT,
