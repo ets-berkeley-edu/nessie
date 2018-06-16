@@ -13,10 +13,11 @@ Networked engines supply statistics in education.
 pip3 install -r requirements.txt [--upgrade]
 ```
 
-### Create Postgres user and database for local tests
+### Create Postgres user and databases
 
 ```
 createuser nessie --no-createdb --no-superuser --no-createrole --pwprompt
+createdb nessie --owner=nessie
 createdb nessie_metadata_test --owner=nessie
 createdb nessie_redshift_test --owner=nessie
 createdb nessie_test --owner=nessie

@@ -27,17 +27,27 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """Background job scheduling."""
 
 
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 
 
+app = None
 sched = None
+
+
+# Postgres advisory locks require numeric ids.
+PG_ADVISORY_LOCK_IDS = {
+    'JOB_SYNC_CANVAS_SNAPSHOTS': 1000,
+    'JOB_RESYNC_CANVAS_SNAPSHOTS': 2000,
+    'JOB_GENERATE_ALL_TABLES': 3000,
+}
 
 
 def get_scheduler():
     return sched
 
 
-def initialize_job_schedules(app):
+def initialize_job_schedules(_app):
     from nessie.jobs.create_canvas_schema import CreateCanvasSchema
     from nessie.jobs.create_sis_schema import CreateSisSchema
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
@@ -45,13 +55,17 @@ def initialize_job_schedules(app):
     from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
     from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 
+    global app
+    app = _app
+
     global sched
     if app.config['JOB_SCHEDULING_ENABLED'] and sched is None:
-        sched = BackgroundScheduler()
-        schedule_job(app, sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots)
-        schedule_job(app, sched, 'JOB_RESYNC_CANVAS_SNAPSHOTS', ResyncCanvasSnapshots)
+        db_jobstore = SQLAlchemyJobStore(url=app.config['SQLALCHEMY_DATABASE_URI'], tablename='apscheduler_jobs')
+        sched = BackgroundScheduler(jobstores={'default': db_jobstore})
+        schedule_job(sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots)
+        schedule_job(sched, 'JOB_RESYNC_CANVAS_SNAPSHOTS', ResyncCanvasSnapshots)
         schedule_chained_job(
-            app, sched, 'JOB_GENERATE_ALL_TABLES', [
+            sched, 'JOB_GENERATE_ALL_TABLES', [
                 CreateCanvasSchema,
                 CreateSisSchema,
                 GenerateIntermediateTables,
@@ -61,29 +75,36 @@ def initialize_job_schedules(app):
         sched.start()
 
 
-def schedule_job(app, sched, config_value, job_class):
-    job_schedule = app.config.get(config_value)
+def add_job(sched, job_func, job_arg, job_id):
+    job_schedule = app.config.get(job_id)
     if job_schedule:
-        sched.add_job(start_background_job, 'cron', args=(app, job_class), **job_schedule)
+        sched.add_job(job_func, 'cron', args=(job_arg, job_id), id=job_id, replace_existing=True, **job_schedule)
+        return job_schedule
+
+
+def schedule_job(sched, job_id, job_class):
+    job_schedule = add_job(sched, start_background_job, job_class, job_id)
+    if job_schedule:
         app.logger.info(f'Scheduled {job_class.__name__} job: {job_schedule}')
 
 
-def start_background_job(app, job_class):
-    app.logger.info(f'Starting scheduled {job_class.__name__} job')
-    with app.app_context():
-        job_class().run_async()
-
-
-def schedule_chained_job(app, sched, config_value, job_components):
-    job_schedule = app.config.get(config_value)
+def schedule_chained_job(sched, job_id, job_components):
+    job_schedule = add_job(sched, start_chained_job, job_components, job_id)
     if job_schedule:
-        sched.add_job(start_chained_job, 'cron', args=(app, job_components), **job_schedule)
         app.logger.info(f'Scheduled chained background job: {job_schedule}, ' + ', '.join([c.__name__ for c in job_components]))
 
 
-def start_chained_job(app, job_components):
+def start_background_job(job_class, job_id):
+    lock_id = PG_ADVISORY_LOCK_IDS[job_id]
+    app.logger.info(f'Starting scheduled {job_class.__name__} job')
+    with app.app_context():
+        job_class().run_async(lock_id=lock_id)
+
+
+def start_chained_job(job_components, job_id):
     from nessie.jobs.background_job import ChainedBackgroundJob
+    lock_id = PG_ADVISORY_LOCK_IDS[job_id]
     app.logger.info(f'Starting chained background job: ' + ', '.join([c.__name__ for c in job_components]))
     with app.app_context():
         initialized_components = [c() for c in job_components]
-        ChainedBackgroundJob(steps=initialized_components).run_async()
+        ChainedBackgroundJob(steps=initialized_components).run_async(lock_id=lock_id)

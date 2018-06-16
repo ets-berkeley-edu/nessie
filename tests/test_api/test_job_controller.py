@@ -135,8 +135,14 @@ class TestJobControllerSchedule:
         """Returns job schedule based on default config values."""
         jobs = client.get('/api/job/schedule').json
         assert len(jobs) == 3
-        assert jobs[0]['job'] == 'SyncCanvasSnapshots'
-        assert jobs[1]['job'] == 'ResyncCanvasSnapshots'
-        assert jobs[2]['job'] == ['CreateCanvasSchema', 'CreateSisSchema', 'GenerateIntermediateTables', 'GenerateBoacAnalytics']
+        assert jobs[0]['id'] == 'job_sync_canvas_snapshots'
+        assert jobs[0]['components'] == ['SyncCanvasSnapshots']
+        assert jobs[0]['locked'] is False
+        assert jobs[1]['id'] == 'job_resync_canvas_snapshots'
+        assert jobs[1]['components'] == ['ResyncCanvasSnapshots']
+        assert jobs[1]['locked'] is False
+        assert jobs[2]['id'] == 'job_generate_all_tables'
+        assert jobs[2]['components'] == ['CreateCanvasSchema', 'CreateSisSchema', 'GenerateIntermediateTables', 'GenerateBoacAnalytics']
+        assert jobs[2]['locked'] is False
         assert jobs[2]['trigger'] == "cron[hour='2', minute='0']"
         assert re.match('\d{4}-\d{2}-\d{2} 02:00:00', jobs[2]['nextRun'])

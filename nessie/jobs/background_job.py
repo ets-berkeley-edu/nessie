@@ -37,6 +37,7 @@ from flask import current_app as app
 from nessie.externals import redshift
 from nessie.jobs.queue import get_job_queue
 from nessie.lib.util import localize_datetime
+from nessie.models.util import advisory_unlock, try_advisory_lock
 
 
 def get_s3_canvas_daily_path():
@@ -98,7 +99,7 @@ class BackgroundJob(object):
     def run(self, **kwargs):
         pass
 
-    def run_async(self):
+    def run_async(self, lock_id=None):
         queue = get_job_queue()
         if queue:
             app.logger.info(f'Current queue size {queue.qsize()}; adding new job.')
@@ -108,7 +109,10 @@ class BackgroundJob(object):
         else:
             app.logger.info('About to start background thread.')
             app_arg = app._get_current_object()
-            thread = Thread(target=self.run_in_app_context, args=[app_arg], kwargs=self.job_args, daemon=True)
+            kwargs = self.job_args
+            if lock_id:
+                kwargs['lock_id'] = lock_id
+            thread = Thread(target=self.run_in_app_context, args=[app_arg], kwargs=kwargs, daemon=True)
 
             if os.environ.get('NESSIE_ENV') in ['test', 'testext']:
                 app.logger.info('Test run in progress; will not muddy the waters by actually kicking off a background thread.')
@@ -118,8 +122,20 @@ class BackgroundJob(object):
             return True
 
     def run_in_app_context(self, app_arg, **kwargs):
+        lock_id = kwargs.pop('lock_id', None)
         with app_arg.app_context():
-            self.run(**kwargs)
+            if not lock_id:
+                self.run(**kwargs)
+                return
+            if try_advisory_lock(lock_id):
+                app.logger.info(f'Granted advisory lock {lock_id}; will execute the job.')
+                self.run(**kwargs)
+                if advisory_unlock(lock_id):
+                    app.logger.info(f'Released advisory lock {lock_id}.')
+                else:
+                    app.logger.error(f'Failed to release advisory lock {lock_id}.')
+            else:
+                app.logger.warn(f'Was not granted advisory lock {lock_id}; will not execute the job.')
 
 
 class ChainedBackgroundJob(BackgroundJob):
