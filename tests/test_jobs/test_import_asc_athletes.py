@@ -26,52 +26,17 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import json
 from nessie.externals import asc_athletes_api
-from nessie.jobs import import_asc_athletes
+from nessie.jobs.import_asc_athletes import ImportAscAthletes
+from nessie.lib import asc
 from nessie.lib.mockingbird import MockResponse, register_mock
 from nessie.models.athletics import Athletics
 from nessie.models.student import Student
 
 
-def find_athlete(team, sid):
-    return next(athlete for athlete in team.athletes if athlete.sid == sid)
-
-
-def asc_data_row(sid, group_code, group_name, team_code, team_name, academic_yr, is_active, is_intensive='No', status=''):
-    return {
-        'SID': sid,
-        'SportCode': group_code,
-        'Sport': group_name,
-        'SportCodeCore': team_code,
-        'SportCore': team_name,
-        'AcadYr': academic_yr,
-        'ActiveYN': is_active,
-        'IntensiveYN': is_intensive,
-        'SportStatus': status,
-    }
-
-
 class TestImportAscAthletes:
-    """Import ASC data."""
 
-    def test_initial_assumptions(self, app):
-        water_polo_team = Athletics.query.filter_by(group_code='MWP').first()
-        assert water_polo_team is None
-        football_backs = Athletics.query.filter_by(group_code='MFB-DB').first()
-        assert len(football_backs.athletes) == 3
-        # John starts without a team.
-        assert Student.find_by_sid('8901234567').athletics == []
-        # PaulK defends the line.
-        assert Student.find_by_sid('3456789012').athletics[0].group_code == 'MFB-DL'
-        # Sandeep is busy.
-        assert len(Student.find_by_sid('5678901234').athletics) == 3
-        # Siegfried is a mug at everything.
-        inactive_student = Student.find_by_sid('890127492')
-        assert not inactive_student.is_active_asc
-        assert inactive_student.status_asc == 'Trouble'
-        assert len(inactive_student.athletics) == 5
-
-    def test_update_from_asc_api_fixture(self, app):
-        status = import_asc_athletes.update_from_asc_api()
+    def test_do_import_from_asc_fixture(self, app):
+        status = ImportAscAthletes().run()
         assert status is not None
         water_polo_team = Athletics.query.filter_by(group_code='MWP').first()
         assert len(water_polo_team.athletes) == 1
@@ -88,8 +53,8 @@ class TestImportAscAthletes:
         assert not inactive_student.is_active_asc
         assert inactive_student.status_asc == 'Beyond Aid'
         assert inactive_student.athletics[0].group_code == 'MWP'
-        assert(not status['errors'])
-        assert(not status['warnings'])
+        assert status is not False
+        assert (not status['warnings'])
         counts = status['change_counts']
         assert counts['deleted_students'] == 1
         assert counts['deleted_memberships'] == 7
@@ -98,10 +63,12 @@ class TestImportAscAthletes:
         assert True
 
     def test_update_safety_check(self, app):
+        this_acad_yr = app.config['ASC_THIS_ACAD_YR']
+        assert len(this_acad_yr)
         skinny_import = {
             '1166.3': {
                 'SID': '5678901234',
-                'AcadYr': '2017-18',
+                'AcadYr': this_acad_yr,
                 'IntensiveYN': 'No',
                 'SportCode': 'MTE',
                 'SportCodeCore': 'MTE',
@@ -113,174 +80,42 @@ class TestImportAscAthletes:
             },
         }
         modified_response = MockResponse(200, {}, json.dumps(skinny_import))
-        with register_mock(asc_athletes_api._get_current_feed, modified_response):
-            with_check = import_asc_athletes.update_from_asc_api()
-            assert with_check['errors'][0]
-            assert with_check['change_counts']['deleted_students'] == 0
-            without_check = import_asc_athletes.update_from_asc_api(force=True)
-            assert without_check['change_counts']['deleted_students'] > 0
+        with register_mock(asc_athletes_api._get_asc_feed_response, modified_response):
+            status = ImportAscAthletes().run()
+            assert status is False
 
-    def test_empty_import(self, app):
-        """Gracefully handles empty dataset."""
-        status = import_asc_athletes.load_student_athletes([])
-        assert {0} == set(status.values())
 
-    def test_students_on_multiple_teams(self, app):
-        """Maps one student to more than one team."""
-        jane_sid = '1234567890'
-        polo_code = 'WWP'
-        volleyball_code = 'WVB'
-        asc_data = [
-            asc_data_row(
-                jane_sid,
-                polo_code,
-                'Women\'s Water Polo',
-                'WWP',
-                'Women\'s Water Polo',
-                '2017-18',
-                'Yes',
-            ),
-            asc_data_row(
-                jane_sid,
-                volleyball_code,
-                'Women\'s Volleyball',
-                'WVB',
-                'Women\'s Volleyball',
-                '2017-18',
-                'Yes',
-            ),
-        ]
-        # Run import script
-        status = import_asc_athletes.load_student_athletes(asc_data)
-        assert 2 == status['new_team_groups']
-        assert 1 == status['new_students']
-        assert 2 == status['new_memberships']
-        polo_team = Athletics.query.filter_by(group_code=polo_code).first()
-        assert find_athlete(polo_team, jane_sid)
-        volleyball_team = Athletics.query.filter_by(group_code=volleyball_code).first()
-        assert find_athlete(volleyball_team, jane_sid)
-        assert True
+class TestAscAthletesApiUpdates:
 
-    def test_student_inactive(self, app):
-        """Only imports inactive students if they are assigned to a team."""
-        jane_sid = '1234567890'
-        polo_code = 'WWP'
-        asc_data = [
-            asc_data_row(
-                jane_sid,
-                polo_code,
-                'Women\'s Water Polo',
-                'WWP',
-                'Women\'s Water Polo',
-                '2017-18',
-                'No',
-                'Yes',
-                status='Not Active',
-            ),
-            asc_data_row(
-                '96',
-                '',
-                '',
-                '',
-                '',
-                '2017-18',
-                'No',
-                'Yes',
-                status='TvParty2nite',
-            ),
-        ]
-        # Run import script
-        status = import_asc_athletes.load_student_athletes(asc_data)
-        assert 1 == status['new_students']
-        saved_student = Student.find_by_sid(jane_sid)
-        assert saved_student.is_active_asc is False
-        assert saved_student.status_asc == 'Not Active'
+    def test_feed_stashing(self, app):
+        feed_date = '2018-01-31'
+        assert asc.get_cached_feed(feed_date) is None
+        status = ImportAscAthletes().run()
+        assert status['last_sync_date'] is None
+        assert status['this_sync_date'] == feed_date
+        api_results_count = status['api_results_count']
+        assert api_results_count == 9
+        stashed = asc.get_cached_feed(feed_date)
+        assert len(stashed) == 9
+        assert stashed[0]['SyncDate'] == feed_date
 
-    def test_student_half_active(self, app):
-        """A student who is active on one team is considered an active athlete."""
-        sid = '1234567890'
-        asc_data = [
-            asc_data_row(
-                sid,
-                'WWP',
-                'Women\'s Water Polo',
-                'WWP',
-                'Women\'s Water Polo',
-                '2017-18',
-                'No',
-                'Yes',
-                status='Not Active',
-            ),
-            asc_data_row(
-                sid,
-                'WFH',
-                'Women\'s Field Hockey',
-                'WFH',
-                'Women\'s Field Hockey',
-                '2017-18',
-                'Yes',
-                'Yes',
-                status='Practice',
-            ),
-            asc_data_row(
-                sid,
-                'WTE',
-                'Women\'s Tennis',
-                'WTE',
-                'Women\'s Tennis',
-                '2017-18',
-                'No',
-                'Yes',
-                status='Not Squad',
-            ),
-        ]
-        # Run import script
-        status = import_asc_athletes.load_student_athletes(asc_data)
-        assert 1 == status['new_students']
-        saved_student = Student.find_by_sid(sid)
-        assert saved_student.is_active_asc is True
-        assert len(saved_student.athletics) == 1
-        assert saved_student.athletics[0].group_code == 'WFH'
+    def test_last_sync_date(self, app):
+        first_date = '2018-01-21'
+        asc.confirm_sync(first_date)
+        status = ImportAscAthletes().run()
+        assert status['last_sync_date'] == first_date
+        assert status['this_sync_date'] == '2018-01-31'
 
-    def test_student_intensive(self, app):
-        """Marks intensive status if set."""
-        jane_sid = '1234567890'
-        polo_code = 'WWP'
-        asc_data = [
-            asc_data_row(
-                jane_sid,
-                polo_code,
-                'Women\'s Water Polo',
-                'WWP',
-                'Women\'s Water Polo',
-                '2017-18',
-                'Yes',
-                'Yes',
-            ),
-        ]
-        # Run import script
-        status = import_asc_athletes.load_student_athletes(asc_data)
-        assert 1 == status['new_students']
-        saved_student = Student.find_by_sid(jane_sid)
-        assert saved_student.in_intensive_cohort
-        assert saved_student.is_active_asc is True
+    def test_consistency_check(self, app):
+        bad_date = '"It\'s not you, it\'s me"'
+        with open(app.config['BASE_DIR'] + '/fixtures/asc_athletes.json') as file:
+            modified_response_body = file.read().replace('"2018-01-31"', bad_date, 1)
+            modified_response = MockResponse(200, {}, modified_response_body)
+            with register_mock(asc_athletes_api._get_asc_feed_response, modified_response):
+                assert ImportAscAthletes().run() is False
 
-    def test_ambiguous_group_name(self, app):
-        sid = '1234567890'
-        ambiguous_group = 'MFB'
-        asc_data = [
-            asc_data_row(
-                sid,
-                ambiguous_group,
-                'Football',
-                ambiguous_group,
-                'Football',
-                '2017-18',
-                'Yes',
-            ),
-        ]
-        # Run import script
-        status = import_asc_athletes.load_student_athletes(asc_data)
-        assert 1 == status['new_team_groups']
-        eccentric_football_group = Athletics.query.filter_by(group_code=ambiguous_group).first()
-        assert 'Football - Other' == eccentric_football_group.group_name
+    def test_repeat_date_not_stashed(self, app):
+        feed_date = '2018-01-31'
+        asc.confirm_sync(feed_date)
+        ImportAscAthletes().run()
+        assert asc.get_cached_feed(feed_date) is None

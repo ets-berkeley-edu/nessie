@@ -33,6 +33,7 @@ from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
 from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
+from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.jobs.scheduling import get_scheduler, PG_ADVISORY_LOCK_IDS
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
@@ -132,6 +133,13 @@ def sync_file_to_s3():
     if canvas_sync_job_id:
         update_canvas_sync_status(canvas_sync_job_id, key, 'received')
     job_started = SyncFileToS3(url=url, key=key, canvas_sync_job_id=canvas_sync_job_id).run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/import_asc_athletes', methods=['POST'])
+@auth_required
+def import_asc_athletes():
+    job_started = ImportAscAthletes().run_async()
     return respond_with_status(job_started)
 
 
