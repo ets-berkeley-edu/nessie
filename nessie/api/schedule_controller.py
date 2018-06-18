@@ -71,7 +71,7 @@ def update_job_schedule(job_id):
             job.reschedule(trigger='cron', **args)
         except Exception as e:
             raise BadRequestError(f'Error rescheduling job: {e}')
-    # Passing a empty JSON object will suspend this job's schedule.
+    # Passing a empty JSON object will pause this job.
     else:
         job.pause()
     job = sched.get_job(job_id)
