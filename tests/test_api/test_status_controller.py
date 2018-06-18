@@ -38,7 +38,8 @@ class TestStatusController:
         response = client.get('/api/ping')
         assert response.status_code == 200
         assert response.json['app'] is True
-        assert response.json['db'] is False
+        assert response.json['rds'] is True
+        assert response.json['redshift'] is False
 
     def test_version(self, client):
         """Reports a version."""
