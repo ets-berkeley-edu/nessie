@@ -24,21 +24,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-import base64
-import json
-import re
-
 import pytest
-
-
-def credentials(app):
-    return (app.config['WORKER_USERNAME'], app.config['WORKER_PASSWORD'])
-
-
-def post_basic_auth(client, path, credentials, data=None):
-    auth_string = bytes(credentials[0] + ':' + credentials[1], 'utf-8')
-    encoded_credentials = base64.b64encode(auth_string).decode('utf-8')
-    return client.post(path, data=json.dumps(data), headers={'Authorization': 'Basic ' + encoded_credentials})
+from tests.util import credentials, post_basic_auth
 
 
 @pytest.mark.parametrize(
@@ -127,22 +114,3 @@ class TestJobControllerSyncFileToS3:
         )
         assert response.status_code == 200
         assert response.json['status'] == 'started'
-
-
-class TestJobControllerSchedule:
-
-    def test_job_schedule(self, app, client):
-        """Returns job schedule based on default config values."""
-        jobs = client.get('/api/job/schedule').json
-        assert len(jobs) == 3
-        assert jobs[0]['id'] == 'job_sync_canvas_snapshots'
-        assert jobs[0]['components'] == ['SyncCanvasSnapshots']
-        assert jobs[0]['locked'] is False
-        assert jobs[1]['id'] == 'job_resync_canvas_snapshots'
-        assert jobs[1]['components'] == ['ResyncCanvasSnapshots']
-        assert jobs[1]['locked'] is False
-        assert jobs[2]['id'] == 'job_generate_all_tables'
-        assert jobs[2]['components'] == ['CreateCanvasSchema', 'CreateSisSchema', 'GenerateIntermediateTables', 'GenerateBoacAnalytics']
-        assert jobs[2]['locked'] is False
-        assert jobs[2]['trigger'] == "cron[hour='2', minute='0']"
-        assert re.match('\d{4}-\d{2}-\d{2} 02:00:00', jobs[2]['nextRun'])

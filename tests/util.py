@@ -23,7 +23,9 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import base64
 from contextlib import contextmanager
+import json
 import logging
 
 import boto3
@@ -62,3 +64,13 @@ def override_config(app, key, value):
     app.config[key] = value
     yield
     app.config[key] = old_value
+
+
+def credentials(app):
+    return (app.config['WORKER_USERNAME'], app.config['WORKER_PASSWORD'])
+
+
+def post_basic_auth(client, path, credentials, data=None):
+    auth_string = bytes(credentials[0] + ':' + credentials[1], 'utf-8')
+    encoded_credentials = base64.b64encode(auth_string).decode('utf-8')
+    return client.post(path, data=json.dumps(data), headers={'Authorization': 'Basic ' + encoded_credentials})
