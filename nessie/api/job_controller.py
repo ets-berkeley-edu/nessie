@@ -35,31 +35,10 @@ from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
 from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
-from nessie.jobs.scheduling import get_scheduler, PG_ADVISORY_LOCK_IDS
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
 from nessie.lib.http import tolerant_jsonify
 from nessie.lib.metadata import update_canvas_sync_status
-from nessie.models.util import get_granted_lock_ids
-
-
-@app.route('/api/job/schedule', methods=['GET'])
-def job_schedule():
-    sched = get_scheduler()
-    lock_ids = get_granted_lock_ids()
-
-    def job_dict(job):
-        job_components = job.args[0]
-        if not hasattr(job_components, '__iter__'):
-            job_components = [job_components]
-        return {
-            'id': job.id.lower(),
-            'components': [c.__name__ for c in job_components],
-            'trigger': str(job.trigger),
-            'nextRun': str(job.next_run_time),
-            'locked': (PG_ADVISORY_LOCK_IDS.get(job.id) in lock_ids),
-        }
-    return tolerant_jsonify([job_dict(job) for job in sched.get_jobs()])
 
 
 @app.route('/api/job/create_canvas_schema', methods=['POST'])

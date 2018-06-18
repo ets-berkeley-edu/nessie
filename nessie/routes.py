@@ -31,6 +31,7 @@ def register_routes(app):
     """Register app routes."""
     # Register API routes.
     import nessie.api.job_controller
+    import nessie.api.schedule_controller
     import nessie.api.status_controller
 
     # Register error handlers.

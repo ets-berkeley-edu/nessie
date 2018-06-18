@@ -59,7 +59,7 @@ def initialize_job_schedules(_app):
     app = _app
 
     global sched
-    if app.config['JOB_SCHEDULING_ENABLED'] and sched is None:
+    if app.config['JOB_SCHEDULING_ENABLED']:
         db_jobstore = SQLAlchemyJobStore(url=app.config['SQLALCHEMY_DATABASE_URI'], tablename='apscheduler_jobs')
         sched = BackgroundScheduler(jobstores={'default': db_jobstore})
         schedule_job(sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots)
