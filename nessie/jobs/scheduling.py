@@ -47,7 +47,7 @@ def get_scheduler():
     return sched
 
 
-def initialize_job_schedules(_app):
+def initialize_job_schedules(_app, force=False):
     from nessie.jobs.create_canvas_schema import CreateCanvasSchema
     from nessie.jobs.create_sis_schema import CreateSisSchema
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
@@ -62,34 +62,42 @@ def initialize_job_schedules(_app):
     if app.config['JOB_SCHEDULING_ENABLED']:
         db_jobstore = SQLAlchemyJobStore(url=app.config['SQLALCHEMY_DATABASE_URI'], tablename='apscheduler_jobs')
         sched = BackgroundScheduler(jobstores={'default': db_jobstore})
-        schedule_job(sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots)
-        schedule_job(sched, 'JOB_RESYNC_CANVAS_SNAPSHOTS', ResyncCanvasSnapshots)
+        sched.start()
+        schedule_job(sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots, force)
+        schedule_job(sched, 'JOB_RESYNC_CANVAS_SNAPSHOTS', ResyncCanvasSnapshots, force)
         schedule_chained_job(
-            sched, 'JOB_GENERATE_ALL_TABLES', [
+            sched,
+            'JOB_GENERATE_ALL_TABLES',
+            [
                 CreateCanvasSchema,
                 CreateSisSchema,
                 GenerateIntermediateTables,
                 GenerateBoacAnalytics,
             ],
+            force,
         )
-        sched.start()
 
 
-def add_job(sched, job_func, job_arg, job_id):
+def add_job(sched, job_func, job_arg, job_id, force=False):
     job_schedule = app.config.get(job_id)
     if job_schedule:
-        sched.add_job(job_func, 'cron', args=(job_arg, job_id), id=job_id, replace_existing=True, **job_schedule)
-        return job_schedule
+        existing_job = sched.get_job(job_id)
+        if existing_job and (force is False):
+            app.logger.info(f'Found existing cron trigger for job {job_id}, will not reschedule: {existing_job.next_run_time}')
+            return False
+        else:
+            sched.add_job(job_func, 'cron', args=(job_arg, job_id), id=job_id, replace_existing=True, **job_schedule)
+            return job_schedule
 
 
-def schedule_job(sched, job_id, job_class):
-    job_schedule = add_job(sched, start_background_job, job_class, job_id)
+def schedule_job(sched, job_id, job_class, force=False):
+    job_schedule = add_job(sched, start_background_job, job_class, job_id, force)
     if job_schedule:
         app.logger.info(f'Scheduled {job_class.__name__} job: {job_schedule}')
 
 
-def schedule_chained_job(sched, job_id, job_components):
-    job_schedule = add_job(sched, start_chained_job, job_components, job_id)
+def schedule_chained_job(sched, job_id, job_components, force=False):
+    job_schedule = add_job(sched, start_chained_job, job_components, job_id, force)
     if job_schedule:
         app.logger.info(f'Scheduled chained background job: {job_schedule}, ' + ', '.join([c.__name__ for c in job_components]))
 

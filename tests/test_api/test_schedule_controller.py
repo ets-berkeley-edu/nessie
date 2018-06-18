@@ -35,7 +35,7 @@ def scheduler(app):
     """Re-initialize job scheduler from configs on teardown so that changes don't persist."""
     yield
     from nessie.jobs.scheduling import initialize_job_schedules
-    initialize_job_schedules(app)
+    initialize_job_schedules(app, force=True)
 
 
 class TestGetSchedule:
