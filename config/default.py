@@ -86,6 +86,7 @@ LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM = 'canvas/path/to/current/term'
 LOCH_S3_CANVAS_DATA_PATH_DAILY = 'canvas/path/to/daily'
 LOCH_S3_CANVAS_DATA_PATH_HISTORICAL = 'canvas/path/to/historical'
 
+LOCH_S3_ASC_DATA_PATH = 'asc/path'
 LOCH_S3_SIS_DATA_PATH = 'sis/path'
 
 LOCH_CANVAS_DATA_REQUESTS_CUTOFF_DATE = '20180101'
@@ -102,6 +103,7 @@ REDSHIFT_USER = 'username'
 
 REDSHIFT_IAM_ROLE = 'iam role'
 
+REDSHIFT_SCHEMA_ASC = 'ASC schema name'
 REDSHIFT_SCHEMA_BOAC = 'BOAC schema name'
 REDSHIFT_SCHEMA_CANVAS = 'Canvas schema name'
 REDSHIFT_SCHEMA_INTERMEDIATE = 'Intermediate schema name'

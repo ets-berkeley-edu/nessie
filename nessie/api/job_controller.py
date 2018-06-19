@@ -29,6 +29,7 @@ from flask import current_app as app, request
 from nessie.api.auth_helper import auth_required
 from nessie.api.errors import BadRequestError
 from nessie.jobs.background_job import ChainedBackgroundJob
+from nessie.jobs.create_asc_schema import CreateAscSchema
 from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
@@ -45,6 +46,13 @@ from nessie.lib.metadata import update_canvas_sync_status
 @auth_required
 def create_canvas_schema():
     job_started = CreateCanvasSchema().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/create_asc_schema', methods=['POST'])
+@auth_required
+def create_asc_schema():
+    job_started = CreateAscSchema().run_async()
     return respond_with_status(job_started)
 
 
