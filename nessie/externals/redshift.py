@@ -27,8 +27,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """Client code to run queries against Redshift."""
 
 
-from contextlib import contextmanager
 from flask import current_app as app
+from nessie.lib.db import get_psycopg_cursor
 import psycopg2
 import psycopg2.extras
 import psycopg2.sql
@@ -92,7 +92,14 @@ def _execute(sql, operation, **kwargs):
         if kwargs:
             params = kwargs.pop('params', None)
             sql = psycopg2.sql.SQL(sql).format(**kwargs)
-        with get_cursor(operation) as cursor:
+        with get_psycopg_cursor(
+                operation=operation,
+                dbname=app.config.get('REDSHIFT_DATABASE'),
+                host=app.config.get('REDSHIFT_HOST'),
+                port=app.config.get('REDSHIFT_PORT'),
+                user=app.config.get('REDSHIFT_USER'),
+                password=app.config.get('REDSHIFT_PASSWORD'),
+        ) as cursor:
             cursor.execute(sql, params)
             if operation == 'read':
                 result = [row for row in cursor]
@@ -105,29 +112,3 @@ def _execute(sql, operation, **kwargs):
         error_str += f'on SQL: {sql}'
         app.logger.warn({'message': error_str})
     return result
-
-
-@contextmanager
-def get_cursor(operation='read'):
-    connection = None
-    cursor = None
-    if operation == 'write':
-        cursor_factory = None
-    else:
-        cursor_factory = psycopg2.extras.NamedTupleCursor
-    try:
-        connection = psycopg2.connect(
-            dbname=app.config.get('REDSHIFT_DATABASE'),
-            host=app.config.get('REDSHIFT_HOST'),
-            port=app.config.get('REDSHIFT_PORT'),
-            user=app.config.get('REDSHIFT_USER'),
-            password=app.config.get('REDSHIFT_PASSWORD'),
-        )
-        # Autocommit is required for EXTERNAL TABLE creation and deletion.
-        connection.autocommit = True
-        yield connection.cursor(cursor_factory=cursor_factory)
-    finally:
-        if cursor is not None:
-            cursor.close()
-        if connection is not None:
-            connection.close()

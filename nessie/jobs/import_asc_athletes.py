@@ -23,15 +23,20 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
+import os
+import tempfile
 from flask import current_app as app
 from nessie import db, std_commit
 from nessie.externals import calnet
+from nessie.externals import s3
 from nessie.externals.asc_athletes_api import get_asc_feed
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, get_s3_asc_daily_path
 from nessie.lib import asc
+from nessie.lib.db import get_psycopg_cursor
 from nessie.models.json_cache import JsonCache
 from nessie.models.student import Student
+import psycopg2
+import psycopg2.sql
 
 
 class ImportAscAthletes(BackgroundJob):
@@ -90,6 +95,18 @@ class ImportAscAthletes(BackgroundJob):
                 else:
                     status['change_counts'].update(_update_from_asc(api_results))
                     asc.confirm_sync(sync_date)
+                    # Dump contents of nessie db (RDS) to JSONs in tmp dir
+                    tmp_dir = f'{tempfile.mkdtemp()}/manifests'
+                    os.mkdir(tmp_dir, 0o777)
+                    s3_path = get_s3_asc_daily_path()
+                    for table_name in ['athletics', 'students', 'student_athletes']:
+                        sql = f'COPY (SELECT ROW_TO_JSON(a) FROM (SELECT * FROM {table_name}) a) TO STDOUT'
+                        file_path = f'{tmp_dir}/{table_name}.json'
+                        with open(file_path, 'w+') as results_json:
+                            with get_psycopg_cursor(operation='write', dsn=app.config.get('SQLALCHEMY_DATABASE_URI')) as cursor:
+                                cursor.copy_expert(sql=psycopg2.sql.SQL(sql), file=results_json)
+                                # Upload newly created CSV to S3
+                                s3.upload_data(open(file_path, 'r').read(), f'{s3_path}/{table_name}.json')
                     app.logger.info(f'ASC athletes API import job success: {str(status)}')
         return status
 
