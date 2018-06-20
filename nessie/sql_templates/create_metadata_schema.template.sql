@@ -25,6 +25,18 @@
 
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_metadata};
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_metadata}.background_job_status
+(
+    job_id VARCHAR NOT NULL,
+    # Possible 'status' values: 'started', 'succeeded', 'failed'
+    status VARCHAR NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    # Primary key constraints are not enforced by Redshift but are used in query planning.
+    # https://docs.aws.amazon.com/redshift/latest/dg/t_Defining_constraints.html
+    PRIMARY KEY (job_id)
+)
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_metadata}.canvas_sync_job_status
 (
     job_id VARCHAR NOT NULL,
@@ -47,8 +59,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_metadata}.canvas_sync_job_status
     details VARCHAR(4096),
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
-    # Primary key constraints are not enforced by Redshift but are used in query planning.
-    # https://docs.aws.amazon.com/redshift/latest/dg/t_Defining_constraints.html
     PRIMARY KEY (job_id, filename)
 )
 DISTKEY (job_id)

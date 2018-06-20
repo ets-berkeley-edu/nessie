@@ -24,18 +24,21 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-"""Simple parent class for background jobs."""
+"""Parent class for background jobs."""
 
 
+from contextlib import contextmanager
 from datetime import datetime
 import hashlib
 import os
 import re
 from threading import Thread
+import time
 
 from flask import current_app as app
 from nessie.externals import redshift
 from nessie.jobs.queue import get_job_queue
+from nessie.lib.metadata import create_background_job_status, update_background_job_status
 from nessie.lib.util import localize_datetime
 from nessie.models.util import advisory_unlock, try_advisory_lock
 
@@ -99,10 +102,31 @@ def verify_external_schema(schema, resolved_ddl):
     return True
 
 
+@contextmanager
+def advisory_lock(lock_id):
+    if not lock_id:
+        yield
+    elif try_advisory_lock(lock_id):
+        app.logger.info(f'Granted advisory lock {lock_id}; will execute the job.')
+        yield
+        if advisory_unlock(lock_id):
+            app.logger.info(f'Released advisory lock {lock_id}.')
+        else:
+            app.logger.error(f'Failed to release advisory lock {lock_id}.')
+    else:
+        app.logger.warn(f'Was not granted advisory lock {lock_id}; will not execute the job.')
+
+
 class BackgroundJob(object):
+
+    status_logging_enabled = True
 
     def __init__(self, **kwargs):
         self.job_args = kwargs
+
+    @classmethod
+    def generate_job_id(cls):
+        return '_'.join([cls.__name__, str(int(time.time()))])
 
     def run(self, **kwargs):
         pass
@@ -130,20 +154,20 @@ class BackgroundJob(object):
             return True
 
     def run_in_app_context(self, app_arg, **kwargs):
-        lock_id = kwargs.pop('lock_id', None)
         with app_arg.app_context():
-            if not lock_id:
-                self.run(**kwargs)
-                return
-            if try_advisory_lock(lock_id):
-                app.logger.info(f'Granted advisory lock {lock_id}; will execute the job.')
-                self.run(**kwargs)
-                if advisory_unlock(lock_id):
-                    app.logger.info(f'Released advisory lock {lock_id}.')
-                else:
-                    app.logger.error(f'Failed to release advisory lock {lock_id}.')
-            else:
-                app.logger.warn(f'Was not granted advisory lock {lock_id}; will not execute the job.')
+            self.run_wrapped(**kwargs)
+
+    def run_wrapped(self, **kwargs):
+        lock_id = kwargs.pop('lock_id', None)
+        with advisory_lock(lock_id):
+            job_id = self.generate_job_id()
+            if self.status_logging_enabled:
+                create_background_job_status(job_id)
+            result = self.run(**kwargs)
+            if self.status_logging_enabled:
+                status = 'succeeded' if result else 'failed'
+                update_background_job_status(job_id, status)
+            return result
 
 
 class ChainedBackgroundJob(BackgroundJob):

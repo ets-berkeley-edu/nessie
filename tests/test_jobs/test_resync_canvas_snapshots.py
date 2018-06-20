@@ -27,7 +27,7 @@ from nessie.externals import canvas_data, redshift
 from nessie.jobs.background_job import get_s3_canvas_daily_path
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.lib import metadata
-from tests.util import capture_app_logs
+from tests.util import assert_background_job_status, capture_app_logs
 
 
 class TestResyncCanvasSnapshots:
@@ -68,14 +68,15 @@ class TestResyncCanvasSnapshots:
             # The cleanup job requires an S3 connection. Since our mock S3 library (moto) doesn't play well with our
             # mock HTTP library (httpretty), disable it for tests.
             # TODO resolve the incompatibility, possibly by switching from httpretty to responses.
-            ResyncCanvasSnapshots().run(cleanup=False)
+            result = ResyncCanvasSnapshots().run_wrapped(cleanup=False)
+            assert result is True
+            assert_background_job_status('resync')
             assert f"Dispatched S3 resync of snapshot {stalled['filename']}" in caplog.text
             assert f"Dispatched S3 resync of snapshot {errored['filename']}" in caplog.text
             assert f"Dispatched S3 resync of snapshot {size_discrepancy['filename']}" in caplog.text
             assert '3 successful dispatches, 0 failures' in caplog.text
 
         assert redshift.fetch(f'SELECT count(*) FROM {schema}.canvas_sync_job_status')[0].count == 21
-
         resync_results = redshift.fetch(f"SELECT * FROM {schema}.canvas_sync_job_status WHERE job_id LIKE 'resync%'")
         assert len(resync_results) == 3
 

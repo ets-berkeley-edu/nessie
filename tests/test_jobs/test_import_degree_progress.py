@@ -25,18 +25,19 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from nessie.jobs.import_degree_progress import ImportDegreeProgress
 from nessie.models import json_cache
-from tests.util import capture_app_logs
+from tests.util import assert_background_job_status, capture_app_logs
 
 
 class TestImportDegreeProgress:
 
-    def test_import_loop(self, app, caplog):
+    def test_import_loop(self, app, caplog, metadata_db):
         """Loops through provided ids and attempts degree progress API import."""
         non_undergrad_csid = '9999999'
         brigitte_csid = '11667051'
 
         with capture_app_logs(app):
-            result = ImportDegreeProgress().run(csids=[non_undergrad_csid, brigitte_csid])
+            result = ImportDegreeProgress().run_wrapped(csids=[non_undergrad_csid, brigitte_csid])
+            assert_background_job_status('ImportDegreeProgress')
             assert result is True
             assert 'Starting SIS degree progress API import job for 2 students' in caplog.text
             assert 'SIS get_degree_progress failed for CSID 9999999' in caplog.text

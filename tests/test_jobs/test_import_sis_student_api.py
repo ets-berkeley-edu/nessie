@@ -26,20 +26,21 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from nessie.jobs.import_sis_student_api import ImportSisStudentApi
 from nessie.models import json_cache
 import pytest
-from tests.util import capture_app_logs
+from tests.util import assert_background_job_status, capture_app_logs
 
 
 class TestImportSisStudentApi:
 
-    def test_student_api_import_loop(self, app, caplog):
+    def test_student_api_import_loop(self, app, caplog, metadata_db):
         """Loops through provided ids and attempts SIS student API import."""
         bad_csid = '9999999'
         brigitte_csid = '11667051'
         doolittle_csid = '2345678901'
 
         with capture_app_logs(app):
-            result = ImportSisStudentApi().run(csids=[bad_csid, brigitte_csid, doolittle_csid])
+            result = ImportSisStudentApi().run_wrapped(csids=[bad_csid, brigitte_csid, doolittle_csid])
             assert result is True
+            assert_background_job_status('ImportSisStudentApi')
             assert 'Starting SIS student API import job for 3 students' in caplog.text
             assert 'SIS student API import failed for CSID 9999999' in caplog.text
             assert 'SIS student API import job completed: 2 succeeded, 1 failed' in caplog.text
