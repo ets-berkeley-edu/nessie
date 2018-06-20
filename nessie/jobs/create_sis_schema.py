@@ -71,15 +71,15 @@ class CreateSisSchema(BackgroundJob):
         enrollments_daily = s3.get_keys_with_prefix(s3_sis_daily + '/enrollments', full_objects=True)
         enrollments_historical = s3.get_keys_with_prefix(app.config['LOCH_S3_SIS_DATA_PATH'] + '/historical/enrollments', full_objects=True)
 
-        def to_manifest_entry(object):
+        def to_manifest_entry(_object):
             return {
-                'url': f"s3://{app.config['LOCH_S3_BUCKET']}/{object['Key']}",
-                'meta': {'content_length': object['Size']},
+                'url': f"s3://{app.config['LOCH_S3_BUCKET']}/{_object['Key']}",
+                'meta': {'content_length': _object['Size']},
             }
 
         def to_manifest(objects):
             return {
-                'entries': [to_manifest_entry(object) for object in objects],
+                'entries': [to_manifest_entry(o) for o in objects],
             }
 
         courses_manifest = json.dumps(to_manifest(courses_daily + courses_historical))

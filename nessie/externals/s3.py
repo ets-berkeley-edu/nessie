@@ -77,7 +77,7 @@ def get_keys_with_prefix(prefix, full_objects=False):
                 if full_objects:
                     objects += page['Contents']
                 else:
-                    objects += [object.get('Key') for object in page['Contents']]
+                    objects += [o.get('Key') for o in page['Contents']]
     except (ClientError, ConnectionError, ValueError) as e:
         app.logger.error(f'Error listing S3 keys with prefix: bucket={bucket}, prefix={prefix}, error={e}')
         return None
@@ -88,8 +88,8 @@ def get_object_text(key):
     client = get_client()
     bucket = app.config['LOCH_S3_BUCKET']
     try:
-        object = client.get_object(Bucket=bucket, Key=key)
-        contents = object.get('Body')
+        _object = client.get_object(Bucket=bucket, Key=key)
+        contents = _object.get('Body')
         if not contents:
             app.logger.error(f'Failed to get S3 object contents: bucket={bucket}, key={key})')
             return None
