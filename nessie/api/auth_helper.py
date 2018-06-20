@@ -40,4 +40,4 @@ def auth_required(f):
 
 
 def valid_worker_credentials(username, password):
-    return username == app.config['WORKER_USERNAME'] and password == app.config['WORKER_PASSWORD']
+    return username == app.config['API_USERNAME'] and password == app.config['API_PASSWORD']

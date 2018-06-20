@@ -41,6 +41,9 @@ CSRF_ENABLED = True
 CSRF_SESSION_KEY = 'secret'
 # Used to encrypt session cookie.
 SECRET_KEY = 'secret'
+# Used to authorize administrative API.
+API_USERNAME = 'username'
+API_PASSWORD = 'password'
 
 # Override in local configs.
 HOST = '0.0.0.0'
@@ -115,8 +118,6 @@ STUDENT_API_KEY = 'secretkey'
 STUDENT_API_URL = 'https://secreturl.berkeley.edu/students'
 
 WORKER_HOST = 'hard-working-nessie.berkeley.edu'
-WORKER_USERNAME = 'username'
-WORKER_PASSWORD = 'password'
 
 # True on worker nodes, false on master node.
 WORKER_QUEUE_ENABLED = False

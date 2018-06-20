@@ -56,7 +56,7 @@ def build_url(command):
 
 
 def request(url, data=None):
-    credentials = app.config['WORKER_USERNAME'] + ':' + app.config['WORKER_PASSWORD']
+    credentials = app.config['API_USERNAME'] + ':' + app.config['API_PASSWORD']
     authorization = 'Basic ' + base64.b64encode(credentials.encode('utf-8')).decode('utf-8')
     headers = {
         'Authorization': authorization,
