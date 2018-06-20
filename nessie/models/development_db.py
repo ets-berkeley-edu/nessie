@@ -28,7 +28,7 @@ from nessie import db, std_commit
 from nessie.models.athletics import Athletics
 from nessie.models.student import Student
 # Models below are included so that db.create_all will find them.
-from nessie.models.db_relationships import student_athletes  # noqa
+from nessie.models.db_relationships import student_athletes # noqa
 from nessie.models.json_cache import JsonCache # noqa
 from sqlalchemy.sql import text
 
@@ -107,12 +107,9 @@ def create_team_group(t):
     return athletics
 
 
-def create_student(sid, uid, first_name, last_name, team_groups, gpa, level, units, majors, in_intensive_cohort=False):
+def create_student(sid, team_groups, gpa, level, units, majors, in_intensive_cohort=False):
     student = Student(
         sid=sid,
-        uid=uid,
-        first_name=first_name,
-        last_name=last_name,
         in_intensive_cohort=in_intensive_cohort,
     )
     db.session.add(student)
@@ -130,10 +127,7 @@ def load_student_athletes():
     wt = create_team_group(womens_tennis)
     # Some students are on teams and some are not
     create_student(
-        uid='61889',
         sid='11667051',
-        first_name='Deborah',
-        last_name='Davies',
         team_groups=[wfh, wt],
         gpa=None,
         level=None,
@@ -142,10 +136,7 @@ def load_student_athletes():
         in_intensive_cohort=True,
     )
     create_student(
-        uid='1022796',
         sid='8901234567',
-        first_name='John David',
-        last_name='Crossman',
         team_groups=[],
         gpa='1.85',
         level='Freshman',
@@ -154,10 +145,7 @@ def load_student_athletes():
         in_intensive_cohort=True,
     )
     create_student(
-        uid='98765',
         sid='2345678901',
-        first_name='Dave',
-        last_name='Doolittle',
         team_groups=[fdb, fdl],
         gpa='3.495',
         level='Junior',
@@ -165,10 +153,7 @@ def load_student_athletes():
         majors=['Chemistry BS'],
     )
     create_student(
-        uid='242881',
         sid='3456789012',
-        first_name='Paul',
-        last_name='Kerschen',
         team_groups=[fdl],
         gpa='3.005',
         level='Junior',
@@ -177,10 +162,7 @@ def load_student_athletes():
         in_intensive_cohort=True,
     )
     create_student(
-        uid='1133399',
         sid='5678901234',
-        first_name='Sandeep',
-        last_name='Jayaprakash',
         team_groups=[fdb, fdl, mt],
         gpa='3.501',
         level='Senior',
@@ -188,10 +170,7 @@ def load_student_athletes():
         majors=['Letters & Sci Undeclared UG'],
     )
     create_student(
-        uid='1049291',
         sid='7890123456',
-        first_name='Paul',
-        last_name='Farestveit',
         team_groups=[mbb],
         gpa='3.90',
         level='Senior',
@@ -200,10 +179,7 @@ def load_student_athletes():
         in_intensive_cohort=True,
     )
     schlemiel = create_student(
-        uid='211159',
         sid='890127492',
-        first_name='Siegfried',
-        last_name='Schlemiel',
         # 'A mug is a mug in everything.' - Colonel Harrington
         team_groups=[fdb, fdl, mt, wfh, wt],
         gpa='0.40',

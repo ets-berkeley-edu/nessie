@@ -42,18 +42,15 @@ class Student(Base):
     __tablename__ = 'students'
 
     sid = db.Column(db.String(80), nullable=False, primary_key=True)
-    uid = db.Column(db.String(80))
-    first_name = db.Column(db.String(255), nullable=False)
-    last_name = db.Column(db.String(255), nullable=False)
     in_intensive_cohort = db.Column(db.Boolean, nullable=False, default=False)
     athletics = db.relationship('Athletics', secondary=student_athletes, back_populates='athletes')
     is_active_asc = db.Column(db.Boolean, nullable=False, default=True)
     status_asc = db.Column(db.String(80))
 
     def __repr__(self):
-        return f"""<Athlete sid={self.sid}, uid={self.uid}, first_name={self.first_name}, last_name={self.last_name},
-            in_intensive_cohort={self.in_intensive_cohort}, is_active_asc={self.is_active_asc},
-            status_asc={self.status_asc}, updated={self.updated_at}, created={self.created_at}>"""
+        return f"""<Athlete sid={self.sid}, in_intensive_cohort={self.in_intensive_cohort},
+            is_active_asc={self.is_active_asc}, status_asc={self.status_asc}, updated={self.updated_at},
+            created={self.created_at}>"""
 
     @classmethod
     def find_by_sid(cls, sid):
@@ -82,10 +79,6 @@ class Student(Base):
     def to_api_json(self):
         return {
             'sid': self.sid,
-            'uid': self.uid,
-            'firstName': self.first_name,
-            'lastName': self.last_name,
-            'name': self.first_name + ' ' + self.last_name,
             'inIntensiveCohort': self.in_intensive_cohort,
             'isActiveAsc': self.is_active_asc,
             'statusAsc': self.status_asc,

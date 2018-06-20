@@ -83,8 +83,3 @@ class TestRedshift:
         result = redshift.fetch('SELECT COUNT(*) FROM {schema}.students', schema=schema)
         assert len(result) == 1
         assert result[0].count == 7
-
-        result = redshift.fetch("SELECT last_name FROM {schema}.students WHERE first_name = 'Paul' ORDER BY last_name", schema=schema)
-        assert len(result) == 2
-        assert result[0].last_name == 'Farestveit'
-        assert result[1].last_name == 'Kerschen'

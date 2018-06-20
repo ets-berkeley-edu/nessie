@@ -51,15 +51,12 @@ LOCATION '{loch_s3_asc_data_path}';
 -- students
 CREATE EXTERNAL TABLE {redshift_schema_asc}.students(
     sid VARCHAR,
-    uid VARCHAR,
-    first_name VARCHAR,
-    last_name VARCHAR,
     in_intensive_cohort BOOLEAN,
     is_active_asc BOOLEAN,
     status_asc VARCHAR
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
-WITH SERDEPROPERTIES ( 'paths'='sid, uid, first_name, last_name, in_intensive_cohort, is_active_asc, status_asc' )
+WITH SERDEPROPERTIES ( 'paths'='sid, in_intensive_cohort, is_active_asc, status_asc' )
 LOCATION '{loch_s3_asc_data_path}';
 
 -- student_athletes
