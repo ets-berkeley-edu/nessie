@@ -105,7 +105,7 @@ class ImportAscAthletes(BackgroundJob):
                         with open(file_path, 'w+') as results_json:
                             with get_psycopg_cursor(operation='write', dsn=app.config.get('SQLALCHEMY_DATABASE_URI')) as cursor:
                                 cursor.copy_expert(sql=psycopg2.sql.SQL(sql), file=results_json)
-                                # Upload newly created CSV to S3
+                                # Upload newly created JSON to S3
                                 s3.upload_data(open(file_path, 'r').read(), f'{s3_path}/{table_name}.json')
                     app.logger.info(f'ASC athletes API import job success: {str(status)}')
         return status
