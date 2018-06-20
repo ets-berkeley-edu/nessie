@@ -67,7 +67,7 @@ def override_config(app, key, value):
 
 
 def credentials(app):
-    return (app.config['WORKER_USERNAME'], app.config['WORKER_PASSWORD'])
+    return (app.config['API_USERNAME'], app.config['API_PASSWORD'])
 
 
 def post_basic_auth(client, path, credentials, data=None):
