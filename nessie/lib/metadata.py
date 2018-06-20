@@ -100,5 +100,28 @@ def delete_canvas_snapshots(keys):
     return redshift.execute(sql, params=[tuple(filenames)], schema=_schema())
 
 
+def create_background_job_status(job_id):
+    sql = """INSERT INTO {schema}.background_job_status
+               (job_id, status, created_at, updated_at)
+               VALUES (%s, 'started', current_timestamp, current_timestamp)
+               """
+    return redshift.execute(
+        sql,
+        params=(job_id,),
+        schema=_schema(),
+    )
+
+
+def update_background_job_status(job_id, status):
+    sql = """UPDATE {schema}.background_job_status
+             SET status=%s, updated_at=current_timestamp
+             WHERE job_id=%s"""
+    return redshift.execute(
+        sql,
+        params=(status, job_id),
+        schema=_schema(),
+    )
+
+
 def _schema():
     return psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_METADATA'])

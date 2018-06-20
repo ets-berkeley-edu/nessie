@@ -114,6 +114,13 @@ def metadata_db(app):
     schema = app.config['REDSHIFT_SCHEMA_METADATA']
     redshift.execute(f'DROP SCHEMA IF EXISTS {schema} CASCADE')
     redshift.execute(f'CREATE SCHEMA IF NOT EXISTS {schema}')
+    redshift.execute(f"""CREATE TABLE IF NOT EXISTS {schema}.background_job_status
+    (
+        job_id VARCHAR NOT NULL,
+        status VARCHAR NOT NULL,
+        created_at TIMESTAMP NOT NULL,
+        updated_at TIMESTAMP NOT NULL
+    )""")
     redshift.execute(f"""CREATE TABLE IF NOT EXISTS {schema}.canvas_sync_job_status
     (
        job_id VARCHAR NOT NULL,

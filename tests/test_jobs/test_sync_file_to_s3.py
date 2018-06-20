@@ -69,22 +69,22 @@ class TestSyncFileToS3:
             assert result is False
 
             schema = app.config['REDSHIFT_SCHEMA_METADATA']
-            job_metadata = redshift.fetch(f'SELECT * FROM {schema}.canvas_sync_job_status')
+            sync_metadata = redshift.fetch(f'SELECT * FROM {schema}.canvas_sync_job_status')
             snapshot_metadata = redshift.fetch(f'SELECT * FROM {schema}.canvas_synced_snapshots')
 
-            assert len(job_metadata) == 2
-            assert job_metadata[0].job_id == 'job_1'
-            assert job_metadata[0].destination_url == 's3://bucket_name/canvas/sonnet_submission_dim/sonnet-xlv.txt'
-            assert job_metadata[0].status == 'complete'
-            assert job_metadata[0].source_size == 767
-            assert job_metadata[0].destination_size == 767
-            assert job_metadata[0].updated_at > job_metadata[0].created_at
-            assert job_metadata[1].job_id == 'job_2'
-            assert job_metadata[1].destination_url == 's3://bucket_name/canvas/sonnet_submission_dim/sonnet-xlv.txt'
-            assert job_metadata[1].status == 'duplicate'
-            assert job_metadata[1].source_size is None
-            assert job_metadata[1].destination_size is None
-            assert job_metadata[1].updated_at > job_metadata[1].created_at
+            assert len(sync_metadata) == 2
+            assert sync_metadata[0].job_id == 'job_1'
+            assert sync_metadata[0].destination_url == 's3://bucket_name/canvas/sonnet_submission_dim/sonnet-xlv.txt'
+            assert sync_metadata[0].status == 'complete'
+            assert sync_metadata[0].source_size == 767
+            assert sync_metadata[0].destination_size == 767
+            assert sync_metadata[0].updated_at > sync_metadata[0].created_at
+            assert sync_metadata[1].job_id == 'job_2'
+            assert sync_metadata[1].destination_url == 's3://bucket_name/canvas/sonnet_submission_dim/sonnet-xlv.txt'
+            assert sync_metadata[1].status == 'duplicate'
+            assert sync_metadata[1].source_size is None
+            assert sync_metadata[1].destination_size is None
+            assert sync_metadata[1].updated_at > sync_metadata[1].created_at
 
             assert len(snapshot_metadata) == 1
             assert snapshot_metadata[0].filename == 'sonnet-xlv.txt'

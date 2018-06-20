@@ -36,14 +36,14 @@ from nessie.lib import metadata
 from nessie.lib.dispatcher import dispatch
 
 
-def generate_job_id():
-    return 'resync_' + str(int(time.time()))
-
-
 class ResyncCanvasSnapshots(BackgroundJob):
 
+    @classmethod
+    def generate_job_id(cls):
+        return 'resync_' + str(int(time.time()))
+
     def run(self, cleanup=True):
-        job_id = generate_job_id()
+        job_id = self.generate_job_id()
         app.logger.info(f'Starting Canvas snapshot resync job... (id={job_id})')
         md = metadata.get_failures_from_last_sync()
         if not md['failures']:
@@ -87,3 +87,4 @@ class ResyncCanvasSnapshots(BackgroundJob):
                 successes += 1
 
         app.logger.info(f'Canvas snapshot resync job dispatched to workers ({successes} successful dispatches, {failures} failures).')
+        return True

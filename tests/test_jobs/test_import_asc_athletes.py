@@ -31,12 +31,14 @@ from nessie.lib import asc
 from nessie.lib.mockingbird import MockResponse, register_mock
 from nessie.models.athletics import Athletics
 from nessie.models.student import Student
+from tests.util import assert_background_job_status
 
 
 class TestImportAscAthletes:
 
-    def test_do_import_from_asc_fixture(self, app):
-        status = ImportAscAthletes().run()
+    def test_do_import_from_asc_fixture(self, app, metadata_db):
+        status = ImportAscAthletes().run_wrapped()
+        assert_background_job_status('ImportAscAthletes')
         assert status is not None
         water_polo_team = Athletics.query.filter_by(group_code='MWP').first()
         assert len(water_polo_team.athletes) == 1

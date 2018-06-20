@@ -59,14 +59,14 @@ def delete_objects_with_prefix(prefix, whitelist=[]):
         return False
 
 
-def generate_job_id():
-    return 'sync_' + str(int(time.time()))
-
-
 class SyncCanvasSnapshots(BackgroundJob):
 
+    @classmethod
+    def generate_job_id(cls):
+        return 'sync_' + str(int(time.time()))
+
     def run(self, cleanup=True):
-        job_id = generate_job_id()
+        job_id = self.generate_job_id()
         app.logger.info(f'Starting Canvas snapshot sync job... (id={job_id})')
 
         snapshot_response = canvas_data.get_snapshots()
@@ -120,3 +120,4 @@ class SyncCanvasSnapshots(BackgroundJob):
             if not delete_result:
                 app.logger.error('Cleanup of obsolete snapshots failed.')
         app.logger.info(f'Canvas snapshot sync job dispatched to workers ({success} successful dispatches, {failure} failures).')
+        return True

@@ -36,6 +36,9 @@ from nessie.lib.metadata import create_canvas_snapshot, update_canvas_sync_statu
 
 class SyncFileToS3(BackgroundJob):
 
+    # Disable default status logging, since more fine-grained logging is incorporated into the run method.
+    status_logging_enabled = False
+
     def run(self, url, key, canvas_sync_job_id=None):
         if canvas_sync_job_id:
             update_canvas_sync_status(canvas_sync_job_id, key, 'started')
