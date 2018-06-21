@@ -24,6 +24,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
+import os
+
 from flask import current_app as app
 from nessie.externals import redshift, s3
 import psycopg2.sql
@@ -31,12 +33,12 @@ import psycopg2.sql
 
 def create_canvas_sync_status(job_id, filename, canvas_table, source_url):
     sql = """INSERT INTO {schema}.canvas_sync_job_status
-               (job_id, filename, canvas_table, source_url, status, created_at, updated_at)
-               VALUES (%s, %s, %s, %s, 'created', current_timestamp, current_timestamp)
+               (job_id, filename, canvas_table, source_url, status, instance_id, created_at, updated_at)
+               VALUES (%s, %s, %s, %s, 'created', %s, current_timestamp, current_timestamp)
                """
     return redshift.execute(
         sql,
-        params=(job_id, filename, canvas_table, source_url),
+        params=(job_id, filename, canvas_table, source_url, _instance_id()),
         schema=_schema(),
     )
 
@@ -102,12 +104,12 @@ def delete_canvas_snapshots(keys):
 
 def create_background_job_status(job_id):
     sql = """INSERT INTO {schema}.background_job_status
-               (job_id, status, created_at, updated_at)
-               VALUES (%s, 'started', current_timestamp, current_timestamp)
+               (job_id, status, instance_id, created_at, updated_at)
+               VALUES (%s, 'started', %s, current_timestamp, current_timestamp)
                """
     return redshift.execute(
         sql,
-        params=(job_id,),
+        params=(job_id, _instance_id()),
         schema=_schema(),
     )
 
@@ -121,6 +123,10 @@ def update_background_job_status(job_id, status):
         params=(status, job_id),
         schema=_schema(),
     )
+
+
+def _instance_id():
+    return os.environ.get('EC2_INSTANCE_ID')
 
 
 def _schema():

@@ -118,6 +118,7 @@ def metadata_db(app):
     (
         job_id VARCHAR NOT NULL,
         status VARCHAR NOT NULL,
+        instance_id VARCHAR,
         created_at TIMESTAMP NOT NULL,
         updated_at TIMESTAMP NOT NULL
     )""")
@@ -132,6 +133,7 @@ def metadata_db(app):
        destination_size BIGINT,
        status VARCHAR NOT NULL,
        details VARCHAR,
+       instance_id VARCHAR,
        created_at TIMESTAMP NOT NULL,
        updated_at TIMESTAMP NOT NULL
     )""")
