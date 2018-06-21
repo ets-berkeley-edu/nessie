@@ -90,9 +90,6 @@ ALTER TABLE ONLY student_athletes
 
 CREATE TABLE students (
     sid character varying(80) NOT NULL,
-    uid character varying(80),
-    first_name character varying(255) NOT NULL,
-    last_name character varying(255) NOT NULL,
     in_intensive_cohort boolean DEFAULT false NOT NULL,
     is_active_asc boolean DEFAULT true NOT NULL,
     status_asc character varying(80),

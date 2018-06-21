@@ -42,22 +42,20 @@ import psycopg2.sql
 class ImportAscAthletes(BackgroundJob):
 
     def run(self, force=False):
-        app.logger.info(f'Starting ASC athletes API import job')
+        app.logger.info(f'ASC import: Fetch team and student athlete data from ASC API')
         api_results = get_asc_feed()
         if api_results is None:
-            app.logger.error('Could not fetch feed from ASC Athletes API')
+            app.logger.error('ASC import: ASC API returned zero results')
             status = False
         else:
             last_sync_date = _get_last_sync_date()
             sync_date = api_results[0]['SyncDate']
             if sync_date != api_results[-1]['SyncDate']:
-                app.logger.error(f"""
-                    Conflicting SyncDate values in ASC Athletes API: {api_results[0]} vs. {api_results[-1]}
-                """)
+                app.logger.error(f'ASC import: SyncDate conflict in ASC API: {api_results[0]} vs. {api_results[-1]}')
                 status = False
             elif last_sync_date == sync_date:
                 app.logger.warning(f"""
-                    Current SyncDate {sync_date} matches last SyncDate {last_sync_date}.
+                    ASC import: Current SyncDate {sync_date} matches last SyncDate {last_sync_date}.
                     Existing cache will not be overwritten
                 """)
                 status = False
@@ -82,15 +80,16 @@ class ImportAscAthletes(BackgroundJob):
                 }
                 if last_sync_date == sync_date:
                     last_feed = asc.get_cached_feed(sync_date)
-                    app.logger.warning(f'Current and previous ASC Athletes API had the same sync date: {sync_date}')
+                    app.logger.warning(f'ASC import: Current and previous feeds have the same sync date: {sync_date}')
                     old_only, new_only = _compare_rows(last_feed, api_results)
-                    app.logger.warning(f'Previous feed differences: {old_only} ; current feed differences: {new_only}')
-                    app.logger.warning('Overwriting previous feed in cache')
+                    app.logger.warning(f"""
+                        ASC import: Previous feed differences: {old_only}; current feed differences: {new_only}.
+                        Overwriting previous feed in cache.""")
                     _stash_feed(api_results)
                 safety = _safety_check_asc_api(api_results)
                 if not safety['safe']:
                     error = safety['message']
-                    app.logger.error(f'Error from ASC Athletes API: {error}')
+                    app.logger.error(f'ASC import error: {error}')
                     status = False
                 else:
                     status['change_counts'].update(_update_from_asc(api_results))
@@ -103,18 +102,20 @@ class ImportAscAthletes(BackgroundJob):
                         sql = f'COPY (SELECT ROW_TO_JSON(a) FROM (SELECT * FROM {table_name}) a) TO STDOUT'
                         file_path = f'{tmp_dir}/{table_name}.json'
                         with open(file_path, 'w+') as results_json:
-                            with get_psycopg_cursor(operation='write', dsn=app.config.get('SQLALCHEMY_DATABASE_URI')) as cursor:
+                            db_uri = app.config.get('SQLALCHEMY_DATABASE_URI')
+                            with get_psycopg_cursor(operation='write', dsn=db_uri) as cursor:
                                 cursor.copy_expert(sql=psycopg2.sql.SQL(sql), file=results_json)
                                 # Upload newly created JSON to S3
                                 s3.upload_data(open(file_path, 'r').read(), f'{s3_path}/{table_name}.json')
-                    app.logger.info(f'ASC athletes API import job success: {str(status)}')
+                    app.logger.info(f'ASC import: Successfully completed import job: {str(status)}')
         return status
 
 
 def _update_from_asc(asc_feed):
     status = asc.merge_student_athletes(asc_feed)
-    app.logger.info(f'{status}')
-    _merge_in_calnet_data()
+    app.logger.info(f'ASC import: status={status}')
+    # TODO: Merge in CalNet data elsewhere
+    # _merge_in_calnet_data()
     return status
 
 
@@ -123,9 +124,10 @@ def _safety_check_asc_api(feed):
     nbr_current_active = Student.query.filter(Student.is_active_asc.is_(True)).count()
     nbr_active_in_feed = len(set(r['SID'] for r in feed if r['ActiveYN'] == 'Yes'))
     if nbr_current_active > 4 and (nbr_current_active / 2.0 > nbr_active_in_feed):
+        remove_count = nbr_current_active - nbr_active_in_feed
         return {
             'safe': False,
-            'message': f'Import feed would remove {nbr_current_active - nbr_active_in_feed} out of {nbr_current_active} active athletes',
+            'message': f'Import feed would remove {remove_count} out of {nbr_current_active} active athletes',
         }
     else:
         return {'safe': True}

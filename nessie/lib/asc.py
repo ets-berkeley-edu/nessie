@@ -122,19 +122,19 @@ def _parse_all_rows(rows):
                 if sid in imported_students:
                     student = imported_students[sid]
                     if student['in_intensive_cohort'] is not in_intensive_cohort:
-                        app.logger.error(f'Unexpected conflict in import rows for SID {sid}')
+                        app.logger.error(f'ASC import: Unexpected conflict in import rows for sid={sid}')
                     # Any active team membership means the student is an active athlete,
                     # even if they happen not to be an active member of a different team.
                     # Until BOAC-460 is resolved, the app will discard inactive memberships of an
                     # otherwise active student.
                     if not student['is_active_asc'] and is_active_asc:
                         athletics = student['athletics']
-                        app.logger.warning(f'Will discard inactive memberships {athletics} for active SID {sid}')
+                        app.logger.warning(f'ASC import: Discard inactive memberships {athletics} for active sid={sid}')
                         student['athletics'] = []
                         student['is_active_asc'] = is_active_asc
                         student['status_asc'] = status_asc
                     elif student['is_active_asc'] and not is_active_asc:
-                        app.logger.warning(f'Will discard inactive memberships {group_code} for SID {sid}')
+                        app.logger.warning(f'ASC import: Discard inactive memberships {group_code} for sid={sid}')
                         continue
                 else:
                     student = {
@@ -155,7 +155,7 @@ def _parse_all_rows(rows):
                     }
             else:
                 sid = r['SID']
-                app.logger.error(f'Unmapped asc_code {asc_code} has ActiveYN for sid {sid}')
+                app.logger.error(f'ASC import: Unmapped asc_code {asc_code} has ActiveYN for sid={sid}')
     return imported_team_groups, imported_students
 
 
@@ -164,11 +164,14 @@ def _merge_athletics_import(imported_team_groups):
         'new_team_groups': 0,
         'changed_team_groups': 0,
     }
-    for team_group in imported_team_groups.values():
+    team_groups = imported_team_groups.values()
+    team_group_count = len(team_groups)
+    for index, team_group in enumerate(team_groups):
         group_code = team_group['group_code']
         existing_group = Athletics.query.filter(Athletics.group_code == group_code).first()
         if not existing_group:
-            app.logger.info(f'Adding new Athletics row: {team_group}')
+            group_name = team_group['group_name']
+            app.logger.info(f'ASC import: Team {index + 1} of {team_group_count} added: {group_name}')
             status['new_team_groups'] += 1
             athletics_row = Athletics(
                 group_code=group_code,
@@ -181,7 +184,7 @@ def _merge_athletics_import(imported_team_groups):
         elif (existing_group.group_name != team_group['group_name']) or (
                 existing_group.team_code != team_group['team_code']) or (
                 existing_group.team_name != team_group['team_name']):
-            app.logger.warning(f'Modifying Athletics row: {team_group} from {existing_group}')
+            app.logger.warning(f'ASC import: Team {index + 1} of {team_group_count} modified: {existing_group.group_name}')
             status['changed_team_groups'] += 1
             existing_group.group_name = team_group['group_name']
             existing_group.team_code = team_group['team_code']
@@ -203,39 +206,35 @@ def _merge_students_import(imported_students, delete_students):
     }
     existing_students = {row['sid']: row for row in Student.get_all('sid')}
     remaining_sids = set(existing_students.keys())
-    for student_import in imported_students.values():
-        sid = student_import['sid']
-        in_intensive_cohort = student_import['in_intensive_cohort']
-        is_active_asc = student_import['is_active_asc']
-        status_asc = student_import['status_asc']
-        team_group_codes = set(student_import['athletics'])
+    students = imported_students.values()
+    student_count = len(students)
+    app.logger.info(f'ASC import: {student_count} students will be updated')
+    for index, student in enumerate(students):
+        sid = student['sid']
+        in_intensive_cohort = student['in_intensive_cohort']
+        is_active_asc = student['is_active_asc']
+        status_asc = student['status_asc']
+        team_group_codes = set(student['athletics'])
         student_data = existing_students.get(sid, None)
         if not student_data:
-            app.logger.info(f'Adding new Student row: {student_import}')
             status['new_students'] += 1
-            student_row = Student(
+            student = Student(
                 sid=sid,
-                first_name='',
-                last_name='',
                 in_intensive_cohort=in_intensive_cohort,
                 is_active_asc=is_active_asc,
                 status_asc=status_asc,
             )
-            db.session.add(student_row)
+            db.session.add(student)
             std_commit()
-            _merge_memberships(sid, set([]), team_group_codes, status)
+            actions = _merge_memberships(sid, set([]), team_group_codes, status)
+            app.logger.info(f'ASC import: Student {index + 1} of {student_count} (sid={sid}) {", ".join(actions)}')
         else:
             remaining_sids.remove(sid)
-            if (
-                    student_data['inIntensiveCohort'] is not in_intensive_cohort
-            ) or (
-                    student_data['isActiveAsc'] is not is_active_asc
-
-            ) or (
-                    student_data['statusAsc'] != status_asc
-            ):
-                app.logger.warning(f'Modifying Student row to {student_import} from {student_data}')
-                if student_data['isActiveAsc'] is not is_active_asc:
+            _in_intensive = student_data['inIntensiveCohort']
+            _is_active_asc = student_data['isActiveAsc']
+            _status_asc = student_data['statusAsc']
+            if (_in_intensive is not in_intensive_cohort) or (_is_active_asc is not is_active_asc) or (_status_asc != status_asc):
+                if _is_active_asc is not is_active_asc:
                     if is_active_asc:
                         status['activated_students'] += 1
                     else:
@@ -249,36 +248,36 @@ def _merge_students_import(imported_students, delete_students):
                 db.session.merge(student_row)
                 std_commit()
             existing_group_codes = {mem['groupCode'] for mem in student_data.get('athletics', [])}
+            actions = []
             if team_group_codes != existing_group_codes:
-                _merge_memberships(sid, existing_group_codes, team_group_codes, status)
+                actions = _merge_memberships(sid, existing_group_codes, team_group_codes, status)
+            app.logger.warning(f'ASC import: Student {index + 1} of {student_count} modified (sid={sid}): {", ".join(actions)}')
     if delete_students:
         for sid in remaining_sids:
             app.logger.warning(f'Deleting Student SID {sid}')
             status['deleted_students'] += 1
             Student.delete_student(sid)
     else:
-        app.logger.warning(f'Will not delete unspecified Students: {remaining_sids}')
+        app.logger.warning(f'ASC import: Do NOT delete unspecified students: {remaining_sids}')
     return status
 
 
 def _merge_memberships(sid, old_group_codes, new_group_codes, status):
+    actions_taken = []
     student_row = Student.find_by_sid(sid)
     for removed_group_code in (old_group_codes - new_group_codes):
         team_group = Athletics.query.filter(Athletics.group_code == removed_group_code).first()
-        app.logger.warning(f'Removing SID {sid} from team group {team_group}')
+        actions_taken.append(f'removed from team {team_group.group_name}')
         status['deleted_memberships'] += 1
         team_group.athletes.remove(student_row)
     for added_group_code in (new_group_codes - old_group_codes):
         team_group = Athletics.query.filter(Athletics.group_code == added_group_code).first()
-        app.logger.info(f'Adding SID {sid} to team group {team_group}')
+        actions_taken.append(f'added to team \'{team_group.group_name}\'')
         status['new_memberships'] += 1
         team_group.athletes.append(student_row)
     std_commit()
-    return status
+    return actions_taken
 
 
 def _unambiguous_group_name(asc_group_name, group_code):
-    if group_code in AMBIGUOUS_GROUP_CODES:
-        return f'{asc_group_name} - Other'
-    else:
-        return asc_group_name
+    return f'{asc_group_name} - Other' if group_code in AMBIGUOUS_GROUP_CODES else asc_group_name
