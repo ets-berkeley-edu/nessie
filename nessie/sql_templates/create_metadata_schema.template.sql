@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_metadata}.background_job_status
     job_id VARCHAR NOT NULL,
     # Possible 'status' values: 'started', 'succeeded', 'failed'
     status VARCHAR NOT NULL,
+    instance_id VARCHAR,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     # Primary key constraints are not enforced by Redshift but are used in query planning.
@@ -57,6 +58,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_metadata}.canvas_sync_job_status
     status VARCHAR NOT NULL,
     # Further details on job status. Currently used only for errors.
     details VARCHAR(4096),
+    instance_id VARCHAR,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     PRIMARY KEY (job_id, filename)
