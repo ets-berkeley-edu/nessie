@@ -32,8 +32,9 @@ from nessie.lib.mockingbird import fixture
 def get_asc_feed():
     response = _get_asc_feed_response()
     if not response or not hasattr(response, 'json'):
-        app.logger.error(f'Bad response from ASC Athletes API: {response}')
-        return None
+        error = f'ASC API unexpected response: {response}'
+        app.logger.error(error)
+        return {'error': error}
     # The API responds with a hash whose values correspond to the rows of a CSV or TSV.
     asc_hash = response.json()
     return [r for r in asc_hash.values()]
