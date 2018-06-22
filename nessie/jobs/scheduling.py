@@ -40,6 +40,7 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_SYNC_CANVAS_SNAPSHOTS': 1000,
     'JOB_RESYNC_CANVAS_SNAPSHOTS': 2000,
     'JOB_GENERATE_ALL_TABLES': 3000,
+    'JOB_REFRESH_BOAC_CACHE': 4000,
 }
 
 
@@ -52,6 +53,7 @@ def initialize_job_schedules(_app, force=False):
     from nessie.jobs.create_sis_schema import CreateSisSchema
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
     from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
+    from nessie.jobs.refresh_boac_cache import RefreshBoacCache
     from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
     from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 
@@ -76,6 +78,7 @@ def initialize_job_schedules(_app, force=False):
             ],
             force,
         )
+        schedule_job(sched, 'JOB_REFRESH_BOAC_CACHE', RefreshBoacCache, force)
 
 
 def add_job(sched, job_func, job_arg, job_id, force=False):
