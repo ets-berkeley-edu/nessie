@@ -44,8 +44,11 @@ class ImportAscAthletes(BackgroundJob):
     def run(self, force=False):
         app.logger.info(f'ASC import: Fetch team and student athlete data from ASC API')
         api_results = get_asc_feed()
-        if api_results is None:
-            app.logger.error('ASC import: ASC API returned zero results')
+        if 'error' in api_results:
+            app.logger.error('ASC import: Error from external API: {}'.format(api_results['error']))
+            status = False
+        elif not api_results:
+            app.logger.error('ASC import: API returned zero students')
             status = False
         else:
             last_sync_date = _get_last_sync_date()
