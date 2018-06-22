@@ -174,6 +174,7 @@ class ChainedBackgroundJob(BackgroundJob):
 
     def run(self, steps):
         for step in steps:
-            if not step.run():
+            if not step.run_wrapped():
                 app.logger.error('Component job returned an error; aborting remainder of chain.')
-                break
+                return False
+        return True

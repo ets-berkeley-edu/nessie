@@ -48,7 +48,7 @@ class ResyncCanvasSnapshots(BackgroundJob):
         md = metadata.get_failures_from_last_sync()
         if not md['failures']:
             app.logger.info(f"No failures found for job_id {md['job_id']}, skipping resync.")
-            return
+            return True
         app.logger.info(f"Found {len(md['failures'])} failures for job_id {md['job_id']}, attempting resync.")
 
         failures = 0
