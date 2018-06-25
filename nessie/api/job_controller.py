@@ -35,6 +35,7 @@ from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
 from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
+from nessie.jobs.import_calnet_data import ImportCalNetData
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
@@ -127,6 +128,13 @@ def sync_file_to_s3():
 @auth_required
 def import_asc_athletes():
     job_started = ImportAscAthletes().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/import_calnet_data', methods=['POST'])
+@auth_required
+def import_calnet_data():
+    job_started = ImportCalNetData().run_async()
     return respond_with_status(job_started)
 
 

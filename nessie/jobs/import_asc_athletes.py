@@ -27,7 +27,6 @@ import os
 import tempfile
 from flask import current_app as app
 from nessie import db, std_commit
-from nessie.externals import calnet
 from nessie.externals import s3
 from nessie.externals.asc_athletes_api import get_asc_feed
 from nessie.jobs.background_job import BackgroundJob, get_s3_asc_daily_path
@@ -41,7 +40,7 @@ import psycopg2.sql
 
 class ImportAscAthletes(BackgroundJob):
 
-    def run(self, force=False):
+    def run(self):
         app.logger.info(f'ASC import: Fetch team and student athlete data from ASC API')
         api_results = get_asc_feed()
         if 'error' in api_results:
@@ -95,31 +94,39 @@ class ImportAscAthletes(BackgroundJob):
                     app.logger.error(f'ASC import error: {error}')
                     status = False
                 else:
-                    status['change_counts'].update(_update_from_asc(api_results))
+                    change_counts = asc.merge_student_athletes(api_results)
+                    app.logger.info(f'ASC import: change_counts={change_counts}')
+                    status['change_counts'].update(change_counts)
                     asc.confirm_sync(sync_date)
-                    # Dump contents of nessie db (RDS) to JSONs in tmp dir
-                    tmp_dir = f'{tempfile.mkdtemp()}/manifests'
-                    os.mkdir(tmp_dir, 0o777)
-                    s3_path = get_s3_asc_daily_path()
-                    for table_name in ['athletics', 'students', 'student_athletes']:
-                        sql = f'COPY (SELECT ROW_TO_JSON(a) FROM (SELECT * FROM {table_name}) a) TO STDOUT'
-                        file_path = f'{tmp_dir}/{table_name}.json'
-                        with open(file_path, 'w+') as results_json:
-                            db_uri = app.config.get('SQLALCHEMY_DATABASE_URI')
-                            with get_psycopg_cursor(operation='write', dsn=db_uri) as cursor:
-                                cursor.copy_expert(sql=psycopg2.sql.SQL(sql), file=results_json)
-                                # Upload newly created JSON to S3
-                                s3.upload_data(open(file_path, 'r').read(), f'{s3_path}/{table_name}.json')
+                    _export_rds_to_s3()
                     app.logger.info(f'ASC import: Successfully completed import job: {str(status)}')
         return status
 
 
-def _update_from_asc(asc_feed):
-    status = asc.merge_student_athletes(asc_feed)
-    app.logger.info(f'ASC import: status={status}')
-    # TODO: Merge in CalNet data elsewhere
-    # _merge_in_calnet_data()
-    return status
+def _export_rds_to_s3():
+    schema = {
+        'athletics': 'group_code, group_name, team_code, team_name',
+        'students': 'sid, in_intensive_cohort, is_active_asc, status_asc',
+        'student_athletes': 'group_code, sid',
+    }
+    tmp_dir = f'{tempfile.mkdtemp()}'
+    if not os.path.exists(tmp_dir):
+        os.makedirs(tmp_dir, 0o777)
+
+    def results_file_path(_table_name):
+        return f'{tmp_dir}/{_table_name}.json'
+    # Dump contents of nessie db (RDS) to JSONs in tmp dir
+    for table_name, columns in schema.items():
+        sql = f'COPY (SELECT ROW_TO_JSON(row) FROM (SELECT {columns} FROM {table_name}) row) TO STDOUT'
+        with open(results_file_path(table_name), 'w+') as query_results_file:
+            db_uri = app.config.get('SQLALCHEMY_DATABASE_URI')
+            with get_psycopg_cursor(operation='write', dsn=db_uri) as cursor:
+                cursor.copy_expert(sql=psycopg2.sql.SQL(sql), file=query_results_file)
+    # Upload newly created JSON to S3
+    s3_path = get_s3_asc_daily_path()
+    for table_name, columns in schema.items():
+        file_path = results_file_path(table_name)
+        s3.upload_data(open(file_path, 'r').read(), f'{s3_path}/{table_name}/{table_name}.json')
 
 
 def _safety_check_asc_api(feed):
@@ -164,44 +171,6 @@ def _sorted_imports(import_rows):
     rows = [{k: v for k, v in r.items() if k in used_fields} for r in import_rows]
     rows = sorted(rows, key=lambda row: (row['SID'], row['SportCode']))
     return rows
-
-
-def _merge_in_calnet_data():
-    students = Student.query.all()
-    app.logger.info(f'Fetch CalNet data for {len(students)} students')
-    _update_student_attributes(students)
-    app.logger.info(f'Modified {len(db.session.dirty)} student records from calnet')
-    std_commit()
-
-
-def _update_student_attributes(students=None):
-    sid_map = {}
-    for student in students:
-        sid_map.setdefault(student.sid, []).append(student)
-    sids = list(sid_map.keys())
-
-    all_attributes = calnet.client(app).search_csids(sids)
-    if len(sids) != len(all_attributes):
-        app.logger.warning(f'Looked for {len(sids)} SIDs but only found {len(all_attributes)}')
-
-    # Update db
-    for a in all_attributes:
-        # Since we searched LDAP by SID, we can be fairly sure that the results have SIDs.
-        sid = a['csid']
-        name_split = a['sortable_name'].split(',') if 'sortable_name' in a else ''
-        full_name = [name.strip() for name in reversed(name_split)]
-        for m in sid_map[sid]:
-            new_uid = a['uid']
-            if m.uid != new_uid:
-                app.logger.info(f'For SID {sid}, changing UID {m.uid} to {new_uid}')
-                m.uid = new_uid
-            new_first_name = full_name[0] if len(full_name) else ''
-            new_last_name = full_name[1] if len(full_name) > 1 else ''
-            if (m.first_name != new_first_name) or (m.last_name != new_last_name):
-                app.logger.info(f'For SID {sid}, changing name "{m.first_name} {m.last_name}" to "{new_first_name} {new_last_name}"')
-                m.first_name = new_first_name
-                m.last_name = new_last_name
-    return students
 
 
 def _stash_feed(rows):
