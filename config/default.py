@@ -109,6 +109,7 @@ REDSHIFT_IAM_ROLE = 'iam role'
 
 REDSHIFT_SCHEMA_ASC = 'ASC schema name'
 REDSHIFT_SCHEMA_BOAC = 'BOAC schema name'
+REDSHIFT_SCHEMA_CALNET = 'CalNet schema name'
 REDSHIFT_SCHEMA_CANVAS = 'Canvas schema name'
 REDSHIFT_SCHEMA_INTERMEDIATE = 'Intermediate schema name'
 REDSHIFT_SCHEMA_METADATA = 'Metadata schema name'

@@ -36,12 +36,12 @@ class ImportCalNetData(BackgroundJob):
     def run(self):
         students = Student.query.all()
         if len(students):
-            app.logger.info(f'CalNet import: Fetch data of {len(students)} students')
+            app.logger.info(f'CalNet import: Preparing to fetch data of {len(students)} students')
             _put_calnet_data_to_s3([s.sid for s in students])
             app.logger.info('CalNet import: done')
             status = True
         else:
-            app.logger.error('ASC import: API returned zero students')
+            app.logger.error('CalNet import: Zero students found in RDS')
             status = False
         return status
 
@@ -53,15 +53,29 @@ def _put_calnet_data_to_s3(sids):
         missing = set(sids) - set(ldap_sids)
         app.logger.warning(f'Looked for {len(sids)} SIDs but only found {len(all_attributes)} : missing {missing}')
 
-    students = []
-    for a in all_attributes:
-        sortable_name = a['sortable_name'] if 'sortable_name' in a else ''
-        name_split = sortable_name.split(',')
-        full_name = [name.strip() for name in reversed(name_split)]
-        students.append({
-            'sid': a['csid'],
-            'uid': a['uid'],
-            'first_name': full_name[0] if len(full_name) else '',
-            'last_name': full_name[1] if len(full_name) > 1 else '',
-        })
-    s3.upload_data(json.dumps(students), f'{get_s3_calnet_daily_path()}/calnet.json')
+    serialized_data = ''
+    total_count = len(all_attributes)
+    for index, a in enumerate(all_attributes):
+        sid = a['csid']
+        app.logger.info(f'CalNet import: Fetch attributes of student {sid} ({index + 1} of {total_count})')
+        affiliations = a['affiliations']
+        first_name, last_name = _split_sortable_name(a)
+        # JsonSerDe in Redshift schema creation requires one and only one JSON record per line in text file in S3.
+        serialized_data += json.dumps({
+            'affiliations': ','.join(affiliations) if isinstance(affiliations, list) else affiliations,
+            'campus_email': a['campus_email'],
+            'email': a['email'],
+            'first_name': first_name,
+            'last_name': last_name,
+            'ldap_uid': a['uid'],
+            'sid': sid,
+        }) + '\n'
+    s3.upload_data(serialized_data, f'{get_s3_calnet_daily_path()}/persons.json')
+
+
+def _split_sortable_name(a):
+    name_split = a['sortable_name'].split(',') if 'sortable_name' in a else []
+    full_name = [name.strip() for name in reversed(name_split)]
+    first_name = full_name[0] if len(full_name) else ''
+    last_name = full_name[1] if len(full_name) > 1 else ''
+    return first_name, last_name
