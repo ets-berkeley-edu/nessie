@@ -45,8 +45,8 @@ CREATE EXTERNAL TABLE {redshift_schema_asc}.athletics(
     team_name VARCHAR
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
-WITH SERDEPROPERTIES ( 'paths'='group_code, group_name, team_code, team_name' )
-LOCATION '{loch_s3_asc_data_path}';
+WITH SERDEPROPERTIES ('paths'='group_code, group_name, team_code, team_name')
+LOCATION '{loch_s3_asc_data_path}/athletics/';
 
 -- students
 CREATE EXTERNAL TABLE {redshift_schema_asc}.students(
@@ -56,8 +56,8 @@ CREATE EXTERNAL TABLE {redshift_schema_asc}.students(
     status_asc VARCHAR
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
-WITH SERDEPROPERTIES ( 'paths'='sid, in_intensive_cohort, is_active_asc, status_asc' )
-LOCATION '{loch_s3_asc_data_path}';
+WITH SERDEPROPERTIES ('paths'='sid, in_intensive_cohort, is_active_asc, status_asc')
+LOCATION '{loch_s3_asc_data_path}/students/';
 
 -- student_athletes
 CREATE EXTERNAL TABLE {redshift_schema_asc}.student_athletes(
@@ -65,5 +65,5 @@ CREATE EXTERNAL TABLE {redshift_schema_asc}.student_athletes(
     sid VARCHAR
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
-WITH SERDEPROPERTIES ( 'paths'='group_code, sid' )
-LOCATION '{loch_s3_asc_data_path}';
+WITH SERDEPROPERTIES ('paths'='group_code, sid')
+LOCATION '{loch_s3_asc_data_path}/student_athletes/';

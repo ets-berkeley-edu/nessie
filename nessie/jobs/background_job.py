@@ -57,6 +57,12 @@ def get_s3_sis_daily_path(cutoff=datetime.now()):
     return app.config['LOCH_S3_SIS_DATA_PATH'] + '/daily/' + today_hash + '-' + today
 
 
+def get_s3_calnet_daily_path(cutoff=datetime.now()):
+    today = localize_datetime(cutoff).strftime('%Y-%m-%d')
+    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
+    return app.config['LOCH_S3_CALNET_DATA_PATH'] + '/daily/' + today_hash + '-' + today
+
+
 def get_s3_asc_daily_path(cutoff=datetime.now()):
     today = localize_datetime(cutoff).strftime('%Y-%m-%d')
     today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
@@ -74,7 +80,7 @@ def resolve_sql_template(sql_filename):
         'redshift_schema_metadata': app.config['REDSHIFT_SCHEMA_METADATA'],
         'redshift_schema_sis': app.config['REDSHIFT_SCHEMA_SIS'],
         'redshift_iam_role': app.config['REDSHIFT_IAM_ROLE'],
-        'loch_s3_asc_data_path': s3_prefix + app.config['LOCH_S3_ASC_DATA_PATH'],
+        'loch_s3_asc_data_path': s3_prefix + get_s3_asc_daily_path(),
         'loch_s3_canvas_data_path_today': s3_prefix + get_s3_canvas_daily_path(),
         'loch_s3_canvas_data_path_historical': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_HISTORICAL'],
         'loch_s3_canvas_data_path_current_term': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'],
