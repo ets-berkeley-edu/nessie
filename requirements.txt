@@ -14,6 +14,12 @@ xmltodict==0.11.0
 # ETS fork of https://github.com/RaRe-Technologies/smart_open, with added support for S3 upload arguments.
 https://github.com/ets-berkeley-edu/smart_open/archive/master.zip
 
+# Dependencies for pandas 0.21.1. Note that pandas is not included in this requirements.txt file because
+# of potential conflicts during installation; it must be separately installed once its dependencies are
+# in place.
+numpy==1.14.5
+python-dateutil==2.7.3
+
 # For testing
 
 https://github.com/gabrielfalcao/HTTPretty/archive/master.zip

@@ -36,7 +36,7 @@ def get_psycopg_cursor(operation='read', **kwargs):
     if operation == 'write':
         cursor_factory = None
     else:
-        cursor_factory = psycopg2.extras.NamedTupleCursor
+        cursor_factory = psycopg2.extras.DictCursor
     try:
         connection = psycopg2.connect(**kwargs)
         # Autocommit is required for EXTERNAL TABLE creation and deletion.

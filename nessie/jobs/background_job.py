@@ -100,8 +100,9 @@ def verify_external_schema(schema, resolved_ddl):
         if 'historical_requests' in table:
             continue
         result = redshift.fetch(f'SELECT COUNT(*) FROM {table}')
-        if result and result[0] and result[0].count:
-            app.logger.info(f'Verified external table {table} ({result[0].count} rows).')
+        if result and result[0] and result[0]['count']:
+            count = result[0]['count']
+            app.logger.info(f'Verified external table {table} ({count} rows).')
         else:
             app.logger.error(f'Failed to verify external table {table}: aborting job.')
             return False

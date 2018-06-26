@@ -48,14 +48,14 @@ def get_failures_from_last_sync():
     failures = []
 
     job_id_result = redshift.fetch(
-        """SELECT MAX(job_id) FROM {schema}.canvas_sync_job_status WHERE job_id LIKE %s""",
+        """SELECT MAX(job_id) AS last_job_id FROM {schema}.canvas_sync_job_status WHERE job_id LIKE %s""",
         params=['sync%%'],
         schema=_schema(),
     )
     if not job_id_result:
         app.logger.error('Failed to retrieve id for last sync job')
     else:
-        last_job_id = job_id_result[0][0]
+        last_job_id = job_id_result[0]['last_job_id']
         failures_query = """SELECT * FROM {schema}.canvas_sync_job_status WHERE job_id = %s
             AND (status NOT IN ('complete', 'duplicate') OR destination_size != source_size)"""
         failures = redshift.fetch(failures_query, params=[last_job_id], schema=_schema())

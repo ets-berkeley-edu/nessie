@@ -67,6 +67,8 @@ DEGREE_PROGRESS_API_URL = 'https://secreturl.berkeley.edu/PSFT_CS'
 DEGREE_PROGRESS_API_USERNAME = 'secretuser'
 DEGREE_PROGRESS_API_PASSWORD = 'secretpassword'
 
+EARLIEST_TERM = 'Fall 2013'
+
 ENROLLMENTS_API_ID = 'secretid'
 ENROLLMENTS_API_KEY = 'secretkey'
 ENROLLMENTS_API_URL = 'https://secreturl.berkeley.edu/enrollments'

@@ -64,7 +64,7 @@ class TestResyncCanvasSnapshots:
         schema = app.config['REDSHIFT_SCHEMA_METADATA']
 
         with capture_app_logs(app):
-            assert redshift.fetch(f'SELECT count(*) FROM {schema}.canvas_sync_job_status')[0].count == 18
+            assert redshift.fetch(f'SELECT count(*) FROM {schema}.canvas_sync_job_status')[0]['count'] == 18
             # The cleanup job requires an S3 connection. Since our mock S3 library (moto) doesn't play well with our
             # mock HTTP library (httpretty), disable it for tests.
             # TODO resolve the incompatibility, possibly by switching from httpretty to responses.
@@ -76,18 +76,18 @@ class TestResyncCanvasSnapshots:
             assert f"Dispatched S3 resync of snapshot {size_discrepancy['filename']}" in caplog.text
             assert '3 successful dispatches, 0 failures' in caplog.text
 
-        assert redshift.fetch(f'SELECT count(*) FROM {schema}.canvas_sync_job_status')[0].count == 21
+        assert redshift.fetch(f'SELECT count(*) FROM {schema}.canvas_sync_job_status')[0]['count'] == 21
         resync_results = redshift.fetch(f"SELECT * FROM {schema}.canvas_sync_job_status WHERE job_id LIKE 'resync%'")
         assert len(resync_results) == 3
 
         urls = []
         for r in resync_results:
-            assert r.job_id.startswith('resync_')
-            assert r.filename
-            assert r.canvas_table
-            assert r.created_at
-            assert r.updated_at
-            urls.append(r.source_url)
+            assert r['job_id'].startswith('resync_')
+            assert r['filename']
+            assert r['canvas_table']
+            assert r['created_at']
+            assert r['updated_at']
+            urls.append(r['source_url'])
         assert stalled['url'] in urls
         assert errored['url'] in urls
         assert size_discrepancy['url'] in urls
