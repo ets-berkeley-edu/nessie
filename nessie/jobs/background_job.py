@@ -43,6 +43,18 @@ from nessie.lib.util import localize_datetime
 from nessie.models.util import advisory_unlock, try_advisory_lock
 
 
+def get_s3_asc_daily_path(cutoff=datetime.now()):
+    today = localize_datetime(cutoff).strftime('%Y-%m-%d')
+    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
+    return app.config['LOCH_S3_ASC_DATA_PATH'] + '/daily/' + today_hash + '-' + today
+
+
+def get_s3_calnet_daily_path(cutoff=datetime.now()):
+    today = localize_datetime(cutoff).strftime('%Y-%m-%d')
+    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
+    return app.config['LOCH_S3_CALNET_DATA_PATH'] + '/daily/' + today_hash + '-' + today
+
+
 def get_s3_canvas_daily_path():
     # TODO Temporarily share Data Loch's existing hash algorithm, even if it doesn't match PDG standard practice.
     # today = localize_datetime(datetime.now()).strftime('%Y-%m-%d')
@@ -57,30 +69,20 @@ def get_s3_sis_daily_path(cutoff=datetime.now()):
     return app.config['LOCH_S3_SIS_DATA_PATH'] + '/daily/' + today_hash + '-' + today
 
 
-def get_s3_calnet_daily_path(cutoff=datetime.now()):
-    today = localize_datetime(cutoff).strftime('%Y-%m-%d')
-    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
-    return app.config['LOCH_S3_CALNET_DATA_PATH'] + '/daily/' + today_hash + '-' + today
-
-
-def get_s3_asc_daily_path(cutoff=datetime.now()):
-    today = localize_datetime(cutoff).strftime('%Y-%m-%d')
-    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
-    return app.config['LOCH_S3_ASC_DATA_PATH'] + '/daily/' + today_hash + '-' + today
-
-
 def resolve_sql_template(sql_filename):
     """Our DDL template files are simple enough to use standard Python string formatting."""
     s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
     template_data = {
         'redshift_schema_asc': app.config['REDSHIFT_SCHEMA_ASC'],
         'redshift_schema_boac': app.config['REDSHIFT_SCHEMA_BOAC'],
+        'redshift_schema_calnet': app.config['REDSHIFT_SCHEMA_CALNET'],
         'redshift_schema_canvas': app.config['REDSHIFT_SCHEMA_CANVAS'],
         'redshift_schema_intermediate': app.config['REDSHIFT_SCHEMA_INTERMEDIATE'],
         'redshift_schema_metadata': app.config['REDSHIFT_SCHEMA_METADATA'],
         'redshift_schema_sis': app.config['REDSHIFT_SCHEMA_SIS'],
         'redshift_iam_role': app.config['REDSHIFT_IAM_ROLE'],
         'loch_s3_asc_data_path': s3_prefix + get_s3_asc_daily_path(),
+        'loch_s3_calnet_data_path': s3_prefix + get_s3_calnet_daily_path(),
         'loch_s3_canvas_data_path_today': s3_prefix + get_s3_canvas_daily_path(),
         'loch_s3_canvas_data_path_historical': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_HISTORICAL'],
         'loch_s3_canvas_data_path_current_term': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'],
