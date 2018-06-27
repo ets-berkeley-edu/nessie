@@ -57,6 +57,9 @@ ASC_ATHLETES_API_URL = 'https://secreturl.berkeley.edu/intensives.php?AcadYr=201
 ASC_ATHLETES_API_KEY = 'secret'
 ASC_THIS_ACAD_YR = '2017-18'
 
+BOAC_API_KEY = 'Regents of the University of California'
+BOAC_CACHE_REFRESH_URL = 'https://ets-boac.example.com/api/refresh_me'
+
 CANVAS_DATA_API_KEY = 'some key'
 CANVAS_DATA_API_SECRET = 'some secret'
 CANVAS_DATA_HOST = 'foo.instructure.com'
@@ -79,6 +82,7 @@ JOB_SCHEDULING_ENABLED = True
 JOB_SYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 0}
 JOB_RESYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 40}
 JOB_GENERATE_ALL_TABLES = {'hour': 2, 'minute': 00}
+JOB_REFRESH_BOAC_CACHE = {'hour': 3, 'minute': 00}
 
 LDAP_HOST = 'nds-test.berkeley.edu'
 LDAP_BIND = 'mybind'
