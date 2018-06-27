@@ -143,11 +143,11 @@ AS (
              * TODO : Canvas's recently added late_policy_status feature can override this logic.
              */
             WHEN {redshift_schema_canvas}.submission_dim.submitted_at IS NOT NULL
-                AND {redshift_schema_canvas}.assignment_dim.due_at IS NOT NULL
                 AND assignment_type.submittable IS NOT NULL
                 AND most_lenient_override.due_at < {redshift_schema_canvas}.submission_dim.submitted_at
                 OR (
                     most_lenient_override.due_at IS NULL
+                    AND {redshift_schema_canvas}.assignment_dim.due_at IS NOT NULL
                     AND {redshift_schema_canvas}.assignment_dim.due_at <
                     {redshift_schema_canvas}.submission_dim.submitted_at +
                     CASE {redshift_schema_canvas}.submission_dim.submission_type WHEN 'online_quiz' THEN interval '1 minute' ELSE interval '0 minutes' END
@@ -158,11 +158,11 @@ AS (
              * Submitted assignments with a known submission date before or equal to a known due date are on time.
              */
             WHEN {redshift_schema_canvas}.submission_dim.submitted_at IS NOT NULL
-                AND {redshift_schema_canvas}.assignment_dim.due_at IS NOT NULL
                 AND assignment_type.submittable IS NOT NULL
                 AND most_lenient_override.due_at >= {redshift_schema_canvas}.submission_dim.submitted_at
                 OR (
                     most_lenient_override.due_at IS NULL
+                    AND {redshift_schema_canvas}.assignment_dim.due_at IS NOT NULL
                     AND {redshift_schema_canvas}.assignment_dim.due_at >=
                     {redshift_schema_canvas}.submission_dim.submitted_at +
                     CASE {redshift_schema_canvas}.submission_dim.submission_type WHEN 'online_quiz' THEN interval '1 minute' ELSE interval '0 minutes' END
