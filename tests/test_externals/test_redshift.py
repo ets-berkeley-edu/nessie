@@ -82,4 +82,4 @@ class TestRedshift:
         schema = psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_BOAC'])
         result = redshift.fetch('SELECT COUNT(*) FROM {schema}.students', schema=schema)
         assert len(result) == 1
-        assert result[0].count == 7
+        assert result[0]['count'] == 7

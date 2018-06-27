@@ -26,8 +26,24 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import re
 
+from flask import current_app as app
+
 
 """A utility module collecting logic specific to the Berkeley campus."""
+
+
+def reverse_terms_until(stop_term):
+    term_name = app.config['CURRENT_TERM']
+    while True:
+        yield term_name
+        if (term_name == stop_term) or (term_name == app.config['EARLIEST_TERM']):
+            break
+        if term_name.startswith('Fall'):
+            term_name = term_name.replace('Fall', 'Summer')
+        elif term_name.startswith('Summer'):
+            term_name = term_name.replace('Summer', 'Spring')
+        elif term_name.startswith('Spring'):
+            term_name = 'Fall ' + str(int(term_name[-4:]) - 1)
 
 
 def sis_term_id_for_name(term_name=None):
@@ -51,3 +67,21 @@ def term_name_for_sis_id(sis_id=None):
             '8': 'Fall',
         }
         return season_codes[sis_id[3:4]] + ' 20' + sis_id[1:3]
+
+
+def current_term_id():
+    term_name = app.config['CURRENT_TERM']
+    return sis_term_id_for_name(term_name)
+
+
+def translate_grading_basis(code):
+    bases = {
+        'CNC': 'C/NC',
+        'EPN': 'P/NP',
+        'ESU': 'S/U',
+        'GRD': 'Letter',
+        'LAW': 'Law',
+        'PNP': 'P/NP',
+        'SUS': 'S/U',
+    }
+    return bases.get(code) or code

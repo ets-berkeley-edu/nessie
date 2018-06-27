@@ -76,8 +76,13 @@ def drop_external_schema(schema_name):
 
 
 def fetch(sql, **kwargs):
-    """Execute SQL read operation with optional keyword arguments for formatting, returning an array of named tuples."""
-    return _execute(sql, 'read', **kwargs)
+    """Execute SQL read operation with optional keyword arguments for formatting, returning an array of dictionaries."""
+    rows = _execute(sql, 'read', **kwargs)
+    if rows is None:
+        return None
+    else:
+        # For Pandas compatibility, copy psycopg's list-like object of dict-like objects to a real list of dicts.
+        return [r.copy() for r in rows]
 
 
 def _execute(sql, operation, **kwargs):

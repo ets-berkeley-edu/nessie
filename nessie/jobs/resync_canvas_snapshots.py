@@ -55,35 +55,35 @@ class ResyncCanvasSnapshots(BackgroundJob):
         successes = 0
 
         for failure in md['failures']:
-            if cleanup and failure.destination_url:
-                destination_key = failure.destination_url.split(app.config['LOCH_S3_BUCKET'] + '/')[1]
+            if cleanup and failure['destination_url']:
+                destination_key = failure['destination_url'].split(app.config['LOCH_S3_BUCKET'] + '/')[1]
                 if s3.delete_objects([destination_key]):
                     metadata.delete_canvas_snapshots([destination_key])
                 else:
                     app.logger.error(f'Could not delete failed snapshot from S3 (url={failure.destination_url})')
             metadata.create_canvas_sync_status(
                 job_id=job_id,
-                filename=failure.filename,
-                canvas_table=failure.canvas_table,
+                filename=failure['filename'],
+                canvas_table=failure['canvas_table'],
                 # The original signed source URL will remain valid if the resync job is run within an hour of the sync job.
                 # TODO Add logic to fetch a new signed URL from the Canvas Data API for older jobs.
-                source_url=failure.source_url,
+                source_url=failure['source_url'],
             )
 
             # Regenerate the S3 key, since the failed job may not have progressed far enough to store a destination URL in its metadata.
-            if failure.canvas_table == 'requests':
-                key_components = [app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'], failure.canvas_table, failure.filename]
+            if failure['canvas_table'] == 'requests':
+                key_components = [app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'], failure['canvas_table'], failure['filename']]
             else:
-                key_components = [get_s3_canvas_daily_path(), failure.canvas_table, failure.filename]
+                key_components = [get_s3_canvas_daily_path(), failure['canvas_table'], failure['filename']]
             key = '/'.join(key_components)
-            response = dispatch('sync_file_to_s3', data={'canvas_sync_job_id': job_id, 'url': failure.source_url, 'key': key})
+            response = dispatch('sync_file_to_s3', data={'canvas_sync_job_id': job_id, 'url': failure['source_url'], 'key': key})
 
             if not response:
-                app.logger.error('Failed to dispatch S3 resync of snapshot ' + failure.filename)
+                app.logger.error('Failed to dispatch S3 resync of snapshot ' + failure['filename'])
                 metadata.update_canvas_sync_status(job_id, key, 'error', details=f'Failed to dispatch: {response}')
                 failures += 1
             else:
-                app.logger.info('Dispatched S3 resync of snapshot ' + failure.filename)
+                app.logger.info('Dispatched S3 resync of snapshot ' + failure['filename'])
                 successes += 1
 
         app.logger.info(f'Canvas snapshot resync job dispatched to workers ({successes} successful dispatches, {failures} failures).')
