@@ -67,7 +67,11 @@ def drop_external_schema(schema_name):
     sql = f'SELECT * FROM SVV_EXTERNAL_TABLES WHERE SCHEMANAME=\'{schema_name}\''
     results = fetch(sql)
     if results:
-        tables = [r.tablename for r in results]
+        def _get_tablename(r):
+            # We tolerate both dict and object when parsing result row
+            return r['tablename'] if 'tablename' in r else r.tablename
+
+        tables = [_get_tablename(r) for r in results]
         for table in tables:
             sql = f'DROP TABLE {schema_name}.{table} CASCADE'
             execute(sql)
