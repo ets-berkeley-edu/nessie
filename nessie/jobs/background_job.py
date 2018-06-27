@@ -63,6 +63,14 @@ def get_s3_canvas_daily_path():
     return app.config['LOCH_S3_CANVAS_DATA_PATH_DAILY'] + '/' + today_hash + '-' + today
 
 
+def get_s3_coe_daily_path(cutoff=datetime.now()):
+    # TODO: When COE is delivering data daily then unleash the following logic
+    # today = localize_datetime(cutoff).strftime('%Y-%m-%d')
+    # today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
+    # return app.config['LOCH_S3_COE_DATA_PATH'] + '/daily/' + today_hash + '-' + today
+    return app.config['LOCH_S3_COE_DATA_PATH']
+
+
 def get_s3_sis_daily_path(cutoff=datetime.now()):
     today = localize_datetime(cutoff).strftime('%Y-%m-%d')
     today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
@@ -77,6 +85,7 @@ def resolve_sql_template(sql_filename):
         'redshift_schema_boac': app.config['REDSHIFT_SCHEMA_BOAC'],
         'redshift_schema_calnet': app.config['REDSHIFT_SCHEMA_CALNET'],
         'redshift_schema_canvas': app.config['REDSHIFT_SCHEMA_CANVAS'],
+        'redshift_schema_coe': app.config['REDSHIFT_SCHEMA_COE'],
         'redshift_schema_intermediate': app.config['REDSHIFT_SCHEMA_INTERMEDIATE'],
         'redshift_schema_metadata': app.config['REDSHIFT_SCHEMA_METADATA'],
         'redshift_schema_sis': app.config['REDSHIFT_SCHEMA_SIS'],
@@ -86,6 +95,7 @@ def resolve_sql_template(sql_filename):
         'loch_s3_canvas_data_path_today': s3_prefix + get_s3_canvas_daily_path(),
         'loch_s3_canvas_data_path_historical': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_HISTORICAL'],
         'loch_s3_canvas_data_path_current_term': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'],
+        'loch_s3_coe_data_path': s3_prefix + get_s3_coe_daily_path(),
         'loch_s3_sis_data_path': s3_prefix + app.config['LOCH_S3_SIS_DATA_PATH'],
     }
     with open(app.config['BASE_DIR'] + f'/nessie/sql_templates/{sql_filename}', encoding='utf-8') as file:
