@@ -77,7 +77,7 @@ def get_s3_sis_daily_path(cutoff=datetime.now()):
     return app.config['LOCH_S3_SIS_DATA_PATH'] + '/daily/' + today_hash + '-' + today
 
 
-def resolve_sql_template(sql_filename):
+def resolve_sql_template(sql_filename, **kwargs):
     """Our DDL template files are simple enough to use standard Python string formatting."""
     s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
     template_data = {
@@ -89,6 +89,7 @@ def resolve_sql_template(sql_filename):
         'redshift_schema_intermediate': app.config['REDSHIFT_SCHEMA_INTERMEDIATE'],
         'redshift_schema_metadata': app.config['REDSHIFT_SCHEMA_METADATA'],
         'redshift_schema_sis': app.config['REDSHIFT_SCHEMA_SIS'],
+        'redshift_schema_student': app.config['REDSHIFT_SCHEMA_STUDENT'],
         'redshift_iam_role': app.config['REDSHIFT_IAM_ROLE'],
         'loch_s3_asc_data_path': s3_prefix + get_s3_asc_daily_path(),
         'loch_s3_calnet_data_path': s3_prefix + get_s3_calnet_daily_path(),
@@ -98,6 +99,8 @@ def resolve_sql_template(sql_filename):
         'loch_s3_coe_data_path': s3_prefix + get_s3_coe_daily_path(),
         'loch_s3_sis_data_path': s3_prefix + app.config['LOCH_S3_SIS_DATA_PATH'],
     }
+    # Kwargs may be passed in to modify default template data.
+    template_data.update(kwargs)
     with open(app.config['BASE_DIR'] + f'/nessie/sql_templates/{sql_filename}', encoding='utf-8') as file:
         template_string = file.read()
     return template_string.format(**template_data)

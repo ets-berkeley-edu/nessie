@@ -24,32 +24,12 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-import inspect
-
-from flask import current_app as app
-import pytz
+from nessie.lib import util
 
 
-"""Generic utilities."""
+class TestUtil:
+    """Generic utilities."""
 
-
-def fill_pattern_from_args(pattern, func, *args, **kw):
-    return pattern.format(**get_args_dict(func, *args, **kw))
-
-
-def get_args_dict(func, *args, **kw):
-    arg_names = inspect.getfullargspec(func)[0]
-    resp = dict(zip(arg_names, args))
-    resp.update(kw)
-    return resp
-
-
-def localize_datetime(dt):
-    return dt.astimezone(pytz.timezone(app.config['TIMEZONE']))
-
-
-def vacuum_whitespace(_str):
-    """Collapse multiple-whitespace sequences into a single space; remove leading and trailing whitespace."""
-    if not _str:
-        return None
-    return ' '.join(_str.split())
+    def test_vacuum_whitespace(self):
+        """Cleans up leading, trailing, and repeated whitespace."""
+        assert util.vacuum_whitespace('  Firstname    Lastname   ') == 'Firstname Lastname'
