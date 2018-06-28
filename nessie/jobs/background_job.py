@@ -125,15 +125,18 @@ def verify_external_schema(schema, resolved_ddl):
 def advisory_lock(lock_id):
     if not lock_id:
         yield
-    elif try_advisory_lock(lock_id):
-        app.logger.info(f'Granted advisory lock {lock_id}; will execute the job.')
-        yield
-        if advisory_unlock(lock_id):
-            app.logger.info(f'Released advisory lock {lock_id}.')
-        else:
-            app.logger.error(f'Failed to release advisory lock {lock_id}.')
     else:
-        app.logger.warn(f'Was not granted advisory lock {lock_id}; will not execute the job.')
+        (locked, pid) = try_advisory_lock(lock_id)
+        if locked:
+            app.logger.info(f'Granted advisory lock {lock_id} for PID {pid}; will execute the job.')
+            yield
+            (unlocked, pid) = advisory_unlock(lock_id)
+            if unlocked:
+                app.logger.info(f'Released advisory lock {lock_id} for PID {pid}.')
+            else:
+                app.logger.error(f'Failed to release advisory lock {lock_id} for PID {pid}.')
+        else:
+            app.logger.warn(f'Was not granted advisory lock {lock_id} for PID {pid}; will not execute the job.')
 
 
 class BackgroundJob(object):
