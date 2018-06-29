@@ -24,7 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-"""Logic for merged student profile generation."""
+"""Logic for merged student profile and term generation."""
 
 
 from itertools import groupby
@@ -34,20 +34,22 @@ import operator
 from flask import current_app as app
 from nessie.externals import redshift
 from nessie.jobs.background_job import BackgroundJob, resolve_sql_template
-from nessie.lib import queries
+from nessie.lib import berkeley, queries
+from nessie.lib.analytics import mean_course_analytics_for_user
 from nessie.merged.sis_profile import get_merged_sis_profile
+from nessie.merged.student_terms import get_canvas_courses_feed, get_merged_enrollment_term
 import psycopg2.sql
 
 
-class GenerateMergedProfiles(BackgroundJob):
+class GenerateMergedStudentFeeds(BackgroundJob):
 
     destination_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
     destination_schema_identifier = psycopg2.sql.Identifier(destination_schema)
     staging_schema = destination_schema + '_staging'
     staging_schema_identifier = psycopg2.sql.Identifier(staging_schema)
 
-    def run(self):
-        """Loop through all records stored in the Calnet external schema and write merged profile data to the internal student schema."""
+    def run(self, term_id=None):
+        """Loop through all records stored in the Calnet external schema and write merged student data to the internal student schema."""
         app.logger.info(f'Starting merged profile generation job...')
         staging_schema_ddl = resolve_sql_template('create_student_schema.template.sql', redshift_schema_student=self.staging_schema)
         if not redshift.execute_ddl_script(staging_schema_ddl):
@@ -59,9 +61,11 @@ class GenerateMergedProfiles(BackgroundJob):
             calnet_schema=psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_CALNET']),
         )
         for sid, profile_group in groupby(calnet_profiles, operator.itemgetter('sid')):
-            self.generate_merged_profile(sid, list(profile_group)[0])
+            merged_profile = self.generate_merged_profile(sid, list(profile_group)[0])
+            self.generate_merged_enrollment_terms(merged_profile, term_id)
 
-        for table in ['student_profiles', 'student_academic_status', 'student_majors']:
+        tables = ['student_profiles', 'student_academic_status', 'student_majors', 'student_enrollment_terms']
+        for table in tables:
             result = redshift.fetch(
                 'SELECT COUNT(*) FROM {schema}.{table}',
                 schema=self.staging_schema_identifier,
@@ -81,7 +85,7 @@ class GenerateMergedProfiles(BackgroundJob):
             redshift.execute('ROLLBACK TRANSACTION')
             return False
 
-        for table in ['student_profiles', 'student_academic_status', 'student_majors']:
+        for table in tables:
             result = redshift.execute(
                 'INSERT INTO {schema}.{table} (SELECT * FROM {staging_schema}.{table})',
                 schema=self.destination_schema_identifier,
@@ -125,26 +129,57 @@ class GenerateMergedProfiles(BackgroundJob):
         if not result:
             app.logger.error(f'Insert failed into {self.staging_schema}.student_profiles: (sid={sid})')
 
-        if not sis_profile:
-            return
-
-        level = sis_profile.get('level', {}).get('code')
-        gpa = sis_profile.get('cumulativeGPA')
-        units = sis_profile.get('cumulativeUnits')
-        result = redshift.execute(
-            'INSERT INTO {schema}.student_academic_status (sid, level, gpa, units) VALUES (%s, %s, %s, %s)',
-            params=(sid, level, gpa, units),
-            schema=self.staging_schema_identifier,
-        )
-        if not result:
-            app.logger.error(f'Insert failed into {self.staging_schema}.student_academic_status:\
-                              (sid={sid}, level={level}, gpa={gpa}, units={units})')
-        for plan in sis_profile.get('plans', []):
-            major = plan['description']
+        if sis_profile:
+            level = sis_profile.get('level', {}).get('code')
+            gpa = sis_profile.get('cumulativeGPA')
+            units = sis_profile.get('cumulativeUnits')
             result = redshift.execute(
-                'INSERT INTO {schema}.student_majors (sid, major) VALUES (%s, %s)',
-                params=(sid, major),
+                'INSERT INTO {schema}.student_academic_status (sid, level, gpa, units) VALUES (%s, %s, %s, %s)',
+                params=(sid, level, gpa, units),
                 schema=self.staging_schema_identifier,
             )
             if not result:
-                app.logger.error(f'Insert failed into {self.staging_schema}.student_majors: (sid={sid}, major={major})')
+                app.logger.error(f'Insert failed into {self.staging_schema}.student_academic_status:\
+                                  (sid={sid}, level={level}, gpa={gpa}, units={units})')
+            for plan in sis_profile.get('plans', []):
+                major = plan['description']
+                result = redshift.execute(
+                    'INSERT INTO {schema}.student_majors (sid, major) VALUES (%s, %s)',
+                    params=(sid, major),
+                    schema=self.staging_schema_identifier,
+                )
+                if not result:
+                    app.logger.error(f'Insert failed into {self.staging_schema}.student_majors: (sid={sid}, major={major})')
+        return merged_profile
+
+    def generate_merged_enrollment_terms(self, merged_profile, term_id=None):
+        matriculation_term = merged_profile.get('sisProfile', {}).get('matriculation')
+        terms_for_student = berkeley.reverse_terms_until(matriculation_term or app.config['EARLIEST_TERM'])
+        term_ids_for_student = [berkeley.sis_term_id_for_name(t) for t in terms_for_student]
+        if term_id and term_id not in term_ids_for_student:
+            return
+
+        uid = merged_profile.get('uid')
+        sid = merged_profile.get('sid')
+        canvas_user_id = merged_profile.get('canvasUserId')
+        canvas_courses_feed = get_canvas_courses_feed(uid)
+
+        term_ids = [term_id] if term_id else term_ids_for_student
+        for term_id in term_ids:
+            term_feed = get_merged_enrollment_term(canvas_courses_feed, uid, sid, term_id)
+            if term_feed and (len(term_feed['enrollments']) or len(term_feed['unmatchedCanvasSites'])):
+                # Rebuild our Canvas courses list to remove any courses that were screened out during association (for instance,
+                # dropped or athletic enrollments).
+                canvas_courses = []
+                for enrollment in term_feed.get('enrollments', []):
+                    canvas_courses += enrollment['canvasSites']
+                canvas_courses += term_feed.get('unmatchedCanvasSites', [])
+                # Decorate the Canvas courses list with per-course statistics and return summary statistics.
+                term_feed['analytics'] = mean_course_analytics_for_user(canvas_courses, canvas_user_id)
+                result = redshift.execute(
+                    'INSERT INTO {schema}.student_enrollment_terms (sid, term_id, enrollment_term) VALUES (%s, %s, %s)',
+                    params=(sid, term_id, json.dumps(term_feed)),
+                    schema=self.staging_schema_identifier,
+                )
+                if not result:
+                    app.logger.error(f'Insert failed into {self.staging_schema}.student_enrollment_terms: (sid={sid}, term_id={term_id})')

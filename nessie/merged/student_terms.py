@@ -26,38 +26,13 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from nessie.externals import sis_enrollments_api
 from nessie.lib import berkeley, queries
-from nessie.lib.analytics import mean_course_analytics_for_user
-from nessie.models.json_cache import stow
 
 
-def get_student_terms(uid, sid, canvas_user_id, matriculation_term=None, term_ids=None):
-    if term_ids == 'all':
-        term_names = berkeley.reverse_terms_until(matriculation_term)
-        term_ids = [berkeley.sis_term_id_for_name(t) for t in term_names]
-    elif term_ids is None:
-        term_ids = [berkeley.current_term_id()]
-    canvas_course_sites = canvas_courses_feed(uid)
-    courses_by_term = []
-    for term_id in term_ids:
-        term_feed = merge_sis_enrollments_for_term(canvas_course_sites, uid, sid, term_id)
-        if term_feed and (len(term_feed['enrollments']) or len(term_feed['unmatchedCanvasSites'])):
-            # Rebuild our Canvas courses list to remove any courses that were screened out during association (for instance,
-            # dropped or athletic enrollments).
-            canvas_courses = []
-            for enrollment in term_feed.get('enrollments', []):
-                canvas_courses += enrollment['canvasSites']
-            canvas_courses += term_feed.get('unmatchedCanvasSites', [])
-            # Decorate the Canvas courses list with per-course statistics, and return summary statistics.
-            term_feed['analytics'] = mean_course_analytics_for_user(canvas_courses, canvas_user_id)
-            courses_by_term.append(term_feed)
-    return courses_by_term
-
-
-def merge_sis_enrollments_for_term(canvas_course_sites, uid, cs_id, term_id):
+def get_merged_enrollment_term(canvas_course_sites, uid, cs_id, term_id):
     enrollments = queries.get_sis_enrollments(uid, term_id) or []
     term_name = berkeley.term_name_for_sis_id(term_id)
     if term_name == app.config['CURRENT_TERM']:
-        drops_and_midterms = sis_enrollments_api.get_drops_and_midterms(cs_id, term_id)
+        drops_and_midterms = sis_enrollments_api.get_drops_and_midterms(cs_id, term_id) or {}
     else:
         drops_and_midterms = {}
     term_feed = merge_enrollment(cs_id, enrollments, term_id, term_name, drops_and_midterms)
@@ -68,6 +43,13 @@ def merge_sis_enrollments_for_term(canvas_course_sites, uid, cs_id, term_id):
     sort_canvas_course_sites(term_feed)
 
     return term_feed
+
+
+def get_canvas_courses_feed(uid):
+    courses = queries.get_student_canvas_courses(uid) or []
+    if not courses:
+        return []
+    return [canvas_course_feed(course) for course in courses]
 
 
 def merge_drops_and_midterms(term_feed, drops_and_midterms):
@@ -83,7 +65,6 @@ def merge_drops_and_midterms(term_feed, drops_and_midterms):
     return term_feed
 
 
-@stow('merged_enrollment_{cs_id}', for_term=True)
 def merge_enrollment(cs_id, enrollments, term_id, term_name, drops_and_midterms):
     enrollments_by_class = {}
     term_section_ids = {}
@@ -173,13 +154,6 @@ def canvas_course_feed(course):
         'courseCode': course.get('canvas_course_code'),
         'courseTerm': course.get('canvas_course_term'),
     }
-
-
-def canvas_courses_feed(uid):
-    courses = queries.get_student_canvas_courses(uid) or []
-    if not courses:
-        return []
-    return [canvas_course_feed(course) for course in courses]
 
 
 def collect_dropped_sections(term_feed):
