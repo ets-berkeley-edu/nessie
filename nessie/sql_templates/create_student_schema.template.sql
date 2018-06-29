@@ -51,3 +51,12 @@ CREATE TABLE {redshift_schema_student}.student_majors
 )
 DISTKEY (major)
 SORTKEY (major);
+
+CREATE TABLE {redshift_schema_student}.student_enrollment_terms
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    enrollment_term VARCHAR(max) NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid, term_id);

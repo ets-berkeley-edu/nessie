@@ -24,7 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-from nessie.merged import student_terms
+from nessie.merged.student_terms import get_canvas_courses_feed, get_merged_enrollment_term
 import pytest
 
 
@@ -32,9 +32,10 @@ import pytest
 class TestMergedSisEnrollments:
 
     def test_merges_midterm_grades(self, app):
-        feed = student_terms.get_student_terms('61889', '11667051', '9000100')
-        assert '2178' == feed[0]['termId']
-        enrollments = feed[0]['enrollments']
+        canvas_courses_feed = get_canvas_courses_feed('61889')
+        term_feed = get_merged_enrollment_term(canvas_courses_feed, '61889', '11667051', '2178')
+        assert '2178' == term_feed['termId']
+        enrollments = term_feed['enrollments']
         assert 4 == len(enrollments)
         assert 'D+' == enrollments[0]['midtermGrade']
         assert 'BURMESE 1A' == enrollments[0]['displayName']
@@ -42,8 +43,9 @@ class TestMergedSisEnrollments:
 
     def test_includes_course_site_section_mappings(self, app):
         """Maps Canvas sites to SIS courses and sections."""
-        feed = student_terms.get_student_terms('61889', '11667051', '9000100')
-        enrollments = feed[0]['enrollments']
+        canvas_courses_feed = get_canvas_courses_feed('61889')
+        term_feed = get_merged_enrollment_term(canvas_courses_feed, '61889', '11667051', '2178')
+        enrollments = term_feed['enrollments']
         assert len(enrollments[0]['canvasSites']) == 1
         assert enrollments[0]['canvasSites'][0]['canvasCourseId'] == 7654320
         assert enrollments[0]['sections'][0]['canvasCourseIds'] == [7654320]
