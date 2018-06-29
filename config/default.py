@@ -122,6 +122,7 @@ REDSHIFT_SCHEMA_COE = 'COE schema name'
 REDSHIFT_SCHEMA_INTERMEDIATE = 'Intermediate schema name'
 REDSHIFT_SCHEMA_METADATA = 'Metadata schema name'
 REDSHIFT_SCHEMA_SIS = 'SIS schema name'
+REDSHIFT_SCHEMA_STUDENTS = 'Student schema name'
 
 STUDENT_API_ID = 'secretid'
 STUDENT_API_KEY = 'secretkey'
