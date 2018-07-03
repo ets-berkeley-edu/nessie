@@ -81,6 +81,7 @@ def resolve_sql_template(sql_filename, **kwargs):
     s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
     template_data = {
         'redshift_schema_asc': app.config['REDSHIFT_SCHEMA_ASC'],
+        'redshift_schema_asc_external': app.config['REDSHIFT_SCHEMA_ASC_EXTERNAL'],
         'redshift_schema_boac': app.config['REDSHIFT_SCHEMA_BOAC'],
         'redshift_schema_calnet': app.config['REDSHIFT_SCHEMA_CALNET'],
         'redshift_schema_canvas': app.config['REDSHIFT_SCHEMA_CANVAS'],
