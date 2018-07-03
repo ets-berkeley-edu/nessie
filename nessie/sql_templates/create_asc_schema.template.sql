@@ -27,9 +27,9 @@
 -- CREATE EXTERNAL SCHEMA
 --------------------------------------------------------------------
 
-CREATE EXTERNAL SCHEMA {redshift_schema_asc}
+CREATE EXTERNAL SCHEMA {redshift_schema_asc_external}
 FROM data catalog
-DATABASE '{redshift_schema_asc}'
+DATABASE '{redshift_schema_asc_external}'
 IAM_ROLE '{redshift_iam_role}'
 CREATE EXTERNAL DATABASE IF NOT EXISTS;
 
@@ -38,7 +38,7 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 --------------------------------------------------------------------
 
 -- athletics
-CREATE EXTERNAL TABLE {redshift_schema_asc}.athletics(
+CREATE EXTERNAL TABLE {redshift_schema_asc_external}.athletics(
     group_code VARCHAR,
     group_name VARCHAR,
     team_code VARCHAR,
@@ -49,7 +49,7 @@ WITH SERDEPROPERTIES ('paths'='group_code, group_name, team_code, team_name')
 LOCATION '{loch_s3_asc_data_path}/athletics/';
 
 -- students
-CREATE EXTERNAL TABLE {redshift_schema_asc}.students(
+CREATE EXTERNAL TABLE {redshift_schema_asc_external}.students(
     sid VARCHAR,
     in_intensive_cohort BOOLEAN,
     is_active_asc BOOLEAN,
@@ -60,10 +60,49 @@ WITH SERDEPROPERTIES ('paths'='sid, in_intensive_cohort, is_active_asc, status_a
 LOCATION '{loch_s3_asc_data_path}/students/';
 
 -- student_athletes
-CREATE EXTERNAL TABLE {redshift_schema_asc}.student_athletes(
+CREATE EXTERNAL TABLE {redshift_schema_asc_external}.student_athletes(
     group_code VARCHAR,
     sid VARCHAR
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
 WITH SERDEPROPERTIES ('paths'='group_code, sid')
 LOCATION '{loch_s3_asc_data_path}/student_athletes/';
+
+--------------------------------------------------------------------
+-- Internal Schema
+--------------------------------------------------------------------
+
+DROP SCHEMA IF EXISTS {redshift_schema_asc} CASCADE;
+CREATE SCHEMA {redshift_schema_asc};
+
+--------------------------------------------------------------------
+-- Internal Tables
+--------------------------------------------------------------------
+
+CREATE TABLE {redshift_schema_asc}.students
+DISTKEY (group_code)
+INTERLEAVED SORTKEY (sid, intensive, active, group_code)
+AS (
+    SELECT
+    s.sid,
+    s.in_intensive_cohort AS intensive,
+    s.is_active_asc AS active,
+    s.status_asc,
+    a.group_code,
+    a.group_name,
+    a.team_code,
+    a.team_name
+    FROM {redshift_schema_asc_external}.students s
+    JOIN {redshift_schema_asc_external}.student_athletes sa
+       ON s.sid = sa.sid
+    JOIN {redshift_schema_asc_external}.athletics a
+       ON sa.group_code = a.group_code
+);
+
+CREATE TABLE {redshift_schema_asc}.student_profiles
+(
+    sid VARCHAR NOT NULL,
+    profile VARCHAR(max) NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid);
