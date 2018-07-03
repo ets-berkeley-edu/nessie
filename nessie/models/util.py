@@ -41,7 +41,7 @@ def select_column(sql):
 def advisory_lock(lock_id):
     if not lock_id:
         yield
-        return True
+        return
     with db.engine.connect() as lock_connection:
         # Detaching will protect the server-session PID from action in the yield block.
         # Because detached connections are permanently removed from the pool, it also
@@ -51,11 +51,12 @@ def advisory_lock(lock_id):
         if locked:
             try:
                 yield
-                return True
+            except Exception as e:
+                app.logger.exception(e)
+                raise e
             finally:
                 # Explicit unlocking should not be necessary, but the logging might be useful.
                 advisory_unlock(lock_connection, lock_id)
-        return False
 
 
 def try_advisory_lock(connection, lock_id):
