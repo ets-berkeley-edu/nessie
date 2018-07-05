@@ -134,8 +134,9 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             gpa = sis_profile.get('cumulativeGPA')
             units = sis_profile.get('cumulativeUnits')
             result = redshift.execute(
-                'INSERT INTO {schema}.student_academic_status (sid, level, gpa, units) VALUES (%s, %s, %s, %s)',
-                params=(sid, level, gpa, units),
+                """INSERT INTO {schema}.student_academic_status (sid, uid, first_name, last_name, level, gpa, units)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                params=(sid, uid, merged_profile['firstName'], merged_profile['lastName'], level, gpa, units),
                 schema=self.staging_schema_identifier,
             )
             if not result:
