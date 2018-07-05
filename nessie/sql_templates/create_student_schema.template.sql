@@ -37,12 +37,15 @@ SORTKEY (sid);
 CREATE TABLE {redshift_schema_student}.student_academic_status
 (
     sid VARCHAR NOT NULL,
+    uid VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    last_name VARCHAR NOT NULL,
     level VARCHAR(2),
     gpa DECIMAL(4,3),
     units DECIMAL (4,1)
 )
 DISTKEY (units)
-INTERLEAVED SORTKEY (level, gpa, units);
+INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name);
 
 CREATE TABLE {redshift_schema_student}.student_majors
 (
