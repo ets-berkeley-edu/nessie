@@ -50,7 +50,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
     def run(self, term_id=None):
         """Loop through all records stored in the Calnet external schema and write merged student data to the internal student schema."""
-        app.logger.info(f'Starting merged profile generation job...')
+        app.logger.info(f'Starting merged profile generation job... (term_id={term_id})')
         staging_schema_ddl = resolve_sql_template('create_student_schema.template.sql', redshift_schema_student=self.staging_schema)
         if not redshift.execute_ddl_script(staging_schema_ddl):
             app.logger.error('Failed to create staging tables for merged profiles.')
@@ -60,30 +60,43 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'SELECT ldap_uid, sid, first_name, last_name FROM {calnet_schema}.persons',
             calnet_schema=psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_CALNET']),
         )
+
         for sid, profile_group in groupby(calnet_profiles, operator.itemgetter('sid')):
-            merged_profile = self.generate_merged_profile(sid, list(profile_group)[0])
-            self.generate_merged_enrollment_terms(merged_profile, term_id)
+            app.logger.info(f'Generating feeds for sid {sid}...')
+            merged_profile = self.generate_or_fetch_merged_profile(term_id, sid, list(profile_group)[0])
+            if merged_profile:
+                self.generate_merged_enrollment_terms(merged_profile, term_id)
 
         tables = ['student_profiles', 'student_academic_status', 'student_majors', 'student_enrollment_terms']
         for table in tables:
-            result = redshift.fetch(
-                'SELECT COUNT(*) FROM {schema}.{table}',
-                schema=self.staging_schema_identifier,
-                table=psycopg2.sql.Identifier(table),
-            )
-            if result and result[0] and result[0]['count']:
-                count = result[0]['count']
-                app.logger.info(f'Verified population of staging table {table} ({count} rows).')
-            else:
-                app.logger.error(f'Failed to verify population of staging table {table}: aborting job.')
+            if not self.verify_table(table):
                 return False
 
         redshift.execute('BEGIN TRANSACTION')
-        recreate_schema_ddl = resolve_sql_template('create_student_schema.template.sql')
-        if not redshift.execute_ddl_script(recreate_schema_ddl):
-            app.logger.error('Failed to recreate schema for merged profiles.')
-            redshift.execute('ROLLBACK TRANSACTION')
-            return False
+
+        if term_id is None:
+            # With no term specified, wipe and recreate the whole destination schema.
+            recreate_schema_ddl = resolve_sql_template('create_student_schema.template.sql')
+            if not redshift.execute_ddl_script(recreate_schema_ddl):
+                app.logger.error('Failed to recreate schema for merged profiles.')
+                redshift.execute('ROLLBACK TRANSACTION')
+                return False
+            app.logger.info(f'Recreated {self.destination_schema} schema.')
+        else:
+            # Otherwise drop rows related to the specified term only.
+            redshift.execute(
+                'DELETE FROM {schema}.student_enrollment_terms WHERE term_id=%s',
+                params=(term_id,),
+                schema=self.destination_schema_identifier,
+            )
+            app.logger.info(f'Dropped term {term_id} from {self.destination_schema}.student_enrollment_terms.')
+            if term_id == berkeley.current_term_id():
+                redshift.execute('DELETE FROM {schema}.student_profiles', schema=self.destination_schema_identifier)
+                app.logger.info(f'Dropped {self.destination_schema}.student_profiles.')
+                redshift.execute('DELETE FROM {schema}.student_academic_status', schema=self.destination_schema_identifier)
+                app.logger.info(f'Dropped {self.destination_schema}.student_academic_status.')
+                redshift.execute('DELETE FROM {schema}.student_majors', schema=self.destination_schema_identifier)
+                app.logger.info(f'Dropped {self.destination_schema}.student_majors.')
 
         for table in tables:
             result = redshift.execute(
@@ -96,13 +109,38 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 app.logger.error(f'Failed to populate table {self.destination_schema}.{table} from staging schema.')
                 redshift.execute('ROLLBACK TRANSACTION')
                 return False
+            app.logger.info(f'Populated {self.destination_schema}.{table} from staging schema.')
 
         redshift.execute('DROP SCHEMA {staging_schema} CASCADE', staging_schema=self.staging_schema_identifier)
         transaction_result = redshift.execute('COMMIT TRANSACTION')
         if not transaction_result:
             app.logger.error(f'Final transaction commit failed for {self.destination_schema}.')
             return False
+        app.logger.info(f'Dropped {self.staging_schema}.')
+
+        # Clean up the workbench.
+        redshift.execute('VACUUM')
+        redshift.execute('ANALYZE')
+        app.logger.info(f'Vacuumed and analyzed. Job complete.')
+
         return True
+
+    def generate_or_fetch_merged_profile(self, term_id, sid, calnet_profile):
+        merged_profile = None
+        if term_id is None or term_id == berkeley.current_term_id():
+            merged_profile = self.generate_merged_profile(sid, calnet_profile)
+            if not merged_profile:
+                app.logger.error(f'Failed to generate merged profile for sid {sid}.')
+        else:
+            profile_result = redshift.fetch(
+                'SELECT profile FROM {schema}.student_profiles WHERE sid = %s',
+                params=(sid,),
+                schema=self.destination_schema_identifier,
+            )
+            merged_profile = profile_result and profile_result[0] and json.loads(profile_result[0].get('profile', '{}'))
+            if not merged_profile:
+                app.logger.error(f'Failed to retrieve merged profile for sid {sid}.')
+        return merged_profile
 
     def generate_merged_profile(self, sid, calnet_profile):
         uid = calnet_profile.get('ldap_uid')
@@ -184,3 +222,17 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 )
                 if not result:
                     app.logger.error(f'Insert failed into {self.staging_schema}.student_enrollment_terms: (sid={sid}, term_id={term_id})')
+
+    def verify_table(self, table):
+        result = redshift.fetch(
+            'SELECT COUNT(*) FROM {schema}.{table}',
+            schema=self.staging_schema_identifier,
+            table=psycopg2.sql.Identifier(table),
+        )
+        if result and result[0] and result[0]['count']:
+            count = result[0]['count']
+            app.logger.info(f'Verified population of staging table {table} ({count} rows).')
+            return True
+        else:
+            app.logger.error(f'Failed to verify population of staging table {table}: aborting job.')
+            return False

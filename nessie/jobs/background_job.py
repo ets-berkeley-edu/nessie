@@ -138,7 +138,7 @@ class BackgroundJob(object):
     def run(self, **kwargs):
         pass
 
-    def run_async(self, lock_id=None):
+    def run_async(self, lock_id=None, **async_opts):
         queue = get_job_queue()
         if queue:
             app.logger.info(f'Current queue size {queue.qsize()}; adding new job.')
@@ -148,6 +148,7 @@ class BackgroundJob(object):
         else:
             app.logger.info('About to start background thread.')
             app_arg = app._get_current_object()
+            self.job_args.update(async_opts)
             kwargs = self.job_args
             if lock_id:
                 kwargs['lock_id'] = lock_id
