@@ -29,6 +29,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
+from nessie.lib.berkeley import current_term_id
 
 
 app = None
@@ -40,6 +41,7 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_SYNC_CANVAS_SNAPSHOTS': 1000,
     'JOB_RESYNC_CANVAS_SNAPSHOTS': 2000,
     'JOB_GENERATE_ALL_TABLES': 3000,
+    'JOB_GENERATE_CURRENT_TERM_FEEDS': 3500,
     'JOB_REFRESH_BOAC_CACHE': 4000,
 }
 
@@ -53,6 +55,7 @@ def initialize_job_schedules(_app, force=False):
     from nessie.jobs.create_sis_schema import CreateSisSchema
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
     from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
+    from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
     from nessie.jobs.refresh_boac_cache import RefreshBoacCache
     from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
     from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
@@ -78,10 +81,11 @@ def initialize_job_schedules(_app, force=False):
             ],
             force,
         )
+        schedule_job(sched, 'JOB_GENERATE_CURRENT_TERM_FEEDS', GenerateMergedStudentFeeds, force, term_id=current_term_id())
         schedule_job(sched, 'JOB_REFRESH_BOAC_CACHE', RefreshBoacCache, force)
 
 
-def add_job(sched, job_func, job_arg, job_id, force=False):
+def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):
     job_schedule = app.config.get(job_id)
     if job_schedule:
         existing_job = sched.get_job(job_id)
@@ -89,12 +93,12 @@ def add_job(sched, job_func, job_arg, job_id, force=False):
             app.logger.info(f'Found existing cron trigger for job {job_id}, will not reschedule: {existing_job.next_run_time}')
             return False
         else:
-            sched.add_job(job_func, 'cron', args=(job_arg, job_id), id=job_id, replace_existing=True, **job_schedule)
+            sched.add_job(job_func, 'cron', args=(job_arg, job_id, job_opts), id=job_id, replace_existing=True, **job_schedule)
             return job_schedule
 
 
-def schedule_job(sched, job_id, job_class, force=False):
-    job_schedule = add_job(sched, start_background_job, job_class, job_id, force)
+def schedule_job(sched, job_id, job_class, force=False, **job_opts):
+    job_schedule = add_job(sched, start_background_job, job_class, job_id, force, **job_opts)
     if job_schedule:
         app.logger.info(f'Scheduled {job_class.__name__} job: {job_schedule}')
 
@@ -105,17 +109,17 @@ def schedule_chained_job(sched, job_id, job_components, force=False):
         app.logger.info(f'Scheduled chained background job: {job_schedule}, ' + ', '.join([c.__name__ for c in job_components]))
 
 
-def start_background_job(job_class, job_id):
-    lock_id = PG_ADVISORY_LOCK_IDS[job_id]
+def start_background_job(job_class, job_id, job_opts={}):
+    job_opts['lock_id'] = PG_ADVISORY_LOCK_IDS[job_id]
     app.logger.info(f'Starting scheduled {job_class.__name__} job')
     with app.app_context():
-        job_class().run_async(lock_id=lock_id)
+        job_class().run_async(**job_opts)
 
 
-def start_chained_job(job_components, job_id):
+def start_chained_job(job_components, job_id, job_opts={}):
     from nessie.jobs.background_job import ChainedBackgroundJob
-    lock_id = PG_ADVISORY_LOCK_IDS[job_id]
+    job_opts['lock_id'] = PG_ADVISORY_LOCK_IDS[job_id]
     app.logger.info(f'Starting chained background job: ' + ', '.join([c.__name__ for c in job_components]))
     with app.app_context():
         initialized_components = [c() for c in job_components]
-        ChainedBackgroundJob(steps=initialized_components).run_async(lock_id=lock_id)
+        ChainedBackgroundJob(steps=initialized_components).run_async(**job_opts)
