@@ -81,9 +81,13 @@ JOB_SCHEDULING_ENABLED = True
 # See http://apscheduler.readthedocs.io/en/latest/modules/triggers/cron.html for supported schedule formats.
 JOB_SYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 0}
 JOB_RESYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 40}
-JOB_GENERATE_ALL_TABLES = {'hour': 2, 'minute': 00}
-JOB_GENERATE_CURRENT_TERM_FEEDS = {'hour': 3, 'minute': 00}
-JOB_REFRESH_BOAC_CACHE = {'hour': 4, 'minute': 00}
+JOB_IMPORT_STUDENT_POPULATION = {'hour': 2, 'minute': 00}
+JOB_IMPORT_DEGREE_PROGRESS = {'hour': 2, 'minute': 20}
+JOB_IMPORT_SIS_ENROLLMENTS = {'hour': 2, 'minute': 20}
+JOB_IMPORT_SIS_STUDENTS = {'hour': 2, 'minute': 20}
+JOB_GENERATE_ALL_TABLES = {'hour': 3, 'minute': 30}
+JOB_GENERATE_CURRENT_TERM_FEEDS = {'hour': 4, 'minute': 00}
+JOB_REFRESH_BOAC_CACHE = {'hour': 4, 'minute': 30}
 
 LDAP_HOST = 'nds-test.berkeley.edu'
 LDAP_BIND = 'mybind'

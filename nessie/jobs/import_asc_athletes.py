@@ -60,7 +60,7 @@ class ImportAscAthletes(BackgroundJob):
                     ASC import: Current SyncDate {sync_date} matches last SyncDate {last_sync_date}.
                     Existing cache will not be overwritten
                 """)
-                status = False
+                status = True
             else:
                 _stash_feed(api_results)
                 status = {

@@ -39,7 +39,11 @@ sched = None
 # Postgres advisory locks require numeric ids.
 PG_ADVISORY_LOCK_IDS = {
     'JOB_SYNC_CANVAS_SNAPSHOTS': 1000,
-    'JOB_RESYNC_CANVAS_SNAPSHOTS': 2000,
+    'JOB_RESYNC_CANVAS_SNAPSHOTS': 1500,
+    'JOB_IMPORT_STUDENT_POPULATION': 2000,
+    'JOB_IMPORT_DEGREE_PROGRESS': 2500,
+    'JOB_IMPORT_SIS_ENROLLMENTS': 2600,
+    'JOB_IMPORT_SIS_STUDENTS': 2700,
     'JOB_GENERATE_ALL_TABLES': 3000,
     'JOB_GENERATE_CURRENT_TERM_FEEDS': 3500,
     'JOB_REFRESH_BOAC_CACHE': 4000,
@@ -51,11 +55,18 @@ def get_scheduler():
 
 
 def initialize_job_schedules(_app, force=False):
+    from nessie.jobs.create_asc_schema import CreateAscSchema
+    from nessie.jobs.create_calnet_schema import CreateCalNetSchema
     from nessie.jobs.create_canvas_schema import CreateCanvasSchema
     from nessie.jobs.create_sis_schema import CreateSisSchema
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
     from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
     from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
+    from nessie.jobs.import_asc_athletes import ImportAscAthletes
+    from nessie.jobs.import_calnet_data import ImportCalNetData
+    from nessie.jobs.import_degree_progress import ImportDegreeProgress
+    from nessie.jobs.import_sis_enrollments_api import ImportSisEnrollmentsApi
+    from nessie.jobs.import_sis_student_api import ImportSisStudentApi
     from nessie.jobs.refresh_boac_cache import RefreshBoacCache
     from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
     from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
@@ -70,6 +81,20 @@ def initialize_job_schedules(_app, force=False):
         sched.start()
         schedule_job(sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots, force)
         schedule_job(sched, 'JOB_RESYNC_CANVAS_SNAPSHOTS', ResyncCanvasSnapshots, force)
+        schedule_chained_job(
+            sched,
+            'JOB_IMPORT_STUDENT_POPULATION',
+            [
+                ImportAscAthletes,
+                CreateAscSchema,
+                ImportCalNetData,
+                CreateCalNetSchema,
+            ],
+            force,
+        )
+        schedule_job(sched, 'JOB_IMPORT_DEGREE_PROGRESS', ImportDegreeProgress, force)
+        schedule_job(sched, 'JOB_IMPORT_SIS_ENROLLMENTS', ImportSisEnrollmentsApi, force)
+        schedule_job(sched, 'JOB_IMPORT_SIS_STUDENTS', ImportSisStudentApi, force)
         schedule_chained_job(
             sched,
             'JOB_GENERATE_ALL_TABLES',

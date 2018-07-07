@@ -30,6 +30,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from nessie.externals import sis_student_api
 from nessie.jobs.background_job import BackgroundJob
+from nessie.models import json_cache
 
 
 class ImportSisStudentApi(BackgroundJob):
@@ -38,6 +39,9 @@ class ImportSisStudentApi(BackgroundJob):
         app.logger.info(f'Starting SIS student API import job for {len(csids)} students...')
         success_count = 0
         failure_count = 0
+
+        json_cache.clear('sis_student_api_%')
+
         for csid in csids:
             if sis_student_api.get_student(csid):
                 success_count += 1

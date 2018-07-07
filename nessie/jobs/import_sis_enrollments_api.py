@@ -31,6 +31,7 @@ from flask import current_app as app
 from nessie.externals import sis_enrollments_api
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.berkeley import sis_term_id_for_name
+from nessie.models import json_cache
 
 
 class ImportSisEnrollmentsApi(BackgroundJob):
@@ -38,6 +39,9 @@ class ImportSisEnrollmentsApi(BackgroundJob):
     def run(self, csids):
         term_id = sis_term_id_for_name(app.config['CURRENT_TERM'])
         app.logger.info(f'Starting SIS enrollments API import job for term {term_id}, {len(csids)} students...')
+
+        json_cache.clear(f"term_{app.config['CURRENT_TERM']}-sis_drops_and_midterms_")
+
         success_count = 0
         failure_count = 0
         for csid in csids:
