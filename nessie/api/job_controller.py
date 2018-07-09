@@ -36,8 +36,12 @@ from nessie.jobs.create_coe_schema import CreateCoeSchema
 from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
 from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
+from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.jobs.import_calnet_data import ImportCalNetData
+from nessie.jobs.import_degree_progress import ImportDegreeProgress
+from nessie.jobs.import_sis_enrollments_api import ImportSisEnrollmentsApi
+from nessie.jobs.import_sis_student_api import ImportSisStudentApi
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
@@ -106,6 +110,49 @@ def generate_boac_analytics():
 @auth_required
 def generate_intermediate_tables():
     job_started = GenerateIntermediateTables().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/generate_merged_student_feeds/<term_id>', methods=['POST'])
+@auth_required
+def generate_merged_student_feeds(term_id):
+    job_started = GenerateMergedStudentFeeds(term_id=term_id).run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/import_degree_progress', methods=['POST'])
+@auth_required
+def import_degree_progress():
+    job_started = ImportDegreeProgress().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/import_sis_enrollments_api', methods=['POST'])
+@auth_required
+def import_sis_enrollments_api():
+    job_started = ImportSisEnrollmentsApi().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/import_sis_student_api', methods=['POST'])
+@auth_required
+def import_sis_student_api():
+    job_started = ImportSisStudentApi().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/import_student_population', methods=['POST'])
+@auth_required
+def import_student_population():
+    chained_job = ChainedBackgroundJob(
+        steps=[
+            ImportAscAthletes(),
+            CreateAscSchema(),
+            ImportCalNetData(),
+            CreateCalNetSchema(),
+        ],
+    )
+    job_started = chained_job.run_async()
     return respond_with_status(job_started)
 
 
