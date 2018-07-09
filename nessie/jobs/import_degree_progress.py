@@ -30,6 +30,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from nessie.externals import sis_degree_progress_api
 from nessie.jobs.background_job import BackgroundJob
+from nessie.models import json_cache
 
 
 class ImportDegreeProgress(BackgroundJob):
@@ -38,6 +39,9 @@ class ImportDegreeProgress(BackgroundJob):
         app.logger.info(f'Starting SIS degree progress API import job for {len(csids)} students...')
         success_count = 0
         failure_count = 0
+
+        json_cache.clear('sis_degree_progress_api_%')
+
         # TODO The SIS degree progress API will return useful data only for students with a UGRD current registration.
         # We get that registration from the SIS student API, which is imported concurrently with this job. Is there an
         # alternative way to filter out non-UGRD students?
