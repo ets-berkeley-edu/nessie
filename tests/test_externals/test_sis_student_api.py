@@ -52,6 +52,20 @@ class TestSisStudentApi:
         students = oski_response.json()['apiResponse']['response']['any']['students']
         assert len(students) == 1
 
+    def test_get_term_gpas(self, app):
+        gpas = student_api.get_term_gpas(11667051)
+        assert len(gpas) == 6
+        assert gpas['2158'] == 3.3
+        assert gpas['2162'] == 4.0
+        assert gpas['2178'] == 3.0
+
+    def test_inner_get_registrations(self, app):
+        oski_response = student_api._get_registrations(11667051)
+        assert oski_response
+        assert oski_response.status_code == 200
+        registrations = oski_response.json()['apiResponse']['response']['any']['registrations']
+        assert len(registrations) == 9
+
     def test_user_not_found(self, app, caplog):
         """Logs 404 for unknown user and returns informative message."""
         response = student_api._get_student(9999999)

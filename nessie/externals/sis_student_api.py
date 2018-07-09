@@ -52,6 +52,35 @@ def _get_student(cs_id, mock=None):
         return authorized_request(url)
 
 
+def get_term_gpas(cs_id):
+    response = _get_registrations(cs_id)
+    if response and hasattr(response, 'json'):
+        unwrapped = response.json().get('apiResponse', {}).get('response', {}).get('any', {}).get('registrations', [])
+        term_gpas = {}
+        for registration in unwrapped:
+            # Ignore terms in which the student was not an undergraduate.
+            if registration.get('academicCareer', {}).get('code') != 'UGRD':
+                continue
+            # Ignore terms in which the student took no classes with units.
+            total_units = next((u for u in registration.get('termUnits', []) if u['type']['code'] == 'Total'), None)
+            if not total_units or not total_units.get('unitsTaken'):
+                continue
+            term_id = registration.get('term', {}).get('id')
+            gpa = registration.get('termGPA', {}).get('average')
+            if term_id and gpa is not None:
+                term_gpas[term_id] = gpa
+        return term_gpas
+    else:
+        return
+
+
+@fixture('sis_registrations_api_{cs_id}')
+def _get_registrations(cs_id, mock=None):
+    url = http.build_url(app.config['STUDENT_API_URL'] + '/' + str(cs_id) + '/registrations')
+    with mock(url):
+        return authorized_request(url)
+
+
 def authorized_request(url):
     auth_headers = {
         'app_id': app.config['STUDENT_API_ID'],
