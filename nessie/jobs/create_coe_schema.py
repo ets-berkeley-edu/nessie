@@ -23,24 +23,60 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from itertools import groupby
+import json
+import operator
+
 from flask import current_app as app
 from nessie.externals import redshift
 from nessie.jobs.background_job import BackgroundJob, resolve_sql_template, verify_external_schema
+import psycopg2
 
 
 """Logic for COE schema creation job."""
+
+
+external_schema = app.config['REDSHIFT_SCHEMA_COE_EXTERNAL']
+internal_schema = app.config['REDSHIFT_SCHEMA_COE']
+internal_schema_identifier = psycopg2.sql.Identifier(internal_schema)
 
 
 class CreateCoeSchema(BackgroundJob):
 
     def run(self):
         app.logger.info(f'Starting COE schema creation job...')
-        external_schema = app.config['REDSHIFT_SCHEMA_COE']
         redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template('create_coe_schema.template.sql')
+        # TODO This DDL drops and recreates the internal schema before the external schema is verified. We
+        # ought to set up proper staging in conjunction with verification. It's also possible that a persistent
+        # external schema isn't needed.
         if redshift.execute_ddl_script(resolved_ddl):
-            app.logger.info(f'COE schema creation job completed.')
-            return verify_external_schema(external_schema, resolved_ddl)
+            app.logger.info(f'COE external schema created.')
+            if not verify_external_schema(external_schema, resolved_ddl):
+                return False
         else:
-            app.logger.error(f'COE schema creation job failed.')
+            app.logger.error(f'COE external schema creation failed.')
             return False
+        coe_rows = redshift.fetch(
+            'SELECT * FROM {schema}.students ORDER by sid',
+            schema=internal_schema_identifier,
+        )
+        index = 1
+        for sid, rows_for_student in groupby(coe_rows, operator.itemgetter('sid')):
+            app.logger.info(f'Generating COE profile for SID {sid} ({index} of {len(coe_rows)})')
+            index += 1
+            row_for_student = list(rows_for_student)[0]
+            # TODO More COE-specific attributes will get merged into this profile as we receive them.
+            coe_profile = {
+                'advisorUid': row_for_student.get('advisor_ldap_uid'),
+            }
+            result = redshift.execute(
+                'INSERT INTO {schema}.student_profiles (sid, profile) VALUES (%s, %s)',
+                params=(sid, json.dumps(coe_profile)),
+                schema=internal_schema_identifier,
+            )
+            if not result:
+                app.logger.error(f'Insert failed into {internal_schema}.student_profiles: (sid={sid})')
+
+        app.logger.info(f'COE internal schema created.')
+        return True
