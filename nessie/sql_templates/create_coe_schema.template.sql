@@ -27,9 +27,9 @@
 -- CREATE EXTERNAL SCHEMA
 --------------------------------------------------------------------
 
-CREATE EXTERNAL SCHEMA {redshift_schema_coe}
+CREATE EXTERNAL SCHEMA {redshift_schema_coe_external}
 FROM data catalog
-DATABASE '{redshift_schema_coe}'
+DATABASE '{redshift_schema_coe_external}'
 IAM_ROLE '{redshift_iam_role}'
 CREATE EXTERNAL DATABASE IF NOT EXISTS;
 
@@ -39,7 +39,7 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 --------------------------------------------------------------------
 
 -- advisor_student_mappings
-CREATE EXTERNAL TABLE {redshift_schema_coe}.advisor_students(
+CREATE EXTERNAL TABLE {redshift_schema_coe_external}.advisor_students(
     sid VARCHAR,
     advisor_ldap_uid VARCHAR
 )
@@ -47,3 +47,32 @@ ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
 LOCATION '{loch_s3_coe_data_path}/advisor_students/';
+
+--------------------------------------------------------------------
+-- Internal Schema
+--------------------------------------------------------------------
+
+DROP SCHEMA IF EXISTS {redshift_schema_coe} CASCADE;
+CREATE SCHEMA {redshift_schema_coe};
+
+--------------------------------------------------------------------
+-- Internal Tables
+--------------------------------------------------------------------
+
+CREATE TABLE {redshift_schema_coe}.students
+DISTKEY (advisor_ldap_uid)
+INTERLEAVED SORTKEY (sid, advisor_ldap_uid)
+AS (
+    SELECT
+    s.sid,
+    s.advisor_ldap_uid
+    FROM {redshift_schema_coe_external}.advisor_students s
+);
+
+CREATE TABLE {redshift_schema_coe}.student_profiles
+(
+    sid VARCHAR NOT NULL,
+    profile VARCHAR(max) NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid);

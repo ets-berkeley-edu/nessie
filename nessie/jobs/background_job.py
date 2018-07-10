@@ -86,6 +86,7 @@ def resolve_sql_template(sql_filename, **kwargs):
         'redshift_schema_calnet': app.config['REDSHIFT_SCHEMA_CALNET'],
         'redshift_schema_canvas': app.config['REDSHIFT_SCHEMA_CANVAS'],
         'redshift_schema_coe': app.config['REDSHIFT_SCHEMA_COE'],
+        'redshift_schema_coe_external': app.config['REDSHIFT_SCHEMA_COE_EXTERNAL'],
         'redshift_schema_intermediate': app.config['REDSHIFT_SCHEMA_INTERMEDIATE'],
         'redshift_schema_metadata': app.config['REDSHIFT_SCHEMA_METADATA'],
         'redshift_schema_sis': app.config['REDSHIFT_SCHEMA_SIS'],
