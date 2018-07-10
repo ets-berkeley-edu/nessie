@@ -130,7 +130,12 @@ def import_degree_progress():
 @app.route('/api/job/import_sis_enrollments_api', methods=['POST'])
 @auth_required
 def import_sis_enrollments_api():
-    job_started = ImportSisEnrollmentsApi().run_async()
+    args = request.get_json(force=True)
+    if args and args.get('term'):
+        term_id = str(args.get('term'))
+    else:
+        term_id = None
+    job_started = ImportSisEnrollmentsApi(term_id=term_id).run_async()
     return respond_with_status(job_started)
 
 

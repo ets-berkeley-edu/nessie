@@ -30,15 +30,15 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from nessie.externals import sis_degree_progress_api
 from nessie.jobs.background_job import BackgroundJob
+from nessie.lib.queries import get_all_student_ids
 from nessie.models import json_cache
-from nessie.models.student import get_all_student_ids
 
 
 class ImportDegreeProgress(BackgroundJob):
 
     def run(self, csids=None):
         if not csids:
-            csids = get_all_student_ids()
+            csids = [row['sid'] for row in get_all_student_ids()]
         app.logger.info(f'Starting SIS degree progress API import job for {len(csids)} students...')
         success_count = 0
         failure_count = 0
@@ -50,7 +50,7 @@ class ImportDegreeProgress(BackgroundJob):
         # alternative way to filter out non-UGRD students?
         index = 1
         for csid in csids:
-            app.logger.info(f'Fetching degree progress API for SID {csid} ({index} of {len(csids)}')
+            app.logger.info(f'Fetching degree progress API for SID {csid} ({index} of {len(csids)})')
             if sis_degree_progress_api.get_degree_progress(csid):
                 success_count += 1
             else:

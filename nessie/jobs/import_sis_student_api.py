@@ -30,15 +30,15 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from nessie.externals import sis_student_api
 from nessie.jobs.background_job import BackgroundJob
+from nessie.lib.queries import get_all_student_ids
 from nessie.models import json_cache
-from nessie.models.student import get_all_student_ids
 
 
 class ImportSisStudentApi(BackgroundJob):
 
     def run(self, csids=None):
         if not csids:
-            csids = get_all_student_ids()
+            csids = [row['sid'] for row in get_all_student_ids()]
         app.logger.info(f'Starting SIS student API import job for {len(csids)} students...')
         success_count = 0
         failure_count = 0
@@ -47,7 +47,7 @@ class ImportSisStudentApi(BackgroundJob):
 
         index = 1
         for csid in csids:
-            app.logger.info(f'Fetching SIS student API for SID {csid} ({index} of {len(csids)}')
+            app.logger.info(f'Fetching SIS student API for SID {csid} ({index} of {len(csids)})')
             if sis_student_api.get_student(csid):
                 success_count += 1
             else:

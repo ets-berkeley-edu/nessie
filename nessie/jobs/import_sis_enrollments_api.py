@@ -30,26 +30,27 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from nessie.externals import sis_enrollments_api
 from nessie.jobs.background_job import BackgroundJob
-from nessie.lib.berkeley import sis_term_id_for_name
+from nessie.lib.berkeley import current_term_id, term_name_for_sis_id
+from nessie.lib.queries import get_all_student_ids
 from nessie.models import json_cache
-from nessie.models.student import get_all_student_ids
 
 
 class ImportSisEnrollmentsApi(BackgroundJob):
 
-    def run(self, csids=None):
+    def run(self, csids=None, term_id=None):
         if not csids:
-            csids = get_all_student_ids()
-        term_id = sis_term_id_for_name(app.config['CURRENT_TERM'])
+            csids = [row['sid'] for row in get_all_student_ids()]
+        if not term_id:
+            term_id = current_term_id()
         app.logger.info(f'Starting SIS enrollments API import job for term {term_id}, {len(csids)} students...')
 
-        json_cache.clear(f"term_{app.config['CURRENT_TERM']}-sis_drops_and_midterms_")
+        json_cache.clear(f'term_{term_name_for_sis_id(term_id)}-sis_drops_and_midterms_%')
 
         success_count = 0
         failure_count = 0
         index = 1
         for csid in csids:
-            app.logger.info(f'Fetching SIS enrollments API for SID {csid}, term {term_id} ({index} of {len(csids)}')
+            app.logger.info(f'Fetching SIS enrollments API for SID {csid}, term {term_id} ({index} of {len(csids)})')
             if sis_enrollments_api.get_drops_and_midterms(csid, term_id):
                 success_count += 1
             else:

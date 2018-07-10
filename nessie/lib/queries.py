@@ -31,12 +31,26 @@ from nessie.lib.mockingdata import fixture
 data_loch_db = None
 
 
+def asc_schema():
+    return app.config['REDSHIFT_SCHEMA_ASC']
+
+
 def boac_schema():
     return app.config['REDSHIFT_SCHEMA_BOAC']
 
 
+def coe_schema():
+    return app.config['REDSHIFT_SCHEMA_COE']
+
+
 def intermediate_schema():
     return app.config['REDSHIFT_SCHEMA_INTERMEDIATE']
+
+
+def get_all_student_ids():
+    sql = f"""SELECT sid FROM {asc_schema()}.students
+        UNION SELECT sid FROM {coe_schema()}.students"""
+    return redshift.fetch(sql)
 
 
 @fixture('query_canvas_course_scores_{course_id}.csv')

@@ -28,22 +28,18 @@ from flask import current_app as app
 from nessie.externals import calnet
 from nessie.externals import s3
 from nessie.jobs.background_job import BackgroundJob, get_s3_calnet_daily_path
-from nessie.models.student import Student
+from nessie.lib.queries import get_all_student_ids
 
 
 class ImportCalNetData(BackgroundJob):
 
-    def run(self):
-        students = Student.query.all()
-        if len(students):
-            app.logger.info(f'CalNet import: Preparing to fetch data of {len(students)} students')
-            _put_calnet_data_to_s3([s.sid for s in students])
-            app.logger.info('CalNet import: done')
-            status = True
-        else:
-            app.logger.error('CalNet import: Zero students found in RDS')
-            status = False
-        return status
+    def run(self, csids=None):
+        if not csids:
+            csids = [row['sid'] for row in get_all_student_ids()]
+        app.logger.info(f'Starting CalNet import job for {len(csids)} students...')
+        _put_calnet_data_to_s3(csids)
+        app.logger.info('CalNet import: done')
+        return True
 
 
 def _put_calnet_data_to_s3(sids):
@@ -74,7 +70,12 @@ def _put_calnet_data_to_s3(sids):
 
 
 def _split_sortable_name(a):
-    name_split = a['sortable_name'].split(',') if 'sortable_name' in a else []
+    if 'sortable_name' not in a:
+        name_split = []
+    elif isinstance(a['sortable_name'], list):
+        name_split = a['sortable_name'][0].split(',')
+    else:
+        name_split = a['sortable_name'].split(',')
     full_name = [name.strip() for name in reversed(name_split)]
     first_name = full_name[0] if len(full_name) else ''
     last_name = full_name[1] if len(full_name) > 1 else ''
