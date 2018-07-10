@@ -32,11 +32,14 @@ from nessie.externals import sis_enrollments_api
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.berkeley import sis_term_id_for_name
 from nessie.models import json_cache
+from nessie.models.student import get_all_student_ids
 
 
 class ImportSisEnrollmentsApi(BackgroundJob):
 
-    def run(self, csids):
+    def run(self, csids=None):
+        if not csids:
+            csids = get_all_student_ids()
         term_id = sis_term_id_for_name(app.config['CURRENT_TERM'])
         app.logger.info(f'Starting SIS enrollments API import job for term {term_id}, {len(csids)} students...')
 
@@ -44,11 +47,14 @@ class ImportSisEnrollmentsApi(BackgroundJob):
 
         success_count = 0
         failure_count = 0
+        index = 1
         for csid in csids:
+            app.logger.info(f'Fetching SIS enrollments API for SID {csid}, term {term_id} ({index} of {len(csids)}')
             if sis_enrollments_api.get_drops_and_midterms(csid, term_id):
                 success_count += 1
             else:
                 failure_count += 1
                 app.logger.error(f'SIS enrollments API import failed for CSID {csid}.')
+            index += 1
         app.logger.info(f'SIS enrollments API import job completed: {success_count} succeeded, {failure_count} failed.')
         return True

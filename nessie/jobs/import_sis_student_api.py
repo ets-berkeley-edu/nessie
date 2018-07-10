@@ -31,22 +31,28 @@ from flask import current_app as app
 from nessie.externals import sis_student_api
 from nessie.jobs.background_job import BackgroundJob
 from nessie.models import json_cache
+from nessie.models.student import get_all_student_ids
 
 
 class ImportSisStudentApi(BackgroundJob):
 
-    def run(self, csids):
+    def run(self, csids=None):
+        if not csids:
+            csids = get_all_student_ids()
         app.logger.info(f'Starting SIS student API import job for {len(csids)} students...')
         success_count = 0
         failure_count = 0
 
         json_cache.clear('sis_student_api_%')
 
+        index = 1
         for csid in csids:
+            app.logger.info(f'Fetching SIS student API for SID {csid} ({index} of {len(csids)}')
             if sis_student_api.get_student(csid):
                 success_count += 1
             else:
                 failure_count += 1
                 app.logger.error(f'SIS student API import failed for CSID {csid}.')
+            index += 1
         app.logger.info(f'SIS student API import job completed: {success_count} succeeded, {failure_count} failed.')
         return True
