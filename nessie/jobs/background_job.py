@@ -171,10 +171,16 @@ class BackgroundJob(object):
             job_id = self.generate_job_id()
             if self.status_logging_enabled:
                 create_background_job_status(job_id)
-            result = self.run(**kwargs)
+            try:
+                error = None
+                result = self.run(**kwargs)
+            except Exception as e:
+                app.logger.exception(e)
+                result = None
+                error = str(e)
             if self.status_logging_enabled:
                 status = 'succeeded' if result else 'failed'
-                update_background_job_status(job_id, status)
+                update_background_job_status(job_id, status, error=error)
             return result
 
 
