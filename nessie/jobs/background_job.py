@@ -37,7 +37,7 @@ from flask import current_app as app
 from nessie.externals import redshift
 from nessie.jobs.queue import get_job_queue
 from nessie.lib.util import localize_datetime
-from nessie.models.util import advisory_unlock, try_advisory_lock
+from nessie.models.util import advisory_lock
 
 
 def get_s3_canvas_daily_path():
@@ -124,18 +124,8 @@ class BackgroundJob(object):
     def run_in_app_context(self, app_arg, **kwargs):
         lock_id = kwargs.pop('lock_id', None)
         with app_arg.app_context():
-            if not lock_id:
+            with advisory_lock(lock_id):
                 self.run(**kwargs)
-                return
-            if try_advisory_lock(lock_id):
-                app.logger.info(f'Granted advisory lock {lock_id}; will execute the job.')
-                self.run(**kwargs)
-                if advisory_unlock(lock_id):
-                    app.logger.info(f'Released advisory lock {lock_id}.')
-                else:
-                    app.logger.error(f'Failed to release advisory lock {lock_id}.')
-            else:
-                app.logger.warn(f'Was not granted advisory lock {lock_id}; will not execute the job.')
 
 
 class ChainedBackgroundJob(BackgroundJob):

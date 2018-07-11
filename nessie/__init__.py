@@ -27,7 +27,7 @@ from flask import current_app as app
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import SQLAlchemyError
 
-__version__ = '2.1'
+__version__ = '2.1.1'
 
 db = SQLAlchemy()
 

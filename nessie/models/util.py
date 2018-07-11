@@ -24,6 +24,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
+from contextlib import contextmanager
+from flask import current_app as app
 from nessie import db
 
 
@@ -35,20 +37,48 @@ def select_column(sql):
     return result
 
 
-def select_scalar(sql):
-    connection = db.engine.connect()
-    result_proxy = connection.execute(sql)
-    result = next(result_proxy)
-    connection.close()
-    return result[0]
+@contextmanager
+def advisory_lock(lock_id):
+    if not lock_id:
+        yield
+        return True
+    with db.engine.connect() as lock_connection:
+        # Detaching will protect the server-session PID from action in the yield block.
+        # Because detached connections are permanently removed from the pool, it also
+        # ensures that the lock will be released when the connection is closed.
+        lock_connection.detach()
+        locked = try_advisory_lock(lock_connection, lock_id)
+        if locked:
+            try:
+                yield
+                return True
+            finally:
+                # Explicit unlocking should not be necessary, but the logging might be useful.
+                advisory_unlock(lock_connection, lock_id)
+        return False
 
 
-def try_advisory_lock(lock_id):
-    return select_scalar(f'SELECT pg_try_advisory_lock({lock_id})')
+def try_advisory_lock(connection, lock_id):
+    result = connection.execute(f'SELECT pg_try_advisory_lock({lock_id}) as locked, pg_backend_pid() as pid')
+    (locked, pid) = next(result)
+    if locked:
+        app.logger.info(f'Granted advisory lock {lock_id} for PID {pid}')
+    else:
+        app.logger.warn(f'Was not granted advisory lock {lock_id} for PID {pid}')
+    return locked
 
 
-def advisory_unlock(lock_id):
-    return select_scalar(f'SELECT pg_advisory_unlock({lock_id})')
+def advisory_unlock(connection, lock_id):
+    result = connection.execute(f'SELECT pg_advisory_unlock({lock_id}) as unlocked, pg_backend_pid() as pid')
+    (unlocked, pid) = next(result)
+    if unlocked:
+        app.logger.info(f'Released advisory lock {lock_id} for PID {pid}')
+    else:
+        app.logger.error(f'Failed to release advisory lock {lock_id} for PID {pid}')
+    # Guard against the possibility of duplicate successful lock requests from this connection.
+    while unlocked:
+        result = connection.execute(f'SELECT pg_advisory_unlock({lock_id}) as unlocked')
+        unlocked = next(result).unlocked
 
 
 def get_granted_lock_ids():
