@@ -38,11 +38,6 @@ def sqlalchemy_bindings(values, column_name):
     return bindings
 
 
-def get_all_student_ids():
-    students = Student.query.all()
-    return [s.sid for s in students]
-
-
 class Student(Base):
     __tablename__ = 'students'
 
