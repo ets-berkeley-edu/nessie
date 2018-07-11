@@ -122,3 +122,19 @@ class TestUpdateSchedule:
         assert response.status_code == 200
         assert response.json['trigger'] == "cron[hour='1', minute='0']"
         assert '01:00:00' in response.json['nextRun']
+
+    def test_update_job_args(self, app, client, scheduler):
+        """Updates job args."""
+        jobs = client.get('/api/schedule').json
+        feed_job = next(j for j in jobs if j['id'] == 'job_generate_current_term_feeds')
+        assert feed_job['args'] == {'term_id': '2178'}
+        response = post_basic_auth(
+            client,
+            '/api/schedule/job_generate_current_term_feeds/args',
+            credentials(app),
+            {'term_id': '2182'},
+        )
+        assert response.status_code == 200
+        jobs = client.get('/api/schedule').json
+        feed_job = next(j for j in jobs if j['id'] == 'job_generate_current_term_feeds')
+        assert feed_job['args'] == {'term_id': '2182'}
