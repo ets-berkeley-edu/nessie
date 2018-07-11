@@ -37,13 +37,19 @@ def job_to_dict(job):
     job_components = job.args[0]
     if not hasattr(job_components, '__iter__'):
         job_components = [job_components]
-    return {
+    job_dict = {
         'id': job.id.lower(),
         'components': [c.__name__ for c in job_components],
         'trigger': str(job.trigger),
         'nextRun': str(job.next_run_time) if job.next_run_time else None,
         'locked': (PG_ADVISORY_LOCK_IDS.get(job.id) in lock_ids),
     }
+    if len(job.args) > 2:
+        args_dict = dict(job.args[2])
+        args_dict.pop('lock_id', None)
+        if args_dict:
+            job_dict['args'] = args_dict
+    return job_dict
 
 
 @app.route('/api/schedule', methods=['GET'])
@@ -74,5 +80,33 @@ def update_job_schedule(job_id):
     # Passing a empty JSON object will pause this job.
     else:
         job.pause()
+    job = sched.get_job(job_id)
+    return tolerant_jsonify(job_to_dict(job))
+
+
+@app.route('/api/schedule/<job_id>/args', methods=['POST'])
+@auth_required
+def update_scheduled_job_args(job_id):
+    try:
+        args = request.get_json(force=True)
+    except Exception as e:
+        raise BadRequestError(str(e))
+    if not args:
+        raise BadRequestError(f'Could not parse args from request')
+    sched = get_scheduler()
+    job_id = job_id.upper()
+    job = sched.get_job(job_id)
+    if not job:
+        raise BadRequestError(f'No job found for job id: {job_id}')
+    try:
+        existing_args = job.args
+        if len(existing_args) > 2:
+            new_args = dict(existing_args[2])
+            new_args.update(args)
+        else:
+            new_args = args
+        job.modify(args=[existing_args[0], existing_args[1], new_args])
+    except Exception as e:
+        raise BadRequestError(f'Error updating job args: {e}')
     job = sched.get_job(job_id)
     return tolerant_jsonify(job_to_dict(job))
