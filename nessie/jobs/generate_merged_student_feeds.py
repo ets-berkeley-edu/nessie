@@ -129,8 +129,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         merged_profile = None
         if term_id is None or term_id == berkeley.current_term_id():
             merged_profile = self.generate_merged_profile(sid, calnet_profile)
-            if not merged_profile:
-                app.logger.error(f'Failed to generate merged profile for sid {sid}.')
         else:
             profile_result = redshift.fetch(
                 'SELECT profile FROM {schema}.student_profiles WHERE sid = %s',
@@ -139,7 +137,9 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             )
             merged_profile = profile_result and profile_result[0] and json.loads(profile_result[0].get('profile', '{}'))
             if not merged_profile:
-                app.logger.error(f'Failed to retrieve merged profile for sid {sid}.')
+                merged_profile = self.generate_merged_profile(sid, calnet_profile)
+        if not merged_profile:
+            app.logger.error(f'Failed to generate merged profile for sid {sid}.')
         return merged_profile
 
     def generate_merged_profile(self, sid, calnet_profile):
