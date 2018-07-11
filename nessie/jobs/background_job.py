@@ -27,7 +27,6 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """Simple parent class for background jobs."""
 
 
-from contextlib import contextmanager
 from datetime import datetime
 import hashlib
 import os
@@ -38,7 +37,7 @@ from flask import current_app as app
 from nessie.externals import redshift
 from nessie.jobs.queue import get_job_queue
 from nessie.lib.util import localize_datetime
-from nessie.models.util import advisory_unlock, try_advisory_lock
+from nessie.models.util import advisory_lock
 
 
 def get_s3_canvas_daily_path():
@@ -90,24 +89,6 @@ def verify_external_schema(schema, resolved_ddl):
             app.logger.error(f'Failed to verify external table {table}: aborting job.')
             return False
     return True
-
-
-@contextmanager
-def advisory_lock(lock_id):
-    if not lock_id:
-        yield
-    else:
-        (locked, pid) = try_advisory_lock(lock_id)
-        if locked:
-            app.logger.info(f'Granted advisory lock {lock_id} for PID {pid}; will execute the job.')
-            yield
-            (unlocked, pid) = advisory_unlock(lock_id)
-            if unlocked:
-                app.logger.info(f'Released advisory lock {lock_id} for PID {pid}.')
-            else:
-                app.logger.error(f'Failed to release advisory lock {lock_id} for PID {pid}.')
-        else:
-            app.logger.warn(f'Was not granted advisory lock {lock_id} for PID {pid}; will not execute the job.')
 
 
 class BackgroundJob(object):
