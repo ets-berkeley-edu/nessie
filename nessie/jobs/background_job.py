@@ -27,6 +27,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """Simple parent class for background jobs."""
 
 
+from contextlib import contextmanager
 from datetime import datetime
 import hashlib
 import os
@@ -91,6 +92,24 @@ def verify_external_schema(schema, resolved_ddl):
     return True
 
 
+@contextmanager
+def advisory_lock(lock_id):
+    if not lock_id:
+        yield
+    else:
+        (locked, pid) = try_advisory_lock(lock_id)
+        if locked:
+            app.logger.info(f'Granted advisory lock {lock_id} for PID {pid}; will execute the job.')
+            yield
+            (unlocked, pid) = advisory_unlock(lock_id)
+            if unlocked:
+                app.logger.info(f'Released advisory lock {lock_id} for PID {pid}.')
+            else:
+                app.logger.error(f'Failed to release advisory lock {lock_id} for PID {pid}.')
+        else:
+            app.logger.warn(f'Was not granted advisory lock {lock_id} for PID {pid}; will not execute the job.')
+
+
 class BackgroundJob(object):
 
     def __init__(self, **kwargs):
@@ -124,18 +143,8 @@ class BackgroundJob(object):
     def run_in_app_context(self, app_arg, **kwargs):
         lock_id = kwargs.pop('lock_id', None)
         with app_arg.app_context():
-            if not lock_id:
+            with advisory_lock(lock_id):
                 self.run(**kwargs)
-                return
-            if try_advisory_lock(lock_id):
-                app.logger.info(f'Granted advisory lock {lock_id}; will execute the job.')
-                self.run(**kwargs)
-                if advisory_unlock(lock_id):
-                    app.logger.info(f'Released advisory lock {lock_id}.')
-                else:
-                    app.logger.error(f'Failed to release advisory lock {lock_id}.')
-            else:
-                app.logger.warn(f'Was not granted advisory lock {lock_id}; will not execute the job.')
 
 
 class ChainedBackgroundJob(BackgroundJob):

@@ -35,6 +35,14 @@ def select_column(sql):
     return result
 
 
+def select_row(sql):
+    connection = db.engine.connect()
+    result_proxy = connection.execute(sql)
+    result = next(result_proxy)
+    connection.close()
+    return result
+
+
 def select_scalar(sql):
     connection = db.engine.connect()
     result_proxy = connection.execute(sql)
@@ -44,11 +52,16 @@ def select_scalar(sql):
 
 
 def try_advisory_lock(lock_id):
-    return select_scalar(f'SELECT pg_try_advisory_lock({lock_id})')
+    return select_row(f'SELECT pg_try_advisory_lock({lock_id}) as locked, pg_backend_pid() as pid')
 
 
 def advisory_unlock(lock_id):
-    return select_scalar(f'SELECT pg_advisory_unlock({lock_id})')
+    initial_unlock = select_row(f'SELECT pg_advisory_unlock({lock_id}) as unlocked, pg_backend_pid() as pid')
+    unlocked = initial_unlock.unlocked
+    # Guard against the possibility of duplicate successful lock requests from this connection.
+    while unlocked:
+        unlocked = select_scalar(f'SELECT pg_advisory_unlock({lock_id})')
+    return initial_unlock
 
 
 def get_granted_lock_ids():
