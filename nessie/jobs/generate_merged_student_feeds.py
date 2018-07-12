@@ -61,13 +61,20 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             calnet_schema=psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_CALNET']),
         )
 
+        index = 1
         for sid, profile_group in groupby(calnet_profiles, operator.itemgetter('sid')):
-            app.logger.info(f'Generating feeds for sid {sid}...')
+            app.logger.info(f'Generating feeds for sid {sid} ({index} of {len(calnet_profiles)})')
+            index += 1
             merged_profile = self.generate_or_fetch_merged_profile(term_id, sid, list(profile_group)[0])
             if merged_profile:
                 self.generate_merged_enrollment_terms(merged_profile, term_id)
 
-        tables = ['student_profiles', 'student_academic_status', 'student_majors', 'student_enrollment_terms']
+        # Jobs for non-current terms generate enrollment feeds only.
+        if term_id and term_id != berkeley.current_term_id():
+            tables = ['student_enrollment_terms']
+        else:
+            tables = ['student_profiles', 'student_academic_status', 'student_majors', 'student_enrollment_terms']
+
         for table in tables:
             if not self.verify_table(table):
                 return False
@@ -90,7 +97,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 schema=self.destination_schema_identifier,
             )
             app.logger.info(f'Dropped term {term_id} from {self.destination_schema}.student_enrollment_terms.')
-            if term_id == berkeley.current_term_id():
+            if term_id is None or term_id == berkeley.current_term_id():
                 redshift.execute('DELETE FROM {schema}.student_profiles', schema=self.destination_schema_identifier)
                 app.logger.info(f'Dropped {self.destination_schema}.student_profiles.')
                 redshift.execute('DELETE FROM {schema}.student_academic_status', schema=self.destination_schema_identifier)
