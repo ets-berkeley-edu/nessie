@@ -229,10 +229,13 @@ AS (
         ase.uid,
         ase.canvas_user_id,
         ase.canvas_course_id AS course_id,
-        ase.last_activity_at,
-        ase.sis_enrollment_status,
-        csf.current_score,
-        csf.final_score
+        /*
+         * There must be only one summary row for each course site membership.
+         */
+        MAX(ase.last_activity_at) AS last_activity_at,
+        MIN(ase.sis_enrollment_status) AS sis_enrollment_status,
+        MAX(csf.current_score) AS current_score,
+        MAX(csf.final_score) AS final_score
     FROM
         {redshift_schema_intermediate}.active_student_enrollments ase
         JOIN {redshift_schema_intermediate}.users
@@ -244,9 +247,5 @@ AS (
     GROUP BY
         ase.uid,
         ase.canvas_user_id,
-        ase.canvas_course_id,
-        ase.last_activity_at,
-        ase.sis_enrollment_status,
-        csf.current_score,
-        csf.final_score
+        ase.canvas_course_id
 );
