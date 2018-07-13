@@ -50,4 +50,4 @@ def _get_asc_feed_response(mock=None):
         auth_params = {
             'ETSkey': app.config['ASC_ATHLETES_API_KEY'],
         }
-        return http.request(url, headers, auth_params=auth_params, verify=False)
+        return http.request(url, headers, auth_params=auth_params)
