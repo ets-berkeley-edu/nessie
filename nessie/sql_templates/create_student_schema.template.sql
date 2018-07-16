@@ -26,6 +26,31 @@
 DROP SCHEMA IF EXISTS {redshift_schema_student} CASCADE;
 CREATE SCHEMA {redshift_schema_student};
 
+CREATE TABLE {redshift_schema_student}.sis_api_degree_progress
+(
+    sid VARCHAR NOT NULL,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY(sid)
+SORTKEY(sid);
+
+CREATE TABLE {redshift_schema_student}.sis_api_drops_and_midterms
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY(sid)
+SORTKEY(sid, term_id);
+
+CREATE TABLE {redshift_schema_student}.sis_api_profiles
+(
+    sid VARCHAR NOT NULL,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY(sid)
+SORTKEY(sid);
+
 CREATE TABLE {redshift_schema_student}.student_profiles
 (
     sid VARCHAR NOT NULL,

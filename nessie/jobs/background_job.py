@@ -76,7 +76,14 @@ def get_s3_sis_daily_path(cutoff=datetime.now()):
     return app.config['LOCH_S3_SIS_DATA_PATH'] + '/daily/' + today_hash + '-' + today
 
 
-def resolve_sql_template(sql_filename, **kwargs):
+def get_s3_sis_api_daily_path(cutoff=datetime.now()):
+    # Path for stashed SIS API data that doesn't need to be queried by Redshift Spectrum.
+    today = localize_datetime(cutoff).strftime('%Y-%m-%d')
+    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
+    return app.config['LOCH_S3_SIS_API_DATA_PATH'] + '/daily/' + today_hash + '-' + today
+
+
+def resolve_sql_template_string(template_string, **kwargs):
     """Our DDL template files are simple enough to use standard Python string formatting."""
     s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
     template_data = {
@@ -99,12 +106,17 @@ def resolve_sql_template(sql_filename, **kwargs):
         'loch_s3_canvas_data_path_current_term': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'],
         'loch_s3_coe_data_path': s3_prefix + get_s3_coe_daily_path(),
         'loch_s3_sis_data_path': s3_prefix + app.config['LOCH_S3_SIS_DATA_PATH'],
+        'loch_s3_sis_api_data_path': s3_prefix + get_s3_sis_api_daily_path(),
     }
     # Kwargs may be passed in to modify default template data.
     template_data.update(kwargs)
+    return template_string.format(**template_data)
+
+
+def resolve_sql_template(sql_filename, **kwargs):
     with open(app.config['BASE_DIR'] + f'/nessie/sql_templates/{sql_filename}', encoding='utf-8') as file:
         template_string = file.read()
-    return template_string.format(**template_data)
+    return resolve_sql_template_string(template_string, **kwargs)
 
 
 def verify_external_schema(schema, resolved_ddl):

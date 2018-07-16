@@ -82,13 +82,13 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         redshift.execute('BEGIN TRANSACTION')
 
         if term_id is None:
-            # With no term specified, wipe and recreate the whole destination schema.
-            recreate_schema_ddl = resolve_sql_template('create_student_schema.template.sql')
-            if not redshift.execute_ddl_script(recreate_schema_ddl):
-                app.logger.error('Failed to recreate schema for merged profiles.')
-                redshift.execute('ROLLBACK TRANSACTION')
-                return False
-            app.logger.info(f'Recreated {self.destination_schema} schema.')
+            # With no term specified, truncate all student tables.
+            for table in tables:
+                redshift.execute(
+                    'TRUNCATE {schema}.{table}',
+                    schema=self.destination_schema_identifier,
+                    table=psycopg2.sql.Identifier(table),
+                )
         else:
             # Otherwise drop rows related to the specified term only.
             redshift.execute(
