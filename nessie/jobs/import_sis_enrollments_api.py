@@ -26,13 +26,13 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 """Logic for SIS enrollments API import job."""
 
+import json
 
 from flask import current_app as app
-from nessie.externals import sis_enrollments_api
-from nessie.jobs.background_job import BackgroundJob
-from nessie.lib.berkeley import current_term_id, term_name_for_sis_id
+from nessie.externals import redshift, s3, sis_enrollments_api
+from nessie.jobs.background_job import BackgroundJob, get_s3_sis_api_daily_path, resolve_sql_template_string
+from nessie.lib.berkeley import current_term_id
 from nessie.lib.queries import get_all_student_ids
-from nessie.models import json_cache
 
 
 class ImportSisEnrollmentsApi(BackgroundJob):
@@ -44,18 +44,43 @@ class ImportSisEnrollmentsApi(BackgroundJob):
             term_id = current_term_id()
         app.logger.info(f'Starting SIS enrollments API import job for term {term_id}, {len(csids)} students...')
 
-        json_cache.clear(f'term_{term_name_for_sis_id(term_id)}-sis_drops_and_midterms_%')
-
+        rows = []
         success_count = 0
         failure_count = 0
         index = 1
         for csid in csids:
             app.logger.info(f'Fetching SIS enrollments API for SID {csid}, term {term_id} ({index} of {len(csids)})')
-            if sis_enrollments_api.get_drops_and_midterms(csid, term_id):
+            feed = sis_enrollments_api.get_drops_and_midterms(csid, term_id)
+            if feed:
                 success_count += 1
+                rows.append('\t'.join([str(csid), str(term_id), json.dumps(feed)]))
             else:
                 failure_count += 1
                 app.logger.error(f'SIS enrollments API import failed for CSID {csid}.')
             index += 1
+
+        s3_key = f'{get_s3_sis_api_daily_path()}/drops_and_midterms_{term_id}.tsv'
+        app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
+        if not s3.upload_data('\n'.join(rows), s3_key):
+            app.logger.error('Error on S3 upload: aborting job.')
+            return False
+
+        app.logger.info('Will copy S3 feeds into Redshift...')
+        query = resolve_sql_template_string(
+            """
+            DELETE FROM {redshift_schema_student}.sis_api_drops_and_midterms WHERE term_id = '{term_id}';
+            COPY {redshift_schema_student}.sis_api_drops_and_midterms
+                FROM '{loch_s3_sis_api_data_path}/drops_and_midterms_{term_id}.tsv'
+                IAM_ROLE '{redshift_iam_role}'
+                DELIMITER '\\t';
+            VACUUM;
+            ANALYZE;
+            """,
+            term_id=term_id,
+        )
+        if not redshift.execute(query):
+            app.logger.error('Error on Redshift copy: aborting job.')
+            return False
+
         app.logger.info(f'SIS enrollments API import job completed: {success_count} succeeded, {failure_count} failed.')
         return True
