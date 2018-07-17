@@ -28,10 +28,8 @@ import io
 
 from nessie.lib import queries
 from nessie.lib.mockingdata import MockRows, register_mock
-import pytest
 
 
-@pytest.mark.usefixtures('db_session')
 class TestQueries:
 
     def test_canvas_course_scores_fixture(self, app):

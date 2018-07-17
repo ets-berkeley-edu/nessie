@@ -25,10 +25,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 
 from nessie.merged.sis_profile import get_merged_sis_profile
-import pytest
 
 
-@pytest.mark.usefixtures('db_session')
 class TestSisProfile:
     """Test SIS profile."""
 

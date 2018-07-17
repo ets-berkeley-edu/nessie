@@ -34,7 +34,6 @@ Usage mode B:
 >>> export FLASK_APP=run.py
 >>> flask run --help
 >>> flask run --debugger
->>> flask initdb
 """
 
 import os
@@ -53,12 +52,6 @@ if __name__.startswith('_mod_wsgi'):
         os.environ[key] = value
 
 application = create_app()
-
-
-@application.cli.command()
-def initdb():
-    from nessie.models import development_db
-    development_db.load_schemas()
 
 
 host = application.config['HOST']

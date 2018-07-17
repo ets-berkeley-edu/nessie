@@ -25,10 +25,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 
 from nessie.merged.student_terms import get_canvas_courses_feed, get_merged_enrollment_term
-import pytest
 
 
-@pytest.mark.usefixtures('db_session')
 class TestMergedSisEnrollments:
 
     def test_merges_midterm_grades(self, app):

@@ -67,46 +67,6 @@ def app(request):
     return _app
 
 
-# TODO Perform DB schema creation and deletion outside an app context, enabling test-specific app configurations.
-@pytest.fixture(scope='session')
-def db(app, request):
-    """Fixture database object, shared by all tests."""
-    from nessie.models import development_db
-    # Drop all tables before re-loading the schemas.
-    # If we dropped at teardown instead, an interrupted test run would block the next test run.
-    development_db.clear()
-    _db = development_db.load()
-
-    return _db
-
-
-@pytest.fixture(scope='function', autouse=True)
-def db_session(db, request):
-    """Fixture database session used for the scope of a single test.
-
-    All executions are wrapped in a session and then rolled back to keep individual tests isolated.
-    """
-    # Mixing SQL-using test fixtures with SQL-using decorators seems to cause timing issues with pytest's
-    # fixture finalizers. Instead of using a finalizer to roll back the session and close connections,
-    # we begin by cleaning up any previous invocations.
-    # This fixture is marked 'autouse' to ensure that cleanup happens at the start of every test, whether
-    # or not it has an explicit database dependency.
-    db.session.rollback()
-    try:
-        db.session.get_bind().close()
-    # The session bind will close only if it was provided a specific connection via this fixture.
-    except AttributeError:
-        pass
-    db.session.remove()
-
-    connection = db.engine.connect()
-    options = dict(bind=connection, binds={})
-    _session = db.create_scoped_session(options=options)
-    db.session = _session
-
-    return _session
-
-
 @pytest.fixture()
 def metadata_db(app):
     """Use Postgres to mock the Redshift metadata schema on local test runs."""

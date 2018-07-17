@@ -22,10 +22,6 @@ createdb nessie --owner=nessie
 createdb nessie_metadata_test --owner=nessie
 createdb nessie_redshift_test --owner=nessie
 createdb nessie_test --owner=nessie
-
-# Load schema in RDS instance
-export FLASK_APP=run.py
-flask initdb
 ```
 
 ### Create local configurations
