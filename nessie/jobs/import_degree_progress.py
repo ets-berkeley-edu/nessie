@@ -74,8 +74,6 @@ class ImportDegreeProgress(BackgroundJob):
                 FROM '{loch_s3_sis_api_data_path}/degree_progress.tsv'
                 IAM_ROLE '{redshift_iam_role}'
                 DELIMITER '\\t';
-            VACUUM;
-            ANALYZE;
             """,
         )
         if not redshift.execute(query):

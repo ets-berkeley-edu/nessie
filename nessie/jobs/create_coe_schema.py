@@ -28,8 +28,10 @@ import json
 import operator
 
 from flask import current_app as app
-from nessie.externals import redshift
-from nessie.jobs.background_job import BackgroundJob, resolve_sql_template, verify_external_schema
+from nessie.externals import redshift, s3
+from nessie.jobs.background_job import (
+    BackgroundJob, get_s3_coe_daily_path, resolve_sql_template, resolve_sql_template_string, verify_external_schema,
+)
 import psycopg2
 
 
@@ -61,6 +63,8 @@ class CreateCoeSchema(BackgroundJob):
             'SELECT * FROM {schema}.students ORDER by sid',
             schema=internal_schema_identifier,
         )
+
+        profile_rows = []
         index = 1
         for sid, rows_for_student in groupby(coe_rows, operator.itemgetter('sid')):
             app.logger.info(f'Generating COE profile for SID {sid} ({index} of {len(coe_rows)})')
@@ -70,13 +74,27 @@ class CreateCoeSchema(BackgroundJob):
             coe_profile = {
                 'advisorUid': row_for_student.get('advisor_ldap_uid'),
             }
-            result = redshift.execute(
-                'INSERT INTO {schema}.student_profiles (sid, profile) VALUES (%s, %s)',
-                params=(sid, json.dumps(coe_profile)),
-                schema=internal_schema_identifier,
-            )
-            if not result:
-                app.logger.error(f'Insert failed into {internal_schema}.student_profiles: (sid={sid})')
+            profile_rows.append('\t'.join([str(sid), json.dumps(coe_profile)]))
 
+        s3_key = f'{get_s3_coe_daily_path()}/coe_profiles.tsv'
+        app.logger.info(f'Will stash {len(profile_rows)} feeds in S3: {s3_key}')
+        if not s3.upload_data('\n'.join(profile_rows), s3_key):
+            app.logger.error('Error on S3 upload: aborting job.')
+            return False
+
+        app.logger.info('Will copy S3 feeds into Redshift...')
+        query = resolve_sql_template_string(
+            """
+            COPY {redshift_schema_coe}.student_profiles
+                FROM '{loch_s3_coe_data_path}/coe_profiles.tsv'
+                IAM_ROLE '{redshift_iam_role}'
+                DELIMITER '\\t';
+            VACUUM;
+            ANALYZE;
+            """,
+        )
+        if not redshift.execute(query):
+            app.logger.error('Error on Redshift copy: aborting job.')
+            return False
         app.logger.info(f'COE internal schema created.')
         return True
