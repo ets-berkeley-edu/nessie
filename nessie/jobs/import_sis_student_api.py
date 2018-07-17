@@ -26,12 +26,12 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 """Logic for SIS student API import job."""
 
+import json
 
 from flask import current_app as app
-from nessie.externals import sis_student_api
-from nessie.jobs.background_job import BackgroundJob
+from nessie.externals import redshift, s3, sis_student_api
+from nessie.jobs.background_job import BackgroundJob, get_s3_sis_api_daily_path, resolve_sql_template_string
 from nessie.lib.queries import get_all_student_ids
-from nessie.models import json_cache
 
 
 class ImportSisStudentApi(BackgroundJob):
@@ -39,20 +39,45 @@ class ImportSisStudentApi(BackgroundJob):
     def run(self, csids=None):
         if not csids:
             csids = [row['sid'] for row in get_all_student_ids()]
+            csids = csids[1:10]
         app.logger.info(f'Starting SIS student API import job for {len(csids)} students...')
+
+        rows = []
         success_count = 0
         failure_count = 0
-
-        json_cache.clear('sis_student_api_%')
-
         index = 1
         for csid in csids:
             app.logger.info(f'Fetching SIS student API for SID {csid} ({index} of {len(csids)})')
-            if sis_student_api.get_student(csid):
+            feed = sis_student_api.get_student(csid)
+            if feed:
                 success_count += 1
+                rows.append('\t'.join([str(csid), json.dumps(feed)]))
             else:
                 failure_count += 1
                 app.logger.error(f'SIS student API import failed for CSID {csid}.')
             index += 1
+
+        s3_key = f'{get_s3_sis_api_daily_path()}/profiles.tsv'
+        app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
+        if not s3.upload_data('\n'.join(rows), s3_key):
+            app.logger.error('Error on S3 upload: aborting job.')
+            return False
+
+        app.logger.info('Will copy S3 feeds into Redshift...')
+        query = resolve_sql_template_string(
+            """
+            TRUNCATE {redshift_schema_student}.sis_api_profiles;
+            COPY {redshift_schema_student}.sis_api_profiles
+                FROM '{loch_s3_sis_api_data_path}/profiles.tsv'
+                IAM_ROLE '{redshift_iam_role}'
+                DELIMITER '\\t';
+            VACUUM;
+            ANALYZE;
+            """,
+        )
+        if not redshift.execute(query):
+            app.logger.error('Error on Redshift copy: aborting job.')
+            return False
+
         app.logger.info(f'SIS student API import job completed: {success_count} succeeded, {failure_count} failed.')
         return True
