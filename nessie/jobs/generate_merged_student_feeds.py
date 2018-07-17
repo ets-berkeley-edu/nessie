@@ -32,8 +32,8 @@ import json
 import operator
 
 from flask import current_app as app
-from nessie.externals import redshift
-from nessie.jobs.background_job import BackgroundJob, resolve_sql_template
+from nessie.externals import redshift, s3
+from nessie.jobs.background_job import BackgroundJob, get_s3_sis_api_daily_path, resolve_sql_template, resolve_sql_template_string
 from nessie.lib import berkeley, queries
 from nessie.lib.analytics import mean_course_analytics_for_user
 from nessie.merged.sis_profile import get_merged_sis_profile
@@ -56,18 +56,13 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             app.logger.error('Failed to create staging tables for merged profiles.')
             return False
 
+        # Before starting the merge, clean up after any recently run external import jobs.
+        redshift.execute('VACUUM; ANALYZE;')
+
         calnet_profiles = redshift.fetch(
             'SELECT ldap_uid, sid, first_name, last_name FROM {calnet_schema}.persons',
             calnet_schema=psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_CALNET']),
         )
-
-        index = 1
-        for sid, profile_group in groupby(calnet_profiles, operator.itemgetter('sid')):
-            app.logger.info(f'Generating feeds for sid {sid} ({index} of {len(calnet_profiles)})')
-            index += 1
-            merged_profile = self.generate_or_fetch_merged_profile(term_id, sid, list(profile_group)[0])
-            if merged_profile:
-                self.generate_merged_enrollment_terms(merged_profile, term_id)
 
         # Jobs for non-current terms generate enrollment feeds only.
         if term_id and term_id != berkeley.current_term_id():
@@ -75,7 +70,24 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         else:
             tables = ['student_profiles', 'student_academic_status', 'student_majors', 'student_enrollment_terms']
 
+        self.rows = {
+            'student_profiles': [],
+            'student_academic_status': [],
+            'student_majors': [],
+            'student_enrollment_terms': [],
+        }
+
+        index = 1
+        for sid, profile_group in groupby(calnet_profiles, operator.itemgetter('sid')):
+            app.logger.info(f'Generating feeds for sid {sid} ({index} of {len(calnet_profiles)})')
+            index += 1
+            merged_profile = self.generate_or_fetch_merged_profile(term_id, sid, list(profile_group)[0])
+
+            if merged_profile:
+                self.generate_merged_enrollment_terms(merged_profile, term_id)
+
         for table in tables:
+            self.upload_table(table)
             if not self.verify_table(table):
                 return False
 
@@ -166,36 +178,20 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'canvasUserName': canvas_profile.get('name'),
             'sisProfile': sis_profile,
         }
-        result = redshift.execute(
-            'INSERT INTO {schema}.student_profiles (sid, profile) VALUES (%s, %s)',
-            params=(sid, json.dumps(merged_profile)),
-            schema=self.staging_schema_identifier,
-        )
-        if not result:
-            app.logger.error(f'Insert failed into {self.staging_schema}.student_profiles: (sid={sid})')
+        self.rows['student_profiles'].append('\t'.join([str(sid), json.dumps(merged_profile)]))
 
         if sis_profile:
-            level = sis_profile.get('level', {}).get('code')
-            gpa = sis_profile.get('cumulativeGPA')
-            units = sis_profile.get('cumulativeUnits')
-            result = redshift.execute(
-                """INSERT INTO {schema}.student_academic_status (sid, uid, first_name, last_name, level, gpa, units)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-                params=(sid, uid, merged_profile['firstName'], merged_profile['lastName'], level, gpa, units),
-                schema=self.staging_schema_identifier,
-            )
-            if not result:
-                app.logger.error(f'Insert failed into {self.staging_schema}.student_academic_status:\
-                                  (sid={sid}, level={level}, gpa={gpa}, units={units})')
+            first_name = merged_profile['firstName'] or ''
+            last_name = merged_profile['lastName'] or ''
+            level = str(sis_profile.get('level', {}).get('code') or '')
+            gpa = str(sis_profile.get('cumulativeGPA') or '')
+            units = str(sis_profile.get('cumulativeUnits') or '')
+
+            self.rows['student_academic_status'].append('\t'.join([str(sid), str(uid), first_name, last_name, level, gpa, units]))
+
             for plan in sis_profile.get('plans', []):
-                major = plan['description']
-                result = redshift.execute(
-                    'INSERT INTO {schema}.student_majors (sid, major) VALUES (%s, %s)',
-                    params=(sid, major),
-                    schema=self.staging_schema_identifier,
-                )
-                if not result:
-                    app.logger.error(f'Insert failed into {self.staging_schema}.student_majors: (sid={sid}, major={major})')
+                self.rows['student_majors'].append('\t'.join([str(sid), plan['description']]))
+
         return merged_profile
 
     def generate_merged_enrollment_terms(self, merged_profile, term_id=None):
@@ -223,13 +219,30 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 canvas_courses += term_feed.get('unmatchedCanvasSites', [])
                 # Decorate the Canvas courses list with per-course statistics and return summary statistics.
                 term_feed['analytics'] = mean_course_analytics_for_user(canvas_courses, canvas_user_id)
-                result = redshift.execute(
-                    'INSERT INTO {schema}.student_enrollment_terms (sid, term_id, enrollment_term) VALUES (%s, %s, %s)',
-                    params=(sid, term_id, json.dumps(term_feed)),
-                    schema=self.staging_schema_identifier,
-                )
-                if not result:
-                    app.logger.error(f'Insert failed into {self.staging_schema}.student_enrollment_terms: (sid={sid}, term_id={term_id})')
+                self.rows['student_enrollment_terms'].append('\t'.join([str(sid), str(term_id), json.dumps(term_feed)]))
+
+    def upload_table(self, table):
+        rows = self.rows[table]
+        s3_key = f'{get_s3_sis_api_daily_path()}/staging_{table}.tsv'
+        app.logger.info(f'Will stash {len(rows)} feeds in S3: {s3_key}')
+        if not s3.upload_data('\n'.join(rows), s3_key):
+            app.logger.error('Error on S3 upload: aborting job.')
+            return False
+
+        app.logger.info('Will copy S3 feeds into Redshift...')
+        query = resolve_sql_template_string(
+            """
+            COPY {staging_schema}.{table}
+                FROM '{loch_s3_sis_api_data_path}/staging_{table}.tsv'
+                IAM_ROLE '{redshift_iam_role}'
+                DELIMITER '\\t';
+            """,
+            staging_schema=self.staging_schema,
+            table=table,
+        )
+        if not redshift.execute(query):
+            app.logger.error('Error on Redshift copy: aborting job.')
+            return False
 
     def verify_table(self, table):
         result = redshift.fetch(

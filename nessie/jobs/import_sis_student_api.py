@@ -39,7 +39,6 @@ class ImportSisStudentApi(BackgroundJob):
     def run(self, csids=None):
         if not csids:
             csids = [row['sid'] for row in get_all_student_ids()]
-            csids = csids[1:10]
         app.logger.info(f'Starting SIS student API import job for {len(csids)} students...')
 
         rows = []
@@ -71,8 +70,6 @@ class ImportSisStudentApi(BackgroundJob):
                 FROM '{loch_s3_sis_api_data_path}/profiles.tsv'
                 IAM_ROLE '{redshift_iam_role}'
                 DELIMITER '\\t';
-            VACUUM;
-            ANALYZE;
             """,
         )
         if not redshift.execute(query):

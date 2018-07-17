@@ -73,8 +73,6 @@ class ImportSisEnrollmentsApi(BackgroundJob):
                 FROM '{loch_s3_sis_api_data_path}/drops_and_midterms_{term_id}.tsv'
                 IAM_ROLE '{redshift_iam_role}'
                 DELIMITER '\\t';
-            VACUUM;
-            ANALYZE;
             """,
             term_id=term_id,
         )

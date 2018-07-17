@@ -122,7 +122,7 @@ class ImportAscAthletes(BackgroundJob):
                 app.logger.info('Copy data in S3 file to Redshift...')
                 query = resolve_sql_template_string(
                     """
-                    DELETE FROM {redshift_schema_asc}.students;
+                    TRUNCATE {redshift_schema_asc}.students;
                     COPY {redshift_schema_asc}.students
                         FROM 's3://{s3_bucket}/{s3_key}'
                         IAM_ROLE '{redshift_iam_role}'

@@ -28,32 +28,29 @@ import json
 import operator
 
 from flask import current_app as app
-from nessie.externals import redshift
-from nessie.jobs.background_job import BackgroundJob, resolve_sql_template
+from nessie.externals import redshift, s3
+from nessie.jobs.background_job import BackgroundJob, get_s3_asc_daily_path, resolve_sql_template_string
 import psycopg2
 
 
 """Logic for ASC schema creation job."""
 
 
-internal_schema = app.config['REDSHIFT_SCHEMA_ASC']
-internal_schema_identifier = psycopg2.sql.Identifier(internal_schema)
+asc_schema = app.config['REDSHIFT_SCHEMA_ASC']
+asc_schema_identifier = psycopg2.sql.Identifier(asc_schema)
 
 
 class CreateAscSchema(BackgroundJob):
 
     def run(self):
         app.logger.info(f'Starting ASC schema creation job...')
-        resolved_ddl = resolve_sql_template('create_asc_schema.template.sql')
-        if redshift.execute_ddl_script(resolved_ddl):
-            app.logger.info(f'ASC schema creation job completed.')
-        else:
-            app.logger.error(f'ASC schema creation job failed.')
-            return False
         asc_rows = redshift.fetch(
             'SELECT * FROM {schema}.students ORDER by sid',
-            schema=internal_schema_identifier,
+            schema=asc_schema_identifier,
         )
+
+        profile_rows = []
+
         for sid, rows_for_student in groupby(asc_rows, operator.itemgetter('sid')):
             rows_for_student = list(rows_for_student)
             athletics_profile = {
@@ -70,11 +67,30 @@ class CreateAscSchema(BackgroundJob):
                     'teamCode': row['team_code'],
                     'teamName': row['team_name'],
                 })
-            result = redshift.execute(
-                'INSERT INTO {schema}.student_profiles (sid, profile) VALUES (%s, %s)',
-                params=(sid, json.dumps(athletics_profile)),
-                schema=internal_schema_identifier,
-            )
-            if not result:
-                app.logger.error(f'Insert failed into {internal_schema}.student_profiles: (sid={sid})')
+
+            profile_rows.append('\t'.join([str(sid), json.dumps(athletics_profile)]))
+
+        s3_key = f'{get_s3_asc_daily_path()}/athletics_profiles.tsv'
+        app.logger.info(f'Will stash {len(profile_rows)} feeds in S3: {s3_key}')
+        if not s3.upload_data('\n'.join(profile_rows), s3_key):
+            app.logger.error('Error on S3 upload: aborting job.')
+            return False
+
+        app.logger.info('Will copy S3 feeds into Redshift...')
+        query = resolve_sql_template_string(
+            """
+            TRUNCATE {redshift_schema_asc}.student_profiles;
+            COPY {redshift_schema_asc}.student_profiles
+                FROM '{loch_s3_asc_data_path}/athletics_profiles.tsv'
+                IAM_ROLE '{redshift_iam_role}'
+                DELIMITER '\\t';
+            VACUUM;
+            ANALYZE;
+            """,
+        )
+        if not redshift.execute(query):
+            app.logger.error('Error on Redshift copy: aborting job.')
+            return False
+
+        app.logger.info('ASC schema creation complete.')
         return True
