@@ -1,0 +1,8 @@
+BEGIN;
+
+DROP TABLE IF EXISTS json_cache;
+DROP TABLE IF EXISTS student_athletes;
+DROP TABLE IF EXISTS athletics;
+DROP TABLE IF EXISTS students;
+
+COMMIT;
