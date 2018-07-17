@@ -10,7 +10,6 @@ REDSHIFT_USER = 'username'
 # be repeatedly created and torn down without conflicts.
 
 REDSHIFT_SCHEMA_ASC = 'testext_mynamehere_asc'
-REDSHIFT_SCHEMA_ASC_EXTERNAL = 'testext_mynamehere_asc_external'
 REDSHIFT_SCHEMA_BOAC = 'testext_mynamehere_boac'
 REDSHIFT_SCHEMA_CANVAS = 'testext_mynamehere_canvas'
 REDSHIFT_SCHEMA_INTERMEDIATE = 'testext_mynamehere_intermediate'

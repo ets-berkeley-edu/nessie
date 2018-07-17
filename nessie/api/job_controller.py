@@ -89,7 +89,9 @@ def create_sis_schema():
 def generate_all_tables():
     chained_job = ChainedBackgroundJob(
         steps=[
+            CreateAscSchema(),
             CreateCanvasSchema(),
+            CreateCoeSchema(),
             CreateSisSchema(),
             GenerateIntermediateTables(),
             GenerateBoacAnalytics(),

@@ -27,42 +27,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import json
 from nessie.externals import asc_athletes_api
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
-from nessie.lib import asc
 from nessie.lib.mockingbird import MockResponse, register_mock
-from nessie.models.athletics import Athletics
-from nessie.models.student import Student
-from tests.util import assert_background_job_status
 
 
 class TestImportAscAthletes:
-
-    def test_do_import_from_asc_fixture(self, app, metadata_db):
-        status = ImportAscAthletes().run_wrapped()
-        assert_background_job_status('ImportAscAthletes')
-        assert status is not None
-        water_polo_team = Athletics.query.filter_by(group_code='MWP').first()
-        assert len(water_polo_team.athletes) == 1
-        football_backs = Athletics.query.filter_by(group_code='MFB-DB').first()
-        assert len(football_backs.athletes) == 1
-        # John has been recruited.
-        assert Student.find_by_sid('8901234567').athletics[0].group_code == 'MFB-DL'
-        # PaulK has dropped out.
-        assert Student.find_by_sid('3456789012') is None
-        # Sandeep relaxed.
-        assert len(Student.find_by_sid('5678901234').athletics) == 1
-        # Siegfried caught hydrophobia.
-        inactive_student = Student.find_by_sid('890127492')
-        assert not inactive_student.is_active_asc
-        assert inactive_student.status_asc == 'Beyond Aid'
-        assert inactive_student.athletics[0].group_code == 'MWP'
-        assert status is not False
-        assert (not status['warnings'])
-        counts = status['change_counts']
-        assert counts['deleted_students'] == 1
-        assert counts['deleted_memberships'] == 7
-        assert counts['new_memberships'] == 2
-        assert counts['new_team_groups'] == 1
-        assert True
 
     def test_update_safety_check(self, app):
         this_acad_yr = app.config['ASC_THIS_ACAD_YR']
@@ -89,25 +57,6 @@ class TestImportAscAthletes:
 
 class TestAscAthletesApiUpdates:
 
-    def test_feed_stashing(self, app):
-        feed_date = '2018-01-31'
-        assert asc.get_cached_feed(feed_date) is None
-        status = ImportAscAthletes().run()
-        assert status['last_sync_date'] is None
-        assert status['this_sync_date'] == feed_date
-        api_results_count = status['api_results_count']
-        assert api_results_count == 9
-        stashed = asc.get_cached_feed(feed_date)
-        assert len(stashed) == 9
-        assert stashed[0]['SyncDate'] == feed_date
-
-    def test_last_sync_date(self, app):
-        first_date = '2018-01-21'
-        asc.confirm_sync(first_date)
-        status = ImportAscAthletes().run()
-        assert status['last_sync_date'] == first_date
-        assert status['this_sync_date'] == '2018-01-31'
-
     def test_consistency_check(self, app):
         bad_date = '"It\'s not you, it\'s me"'
         with open(app.config['BASE_DIR'] + '/fixtures/asc_athletes.json') as file:
@@ -115,9 +64,3 @@ class TestAscAthletesApiUpdates:
             modified_response = MockResponse(200, {}, modified_response_body)
             with register_mock(asc_athletes_api._get_asc_feed_response, modified_response):
                 assert ImportAscAthletes().run() is False
-
-    def test_repeat_date_not_stashed(self, app):
-        feed_date = '2018-01-31'
-        asc.confirm_sync(feed_date)
-        ImportAscAthletes().run()
-        assert asc.get_cached_feed(feed_date) is None
