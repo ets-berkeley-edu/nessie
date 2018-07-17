@@ -199,7 +199,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         return merged_profile
 
     def generate_merged_enrollment_terms(self, merged_profile, term_id=None):
-        matriculation_term = merged_profile.get('sisProfile', {}).get('matriculation')
+        sis_profile = merged_profile.get('sisProfile') or {}
+        matriculation_term = sis_profile.get('matriculation')
         terms_for_student = berkeley.reverse_terms_until(matriculation_term or app.config['EARLIEST_TERM'])
         term_ids_for_student = [berkeley.sis_term_id_for_name(t) for t in terms_for_student]
         if term_id and term_id not in term_ids_for_student:

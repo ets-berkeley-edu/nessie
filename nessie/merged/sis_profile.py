@@ -24,44 +24,50 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
+import json
 import re
+
 from flask import current_app as app
-from nessie.externals import sis_degree_progress_api
-from nessie.externals import sis_student_api
+from nessie.lib import queries
 from nessie.lib.berkeley import degree_program_url_for_major, term_name_for_sis_id
 from nessie.lib.util import vacuum_whitespace
 
 
 def get_merged_sis_profile(csid):
-    sis_response = sis_student_api.get_student(csid)
-    if not sis_response:
+    result = queries.get_sis_api_profile(csid)
+    sis_student_api_feed = result and result[0] and json.loads(result[0]['feed'])
+    if not sis_student_api_feed:
         return False
 
     sis_profile = {}
-    merge_sis_profile_academic_status(sis_response, sis_profile)
-    merge_sis_profile_emails(sis_response, sis_profile)
+    merge_sis_profile_academic_status(sis_student_api_feed, sis_profile)
+    merge_sis_profile_emails(sis_student_api_feed, sis_profile)
 
     # We have encountered at least one malformed Hub Student Profile feed in which the top-level
     # 'names' key points to an embedded 'names' array rather than simply pointing to the array.
     # See BOAC-362 for details.
     try:
-        merge_sis_profile_names(sis_response, sis_profile)
+        merge_sis_profile_names(sis_student_api_feed, sis_profile)
     except AttributeError as e:
         app.logger.error(f'Hub Student API returned malformed response for SID {csid}')
         app.logger.error(e)
 
-    merge_sis_profile_phones(sis_response, sis_profile)
+    merge_sis_profile_phones(sis_student_api_feed, sis_profile)
     if sis_profile['academicCareer'] == 'UGRD':
-        sis_profile['degreeProgress'] = sis_degree_progress_api.parsed_degree_progress(csid)
+        dp_result = queries.get_sis_api_degree_progress(csid)
+        degree_progress_api_feed = dp_result and dp_result[0] and json.loads(dp_result[0]['feed'])
+        if not degree_progress_api_feed:
+            return False
+        sis_profile['degreeProgress'] = degree_progress_api_feed
 
     return sis_profile
 
 
-def merge_sis_profile_academic_status(sis_response, sis_profile):
+def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
     # The Hub may return multiple academic statuses. We'll select the first status with a well-formed academic
     # career that is not a concurrent enrollment.
     academic_status = None
-    for status in sis_response.get('academicStatuses', []):
+    for status in sis_student_api_feed.get('academicStatuses', []):
         career_code = status.get('currentRegistration', {}).get('academicCareer', {}).get('code')
         if career_code and career_code != 'UCBX':
             academic_status = status
@@ -87,10 +93,10 @@ def merge_sis_profile_academic_status(sis_response, sis_profile):
     merge_sis_profile_plans(academic_status, sis_profile)
 
 
-def merge_sis_profile_emails(sis_response, sis_profile):
+def merge_sis_profile_emails(sis_student_api_feed, sis_profile):
     primary_email = None
     campus_email = None
-    for email in sis_response.get('emails', []):
+    for email in sis_student_api_feed.get('emails', []):
         if email.get('primary'):
             primary_email = email.get('emailAddress')
             break
@@ -99,8 +105,8 @@ def merge_sis_profile_emails(sis_response, sis_profile):
     sis_profile['emailAddress'] = primary_email or campus_email
 
 
-def merge_sis_profile_names(sis_response, sis_profile):
-    for name in sis_response.get('names', []):
+def merge_sis_profile_names(sis_student_api_feed, sis_profile):
+    for name in sis_student_api_feed.get('names', []):
         code = name.get('type', {}).get('code')
         if code == 'PRF':
             sis_profile['preferredName'] = vacuum_whitespace(name.get('formattedName'))
@@ -110,10 +116,10 @@ def merge_sis_profile_names(sis_response, sis_profile):
             break
 
 
-def merge_sis_profile_phones(sis_response, sis_profile):
+def merge_sis_profile_phones(sis_student_api_feed, sis_profile):
     phones_by_code = {
         phone.get('type', {}).get('code'): phone.get('number')
-        for phone in sis_response.get('phones', [])
+        for phone in sis_student_api_feed.get('phones', [])
     }
     sis_profile['phoneNumber'] = phones_by_code.get('CELL') or phones_by_code.get('LOCL') or phones_by_code.get('HOME')
 

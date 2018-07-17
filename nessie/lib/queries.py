@@ -71,9 +71,21 @@ def get_canvas_course_scores(course_id):
     return redshift.fetch(sql)
 
 
+@fixture('query_sis_api_drops_and_midterms_{csid}.csv')
+def get_sis_api_degree_progress(csid):
+    sql = f"""SELECT feed from {student_schema()}.sis_api_degree_progress WHERE sid={csid}"""
+    return redshift.fetch(sql)
+
+
 @fixture('query_sis_api_drops_and_midterms_{csid}_{term_id}.csv')
 def get_sis_api_drops_and_midterms(csid, term_id):
     sql = f"""SELECT feed from {student_schema()}.sis_api_drops_and_midterms WHERE sid={csid} and term_id={term_id}"""
+    return redshift.fetch(sql)
+
+
+@fixture('query_sis_api_profile_{csid}.csv')
+def get_sis_api_profile(csid):
+    sql = f"""SELECT feed from {student_schema()}.sis_api_profiles WHERE sid={csid}"""
     return redshift.fetch(sql)
 
 

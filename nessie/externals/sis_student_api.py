@@ -30,10 +30,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
-from nessie.models.json_cache import stow
 
 
-@stow('sis_student_api_{cs_id}')
 def get_student(cs_id):
     response = _get_student(cs_id)
     if response and hasattr(response, 'json'):
