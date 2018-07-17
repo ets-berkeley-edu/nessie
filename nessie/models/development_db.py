@@ -23,52 +23,14 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+
 from flask import current_app as app
 from nessie import db, std_commit
-from nessie.models.athletics import Athletics
-from nessie.models.student import Student
+from nessie.externals import redshift
 # Models below are included so that db.create_all will find them.
-from nessie.models.db_relationships import student_athletes # noqa
 from nessie.models.json_cache import JsonCache # noqa
+import psycopg2.sql
 from sqlalchemy.sql import text
-
-
-football_defensive_backs = {
-    'group_code': 'MFB-DB',
-    'group_name': 'Football, Defensive Backs',
-    'team_code': 'FBM',
-    'team_name': 'Football',
-}
-football_defensive_line = {
-    'group_code': 'MFB-DL',
-    'group_name': 'Football, Defensive Line',
-    'team_code': 'FBM',
-    'team_name': 'Football',
-}
-womens_field_hockey = {
-    'group_code': 'WFH',
-    'group_name': 'Women\'s Field Hockey',
-    'team_code': 'FHW',
-    'team_name': 'Women\'s Field Hockey',
-}
-mens_baseball = {
-    'group_code': 'MBB',
-    'group_name': 'Men\'s Baseball',
-    'team_code': 'BAM',
-    'team_name': 'Men\'s Baseball',
-}
-mens_tennis = {
-    'group_code': 'MTE',
-    'group_name': 'Men\'s Tennis',
-    'team_code': 'TNM',
-    'team_name': 'Men\'s Tennis',
-}
-womens_tennis = {
-    'group_code': 'WTE',
-    'group_name': 'Women\'s Tennis',
-    'team_code': 'TNW',
-    'team_name': 'Women\'s Tennis',
-}
 
 
 def clear():
@@ -96,100 +58,128 @@ def load_schemas():
     std_commit(allow_test_environment=True)
 
 
-def create_team_group(t):
-    athletics = Athletics(
-        group_code=t['group_code'],
-        group_name=t['group_name'],
-        team_code=t['team_code'],
-        team_name=t['team_name'],
-    )
-    db.session.add(athletics)
-    return athletics
-
-
-def create_student(sid, team_groups, gpa, level, units, majors, in_intensive_cohort=False):
-    student = Student(
-        sid=sid,
-        in_intensive_cohort=in_intensive_cohort,
-    )
-    db.session.add(student)
-    for team_group in team_groups:
-        team_group.athletes.append(student)
-    return student
+def create_student(sid, active=True, intensive=False, status_asc=None, team_groups=None):
+    schema = psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_ASC'])
+    sql = """INSERT INTO {schema}.students
+        (sid, active, intensive, status_asc, group_code, group_name, team_code, team_name, created_at, updated_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, current_timestamp, current_timestamp)
+    """
+    if len(team_groups):
+        for t in team_groups:
+            redshift.execute(
+                sql,
+                params=(sid, active, intensive, status_asc, t['group_code'], t['group_name'], t['team_code'], t['team_name']),
+                schema=schema,
+            )
+    else:
+        redshift.execute(
+            sql,
+            params=(sid, active, intensive, status_asc, None, None, None, None),
+            schema=schema,
+        )
 
 
 def load_student_athletes():
-    fdb = create_team_group(football_defensive_backs)
-    fdl = create_team_group(football_defensive_line)
-    mbb = create_team_group(mens_baseball)
-    mt = create_team_group(mens_tennis)
-    wfh = create_team_group(womens_field_hockey)
-    wt = create_team_group(womens_tennis)
-    # Some students are on teams and some are not
+    """Use Postgres to mock the Redshift students schema on local test runs."""
+    schema = app.config['REDSHIFT_SCHEMA_ASC']
+    redshift.execute(f'DROP SCHEMA IF EXISTS {schema} CASCADE')
+    redshift.execute(f'CREATE SCHEMA IF NOT EXISTS {schema}')
+    redshift.execute(f"""CREATE TABLE IF NOT EXISTS {schema}.students
+    (
+        sid VARCHAR NOT NULL,
+        active BOOLEAN NOT NULL,
+        intensive BOOLEAN NOT NULL,
+        status_asc VARCHAR,
+        group_code VARCHAR,
+        group_name VARCHAR,
+        team_code VARCHAR,
+        team_name VARCHAR,
+        created_at TIMESTAMP NOT NULL,
+        updated_at TIMESTAMP NOT NULL
+    )""")
+    redshift.execute(f"""CREATE TABLE IF NOT EXISTS {schema}.student_profiles
+    (
+        sid VARCHAR NOT NULL,
+        profile VARCHAR(max) NOT NULL
+    )""")
+
+    football_defensive_backs = {
+        'group_code': 'MFB-DB',
+        'group_name': 'Football, Defensive Backs',
+        'team_code': 'FBM',
+        'team_name': 'Football',
+    }
+    football_defensive_line = {
+        'group_code': 'MFB-DL',
+        'group_name': 'Football, Defensive Line',
+        'team_code': 'FBM',
+        'team_name': 'Football',
+    }
+    womens_field_hockey = {
+        'group_code': 'WFH',
+        'group_name': 'Women\'s Field Hockey',
+        'team_code': 'FHW',
+        'team_name': 'Women\'s Field Hockey',
+    }
+    mens_baseball = {
+        'group_code': 'MBB',
+        'group_name': 'Men\'s Baseball',
+        'team_code': 'BAM',
+        'team_name': 'Men\'s Baseball',
+    }
+    mens_tennis = {
+        'group_code': 'MTE',
+        'group_name': 'Men\'s Tennis',
+        'team_code': 'TNM',
+        'team_name': 'Men\'s Tennis',
+    }
+    womens_tennis = {
+        'group_code': 'WTE',
+        'group_name': 'Women\'s Tennis',
+        'team_code': 'TNW',
+        'team_name': 'Women\'s Tennis',
+    }
     create_student(
         sid='11667051',
-        team_groups=[wfh, wt],
-        gpa=None,
-        level=None,
-        units=0,
-        majors=['History BA'],
-        in_intensive_cohort=True,
+        intensive=True,
+        team_groups=[womens_field_hockey, womens_tennis],
     )
     create_student(
         sid='8901234567',
+        intensive=True,
         team_groups=[],
-        gpa='1.85',
-        level='Freshman',
-        units=12,
-        majors=['Economics BA'],
-        in_intensive_cohort=True,
     )
     create_student(
         sid='2345678901',
-        team_groups=[fdb, fdl],
-        gpa='3.495',
-        level='Junior',
-        units=34,
-        majors=['Chemistry BS'],
+        team_groups=[football_defensive_backs, football_defensive_line],
     )
     create_student(
         sid='3456789012',
-        team_groups=[fdl],
-        gpa='3.005',
-        level='Junior',
-        units=70,
-        majors=['English BA', 'Political Economy BA'],
-        in_intensive_cohort=True,
+        intensive=True,
+        team_groups=[football_defensive_line],
     )
     create_student(
         sid='5678901234',
-        team_groups=[fdb, fdl, mt],
-        gpa='3.501',
-        level='Senior',
-        units=102,
-        majors=['Letters & Sci Undeclared UG'],
+        team_groups=[football_defensive_backs, football_defensive_line, mens_tennis],
     )
     create_student(
         sid='7890123456',
-        team_groups=[mbb],
-        gpa='3.90',
-        level='Senior',
-        units=110,
-        majors=['History BA'],
-        in_intensive_cohort=True,
+        intensive=True,
+        team_groups=[mens_baseball],
     )
-    schlemiel = create_student(
+    create_student(
         sid='890127492',
+        active=False,
+        intensive=True,
+        status_asc='Trouble',
         # 'A mug is a mug in everything.' - Colonel Harrington
-        team_groups=[fdb, fdl, mt, wfh, wt],
-        gpa='0.40',
-        level='Sophomore',
-        units=8,
-        majors=['Mathematics'],
-        in_intensive_cohort=True,
+        team_groups=[
+            football_defensive_backs,
+            football_defensive_line,
+            mens_tennis,
+            womens_field_hockey,
+            womens_tennis,
+        ],
     )
-    schlemiel.is_active_asc = False
-    schlemiel.status_asc = 'Trouble'
-    db.session.merge(schlemiel)
 
     std_commit(allow_test_environment=True)

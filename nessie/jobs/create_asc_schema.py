@@ -29,14 +29,13 @@ import operator
 
 from flask import current_app as app
 from nessie.externals import redshift
-from nessie.jobs.background_job import BackgroundJob, resolve_sql_template, verify_external_schema
+from nessie.jobs.background_job import BackgroundJob, resolve_sql_template
 import psycopg2
 
 
 """Logic for ASC schema creation job."""
 
 
-external_schema = app.config['REDSHIFT_SCHEMA_ASC_EXTERNAL']
 internal_schema = app.config['REDSHIFT_SCHEMA_ASC']
 internal_schema_identifier = psycopg2.sql.Identifier(internal_schema)
 
@@ -45,15 +44,9 @@ class CreateAscSchema(BackgroundJob):
 
     def run(self):
         app.logger.info(f'Starting ASC schema creation job...')
-        redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template('create_asc_schema.template.sql')
-        # TODO This DDL drops and recreates the internal schema before the external schema is verified. We
-        # ought to set up proper staging in conjunction with verification. It's also possible that a persistent
-        # external schema isn't needed.
         if redshift.execute_ddl_script(resolved_ddl):
             app.logger.info(f'ASC schema creation job completed.')
-            if not verify_external_schema(external_schema, resolved_ddl):
-                return False
         else:
             app.logger.error(f'ASC schema creation job failed.')
             return False
