@@ -79,7 +79,7 @@ def metadata_db(app):
         job_id VARCHAR NOT NULL,
         status VARCHAR NOT NULL,
         instance_id VARCHAR,
-        error VARCHAR(4096),
+        details VARCHAR(4096),
         created_at TIMESTAMP NOT NULL,
         updated_at TIMESTAMP NOT NULL
     )""")

@@ -96,5 +96,5 @@ class CreateCoeSchema(BackgroundJob):
         if not redshift.execute(query):
             app.logger.error('Error on Redshift copy: aborting job.')
             return False
-        app.logger.info(f'COE internal schema created.')
-        return True
+
+        return 'COE internal schema created.'

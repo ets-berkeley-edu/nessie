@@ -38,8 +38,7 @@ class GenerateBoacAnalytics(BackgroundJob):
         app.logger.info(f'Starting BOAC analytics job...')
         resolved_ddl = resolve_sql_template('create_boac_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
-            app.logger.info(f'BOAC analytics creation job completed.')
-            return True
+            return 'BOAC analytics creation job completed.'
         else:
             app.logger.error(f'BOAC analytics creation job failed.')
             return False

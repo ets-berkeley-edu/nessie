@@ -56,9 +56,8 @@ def get_merged_sis_profile(csid):
     if sis_profile['academicCareer'] == 'UGRD':
         dp_result = queries.get_sis_api_degree_progress(csid)
         degree_progress_api_feed = dp_result and dp_result[0] and json.loads(dp_result[0]['feed'])
-        if not degree_progress_api_feed:
-            return False
-        sis_profile['degreeProgress'] = degree_progress_api_feed
+        if degree_progress_api_feed:
+            sis_profile['degreeProgress'] = degree_progress_api_feed
 
     return sis_profile
 

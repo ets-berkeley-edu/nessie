@@ -34,20 +34,21 @@ import xmltodict
 
 
 def parsed_degree_progress(cs_id):
-    data = {}
     cs_feed = get_degree_progress(cs_id)
-    if cs_feed:
-        requirements_list = cs_feed.get('UC_AA_PROGRESS', {}).get('PROGRESSES', {}).get('PROGRESS', {}).get('REQUIREMENTS', {}).get('REQUIREMENT')
-        if requirements_list:
-            data['reportDate'] = cs_feed['UC_AA_PROGRESS']['PROGRESSES']['PROGRESS']['RPT_DATE']
-            data['requirements'] = {
-                'entryLevelWriting': {'name': 'Entry Level Writing'},
-                'americanHistory': {'name': 'American History'},
-                'americanInstitutions': {'name': 'American Institutions'},
-                'americanCultures': {'name': 'American Cultures'},
-            }
-            for req in requirements_list:
-                merge_requirement_status(data['requirements'], req)
+    if not cs_feed:
+        return cs_feed
+    data = {}
+    requirements_list = cs_feed.get('UC_AA_PROGRESS', {}).get('PROGRESSES', {}).get('PROGRESS', {}).get('REQUIREMENTS', {}).get('REQUIREMENT')
+    if requirements_list:
+        data['reportDate'] = cs_feed['UC_AA_PROGRESS']['PROGRESSES']['PROGRESS']['RPT_DATE']
+        data['requirements'] = {
+            'entryLevelWriting': {'name': 'Entry Level Writing'},
+            'americanHistory': {'name': 'American History'},
+            'americanInstitutions': {'name': 'American Institutions'},
+            'americanCultures': {'name': 'American Cultures'},
+        }
+        for req in requirements_list:
+            merge_requirement_status(data['requirements'], req)
     return data
 
 
@@ -93,7 +94,7 @@ def get_degree_progress(cs_id):
 def _get_degree_progress(cs_id, mock=None):
     url = http.build_url(app.config['DEGREE_PROGRESS_API_URL'], {'EMPLID': cs_id})
     with mock(url):
-        return http.request(url, auth=cs_api_auth())
+        return http.request(url, auth=cs_api_auth(), log_404s=False)
 
 
 def cs_api_auth():

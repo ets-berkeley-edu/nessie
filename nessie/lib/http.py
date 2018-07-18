@@ -72,7 +72,7 @@ def get_next_page(response):
         return None
 
 
-def request(url, headers={}, method='get', auth=None, auth_params=None, data=None, **kwargs):
+def request(url, headers={}, method='get', auth=None, auth_params=None, data=None, log_404s=True, **kwargs):
     """Exception and error catching wrapper for outgoing HTTP requests.
 
     :param url:
@@ -99,9 +99,10 @@ def request(url, headers={}, method='get', auth=None, auth_params=None, data=Non
             urllib_logger.setLevel(saved_level)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        app.logger.error(e)
-        if hasattr(response, 'content'):
-            app.logger.error(response.content)
+        if not (hasattr(response, 'status_code') and response.status_code == 404 and not log_404s):
+            app.logger.error(e)
+            if hasattr(response, 'content'):
+                app.logger.error(response.content)
         return ResponseExceptionWrapper(e, response)
     else:
         return response

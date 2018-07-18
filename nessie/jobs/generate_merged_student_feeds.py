@@ -33,7 +33,7 @@ import operator
 
 from flask import current_app as app
 from nessie.externals import redshift, s3
-from nessie.jobs.background_job import BackgroundJob, get_s3_sis_api_daily_path, resolve_sql_template, resolve_sql_template_string
+from nessie.jobs.background_job import BackgroundJob, get_s3_sis_api_daily_path, resolve_sql_template_string
 from nessie.lib import berkeley, queries
 from nessie.lib.analytics import mean_course_analytics_for_user
 from nessie.merged.sis_profile import get_merged_sis_profile
@@ -51,13 +51,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     def run(self, term_id=None):
         """Loop through all records stored in the Calnet external schema and write merged student data to the internal student schema."""
         app.logger.info(f'Starting merged profile generation job... (term_id={term_id})')
-        staging_schema_ddl = resolve_sql_template('create_student_schema.template.sql', redshift_schema_student=self.staging_schema)
-        if not redshift.execute_ddl_script(staging_schema_ddl):
-            app.logger.error('Failed to create staging tables for merged profiles.')
-            return False
-
-        # Before starting the merge, clean up after any recently run external import jobs.
-        redshift.execute('VACUUM; ANALYZE;')
 
         calnet_profiles = redshift.fetch(
             'SELECT ldap_uid, sid, first_name, last_name FROM {calnet_schema}.persons',
@@ -77,6 +70,19 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'student_enrollment_terms': [],
         }
 
+        # Remove any old data from staging tables.
+        for table in tables:
+            redshift.execute(
+                'TRUNCATE {schema}.{table}',
+                schema=self.staging_schema_identifier,
+                table=psycopg2.sql.Identifier(table),
+            )
+
+        # Before starting the merge, clean up after any recently run external import jobs.
+        # redshift.execute('VACUUM; ANALYZE;')
+
+        success_count = 0
+        failure_count = 0
         index = 1
         for sid, profile_group in groupby(calnet_profiles, operator.itemgetter('sid')):
             app.logger.info(f'Generating feeds for sid {sid} ({index} of {len(calnet_profiles)})')
@@ -85,6 +91,9 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
             if merged_profile:
                 self.generate_merged_enrollment_terms(merged_profile, term_id)
+                success_count += 1
+            else:
+                failure_count += 1
 
         for table in tables:
             self.upload_table(table)
@@ -129,20 +138,24 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 redshift.execute('ROLLBACK TRANSACTION')
                 return False
             app.logger.info(f'Populated {self.destination_schema}.{table} from staging schema.')
+            redshift.execute(
+                'TRUNCATE {schema}.{table}',
+                schema=self.staging_schema_identifier,
+                table=psycopg2.sql.Identifier(table),
+            )
+            app.logger.info(f'Truncated staging table {self.staging_schema}.{table}.')
 
-        redshift.execute('DROP SCHEMA {staging_schema} CASCADE', staging_schema=self.staging_schema_identifier)
         transaction_result = redshift.execute('COMMIT TRANSACTION')
         if not transaction_result:
             app.logger.error(f'Final transaction commit failed for {self.destination_schema}.')
             return False
-        app.logger.info(f'Dropped {self.staging_schema}.')
 
         # Clean up the workbench.
         redshift.execute('VACUUM')
         redshift.execute('ANALYZE')
-        app.logger.info(f'Vacuumed and analyzed. Job complete.')
+        app.logger.info(f'Vacuumed and analyzed.')
 
-        return True
+        return f'Merged profile generation complete: {success_count} successes, {failure_count} failures.'
 
     def generate_or_fetch_merged_profile(self, term_id, sid, calnet_profile):
         merged_profile = None

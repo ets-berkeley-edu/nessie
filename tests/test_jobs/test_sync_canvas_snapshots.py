@@ -39,7 +39,7 @@ class TestSyncCanvasSnapshots:
             # mock HTTP library (httpretty), disable it for tests.
             # TODO resolve the incompatibility, possibly by switching from httpretty to responses.
             result = SyncCanvasSnapshots().run_wrapped(cleanup=False)
-            assert result is True
+            assert 'Canvas snapshot sync job dispatched to workers' in result
             assert_background_job_status('sync')
             assert 'Dispatched S3 sync of snapshot quiz_dim-00000-0ab80c7c.gz' in caplog.text
             assert 'Dispatched S3 sync of snapshot requests-00098-b14782f5.gz' in caplog.text
