@@ -23,6 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from functools import reduce
 from itertools import groupby
 import json
 import operator
@@ -53,6 +54,12 @@ class CreateAscSchema(BackgroundJob):
 
         for sid, rows_for_student in groupby(asc_rows, operator.itemgetter('sid')):
             rows_for_student = list(rows_for_student)
+            # Since BOAC believes (falsely) that isActiveAsc and statusAsc are attributes of a student, not
+            # a team membership, a bit of brutal simplification is needed. Students who are active in at least
+            # one sport have inactive team memberships dropped.
+            any_active_athletics = reduce(operator.or_, [r['active'] for r in rows_for_student], False)
+            if any_active_athletics:
+                rows_for_student = [r for r in rows_for_student if r['active']]
             athletics_profile = {
                 'athletics': [],
                 'inIntensiveCohort': rows_for_student[0]['intensive'],
