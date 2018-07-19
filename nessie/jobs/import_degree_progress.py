@@ -69,16 +69,19 @@ class ImportDegreeProgress(BackgroundJob):
         app.logger.info('Will copy S3 feeds into Redshift...')
         query = resolve_sql_template_string(
             """
-            TRUNCATE {redshift_schema_student}.sis_api_degree_progress;
-            COPY {redshift_schema_student}.sis_api_degree_progress
+            TRUNCATE {redshift_schema_student}_staging.sis_api_degree_progress;
+            COPY {redshift_schema_student}_staging.sis_api_degree_progress
                 FROM '{loch_s3_sis_api_data_path}/degree_progress.tsv'
                 IAM_ROLE '{redshift_iam_role}'
                 DELIMITER '\\t';
+            DELETE FROM {redshift_schema_student}.sis_api_degree_progress
+                WHERE sid IN (SELECT sid FROM {redshift_schema_student}_staging.sis_api_degree_progress);
+            INSERT INTO {redshift_schema_student}.sis_api_degree_progress
+                (SELECT * FROM {redshift_schema_student}_staging.sis_api_degree_progress);
             """,
         )
         if not redshift.execute(query):
             app.logger.error('Error on Redshift copy: aborting job.')
             return False
 
-        app.logger.info(f'SIS degree progress API import job completed: {success_count} succeeded, {failure_count} failed.')
-        return True
+        return f'SIS degree progress API import job completed: {success_count} succeeded, {failure_count} failed.'

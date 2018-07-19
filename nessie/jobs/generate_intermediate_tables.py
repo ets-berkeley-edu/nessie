@@ -38,8 +38,7 @@ class GenerateIntermediateTables(BackgroundJob):
         app.logger.info(f'Starting intermediate table generation job...')
         resolved_ddl = resolve_sql_template('create_intermediate_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
-            app.logger.info(f'Intermediate table creation job completed.')
-            return True
+            return 'Intermediate table creation job completed.'
         else:
             app.logger.error(f'Intermediate table creation job failed.')
             return False

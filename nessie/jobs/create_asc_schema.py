@@ -92,5 +92,4 @@ class CreateAscSchema(BackgroundJob):
             app.logger.error('Error on Redshift copy: aborting job.')
             return False
 
-        app.logger.info('ASC schema creation complete.')
-        return True
+        return 'ASC schema creation complete.'

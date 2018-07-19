@@ -47,8 +47,7 @@ class ResyncCanvasSnapshots(BackgroundJob):
         app.logger.info(f'Starting Canvas snapshot resync job... (id={job_id})')
         md = metadata.get_failures_from_last_sync()
         if not md['failures']:
-            app.logger.info(f"No failures found for job_id {md['job_id']}, skipping resync.")
-            return True
+            return f"No failures found for job_id {md['job_id']}, skipping resync."
         app.logger.info(f"Found {len(md['failures'])} failures for job_id {md['job_id']}, attempting resync.")
 
         failures = 0
@@ -86,5 +85,4 @@ class ResyncCanvasSnapshots(BackgroundJob):
                 app.logger.info('Dispatched S3 resync of snapshot ' + failure['filename'])
                 successes += 1
 
-        app.logger.info(f'Canvas snapshot resync job dispatched to workers ({successes} successful dispatches, {failures} failures).')
-        return True
+        return f'Canvas snapshot resync job dispatched to workers ({successes} successful dispatches, {failures} failures).'

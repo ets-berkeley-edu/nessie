@@ -114,15 +114,15 @@ def create_background_job_status(job_id):
     )
 
 
-def update_background_job_status(job_id, status, error=None):
-    if error:
-        error = error[:4096]
+def update_background_job_status(job_id, status, details=None):
+    if details:
+        details = details[:4096]
     sql = """UPDATE {schema}.background_job_status
-             SET status=%s, updated_at=current_timestamp, error=%s
+             SET status=%s, updated_at=current_timestamp, details=%s
              WHERE job_id=%s"""
     return redshift.execute(
         sql,
-        params=(status, error, job_id),
+        params=(status, details, job_id),
         schema=_schema(),
     )
 

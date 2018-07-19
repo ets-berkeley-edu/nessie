@@ -119,5 +119,4 @@ class SyncCanvasSnapshots(BackgroundJob):
             delete_result = delete_objects_with_prefix(requests_prefix, whitelist=current_snapshot_filenames)
             if not delete_result:
                 app.logger.error('Cleanup of obsolete snapshots failed.')
-        app.logger.info(f'Canvas snapshot sync job dispatched to workers ({success} successful dispatches, {failure} failures).')
-        return True
+        return f'Canvas snapshot sync job dispatched to workers ({success} successful dispatches, {failure} failures).'

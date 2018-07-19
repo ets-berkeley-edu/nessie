@@ -46,6 +46,7 @@ class ImportSisEnrollmentsApi(BackgroundJob):
 
         rows = []
         success_count = 0
+        no_enrollments_count = 0
         failure_count = 0
         index = 1
         for csid in csids:
@@ -54,6 +55,9 @@ class ImportSisEnrollmentsApi(BackgroundJob):
             if feed:
                 success_count += 1
                 rows.append('\t'.join([str(csid), str(term_id), json.dumps(feed)]))
+            elif feed is False:
+                app.logger.info(f'SID {csid} returned no enrollments for term {term_id}.')
+                no_enrollments_count += 1
             else:
                 failure_count += 1
                 app.logger.error(f'SIS enrollments API import failed for CSID {csid}.')
@@ -68,11 +72,16 @@ class ImportSisEnrollmentsApi(BackgroundJob):
         app.logger.info('Will copy S3 feeds into Redshift...')
         query = resolve_sql_template_string(
             """
-            DELETE FROM {redshift_schema_student}.sis_api_drops_and_midterms WHERE term_id = '{term_id}';
-            COPY {redshift_schema_student}.sis_api_drops_and_midterms
+            DELETE FROM {redshift_schema_student}_staging.sis_api_drops_and_midterms WHERE term_id = '{term_id}';
+            COPY {redshift_schema_student}_staging.sis_api_drops_and_midterms
                 FROM '{loch_s3_sis_api_data_path}/drops_and_midterms_{term_id}.tsv'
                 IAM_ROLE '{redshift_iam_role}'
                 DELIMITER '\\t';
+            DELETE FROM {redshift_schema_student}.sis_api_drops_and_midterms
+                WHERE term_id = '{term_id}'
+                AND sid IN (SELECT sid FROM {redshift_schema_student}_staging.sis_api_drops_and_midterms);
+            INSERT INTO {redshift_schema_student}.sis_api_drops_and_midterms
+                (SELECT * FROM {redshift_schema_student}_staging.sis_api_drops_and_midterms);
             """,
             term_id=term_id,
         )
@@ -80,5 +89,7 @@ class ImportSisEnrollmentsApi(BackgroundJob):
             app.logger.error('Error on Redshift copy: aborting job.')
             return False
 
-        app.logger.info(f'SIS enrollments API import job completed: {success_count} succeeded, {failure_count} failed.')
-        return True
+        return (
+            f'SIS enrollments API import completed for term {term_id}: {success_count} succeeded, '
+            f'{no_enrollments_count} returned no enrollments, {failure_count} failed.'
+        )

@@ -69,7 +69,7 @@ class TestResyncCanvasSnapshots:
             # mock HTTP library (httpretty), disable it for tests.
             # TODO resolve the incompatibility, possibly by switching from httpretty to responses.
             result = ResyncCanvasSnapshots().run_wrapped(cleanup=False)
-            assert result is True
+            assert 'Canvas snapshot resync job dispatched to workers' in result
             assert_background_job_status('resync')
             assert f"Dispatched S3 resync of snapshot {stalled['filename']}" in caplog.text
             assert f"Dispatched S3 resync of snapshot {errored['filename']}" in caplog.text

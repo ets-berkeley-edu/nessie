@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_metadata}.background_job_status
     instance_id VARCHAR,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
-    error VARCHAR(4096),
+    details VARCHAR(4096),
     # Primary key constraints are not enforced by Redshift but are used in query planning.
     # https://docs.aws.amazon.com/redshift/latest/dg/t_Defining_constraints.html
     PRIMARY KEY (job_id)

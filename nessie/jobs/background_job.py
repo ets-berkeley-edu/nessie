@@ -191,8 +191,17 @@ class BackgroundJob(object):
                 result = None
                 error = str(e)
             if self.status_logging_enabled:
-                status = 'succeeded' if result else 'failed'
-                update_background_job_status(job_id, status, error=error)
+                if result:
+                    status = 'succeeded'
+                    if isinstance(result, str):
+                        app.logger.info(result)
+                        details = result
+                    else:
+                        details = None
+                else:
+                    status = 'failed'
+                    details = error
+                update_background_job_status(job_id, status, details=details)
             return result
 
 

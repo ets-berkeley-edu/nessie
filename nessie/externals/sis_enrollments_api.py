@@ -90,4 +90,4 @@ def authorized_request(url):
         'app_key': app.config['ENROLLMENTS_API_KEY'],
         'Accept': 'application/json',
     }
-    return http.request(url, auth_headers)
+    return http.request(url, auth_headers, log_404s=False)

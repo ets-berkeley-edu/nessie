@@ -65,16 +65,19 @@ class ImportSisStudentApi(BackgroundJob):
         app.logger.info('Will copy S3 feeds into Redshift...')
         query = resolve_sql_template_string(
             """
-            TRUNCATE {redshift_schema_student}.sis_api_profiles;
-            COPY {redshift_schema_student}.sis_api_profiles
+            TRUNCATE {redshift_schema_student}_staging.sis_api_profiles;
+            COPY {redshift_schema_student}_staging.sis_api_profiles
                 FROM '{loch_s3_sis_api_data_path}/profiles.tsv'
                 IAM_ROLE '{redshift_iam_role}'
                 DELIMITER '\\t';
+            DELETE FROM {redshift_schema_student}.sis_api_profiles WHERE sid IN
+                (SELECT sid FROM {redshift_schema_student}_staging.sis_api_profiles);
+            INSERT INTO {redshift_schema_student}.sis_api_profiles
+                (SELECT * FROM {redshift_schema_student}_staging.sis_api_profiles);
             """,
         )
         if not redshift.execute(query):
             app.logger.error('Error on Redshift copy: aborting job.')
             return False
 
-        app.logger.info(f'SIS student API import job completed: {success_count} succeeded, {failure_count} failed.')
-        return True
+        return f'SIS student API import job completed: {success_count} succeeded, {failure_count} failed.'
