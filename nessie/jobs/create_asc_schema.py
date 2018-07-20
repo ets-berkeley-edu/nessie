@@ -46,7 +46,7 @@ class CreateAscSchema(BackgroundJob):
     def run(self):
         app.logger.info(f'Starting ASC schema creation job...')
         asc_rows = redshift.fetch(
-            'SELECT * FROM {schema}.students ORDER by sid',
+            'SELECT * FROM {schema}.students ORDER by sid, UPPER(team_name)',
             schema=asc_schema_identifier,
         )
 
