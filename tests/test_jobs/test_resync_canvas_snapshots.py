@@ -24,9 +24,9 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from nessie.externals import canvas_data, redshift
-from nessie.jobs.background_job import get_s3_canvas_daily_path
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.lib import metadata
+from nessie.lib.util import get_s3_canvas_daily_path
 from tests.util import assert_background_job_status, capture_app_logs
 
 

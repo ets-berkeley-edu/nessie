@@ -29,7 +29,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import redshift
-from nessie.jobs.background_job import BackgroundJob, resolve_sql_template
+from nessie.jobs.background_job import BackgroundJob
+from nessie.lib.util import resolve_sql_template
 
 
 class CreateMetadataSchema(BackgroundJob):

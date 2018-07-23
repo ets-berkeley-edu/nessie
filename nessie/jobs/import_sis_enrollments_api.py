@@ -30,9 +30,10 @@ import json
 
 from flask import current_app as app
 from nessie.externals import redshift, s3, sis_enrollments_api
-from nessie.jobs.background_job import BackgroundJob, get_s3_sis_api_daily_path, resolve_sql_template_string
+from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.berkeley import current_term_id
 from nessie.lib.queries import get_all_student_ids
+from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
 
 
 class ImportSisEnrollmentsApi(BackgroundJob):

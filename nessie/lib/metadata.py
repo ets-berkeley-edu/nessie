@@ -24,10 +24,12 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
+from datetime import datetime
 import os
 
 from flask import current_app as app
 from nessie.externals import redshift, s3
+from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
 import psycopg2.sql
 
 
@@ -125,6 +127,34 @@ def update_background_job_status(job_id, status, details=None):
         params=(status, details, job_id),
         schema=_schema(),
     )
+
+
+def update_merged_feed_status(term_id, successes, failures):
+    term_id = term_id or 'all'
+    redshift.execute(
+        'DELETE FROM {schema}.merged_feed_status WHERE sid = ANY(%s) AND term_id = %s',
+        schema=_schema(),
+        params=((successes + failures), term_id),
+    )
+    now = datetime.utcnow().isoformat()
+    success_records = ['\t'.join([sid, term_id, 'success', now]) for sid in successes]
+    failure_records = ['\t'.join([sid, term_id, 'failure', now]) for sid in failures]
+    rows = success_records + failure_records
+    s3_key = f'{get_s3_sis_api_daily_path()}/merged_feed_status.tsv'
+    if not s3.upload_data('\n'.join(rows), s3_key):
+        app.logger.error('Error uploading merged feed status updates to S3.')
+        return
+    query = resolve_sql_template_string(
+        """
+        COPY {redshift_schema_metadata}.merged_feed_status
+            FROM '{loch_s3_sis_api_data_path}/merged_feed_status.tsv'
+            IAM_ROLE '{redshift_iam_role}'
+            DELIMITER '\\t'
+            TIMEFORMAT 'YYYY-MM-DDTHH:MI:SS';
+        """
+    )
+    if not redshift.execute(query):
+        app.logger.error('Error copying merged feed status updates to Redshift.')
 
 
 def _instance_id():

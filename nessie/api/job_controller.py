@@ -118,7 +118,12 @@ def generate_intermediate_tables():
 def generate_merged_student_feeds(term_id):
     if term_id == 'all':
         term_id = None
-    job_started = GenerateMergedStudentFeeds(term_id=term_id).run_async()
+    args = get_json_args(request)
+    if args:
+        backfill = args.get('backfill')
+    else:
+        backfill = False
+    job_started = GenerateMergedStudentFeeds(term_id=term_id, backfill_new_students=backfill).run_async()
     return respond_with_status(job_started)
 
 
@@ -132,9 +137,9 @@ def import_degree_progress():
 @app.route('/api/job/import_sis_enrollments_api', methods=['POST'])
 @auth_required
 def import_sis_enrollments_api():
-    args = request.get_json(force=True)
-    if args and args.get('term'):
-        term_id = str(args.get('term'))
+    args = get_json_args(request)
+    if args:
+        term_id = args.get('term')
     else:
         term_id = None
     job_started = ImportSisEnrollmentsApi(term_id=term_id).run_async()
@@ -214,3 +219,11 @@ def respond_with_status(job_started):
         return tolerant_jsonify({'status': 'started'})
     else:
         return tolerant_jsonify({'status': 'errored'})
+
+
+def get_json_args(request):
+    try:
+        args = request.get_json(force=True)
+    except Exception:
+        args = None
+    return args
