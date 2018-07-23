@@ -118,6 +118,8 @@ def generate_intermediate_tables():
 @app.route('/api/job/generate_merged_student_feeds/<term_id>', methods=['POST'])
 @auth_required
 def generate_merged_student_feeds(term_id):
+    if term_id == 'all':
+        term_id = None
     job_started = GenerateMergedStudentFeeds(term_id=term_id).run_async()
     return respond_with_status(job_started)
 
