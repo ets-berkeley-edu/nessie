@@ -64,6 +64,7 @@ def initialize_job_schedules(_app, force=False):
     from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
     from nessie.jobs.import_asc_athletes import ImportAscAthletes
     from nessie.jobs.import_calnet_data import ImportCalNetData
+    from nessie.jobs.create_coe_schema import CreateCoeSchema
     from nessie.jobs.import_degree_progress import ImportDegreeProgress
     from nessie.jobs.import_sis_enrollments_api import ImportSisEnrollmentsApi
     from nessie.jobs.import_sis_student_api import ImportSisStudentApi
@@ -85,6 +86,7 @@ def initialize_job_schedules(_app, force=False):
             sched,
             'JOB_IMPORT_STUDENT_POPULATION',
             [
+                CreateCoeSchema,
                 ImportAscAthletes,
                 CreateAscSchema,
                 ImportCalNetData,
