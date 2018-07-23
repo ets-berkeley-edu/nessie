@@ -31,9 +31,10 @@ import time
 
 from flask import current_app as app
 from nessie.externals import s3
-from nessie.jobs.background_job import BackgroundJob, get_s3_canvas_daily_path
+from nessie.jobs.background_job import BackgroundJob
 from nessie.lib import metadata
 from nessie.lib.dispatcher import dispatch
+from nessie.lib.util import get_s3_canvas_daily_path
 
 
 class ResyncCanvasSnapshots(BackgroundJob):

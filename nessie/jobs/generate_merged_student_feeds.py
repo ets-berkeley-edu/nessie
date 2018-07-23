@@ -33,9 +33,12 @@ import operator
 
 from flask import current_app as app
 from nessie.externals import redshift, s3
-from nessie.jobs.background_job import BackgroundJob, get_s3_sis_api_daily_path, resolve_sql_template_string
+from nessie.jobs.background_job import BackgroundJob
 from nessie.lib import berkeley, queries
 from nessie.lib.analytics import mean_course_analytics_for_user
+from nessie.lib.metadata import update_merged_feed_status
+from nessie.lib.queries import get_all_student_ids, get_successfully_backfilled_students
+from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
 from nessie.merged.sis_profile import get_merged_sis_profile
 from nessie.merged.student_terms import get_canvas_courses_feed, get_merged_enrollment_term
 import psycopg2.sql
@@ -45,17 +48,48 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
     destination_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
     destination_schema_identifier = psycopg2.sql.Identifier(destination_schema)
+    metadata_schema = app.config['REDSHIFT_SCHEMA_METADATA']
+    metadata_schema_identifier = psycopg2.sql.Identifier(metadata_schema)
     staging_schema = destination_schema + '_staging'
     staging_schema_identifier = psycopg2.sql.Identifier(staging_schema)
 
-    def run(self, term_id=None):
-        """Loop through all records stored in the Calnet external schema and write merged student data to the internal student schema."""
-        app.logger.info(f'Starting merged profile generation job... (term_id={term_id})')
+    def run(self, term_id=None, backfill_new_students=False):
+        app.logger.info(f'Starting merged profile generation job (term_id={term_id}, backfill={backfill_new_students}).')
 
-        calnet_profiles = redshift.fetch(
-            'SELECT ldap_uid, sid, first_name, last_name FROM {calnet_schema}.persons',
-            calnet_schema=psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_CALNET']),
-        )
+        app.logger.info('Cleaning up old data...')
+        redshift.execute('VACUUM; ANALYZE;')
+
+        if backfill_new_students:
+            status = ''
+            previous_backfills = {row['sid'] for row in get_successfully_backfilled_students()}
+            sids = {row['sid'] for row in get_all_student_ids()}
+            old_sids = sids.intersection(previous_backfills)
+            new_sids = sids.difference(previous_backfills)
+            # Any students without a previous backfill will have feeds generated for all terms. Students with a previous
+            # backfill get an update for the requested term only.
+            if len(new_sids):
+                app.logger.info(f'Found {len(new_sids)} new students, will backfill all terms.')
+                backfill_status = self.generate_feeds(sids=list(new_sids))
+                if not backfill_status:
+                    return False
+                status += f'Backfill: {backfill_status}; non-backfill: '
+                app.logger.info(f'Backfill complete, will continue with {len(old_sids)} remaining students.')
+            continuation_status = self.generate_feeds(sids=list(old_sids), term_id=term_id)
+            if not continuation_status:
+                return False
+            status += continuation_status
+        else:
+            status = self.generate_feeds(term_id)
+
+        # Clean up the workbench.
+        redshift.execute('VACUUM; ANALYZE;')
+        app.logger.info(f'Vacuumed and analyzed.')
+
+        return status
+
+    def generate_feeds(self, term_id=None, sids=None):
+        """Loop through all records stored in the Calnet external schema and write merged student data to the internal student schema."""
+        calnet_profiles = self.fetch_calnet_profiles(sids)
 
         # Jobs for non-current terms generate enrollment feeds only.
         if term_id and term_id != berkeley.current_term_id():
@@ -78,84 +112,52 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 table=psycopg2.sql.Identifier(table),
             )
 
-        # Before starting the merge, clean up after any recently run external import jobs.
-        # redshift.execute('VACUUM; ANALYZE;')
-
-        success_count = 0
-        failure_count = 0
+        app.logger.info(f'Will generate feeds for {len(calnet_profiles)} students (term_id={term_id}).')
+        successes = []
+        failures = []
         index = 1
         for sid, profile_group in groupby(calnet_profiles, operator.itemgetter('sid')):
             app.logger.info(f'Generating feeds for sid {sid} ({index} of {len(calnet_profiles)})')
             index += 1
             merged_profile = self.generate_or_fetch_merged_profile(term_id, sid, list(profile_group)[0])
-
             if merged_profile:
                 self.generate_merged_enrollment_terms(merged_profile, term_id)
-                success_count += 1
+                successes.append(sid)
             else:
-                failure_count += 1
+                failures.append(sid)
 
         for table in tables:
-            self.upload_table(table)
+            self.upload_to_staging(table)
             if not self.verify_table(table):
                 return False
 
         redshift.execute('BEGIN TRANSACTION')
-
-        if term_id is None:
-            # With no term specified, truncate all student tables.
-            for table in tables:
-                redshift.execute(
-                    'TRUNCATE {schema}.{table}',
-                    schema=self.destination_schema_identifier,
-                    table=psycopg2.sql.Identifier(table),
-                )
-        else:
-            # Otherwise drop rows related to the specified term only.
-            redshift.execute(
-                'DELETE FROM {schema}.student_enrollment_terms WHERE term_id=%s',
-                params=(term_id,),
-                schema=self.destination_schema_identifier,
-            )
-            app.logger.info(f'Dropped term {term_id} from {self.destination_schema}.student_enrollment_terms.')
-            if term_id is None or term_id == berkeley.current_term_id():
-                redshift.execute('DELETE FROM {schema}.student_profiles', schema=self.destination_schema_identifier)
-                app.logger.info(f'Dropped {self.destination_schema}.student_profiles.')
-                redshift.execute('DELETE FROM {schema}.student_academic_status', schema=self.destination_schema_identifier)
-                app.logger.info(f'Dropped {self.destination_schema}.student_academic_status.')
-                redshift.execute('DELETE FROM {schema}.student_majors', schema=self.destination_schema_identifier)
-                app.logger.info(f'Dropped {self.destination_schema}.student_majors.')
-
         for table in tables:
-            result = redshift.execute(
-                'INSERT INTO {schema}.{table} (SELECT * FROM {staging_schema}.{table})',
-                schema=self.destination_schema_identifier,
-                staging_schema=self.staging_schema_identifier,
-                table=psycopg2.sql.Identifier(table),
-            )
-            if not result:
-                app.logger.error(f'Failed to populate table {self.destination_schema}.{table} from staging schema.')
-                redshift.execute('ROLLBACK TRANSACTION')
+            if not self.refresh_from_staging(table, term_id, sids):
+                app.logger.error(f'Failed to refresh {self.destination_schema}.{table} from staging.')
                 return False
-            app.logger.info(f'Populated {self.destination_schema}.{table} from staging schema.')
-            redshift.execute(
-                'TRUNCATE {schema}.{table}',
-                schema=self.staging_schema_identifier,
-                table=psycopg2.sql.Identifier(table),
-            )
-            app.logger.info(f'Truncated staging table {self.staging_schema}.{table}.')
-
-        transaction_result = redshift.execute('COMMIT TRANSACTION')
-        if not transaction_result:
+        if not redshift.execute('COMMIT TRANSACTION'):
             app.logger.error(f'Final transaction commit failed for {self.destination_schema}.')
             return False
 
-        # Clean up the workbench.
-        redshift.execute('VACUUM')
-        redshift.execute('ANALYZE')
-        app.logger.info(f'Vacuumed and analyzed.')
+        update_merged_feed_status(term_id, successes, failures)
+        app.logger.info(f'Updated merged feed status.')
 
-        return f'Merged profile generation complete: {success_count} successes, {failure_count} failures.'
+        return f'Merged profile generation complete: {len(successes)} successes, {len(failures)} failures.'
+
+    def fetch_calnet_profiles(self, sids=None):
+        if sids:
+            profiles = redshift.fetch(
+                'SELECT ldap_uid, sid, first_name, last_name FROM {calnet_schema}.persons WHERE sid = ANY(%s)',
+                calnet_schema=psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_CALNET']),
+                params=(sids,),
+            )
+        else:
+            profiles = redshift.fetch(
+                'SELECT ldap_uid, sid, first_name, last_name FROM {calnet_schema}.persons',
+                calnet_schema=psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_CALNET']),
+            )
+        return profiles
 
     def generate_or_fetch_merged_profile(self, term_id, sid, calnet_profile):
         merged_profile = None
@@ -234,7 +236,60 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 term_feed['analytics'] = mean_course_analytics_for_user(canvas_courses, canvas_user_id)
                 self.rows['student_enrollment_terms'].append('\t'.join([str(sid), str(term_id), json.dumps(term_feed)]))
 
-    def upload_table(self, table):
+    def refresh_from_staging(self, table, term_id, sids):
+        # If our job is restricted to a particular term id or set of sids, then drop rows from the destination table
+        # matching those restrictions. If there are no restrictions, the entire destination table can be truncated.
+        delete_conditions = []
+        delete_params = []
+        if (term_id and table == 'student_enrollment_terms'):
+            delete_conditions.append('term_id = %s')
+            delete_params.append(term_id)
+        if sids:
+            delete_conditions.append('sid = ANY(%s)')
+            delete_params.append(sids)
+        if not delete_conditions:
+            redshift.execute(
+                'TRUNCATE {schema}.{table}',
+                schema=self.destination_schema_identifier,
+                table=psycopg2.sql.Identifier(table),
+            )
+            app.logger.info(f'Truncated destination table {self.destination_schema}.{table}.')
+        else:
+            delete_sql = 'DELETE FROM {schema}.{table} WHERE ' + ' AND '.join(delete_conditions)
+            redshift.execute(
+                delete_sql,
+                schema=self.destination_schema_identifier,
+                table=psycopg2.sql.Identifier(table),
+                params=tuple(delete_params),
+            )
+            app.logger.info(
+                f'Deleted existing rows from destination table {self.destination_schema}.{table} '
+                f"(term_id={term_id or 'all'}, {len(sids) if sids else 'all'} sids)."
+            )
+
+        # Load new data from the staging tables into the destination table.
+        result = redshift.execute(
+            'INSERT INTO {schema}.{table} (SELECT * FROM {staging_schema}.{table})',
+            schema=self.destination_schema_identifier,
+            staging_schema=self.staging_schema_identifier,
+            table=psycopg2.sql.Identifier(table),
+        )
+        if not result:
+            app.logger.error(f'Failed to populate table {self.destination_schema}.{table} from staging schema.')
+            redshift.execute('ROLLBACK TRANSACTION')
+            return False
+        app.logger.info(f'Populated {self.destination_schema}.{table} from staging schema.')
+
+        # Truncate staging table.
+        redshift.execute(
+            'TRUNCATE {schema}.{table}',
+            schema=self.staging_schema_identifier,
+            table=psycopg2.sql.Identifier(table),
+        )
+        app.logger.info(f'Truncated staging table {self.staging_schema}.{table}.')
+        return True
+
+    def upload_to_staging(self, table):
         rows = self.rows[table]
         s3_key = f'{get_s3_sis_api_daily_path()}/staging_{table}.tsv'
         app.logger.info(f'Will stash {len(rows)} feeds in S3: {s3_key}')

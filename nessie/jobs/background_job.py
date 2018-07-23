@@ -27,8 +27,6 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """Parent class for background jobs."""
 
 
-from datetime import datetime
-import hashlib
 import os
 import re
 from threading import Thread
@@ -38,84 +36,7 @@ from flask import current_app as app
 from nessie.externals import redshift
 from nessie.jobs.queue import get_job_queue
 from nessie.lib.metadata import create_background_job_status, update_background_job_status
-from nessie.lib.util import localize_datetime
 from nessie.models.util import advisory_lock
-
-
-def get_s3_asc_daily_path(cutoff=datetime.now()):
-    today = localize_datetime(cutoff).strftime('%Y-%m-%d')
-    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
-    return app.config['LOCH_S3_ASC_DATA_PATH'] + '/daily/' + today_hash + '-' + today
-
-
-def get_s3_calnet_daily_path(cutoff=datetime.now()):
-    today = localize_datetime(cutoff).strftime('%Y-%m-%d')
-    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
-    return app.config['LOCH_S3_CALNET_DATA_PATH'] + '/daily/' + today_hash + '-' + today
-
-
-def get_s3_canvas_daily_path():
-    # TODO Temporarily share Data Loch's existing hash algorithm, even if it doesn't match PDG standard practice.
-    # today = localize_datetime(datetime.now()).strftime('%Y-%m-%d')
-    today = localize_datetime(datetime.now()).strftime('%m-%d-%Y')
-    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
-    return app.config['LOCH_S3_CANVAS_DATA_PATH_DAILY'] + '/' + today_hash + '-' + today
-
-
-def get_s3_coe_daily_path(cutoff=datetime.now()):
-    # TODO: When COE is delivering data daily then unleash the following logic
-    # today = localize_datetime(cutoff).strftime('%Y-%m-%d')
-    # today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
-    # return app.config['LOCH_S3_COE_DATA_PATH'] + '/daily/' + today_hash + '-' + today
-    return app.config['LOCH_S3_COE_DATA_PATH']
-
-
-def get_s3_sis_daily_path(cutoff=datetime.now()):
-    today = localize_datetime(cutoff).strftime('%Y-%m-%d')
-    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
-    return app.config['LOCH_S3_SIS_DATA_PATH'] + '/daily/' + today_hash + '-' + today
-
-
-def get_s3_sis_api_daily_path(cutoff=datetime.now()):
-    # Path for stashed SIS API data that doesn't need to be queried by Redshift Spectrum.
-    today = localize_datetime(cutoff).strftime('%Y-%m-%d')
-    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
-    return app.config['LOCH_S3_SIS_API_DATA_PATH'] + '/daily/' + today_hash + '-' + today
-
-
-def resolve_sql_template_string(template_string, **kwargs):
-    """Our DDL template files are simple enough to use standard Python string formatting."""
-    s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
-    template_data = {
-        'redshift_schema_asc': app.config['REDSHIFT_SCHEMA_ASC'],
-        'redshift_schema_boac': app.config['REDSHIFT_SCHEMA_BOAC'],
-        'redshift_schema_calnet': app.config['REDSHIFT_SCHEMA_CALNET'],
-        'redshift_schema_canvas': app.config['REDSHIFT_SCHEMA_CANVAS'],
-        'redshift_schema_coe': app.config['REDSHIFT_SCHEMA_COE'],
-        'redshift_schema_coe_external': app.config['REDSHIFT_SCHEMA_COE_EXTERNAL'],
-        'redshift_schema_intermediate': app.config['REDSHIFT_SCHEMA_INTERMEDIATE'],
-        'redshift_schema_metadata': app.config['REDSHIFT_SCHEMA_METADATA'],
-        'redshift_schema_sis': app.config['REDSHIFT_SCHEMA_SIS'],
-        'redshift_schema_student': app.config['REDSHIFT_SCHEMA_STUDENT'],
-        'redshift_iam_role': app.config['REDSHIFT_IAM_ROLE'],
-        'loch_s3_asc_data_path': s3_prefix + get_s3_asc_daily_path(),
-        'loch_s3_calnet_data_path': s3_prefix + get_s3_calnet_daily_path(),
-        'loch_s3_canvas_data_path_today': s3_prefix + get_s3_canvas_daily_path(),
-        'loch_s3_canvas_data_path_historical': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_HISTORICAL'],
-        'loch_s3_canvas_data_path_current_term': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'],
-        'loch_s3_coe_data_path': s3_prefix + get_s3_coe_daily_path(),
-        'loch_s3_sis_data_path': s3_prefix + app.config['LOCH_S3_SIS_DATA_PATH'],
-        'loch_s3_sis_api_data_path': s3_prefix + get_s3_sis_api_daily_path(),
-    }
-    # Kwargs may be passed in to modify default template data.
-    template_data.update(kwargs)
-    return template_string.format(**template_data)
-
-
-def resolve_sql_template(sql_filename, **kwargs):
-    with open(app.config['BASE_DIR'] + f'/nessie/sql_templates/{sql_filename}', encoding='utf-8') as file:
-        template_string = file.read()
-    return resolve_sql_template_string(template_string, **kwargs)
 
 
 def verify_external_schema(schema, resolved_ddl):

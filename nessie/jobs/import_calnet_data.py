@@ -27,8 +27,9 @@ import json
 from flask import current_app as app
 from nessie.externals import calnet
 from nessie.externals import s3
-from nessie.jobs.background_job import BackgroundJob, get_s3_calnet_daily_path
+from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.queries import get_all_student_ids
+from nessie.lib.util import get_s3_calnet_daily_path
 
 
 class ImportCalNetData(BackgroundJob):
