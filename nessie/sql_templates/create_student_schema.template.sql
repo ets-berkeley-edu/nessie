@@ -23,10 +23,9 @@
  * ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-DROP SCHEMA IF EXISTS {redshift_schema_student} CASCADE;
-CREATE SCHEMA {redshift_schema_student};
+CREATE SCHEMA IF NOT EXISTS {redshift_schema_student};
 
-CREATE TABLE {redshift_schema_student}.sis_api_degree_progress
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_degree_progress
 (
     sid VARCHAR NOT NULL,
     feed VARCHAR(max) NOT NULL
@@ -34,7 +33,7 @@ CREATE TABLE {redshift_schema_student}.sis_api_degree_progress
 DISTKEY(sid)
 SORTKEY(sid);
 
-CREATE TABLE {redshift_schema_student}.sis_api_drops_and_midterms
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_drops_and_midterms
 (
     sid VARCHAR NOT NULL,
     term_id VARCHAR(4) NOT NULL,
@@ -43,7 +42,7 @@ CREATE TABLE {redshift_schema_student}.sis_api_drops_and_midterms
 DISTKEY(sid)
 SORTKEY(sid, term_id);
 
-CREATE TABLE {redshift_schema_student}.sis_api_profiles
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_profiles
 (
     sid VARCHAR NOT NULL,
     feed VARCHAR(max) NOT NULL
@@ -51,7 +50,7 @@ CREATE TABLE {redshift_schema_student}.sis_api_profiles
 DISTKEY(sid)
 SORTKEY(sid);
 
-CREATE TABLE {redshift_schema_student}.student_profiles
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles
 (
     sid VARCHAR NOT NULL,
     profile VARCHAR(max) NOT NULL
@@ -59,7 +58,7 @@ CREATE TABLE {redshift_schema_student}.student_profiles
 DISTKEY (sid)
 SORTKEY (sid);
 
-CREATE TABLE {redshift_schema_student}.student_academic_status
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_status
 (
     sid VARCHAR NOT NULL,
     uid VARCHAR NOT NULL,
@@ -72,7 +71,7 @@ CREATE TABLE {redshift_schema_student}.student_academic_status
 DISTKEY (units)
 INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name);
 
-CREATE TABLE {redshift_schema_student}.student_majors
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_majors
 (
     sid VARCHAR NOT NULL,
     major VARCHAR NOT NULL
@@ -80,7 +79,7 @@ CREATE TABLE {redshift_schema_student}.student_majors
 DISTKEY (major)
 SORTKEY (major);
 
-CREATE TABLE {redshift_schema_student}.student_enrollment_terms
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_enrollment_terms
 (
     sid VARCHAR NOT NULL,
     term_id VARCHAR(4) NOT NULL,

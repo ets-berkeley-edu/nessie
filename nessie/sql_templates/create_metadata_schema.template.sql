@@ -28,16 +28,16 @@ CREATE SCHEMA IF NOT EXISTS {redshift_schema_metadata};
 CREATE TABLE IF NOT EXISTS {redshift_schema_metadata}.background_job_status
 (
     job_id VARCHAR NOT NULL,
-    # Possible 'status' values: 'started', 'succeeded', 'failed'
+    -- Possible 'status' values: 'started', 'succeeded', 'failed'
     status VARCHAR NOT NULL,
     instance_id VARCHAR,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     details VARCHAR(4096),
-    # Primary key constraints are not enforced by Redshift but are used in query planning.
-    # https://docs.aws.amazon.com/redshift/latest/dg/t_Defining_constraints.html
+    -- Primary key constraints are not enforced by Redshift but are used in query planning.
+    -- https://docs.aws.amazon.com/redshift/latest/dg/t_Defining_constraints.html
     PRIMARY KEY (job_id)
-)
+);
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_metadata}.canvas_sync_job_status
 (
@@ -48,16 +48,16 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_metadata}.canvas_sync_job_status
     source_size BIGINT,
     destination_url VARCHAR(1024),
     destination_size BIGINT,
-    # Possible 'status' values:
-    # - 'created': the master node has identified a source file in Canvas and will dispatch a sync job
-    # - 'received': the worker node has received the dispatch request
-    # - 'started': the worker node has started a background thread for the sync job
-    # - 'streaming': the worker node has started streaming the file to S3
-    # - 'complete': the worker node has completed the file upload to S3
-    # - 'duplicate': the worker node has found a duplicate file in S3 and will not upload
-    # - 'error': an error occurred.
+    -- Possible 'status' values:
+    -- - 'created': the master node has identified a source file in Canvas and will dispatch a sync job
+    -- - 'received': the worker node has received the dispatch request
+    -- - 'started': the worker node has started a background thread for the sync job
+    -- - 'streaming': the worker node has started streaming the file to S3
+    -- - 'complete': the worker node has completed the file upload to S3
+    -- - 'duplicate': the worker node has found a duplicate file in S3 and will not upload
+    -- - 'error': an error occurred.
     status VARCHAR NOT NULL,
-    # Further details on job status. Currently used only for errors.
+    -- Further details on job status. Currently used only for errors.
     details VARCHAR(4096),
     instance_id VARCHAR,
     created_at TIMESTAMP NOT NULL,
