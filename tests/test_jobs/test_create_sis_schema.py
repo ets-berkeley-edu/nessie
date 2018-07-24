@@ -26,8 +26,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from datetime import datetime, timedelta
 import json
 from nessie.externals import s3
-from nessie.jobs.background_job import get_s3_sis_daily_path
 from nessie.jobs.create_sis_schema import CreateSisSchema
+from nessie.lib.util import get_s3_sis_daily_path
 from tests.util import mock_s3
 
 

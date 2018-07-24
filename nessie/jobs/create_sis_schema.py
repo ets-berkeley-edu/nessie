@@ -31,7 +31,8 @@ from datetime import datetime, timedelta
 import json
 from flask import current_app as app
 from nessie.externals import redshift, s3
-from nessie.jobs.background_job import BackgroundJob, get_s3_sis_daily_path, resolve_sql_template, verify_external_schema
+from nessie.jobs.background_job import BackgroundJob, verify_external_schema
+from nessie.lib.util import get_s3_sis_daily_path, resolve_sql_template
 
 
 class CreateSisSchema(BackgroundJob):
