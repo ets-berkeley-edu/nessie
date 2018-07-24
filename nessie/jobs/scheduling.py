@@ -108,7 +108,14 @@ def initialize_job_schedules(_app, force=False):
             ],
             force,
         )
-        schedule_job(sched, 'JOB_GENERATE_CURRENT_TERM_FEEDS', GenerateMergedStudentFeeds, force, term_id=current_term_id())
+        schedule_job(
+            sched,
+            'JOB_GENERATE_CURRENT_TERM_FEEDS',
+            GenerateMergedStudentFeeds,
+            force,
+            term_id=current_term_id(),
+            backfill_new_students=True,
+        )
         schedule_job(sched, 'JOB_REFRESH_BOAC_CACHE', RefreshBoacCache, force)
 
 

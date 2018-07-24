@@ -47,6 +47,10 @@ def intermediate_schema():
     return app.config['REDSHIFT_SCHEMA_INTERMEDIATE']
 
 
+def metadata_schema():
+    return app.config['REDSHIFT_SCHEMA_METADATA']
+
+
 def student_schema():
     return app.config['REDSHIFT_SCHEMA_STUDENT']
 
@@ -163,6 +167,13 @@ def get_submissions_turned_in_relative_to_user(course_id, user_id):
           WHERE canvas_user_id = {user_id} AND course_id = {course_id}
         )
         """
+    return redshift.fetch(sql)
+
+
+def get_successfully_backfilled_students():
+    sql = f"""SELECT sid
+        FROM {metadata_schema()}.merged_feed_status
+        WHERE term_id = 'all' AND status = 'success'"""
     return redshift.fetch(sql)
 
 

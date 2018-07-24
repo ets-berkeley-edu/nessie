@@ -30,8 +30,9 @@ import json
 
 from flask import current_app as app
 from nessie.externals import redshift, s3, sis_student_api
-from nessie.jobs.background_job import BackgroundJob, get_s3_sis_api_daily_path, resolve_sql_template_string
+from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.queries import get_all_student_ids
+from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
 
 
 class ImportSisStudentApi(BackgroundJob):
@@ -74,6 +75,7 @@ class ImportSisStudentApi(BackgroundJob):
                 (SELECT sid FROM {redshift_schema_student}_staging.sis_api_profiles);
             INSERT INTO {redshift_schema_student}.sis_api_profiles
                 (SELECT * FROM {redshift_schema_student}_staging.sis_api_profiles);
+            TRUNCATE {redshift_schema_student}_staging.sis_api_profiles;
             """,
         )
         if not redshift.execute(query):

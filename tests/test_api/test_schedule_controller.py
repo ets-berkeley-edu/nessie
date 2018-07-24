@@ -127,7 +127,7 @@ class TestUpdateSchedule:
         """Updates job args."""
         jobs = client.get('/api/schedule').json
         feed_job = next(j for j in jobs if j['id'] == 'job_generate_current_term_feeds')
-        assert feed_job['args'] == {'term_id': '2178'}
+        assert feed_job['args'] == {'backfill_new_students': True, 'term_id': '2178'}
         response = post_basic_auth(
             client,
             '/api/schedule/job_generate_current_term_feeds/args',
@@ -137,4 +137,4 @@ class TestUpdateSchedule:
         assert response.status_code == 200
         jobs = client.get('/api/schedule').json
         feed_job = next(j for j in jobs if j['id'] == 'job_generate_current_term_feeds')
-        assert feed_job['args'] == {'term_id': '2182'}
+        assert feed_job['args'] == {'backfill_new_students': True, 'term_id': '2182'}

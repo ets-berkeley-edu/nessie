@@ -29,9 +29,8 @@ import operator
 
 from flask import current_app as app
 from nessie.externals import redshift, s3
-from nessie.jobs.background_job import (
-    BackgroundJob, get_s3_coe_daily_path, resolve_sql_template, resolve_sql_template_string, verify_external_schema,
-)
+from nessie.jobs.background_job import BackgroundJob, verify_external_schema
+from nessie.lib.util import get_s3_coe_daily_path, resolve_sql_template, resolve_sql_template_string
 import psycopg2
 
 

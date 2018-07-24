@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 
 from nessie.externals import redshift
-from nessie.jobs.background_job import resolve_sql_template
+from nessie.lib.util import resolve_sql_template
 import psycopg2.sql
 import pytest
 from tests.util import capture_app_logs, override_config

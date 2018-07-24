@@ -77,3 +77,13 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_metadata}.canvas_synced_snapshots
     deleted_at TIMESTAMP
 )
 SORTKEY (filename);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_metadata}.merged_feed_status
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    -- Possible 'status' values: 'succeeded', 'failed'
+    status VARCHAR NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+)
+SORTKEY (sid, term_id);
