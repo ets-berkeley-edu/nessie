@@ -80,9 +80,12 @@ class ImportSisEnrollmentsApi(BackgroundJob):
                 DELIMITER '\\t';
             DELETE FROM {redshift_schema_student}.sis_api_drops_and_midterms
                 WHERE term_id = '{term_id}'
-                AND sid IN (SELECT sid FROM {redshift_schema_student}_staging.sis_api_drops_and_midterms);
+                AND sid IN
+                (SELECT sid FROM {redshift_schema_student}_staging.sis_api_drops_and_midterms WHERE term_id = '{term_id}');
             INSERT INTO {redshift_schema_student}.sis_api_drops_and_midterms
-                (SELECT * FROM {redshift_schema_student}_staging.sis_api_drops_and_midterms);
+                (SELECT * FROM {redshift_schema_student}_staging.sis_api_drops_and_midterms WHERE term_id = '{term_id}');
+            DELETE FROM {redshift_schema_student}_staging.sis_api_drops_and_midterms
+                WHERE term_id = '{term_id}';
             """,
             term_id=term_id,
         )
