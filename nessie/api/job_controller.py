@@ -29,11 +29,11 @@ from flask import current_app as app, request
 from nessie.api.auth_helper import auth_required
 from nessie.api.errors import BadRequestError
 from nessie.jobs.background_job import ChainedBackgroundJob
-from nessie.jobs.create_asc_schema import CreateAscSchema
 from nessie.jobs.create_calnet_schema import CreateCalNetSchema
 from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.create_coe_schema import CreateCoeSchema
 from nessie.jobs.create_sis_schema import CreateSisSchema
+from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
 from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
 from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
@@ -53,13 +53,6 @@ from nessie.lib.metadata import update_canvas_sync_status
 @auth_required
 def create_canvas_schema():
     job_started = CreateCanvasSchema().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/create_asc_schema', methods=['POST'])
-@auth_required
-def create_asc_schema():
-    job_started = CreateAscSchema().run_async()
     return respond_with_status(job_started)
 
 
@@ -89,15 +82,20 @@ def create_sis_schema():
 def generate_all_tables():
     chained_job = ChainedBackgroundJob(
         steps=[
-            CreateAscSchema(),
             CreateCanvasSchema(),
-            CreateCoeSchema(),
             CreateSisSchema(),
             GenerateIntermediateTables(),
             GenerateBoacAnalytics(),
         ],
     )
     job_started = chained_job.run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/generate_asc_profiles', methods=['POST'])
+@auth_required
+def generate_asc_profiles():
+    job_started = GenerateAscProfiles().run_async()
     return respond_with_status(job_started)
 
 
@@ -155,8 +153,9 @@ def import_sis_student_api():
 def import_student_population():
     chained_job = ChainedBackgroundJob(
         steps=[
+            CreateCoeSchema(),
             ImportAscAthletes(),
-            CreateAscSchema(),
+            GenerateAscProfiles(),
             ImportCalNetData(),
             CreateCalNetSchema(),
         ],
