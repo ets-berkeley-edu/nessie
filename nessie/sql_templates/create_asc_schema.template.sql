@@ -28,14 +28,13 @@
 -- Internal Schema
 --------------------------------------------------------------------
 
-DROP SCHEMA IF EXISTS {redshift_schema_asc} CASCADE;
-CREATE SCHEMA {redshift_schema_asc};
+CREATE SCHEMA IF NOT EXISTS {redshift_schema_asc};
 
 --------------------------------------------------------------------
 -- Internal Tables
 --------------------------------------------------------------------
 
-CREATE TABLE {redshift_schema_asc}.students
+CREATE TABLE IF NOT EXISTS {redshift_schema_asc}.students
 (
     sid VARCHAR NOT NULL,
     active BOOLEAN NOT NULL,
@@ -49,7 +48,7 @@ CREATE TABLE {redshift_schema_asc}.students
 DISTKEY (group_code)
 INTERLEAVED SORTKEY (sid, intensive, active, group_code);
 
-CREATE TABLE {redshift_schema_asc}.student_profiles
+CREATE TABLE IF NOT EXISTS {redshift_schema_asc}.student_profiles
 (
     sid VARCHAR NOT NULL,
     profile VARCHAR(max) NOT NULL

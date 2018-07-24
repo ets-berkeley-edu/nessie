@@ -24,7 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-"""Logic for ASC schema creation job."""
+"""Logic for metadata schema creation job."""
 
 
 from flask import current_app as app
@@ -32,15 +32,15 @@ from nessie.externals import redshift
 from nessie.jobs.background_job import BackgroundJob, resolve_sql_template
 
 
-class CreateAscSchema(BackgroundJob):
+class CreateMetadataSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting ASC schema creation job...')
+        app.logger.info(f'Starting metadata schema creation job...')
         app.logger.info(f'Executing SQL...')
-        resolved_ddl = resolve_sql_template('create_asc_schema.template.sql')
+        resolved_ddl = resolve_sql_template('create_metadata_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
-            app.logger.info(f"Schema '{app.config['REDSHIFT_SCHEMA_ASC']}' found or created.")
+            app.logger.info(f"Schema '{app.config['REDSHIFT_SCHEMA_METADATA']}' found or created.")
         else:
-            app.logger.error(f'ASC schema creation failed.')
+            app.logger.error(f'Metadata schema creation failed.')
             return False
         return True
