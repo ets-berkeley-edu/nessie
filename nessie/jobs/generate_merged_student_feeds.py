@@ -48,8 +48,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
     destination_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
     destination_schema_identifier = psycopg2.sql.Identifier(destination_schema)
-    metadata_schema = app.config['REDSHIFT_SCHEMA_METADATA']
-    metadata_schema_identifier = psycopg2.sql.Identifier(metadata_schema)
     staging_schema = destination_schema + '_staging'
     staging_schema_identifier = psycopg2.sql.Identifier(staging_schema)
 
