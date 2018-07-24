@@ -24,7 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-"""Logic for metadata schema creation job."""
+"""Logic for student schema creation job."""
 
 
 from flask import current_app as app
@@ -32,15 +32,24 @@ from nessie.externals import redshift
 from nessie.jobs.background_job import BackgroundJob, resolve_sql_template
 
 
-class CreateAscSchema(BackgroundJob):
+class CreateStudentSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting ASC schema creation job...')
+        app.logger.info(f'Starting student schema creation job...')
         app.logger.info(f'Executing SQL...')
-        resolved_ddl = resolve_sql_template('create_asc_schema.template.sql')
+        resolved_ddl = resolve_sql_template('create_student_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
-            app.logger.info(f"Schema '{app.config['REDSHIFT_SCHEMA_ASC']}' found or created.")
+            app.logger.info(f"Schema '{app.config['REDSHIFT_SCHEMA_STUDENT']}' found or created.")
         else:
-            app.logger.error(f'ASC schema creation failed.')
+            app.logger.error(f'Student schema creation failed.')
+            return False
+        resolved_ddl_staging = resolve_sql_template(
+            'create_student_schema.template.sql',
+            redshift_schema_student=app.config['REDSHIFT_SCHEMA_STUDENT'] + '_staging',
+        )
+        if redshift.execute_ddl_script(resolved_ddl_staging):
+            app.logger.info(f"Schema '{app.config['REDSHIFT_SCHEMA_STUDENT']}_staging' found or created.")
+        else:
+            app.logger.error(f'Student staging schema creation failed.')
             return False
         return True

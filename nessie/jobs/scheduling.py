@@ -55,16 +55,16 @@ def get_scheduler():
 
 
 def initialize_job_schedules(_app, force=False):
-    from nessie.jobs.create_asc_schema import CreateAscSchema
     from nessie.jobs.create_calnet_schema import CreateCalNetSchema
     from nessie.jobs.create_canvas_schema import CreateCanvasSchema
+    from nessie.jobs.create_coe_schema import CreateCoeSchema
     from nessie.jobs.create_sis_schema import CreateSisSchema
+    from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
     from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
     from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
     from nessie.jobs.import_asc_athletes import ImportAscAthletes
     from nessie.jobs.import_calnet_data import ImportCalNetData
-    from nessie.jobs.create_coe_schema import CreateCoeSchema
     from nessie.jobs.import_degree_progress import ImportDegreeProgress
     from nessie.jobs.import_sis_enrollments_api import ImportSisEnrollmentsApi
     from nessie.jobs.import_sis_student_api import ImportSisStudentApi
@@ -88,7 +88,7 @@ def initialize_job_schedules(_app, force=False):
             [
                 CreateCoeSchema,
                 ImportAscAthletes,
-                CreateAscSchema,
+                GenerateAscProfiles,
                 ImportCalNetData,
                 CreateCalNetSchema,
             ],
@@ -150,3 +150,16 @@ def start_chained_job(job_components, job_id, job_opts={}):
     with app.app_context():
         initialized_components = [c() for c in job_components]
         ChainedBackgroundJob(steps=initialized_components).run_async(**job_opts)
+
+
+def run_startup_jobs(_app):
+    # Jobs to be run in the foreground on app startup.
+    from nessie.jobs.create_asc_schema import CreateAscSchema
+    from nessie.jobs.create_metadata_schema import CreateMetadataSchema
+    from nessie.jobs.create_student_schema import CreateStudentSchema
+
+    if _app.config['JOB_SCHEDULING_ENABLED']:
+        _app.logger.info('Checking for required schemas...')
+        CreateAscSchema().run()
+        CreateMetadataSchema().run()
+        CreateStudentSchema().run()
