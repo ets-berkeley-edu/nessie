@@ -64,7 +64,23 @@ def execute_ddl_script(sql):
 
 def drop_external_schema(schema_name):
     app.logger.info(f'Dropping external schema {schema_name}')
-    sql = f'SELECT * FROM SVV_EXTERNAL_TABLES WHERE SCHEMANAME=\'{schema_name}\''
+
+    # If the external schema has previously been dropped without benefit of this function,
+    # external tables may be in place but not visible from Redshift. Running an apparently
+    # redundant 'CREATE EXTERNAL SCHEMA' will make the external tables visible again, and
+    # thereby make it possible to explicity drop them.
+    if not fetch(f'SELECT * FROM SVV_EXTERNAL_SCHEMAS WHERE schemaname=\'{schema_name}\''):
+        external_db = fetch(f'SELECT * FROM SVV_EXTERNAL_DATABASES WHERE databasename=\'{schema_name}\'')
+        if external_db:
+            iam_role = app.config['REDSHIFT_IAM_ROLE']
+            sql = f"""CREATE EXTERNAL SCHEMA {schema_name}
+                FROM data catalog DATABASE \'{schema_name}\'
+                IAM_ROLE \'{iam_role}\'
+                CREATE EXTERNAL DATABASE IF NOT EXISTS
+            """
+            execute(sql)
+
+    sql = f'SELECT * FROM SVV_EXTERNAL_TABLES WHERE schemaname=\'{schema_name}\''
     results = fetch(sql)
     if results:
         def _get_tablename(r):
