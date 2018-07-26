@@ -44,6 +44,7 @@ class ImportDegreeProgress(BackgroundJob):
 
         rows = []
         success_count = 0
+        no_information_count = 0
         failure_count = 0
         index = 1
 
@@ -56,9 +57,12 @@ class ImportDegreeProgress(BackgroundJob):
             if feed:
                 success_count += 1
                 rows.append('\t'.join([str(csid), json.dumps(feed)]))
+            elif feed == {}:
+                app.logger.info(f'No degree progress information found for SID {csid}.')
+                no_information_count += 1
             else:
                 failure_count += 1
-                app.logger.error(f'SIS get_degree_progress failed for CSID {csid}.')
+                app.logger.error(f'SIS get_degree_progress failed for SID {csid}.')
             index += 1
 
         s3_key = f'{get_s3_sis_api_daily_path()}/degree_progress.tsv'
@@ -86,4 +90,7 @@ class ImportDegreeProgress(BackgroundJob):
             app.logger.error('Error on Redshift copy: aborting job.')
             return False
 
-        return f'SIS degree progress API import job completed: {success_count} succeeded, {failure_count} failed.'
+        return (
+            f'SIS degree progress API import job completed: {success_count} succeeded, '
+            f'{no_information_count} returned no information, {failure_count} failed.'
+        )
