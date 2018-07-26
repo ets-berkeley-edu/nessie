@@ -35,8 +35,8 @@ import xmltodict
 
 def parsed_degree_progress(cs_id):
     cs_feed = get_degree_progress(cs_id)
-    if not cs_feed:
-        return cs_feed
+    if cs_feed is None:
+        return None
     data = {}
     requirements_list = cs_feed.get('UC_AA_PROGRESS', {}).get('PROGRESSES', {}).get('PROGRESS', {}).get('REQUIREMENTS', {}).get('REQUIREMENT')
     if requirements_list:
