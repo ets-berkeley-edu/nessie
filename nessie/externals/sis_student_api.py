@@ -59,14 +59,19 @@ def get_term_gpas(cs_id):
             # Ignore terms in which the student was not an undergraduate.
             if registration.get('academicCareer', {}).get('code') != 'UGRD':
                 continue
-            # Ignore terms in which the student took no classes with units.
+            # Ignore terms in which the student took no classes with units. These may include future terms.
             total_units = next((u for u in registration.get('termUnits', []) if u['type']['code'] == 'Total'), None)
             if not total_units or not total_units.get('unitsTaken'):
                 continue
             term_id = registration.get('term', {}).get('id')
             gpa = registration.get('termGPA', {}).get('average')
+            term_units = registration.get('termUnits', [])
+            units_taken_for_gpa = next((tu['unitsTaken'] for tu in term_units if tu['type']['code'] == 'For GPA'), None)
             if term_id and gpa is not None:
-                term_gpas[term_id] = gpa
+                term_gpas[term_id] = {
+                    'gpa': gpa,
+                    'unitsTakenForGpa': units_taken_for_gpa,
+                }
         return term_gpas
     else:
         return
