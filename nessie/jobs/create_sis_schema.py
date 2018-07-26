@@ -29,6 +29,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from datetime import datetime, timedelta
 import json
+import re
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, verify_external_schema
@@ -72,6 +73,14 @@ class CreateSisSchema(BackgroundJob):
         enrollments_daily = s3.get_keys_with_prefix(s3_sis_daily + '/enrollments', full_objects=True)
         enrollments_historical = s3.get_keys_with_prefix(app.config['LOCH_S3_SIS_DATA_PATH'] + '/historical/enrollments', full_objects=True)
 
+        def deduplicate(s3list):
+            filename_map = {}
+            for s3obj in s3list:
+                m = re.match(r'.+/(.+\.gz)', s3obj['Key'])
+                if m:
+                    filename_map[m[1]] = s3obj
+            return list(filename_map.values())
+
         def to_manifest_entry(_object):
             return {
                 'url': f"s3://{app.config['LOCH_S3_BUCKET']}/{_object['Key']}",
@@ -83,8 +92,8 @@ class CreateSisSchema(BackgroundJob):
                 'entries': [to_manifest_entry(o) for o in objects],
             }
 
-        courses_manifest = json.dumps(to_manifest(courses_daily + courses_historical))
-        enrollments_manifest = json.dumps(to_manifest(enrollments_daily + enrollments_historical))
+        courses_manifest = json.dumps(to_manifest(deduplicate(courses_daily + courses_historical)))
+        enrollments_manifest = json.dumps(to_manifest(deduplicate(enrollments_daily + enrollments_historical)))
 
         courses_result = s3.upload_data(courses_manifest, app.config['LOCH_S3_SIS_DATA_PATH'] + '/manifests/courses.json')
         enrollments_result = s3.upload_data(enrollments_manifest, app.config['LOCH_S3_SIS_DATA_PATH'] + '/manifests/enrollments.json')
