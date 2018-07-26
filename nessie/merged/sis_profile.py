@@ -53,7 +53,7 @@ def get_merged_sis_profile(csid):
         app.logger.error(e)
 
     merge_sis_profile_phones(sis_student_api_feed, sis_profile)
-    if sis_profile['academicCareer'] == 'UGRD':
+    if sis_profile.get('academicCareer') == 'UGRD':
         dp_result = queries.get_sis_api_degree_progress(csid)
         degree_progress_api_feed = dp_result and dp_result[0] and json.loads(dp_result[0]['feed'])
         if degree_progress_api_feed:
