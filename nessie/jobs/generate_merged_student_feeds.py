@@ -32,7 +32,7 @@ import json
 import operator
 
 from flask import current_app as app
-from nessie.externals import redshift, s3
+from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib import berkeley, queries
 from nessie.lib.analytics import mean_course_analytics_for_user
@@ -140,6 +140,11 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         if not redshift.execute('COMMIT TRANSACTION'):
             app.logger.error(f'Final transaction commit failed for {self.destination_schema}.')
             return False
+
+        if self.refresh_rds_indexes(sids):
+            app.logger.info('Refreshed RDS indexes.')
+        else:
+            app.logger.error('Failed to refresh RDS indexes.')
 
         update_merged_feed_status(term_id, successes, failures)
         app.logger.info(f'Updated merged feed status.')
@@ -288,6 +293,36 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             table=psycopg2.sql.Identifier(table),
         )
         app.logger.info(f'Truncated staging table {self.staging_schema}.{table}.')
+        return True
+
+    def refresh_rds_indexes(self, sids):
+        if len(self.rows['student_academic_status']):
+            result = rds.execute(
+                f'DELETE FROM {self.destination_schema}.student_academic_status WHERE sid = ANY(%s)',
+                (sids,),
+            )
+            if not result:
+                return False
+            result = rds.insert_bulk(
+                f"""INSERT INTO {self.destination_schema}.student_academic_status
+                    (sid, uid, first_name, last_name, level, gpa, units) VALUES %s""",
+                [tuple(r.split('\t')) for r in self.rows['student_academic_status']],
+            )
+            if not result:
+                return False
+        if len(self.rows['student_majors']):
+            result = rds.execute(
+                f'DELETE FROM {self.destination_schema}.student_majors WHERE sid = ANY(%s)',
+                (sids,),
+            )
+            if not result:
+                return False
+            result = rds.insert_bulk(
+                f'INSERT INTO {self.destination_schema}.student_majors (sid, major) VALUES %s',
+                [tuple(r.split('\t')) for r in self.rows['student_majors']],
+            )
+            if not result:
+                return False
         return True
 
     def upload_to_staging(self, table):
