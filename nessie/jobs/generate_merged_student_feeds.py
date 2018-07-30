@@ -69,9 +69,12 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 app.logger.info(f'Found {len(new_sids)} new students, will backfill all terms.')
                 backfill_status = self.generate_feeds(sids=list(new_sids))
                 if not backfill_status:
-                    return False
+                    app.logger.warn('Backfill job aborted, will continue with non-backfill job.')
+                    backfill_status = 'aborted'
+                else:
+                    app.logger.info(f'Backfill complete.')
                 status += f'Backfill: {backfill_status}; non-backfill: '
-                app.logger.info(f'Backfill complete, will continue with {len(old_sids)} remaining students.')
+                app.logger.info(f'Will continue merged feed job for {len(old_sids)} previously backfilled students.')
             continuation_status = self.generate_feeds(sids=list(old_sids), term_id=term_id)
             if not continuation_status:
                 return False
