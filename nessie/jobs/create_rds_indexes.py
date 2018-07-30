@@ -23,30 +23,25 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from contextlib import contextmanager
-import psycopg2
-import psycopg2.extras
-import psycopg2.sql
+
+"""Logic for RDS index creation job."""
 
 
-@contextmanager
-def get_psycopg_cursor(operation='read', **kwargs):
-    connection = None
-    cursor = None
-    if operation == 'write':
-        cursor_factory = None
-    else:
-        cursor_factory = psycopg2.extras.DictCursor
-    try:
-        if kwargs.get('uri'):
-            connection = psycopg2.connect(kwargs['uri'])
+from flask import current_app as app
+from nessie.externals import rds
+from nessie.jobs.background_job import BackgroundJob
+from nessie.lib.util import resolve_sql_template
+
+
+class CreateRdsIndexes(BackgroundJob):
+
+    def run(self):
+        app.logger.info('Starting RDS index creation job...')
+        app.logger.info('Executing SQL...')
+        resolved_ddl = resolve_sql_template('create_rds_indexes.template.sql')
+        if rds.execute(resolved_ddl):
+            app.logger.info('RDS indexes found or created.')
         else:
-            connection = psycopg2.connect(**kwargs)
-        # Autocommit is required for EXTERNAL TABLE creation and deletion.
-        connection.autocommit = True
-        yield connection.cursor(cursor_factory=cursor_factory)
-    finally:
-        if cursor is not None:
-            cursor.close()
-        if connection is not None:
-            connection.close()
+            app.logger.error('RDS index creation failed.')
+            return False
+        return True

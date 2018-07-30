@@ -29,7 +29,7 @@ import json
 import operator
 
 from flask import current_app as app
-from nessie.externals import redshift, s3
+from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.util import get_s3_asc_daily_path, resolve_sql_template_string
 import psycopg2
@@ -100,4 +100,24 @@ class GenerateAscProfiles(BackgroundJob):
             app.logger.error('Error on Redshift copy: aborting job.')
             return False
 
+        if self.refresh_rds_indexes(asc_rows):
+            app.logger.info('Refreshed RDS indexes.')
+        else:
+            app.logger.error('Error refreshing RDS indexes.')
+            return False
+
         return 'ASC profile generation complete.'
+
+    def refresh_rds_indexes(self, asc_rows):
+        if len(asc_rows):
+            result = rds.execute(f'TRUNCATE {asc_schema}.students')
+            if not result:
+                return False
+            columns = ['sid', 'active', 'intensive', 'status_asc', 'group_code', 'group_name', 'team_code', 'team_name']
+            result = rds.insert_bulk(
+                f'INSERT INTO {asc_schema}.students ({", ".join(columns)}) VALUES %s',
+                [tuple([r[c] for c in columns]) for r in asc_rows],
+            )
+            if not result:
+                return False
+        return True
