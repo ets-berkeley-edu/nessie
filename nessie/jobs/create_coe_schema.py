@@ -28,7 +28,7 @@ import json
 import operator
 
 from flask import current_app as app
-from nessie.externals import redshift, s3
+from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, verify_external_schema
 from nessie.lib.util import get_s3_coe_daily_path, resolve_sql_template, resolve_sql_template_string
 import psycopg2
@@ -96,4 +96,24 @@ class CreateCoeSchema(BackgroundJob):
             app.logger.error('Error on Redshift copy: aborting job.')
             return False
 
+        if self.refresh_rds_indexes(coe_rows):
+            app.logger.error('Refreshed RDS indexes.')
+        else:
+            app.logger.error('Error refreshing RDS indexes.')
+            return False
+
         return 'COE internal schema created.'
+
+    def refresh_rds_indexes(self, coe_rows):
+        if len(coe_rows):
+            result = rds.execute(f'TRUNCATE {internal_schema}.students')
+            if not result:
+                return False
+            columns = ['sid', 'advisor_ldap_uid']
+            result = rds.insert_bulk(
+                f'INSERT INTO {internal_schema}.students ({", ".join(columns)}) VALUES %s',
+                [tuple([r[c] for c in columns]) for r in coe_rows],
+            )
+            if not result:
+                return False
+        return True

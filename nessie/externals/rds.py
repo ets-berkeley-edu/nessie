@@ -23,30 +23,41 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from contextlib import contextmanager
+
+"""Client code to run queries against RDS."""
+
+
+from flask import current_app as app
+from nessie.lib.db import get_psycopg_cursor
 import psycopg2
 import psycopg2.extras
-import psycopg2.sql
 
 
-@contextmanager
-def get_psycopg_cursor(operation='read', **kwargs):
-    connection = None
-    cursor = None
-    if operation == 'write':
-        cursor_factory = None
-    else:
-        cursor_factory = psycopg2.extras.DictCursor
+def execute(sql, params=None):
+    result = None
     try:
-        if kwargs.get('uri'):
-            connection = psycopg2.connect(kwargs['uri'])
-        else:
-            connection = psycopg2.connect(**kwargs)
-        # Autocommit is required for EXTERNAL TABLE creation and deletion.
-        connection.autocommit = True
-        yield connection.cursor(cursor_factory=cursor_factory)
-    finally:
-        if cursor is not None:
-            cursor.close()
-        if connection is not None:
-            connection.close()
+        with get_psycopg_cursor(operation='write', uri=app.config.get('SQLALCHEMY_DATABASE_URI')) as cursor:
+            cursor.execute(sql, params)
+            result = cursor.statusmessage
+    except psycopg2.Error as e:
+        _log_db_error(e, sql)
+    return result
+
+
+def insert_bulk(sql, rows):
+    result = None
+    try:
+        with get_psycopg_cursor(operation='write', uri=app.config.get('SQLALCHEMY_DATABASE_URI')) as cursor:
+            psycopg2.extras.execute_values(cursor, sql, rows, page_size=5000)
+            result = cursor.statusmessage
+    except psycopg2.Error as e:
+        _log_db_error(e, sql)
+    return result
+
+
+def _log_db_error(e, sql):
+    error_str = str(e)
+    if e.pgcode:
+        error_str += f'{e.pgcode}: {e.pgerror}\n'
+    error_str += f'on SQL: {sql}'
+    app.logger.warn({'message': error_str})

@@ -163,10 +163,12 @@ def run_startup_jobs(_app):
     # Jobs to be run in the foreground on app startup.
     from nessie.jobs.create_asc_schema import CreateAscSchema
     from nessie.jobs.create_metadata_schema import CreateMetadataSchema
+    from nessie.jobs.create_rds_indexes import CreateRdsIndexes
     from nessie.jobs.create_student_schema import CreateStudentSchema
 
     if _app.config['JOB_SCHEDULING_ENABLED']:
         _app.logger.info('Checking for required schemas...')
         CreateAscSchema().run()
         CreateMetadataSchema().run()
+        CreateRdsIndexes().run()
         CreateStudentSchema().run()
