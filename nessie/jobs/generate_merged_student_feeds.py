@@ -303,10 +303,14 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             )
             if not result:
                 return False
+
+            def split_tsv_row(row):
+                return [v if len(v) else None for v in row.split('\t')]
+
             result = rds.insert_bulk(
                 f"""INSERT INTO {self.destination_schema}.student_academic_status
                     (sid, uid, first_name, last_name, level, gpa, units) VALUES %s""",
-                [tuple(r.split('\t')) for r in self.rows['student_academic_status']],
+                [tuple(split_tsv_row(r)) for r in self.rows['student_academic_status']],
             )
             if not result:
                 return False
