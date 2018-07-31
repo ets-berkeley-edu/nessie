@@ -27,29 +27,34 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """Client code to run queries against RDS."""
 
 
+from contextlib import contextmanager
 from flask import current_app as app
 from nessie.lib.db import get_psycopg_cursor
 import psycopg2
 import psycopg2.extras
 
 
-def execute(sql, params=None):
+@contextmanager
+def get_cursor():
+    with get_psycopg_cursor(operation='write', autocommit=False, uri=app.config.get('SQLALCHEMY_DATABASE_URI')) as cursor:
+        yield cursor
+
+
+def execute(cursor, sql, params=None):
     result = None
     try:
-        with get_psycopg_cursor(operation='write', uri=app.config.get('SQLALCHEMY_DATABASE_URI')) as cursor:
-            cursor.execute(sql, params)
-            result = cursor.statusmessage
+        cursor.execute(sql, params)
+        result = cursor.statusmessage
     except psycopg2.Error as e:
         _log_db_error(e, sql)
     return result
 
 
-def insert_bulk(sql, rows):
+def insert_bulk(cursor, sql, rows):
     result = None
     try:
-        with get_psycopg_cursor(operation='write', uri=app.config.get('SQLALCHEMY_DATABASE_URI')) as cursor:
-            psycopg2.extras.execute_values(cursor, sql, rows, page_size=5000)
-            result = cursor.statusmessage
+        psycopg2.extras.execute_values(cursor, sql, rows, page_size=5000)
+        result = cursor.statusmessage
     except psycopg2.Error as e:
         _log_db_error(e, sql)
     return result

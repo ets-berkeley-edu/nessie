@@ -141,10 +141,15 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             app.logger.error(f'Final transaction commit failed for {self.destination_schema}.')
             return False
 
-        if self.refresh_rds_indexes(sids):
-            app.logger.info('Refreshed RDS indexes.')
-        else:
-            app.logger.error('Failed to refresh RDS indexes.')
+        with rds.get_cursor() as cursor:
+            rds.execute(cursor, 'BEGIN TRANSACTION')
+            if self.refresh_rds_indexes(sids, cursor):
+                rds.execute(cursor, 'COMMIT TRANSACTION')
+                app.logger.info('Refreshed RDS indexes.')
+            else:
+                rds.execute(cursor, 'ROLLBACK TRANSACTION')
+                app.logger.error('Failed to refresh RDS indexes.')
+                return False
 
         update_merged_feed_status(term_id, successes, failures)
         app.logger.info(f'Updated merged feed status.')
@@ -292,19 +297,24 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         app.logger.info(f'Truncated staging table {self.staging_schema}.{table}.')
         return True
 
-    def refresh_rds_indexes(self, sids):
+    def refresh_rds_indexes(self, sids, cursor):
+        def delete_existing_rows(table):
+            if sids:
+                sql = f'DELETE FROM {self.destination_schema}.{table} WHERE sid = ANY(%s)'
+                params = (sids,)
+            else:
+                sql = f'TRUNCATE {self.destination_schema}.{table}'
+                params = None
+            return rds.execute(cursor, sql, params)
+
         if len(self.rows['student_academic_status']):
-            result = rds.execute(
-                f'DELETE FROM {self.destination_schema}.student_academic_status WHERE sid = ANY(%s)',
-                (sids,),
-            )
-            if not result:
+            if not delete_existing_rows('student_academic_status'):
                 return False
 
             def split_tsv_row(row):
                 return [v if len(v) else None for v in row.split('\t')]
-
             result = rds.insert_bulk(
+                cursor,
                 f"""INSERT INTO {self.destination_schema}.student_academic_status
                     (sid, uid, first_name, last_name, level, gpa, units) VALUES %s""",
                 [tuple(split_tsv_row(r)) for r in self.rows['student_academic_status']],
@@ -312,13 +322,10 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             if not result:
                 return False
         if len(self.rows['student_majors']):
-            result = rds.execute(
-                f'DELETE FROM {self.destination_schema}.student_majors WHERE sid = ANY(%s)',
-                (sids,),
-            )
-            if not result:
+            if not delete_existing_rows('student_majors'):
                 return False
             result = rds.insert_bulk(
+                cursor,
                 f'INSERT INTO {self.destination_schema}.student_majors (sid, major) VALUES %s',
                 [tuple(r.split('\t')) for r in self.rows['student_majors']],
             )
