@@ -39,9 +39,10 @@ class CreateRdsIndexes(BackgroundJob):
         app.logger.info('Starting RDS index creation job...')
         app.logger.info('Executing SQL...')
         resolved_ddl = resolve_sql_template('create_rds_indexes.template.sql')
-        if rds.execute(resolved_ddl):
-            app.logger.info('RDS indexes found or created.')
-        else:
-            app.logger.error('RDS index creation failed.')
-            return False
-        return True
+        with rds.get_cursor() as cursor:
+            if rds.execute(cursor, resolved_ddl):
+                app.logger.info('RDS indexes found or created.')
+            else:
+                app.logger.error('RDS index creation failed.')
+                return False
+            return True
