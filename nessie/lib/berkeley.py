@@ -157,18 +157,20 @@ ACADEMIC_PLAN_TO_DEGREE_PROGRAM_PAGE = {
 }
 
 
-def reverse_terms_until(stop_term):
-    term_name = app.config['CURRENT_TERM']
+def reverse_term_ids():
+    term_ids = []
+    stop_term_id = sis_term_id_for_name(app.config['EARLIEST_TERM'])
+    term_id = current_term_id()
     while True:
-        yield term_name
-        if (term_name == stop_term) or (term_name == app.config['EARLIEST_TERM']):
-            break
-        if term_name.startswith('Fall'):
-            term_name = term_name.replace('Fall', 'Summer')
-        elif term_name.startswith('Summer'):
-            term_name = term_name.replace('Summer', 'Spring')
-        elif term_name.startswith('Spring'):
-            term_name = 'Fall ' + str(int(term_name[-4:]) - 1)
+        term_ids.append(term_id)
+        if term_id == stop_term_id:
+            return term_ids
+        if term_id[3] == '8':
+            term_id = term_id[:3] + '5'
+        elif term_id[3] == '5':
+            term_id = term_id[:3] + '2'
+        elif term_id[3] == '2':
+            term_id = term_id[:1] + str(int(term_id[1:3]) - 1).zfill(2) + '8'
 
 
 def sis_term_id_for_name(term_name=None):

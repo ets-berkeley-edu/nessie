@@ -216,11 +216,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         return merged_profile
 
     def generate_merged_enrollment_terms(self, merged_profile, term_id=None):
-        sis_profile = merged_profile.get('sisProfile') or {}
-        matriculation_term = sis_profile.get('matriculation')
-        terms_for_student = berkeley.reverse_terms_until(matriculation_term or app.config['EARLIEST_TERM'])
-        term_ids_for_student = [berkeley.sis_term_id_for_name(t) for t in terms_for_student]
-        if term_id and term_id not in term_ids_for_student:
+        term_ids = berkeley.reverse_term_ids()
+        if term_id and term_id not in term_ids:
             return
 
         uid = merged_profile.get('uid')
@@ -228,7 +225,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         canvas_user_id = merged_profile.get('canvasUserId')
         canvas_courses_feed = get_canvas_courses_feed(uid)
 
-        term_ids = [term_id] if term_id else term_ids_for_student
+        term_ids = [term_id] if term_id else term_ids
         for term_id in term_ids:
             term_feed = get_merged_enrollment_term(canvas_courses_feed, uid, sid, term_id)
             if term_feed and (len(term_feed['enrollments']) or len(term_feed['unmatchedCanvasSites'])):
