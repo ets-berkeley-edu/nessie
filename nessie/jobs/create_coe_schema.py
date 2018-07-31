@@ -96,21 +96,26 @@ class CreateCoeSchema(BackgroundJob):
             app.logger.error('Error on Redshift copy: aborting job.')
             return False
 
-        if self.refresh_rds_indexes(coe_rows):
-            app.logger.error('Refreshed RDS indexes.')
-        else:
-            app.logger.error('Error refreshing RDS indexes.')
-            return False
+        with rds.get_cursor() as cursor:
+            rds.execute(cursor, 'BEGIN TRANSACTION')
+            if self.refresh_rds_indexes(coe_rows, cursor):
+                rds.execute(cursor, 'COMMIT TRANSACTION')
+                app.logger.info('Refreshed RDS indexes.')
+            else:
+                rds.execute(cursor, 'ROLLBACK TRANSACTION')
+                app.logger.error('Error refreshing RDS indexes.')
+                return False
 
         return 'COE internal schema created.'
 
-    def refresh_rds_indexes(self, coe_rows):
+    def refresh_rds_indexes(self, coe_rows, cursor):
         if len(coe_rows):
-            result = rds.execute(f'TRUNCATE {internal_schema}.students')
+            result = rds.execute(cursor, f'TRUNCATE {internal_schema}.students')
             if not result:
                 return False
             columns = ['sid', 'advisor_ldap_uid']
             result = rds.insert_bulk(
+                cursor,
                 f'INSERT INTO {internal_schema}.students ({", ".join(columns)}) VALUES %s',
                 [tuple([r[c] for c in columns]) for r in coe_rows],
             )
