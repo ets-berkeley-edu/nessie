@@ -30,7 +30,7 @@ import psycopg2.sql
 
 
 @contextmanager
-def get_psycopg_cursor(operation='read', **kwargs):
+def get_psycopg_cursor(operation='read', autocommit=True, **kwargs):
     connection = None
     cursor = None
     if operation == 'write':
@@ -43,7 +43,8 @@ def get_psycopg_cursor(operation='read', **kwargs):
         else:
             connection = psycopg2.connect(**kwargs)
         # Autocommit is required for EXTERNAL TABLE creation and deletion.
-        connection.autocommit = True
+        if autocommit:
+            connection.autocommit = True
         yield connection.cursor(cursor_factory=cursor_factory)
     finally:
         if cursor is not None:

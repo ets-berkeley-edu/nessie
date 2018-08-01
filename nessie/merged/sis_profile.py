@@ -147,4 +147,6 @@ def merge_sis_profile_plans(academic_status, sis_profile):
         if plan.get('code') != '25000U':
             program = student_plan.get('academicPlan', {}).get('academicProgram', {}).get('program', {})
             plan_feed['program'] = program.get('description')
-        sis_profile['plans'].append(plan_feed)
+        # Add plan unless it's a duplicate.
+        if not next((p for p in sis_profile['plans'] if p.get('description') == plan_feed.get('description')), None):
+            sis_profile['plans'].append(plan_feed)

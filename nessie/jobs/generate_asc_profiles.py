@@ -100,21 +100,26 @@ class GenerateAscProfiles(BackgroundJob):
             app.logger.error('Error on Redshift copy: aborting job.')
             return False
 
-        if self.refresh_rds_indexes(asc_rows):
-            app.logger.info('Refreshed RDS indexes.')
-        else:
-            app.logger.error('Error refreshing RDS indexes.')
-            return False
+        with rds.get_cursor() as cursor:
+            rds.execute(cursor, 'BEGIN TRANSACTION')
+            if self.refresh_rds_indexes(asc_rows, cursor):
+                rds.execute(cursor, 'COMMIT TRANSACTION')
+                app.logger.info('Refreshed RDS indexes.')
+            else:
+                rds.execute(cursor, 'ROLLBACK TRANSACTION')
+                app.logger.error('Error refreshing RDS indexes.')
+                return False
 
         return 'ASC profile generation complete.'
 
-    def refresh_rds_indexes(self, asc_rows):
+    def refresh_rds_indexes(self, asc_rows, cursor):
         if len(asc_rows):
-            result = rds.execute(f'TRUNCATE {asc_schema}.students')
+            result = rds.execute(cursor, f'TRUNCATE {asc_schema}.students')
             if not result:
                 return False
             columns = ['sid', 'active', 'intensive', 'status_asc', 'group_code', 'group_name', 'team_code', 'team_name']
             result = rds.insert_bulk(
+                cursor,
                 f'INSERT INTO {asc_schema}.students ({", ".join(columns)}) VALUES %s',
                 [tuple([r[c] for c in columns]) for r in asc_rows],
             )
