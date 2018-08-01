@@ -25,18 +25,14 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import json
 
-from flask import current_app as app
 from nessie.lib import berkeley, queries
 
 
 def get_merged_enrollment_term(canvas_course_sites, uid, cs_id, term_id):
     enrollments = queries.get_sis_enrollments(uid, term_id) or []
     term_name = berkeley.term_name_for_sis_id(term_id)
-    if term_name == app.config['CURRENT_TERM']:
-        result = queries.get_sis_api_drops_and_midterms(cs_id, term_id)
-        drops_and_midterms = (result and result[0] and json.loads(result[0]['feed'])) or {}
-    else:
-        drops_and_midterms = {}
+    result = queries.get_sis_api_drops_and_midterms(cs_id, term_id)
+    drops_and_midterms = (result and result[0] and json.loads(result[0]['feed'])) or {}
     term_feed = merge_enrollment(cs_id, enrollments, term_id, term_name, drops_and_midterms)
 
     for site in canvas_course_sites:
