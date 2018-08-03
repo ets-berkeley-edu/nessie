@@ -26,8 +26,9 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 """Client code to run queries against RDS."""
 
-
 from contextlib import contextmanager
+from datetime import datetime
+
 from flask import current_app as app
 from nessie.lib.db import get_psycopg_cursor
 import psycopg2
@@ -43,8 +44,11 @@ def get_cursor():
 def execute(cursor, sql, params=None):
     result = None
     try:
+        ts = datetime.now().timestamp()
         cursor.execute(sql, params)
         result = cursor.statusmessage
+        query_time = datetime.now().timestamp() - ts
+        app.logger.debug(f'RDS query returned status {result} in {query_time} seconds:\n{sql}\n{params or ""}')
     except psycopg2.Error as e:
         _log_db_error(e, sql)
     return result
