@@ -27,6 +27,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """Logic for merged student profile and term generation."""
 
 
+from datetime import datetime
 from itertools import groupby
 import json
 import operator
@@ -188,6 +189,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         return merged_profile
 
     def generate_merged_profile(self, sid, calnet_profile):
+        app.logger.debug(f'Generating merged profile for SID {sid}')
+        ts = datetime.now().timestamp()
         uid = calnet_profile.get('ldap_uid')
         if not uid:
             return
@@ -218,6 +221,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             for plan in sis_profile.get('plans', []):
                 self.rows['student_majors'].append('\t'.join([str(sid), plan['description']]))
 
+        app.logger.debug(f'Merged profile generation complete for SID {sid} in {datetime.now().timestamp() - ts} seconds.')
         return merged_profile
 
     def generate_merged_enrollment_terms(self, merged_profile, term_id=None):
@@ -235,6 +239,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
         term_ids = [term_id] if term_id else term_ids_for_student
         for term_id in term_ids:
+            app.logger.debug(f'Generating merged enrollment term (uid={uid}, sid={sid}, term_id={term_id})')
+            ts = datetime.now().timestamp()
             term_feed = get_merged_enrollment_term(canvas_courses_feed, uid, sid, term_id)
             if term_feed and (len(term_feed['enrollments']) or len(term_feed['unmatchedCanvasSites'])):
                 # Rebuild our Canvas courses list to remove any courses that were screened out during association (for instance,
@@ -244,8 +250,13 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                     canvas_courses += enrollment['canvasSites']
                 canvas_courses += term_feed.get('unmatchedCanvasSites', [])
                 # Decorate the Canvas courses list with per-course statistics and return summary statistics.
+                app.logger.debug(f'Generating enrollment term analytics (uid={uid}, sid={sid}, term_id={term_id})')
                 term_feed['analytics'] = mean_course_analytics_for_user(canvas_courses, canvas_user_id)
                 self.rows['student_enrollment_terms'].append('\t'.join([str(sid), str(term_id), json.dumps(term_feed)]))
+            app.logger.debug(
+                f'Enrollment term merge complete (uid={uid}, sid={sid}, term_id={term_id}, '
+                f'{datetime.now().timestamp() - ts} seconds)'
+            )
 
     def refresh_from_staging(self, table, term_id, sids):
         # If our job is restricted to a particular term id or set of sids, then drop rows from the destination table
