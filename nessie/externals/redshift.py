@@ -27,6 +27,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """Client code to run queries against Redshift."""
 
 
+from datetime import datetime
+
 from flask import current_app as app
 from nessie.lib.db import get_psycopg_cursor
 import psycopg2
@@ -125,11 +127,16 @@ def _execute(sql, operation, **kwargs):
                 user=app.config.get('REDSHIFT_USER'),
                 password=app.config.get('REDSHIFT_PASSWORD'),
         ) as cursor:
+            ts = datetime.now().timestamp()
             cursor.execute(sql, params)
             if operation == 'read':
                 result = [row for row in cursor]
+                query_time = datetime.now().timestamp() - ts
+                app.logger.debug(f'Redshift query returned {len(result)} rows in {query_time} seconds:\n{sql}\n{params or ""}')
             else:
                 result = cursor.statusmessage
+                query_time = datetime.now().timestamp() - ts
+                app.logger.debug(f'Redshift query returned status {result} in {query_time} seconds:\n{sql}\n{params or ""}')
     except psycopg2.Error as e:
         error_str = str(e)
         if e.pgcode:
