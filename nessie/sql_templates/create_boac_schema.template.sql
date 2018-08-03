@@ -31,7 +31,7 @@ DROP SCHEMA IF EXISTS {redshift_schema_boac} CASCADE;
 CREATE SCHEMA {redshift_schema_boac};
 
 CREATE TABLE {redshift_schema_boac}.assignment_submissions_scores
-INTERLEAVED SORTKEY (uid, course_id, assignment_id)
+INTERLEAVED SORTKEY (canvas_user_id, course_id, assignment_id)
 AS (
     /*
      * Following Canvas code, in cases where multiple assignment overrides associate a student with an assignment,
