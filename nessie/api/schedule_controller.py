@@ -27,7 +27,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app, request
 from nessie.api.auth_helper import auth_required
 from nessie.api.errors import BadRequestError
-from nessie.jobs.scheduling import get_scheduler, PG_ADVISORY_LOCK_IDS
+from nessie.jobs.scheduling import get_scheduler, initialize_job_schedules, PG_ADVISORY_LOCK_IDS
 from nessie.lib.http import tolerant_jsonify
 from nessie.models.util import get_granted_lock_ids
 
@@ -110,3 +110,12 @@ def update_scheduled_job_args(job_id):
         raise BadRequestError(f'Error updating job args: {e}')
     job = sched.get_job(job_id)
     return tolerant_jsonify(job_to_dict(job))
+
+
+@app.route('/api/schedule/reload', methods=['POST'])
+@auth_required
+def reload_job_schedules():
+    """Discard any manual changes to job schedules and bring back the configured version."""
+    initialize_job_schedules(app, force=True)
+    app.logger.info(f'Overwrote current jobs schedule with configured values')
+    return get_job_schedule()
