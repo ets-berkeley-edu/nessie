@@ -70,6 +70,32 @@ class TestUpdateSchedule:
         )
         assert response.status_code == 401
 
+    def test_reload_configured_schedule(self, app, client):
+        post_basic_auth(
+            client,
+            '/api/schedule/job_sync_canvas_snapshots',
+            credentials(app),
+            {'hour': 12, 'minute': 30},
+        )
+        post_basic_auth(
+            client,
+            '/api/schedule/job_resync_canvas_snapshots',
+            credentials(app),
+            {},
+        )
+        response = post_basic_auth(
+            client,
+            '/api/schedule/reload',
+            credentials(app),
+        )
+        assert response.status_code == 200
+        jobs = response.json
+        assert len(jobs) == 9
+        sync_job = next(job for job in jobs if job['id'] == 'job_sync_canvas_snapshots')
+        assert sync_job['trigger'] == "cron[hour='1', minute='0']"
+        resync_job = next(job for job in jobs if job['id'] == 'job_resync_canvas_snapshots')
+        assert '01:40:00' in resync_job['nextRun']
+
     def test_unknown_job_id(self, app, client):
         """Handles unknown job id."""
         response = post_basic_auth(
