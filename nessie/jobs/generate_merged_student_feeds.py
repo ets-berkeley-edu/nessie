@@ -36,12 +36,12 @@ from flask import current_app as app
 from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib import berkeley, queries
-from nessie.lib.analytics import mean_course_analytics_for_user
+from nessie.lib.analytics import get_relative_submission_counts, mean_course_analytics_for_user
 from nessie.lib.metadata import update_merged_feed_status
 from nessie.lib.queries import get_all_student_ids, get_successfully_backfilled_students
 from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
 from nessie.merged.sis_profile import get_merged_sis_profile
-from nessie.merged.student_terms import get_canvas_courses_feed, get_merged_enrollment_term
+from nessie.merged.student_terms import get_canvas_courses_feed, get_merged_enrollment_terms, merge_canvas_site_map
 import psycopg2.sql
 
 
@@ -99,12 +99,16 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         else:
             tables = ['student_profiles', 'student_academic_status', 'student_majors', 'student_enrollment_terms']
 
+        # In-memory storage for generated feeds prior to TSV output.
         self.rows = {
             'student_profiles': [],
             'student_academic_status': [],
             'student_majors': [],
             'student_enrollment_terms': [],
         }
+
+        # Track the results of course-level queries to avoid requerying.
+        self.canvas_site_map = {}
 
         # Remove any old data from staging tables.
         for table in tables:
@@ -225,20 +229,27 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         return merged_profile
 
     def generate_merged_enrollment_terms(self, merged_profile, term_id=None):
-        term_ids = berkeley.reverse_term_ids()
-        if term_id and term_id not in term_ids:
+        if term_id and term_id not in berkeley.reverse_term_ids():
             return
+        elif term_id:
+            term_ids = [term_id]
+        else:
+            term_ids = berkeley.reverse_term_ids()
 
         uid = merged_profile.get('uid')
         sid = merged_profile.get('sid')
         canvas_user_id = merged_profile.get('canvasUserId')
-        canvas_courses_feed = get_canvas_courses_feed(uid)
 
-        term_ids = [term_id] if term_id else term_ids
+        canvas_courses_feed = get_canvas_courses_feed(uid)
+        merge_canvas_site_map(self.canvas_site_map, canvas_courses_feed)
+        terms_feed = get_merged_enrollment_terms(uid, sid, term_ids, canvas_courses_feed, self.canvas_site_map)
+
+        relative_submission_counts = get_relative_submission_counts(canvas_user_id)
+
         for term_id in term_ids:
             app.logger.debug(f'Generating merged enrollment term (uid={uid}, sid={sid}, term_id={term_id})')
             ts = datetime.now().timestamp()
-            term_feed = get_merged_enrollment_term(canvas_courses_feed, uid, sid, term_id)
+            term_feed = terms_feed.get(term_id)
             if term_feed and (len(term_feed['enrollments']) or len(term_feed['unmatchedCanvasSites'])):
                 # Rebuild our Canvas courses list to remove any courses that were screened out during association (for instance,
                 # dropped or athletic enrollments).
@@ -248,7 +259,12 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 canvas_courses += term_feed.get('unmatchedCanvasSites', [])
                 # Decorate the Canvas courses list with per-course statistics and return summary statistics.
                 app.logger.debug(f'Generating enrollment term analytics (uid={uid}, sid={sid}, term_id={term_id})')
-                term_feed['analytics'] = mean_course_analytics_for_user(canvas_courses, canvas_user_id)
+                term_feed['analytics'] = mean_course_analytics_for_user(
+                    canvas_courses,
+                    canvas_user_id,
+                    relative_submission_counts,
+                    self.canvas_site_map,
+                )
                 self.rows['student_enrollment_terms'].append('\t'.join([str(sid), str(term_id), json.dumps(term_feed)]))
             app.logger.debug(
                 f'Enrollment term merge complete (uid={uid}, sid={sid}, term_id={term_id}, '

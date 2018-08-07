@@ -1,2 +1,2 @@
-feed
-"{\"reportDate\": \"2017-03-03\"\, \"requirements\": [{\"entryLevelWriting\": {\"status\": \"Satisfied\"}}, {\"americanHistory\": {\"status\": \"Not Satisfied\"}}, {\"americanCultures\": {\"status\": \"In Progress\"}}, {\"americanInstitutions\": {\"status\": \"Not Satisfied\"}}]}"
+term_id,feed
+2178,"{\"droppedPrimarySections\": []\, \"midtermGrades\": {\"90100\": \"D+\"}}"

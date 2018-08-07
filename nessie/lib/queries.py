@@ -61,29 +61,31 @@ def get_all_student_ids():
     return redshift.fetch(sql)
 
 
-@fixture('query_canvas_course_scores_{course_id}.csv')
-def get_canvas_course_scores(course_id):
+@fixture('query_canvas_course_scores.csv')
+def get_canvas_course_scores(course_ids):
     sql = f"""SELECT
+                course_id,
                 canvas_user_id,
                 current_score,
                 EXTRACT(EPOCH FROM last_activity_at) AS last_activity_at,
                 sis_enrollment_status
               FROM {boac_schema()}.course_enrollments
-              WHERE course_id={course_id}
-              ORDER BY canvas_user_id
+              WHERE course_id=ANY('{{{','.join(course_ids)}}}')
+              ORDER BY course_id, canvas_user_id
         """
     return redshift.fetch(sql)
 
 
-@fixture('query_sis_api_drops_and_midterms_{csid}.csv')
+@fixture('query_sis_api_degree_progress_{csid}.csv')
 def get_sis_api_degree_progress(csid):
     sql = f"""SELECT feed from {student_schema()}.sis_api_degree_progress WHERE sid={csid}"""
     return redshift.fetch(sql)
 
 
-@fixture('query_sis_api_drops_and_midterms_{csid}_{term_id}.csv')
-def get_sis_api_drops_and_midterms(csid, term_id):
-    sql = f"""SELECT feed from {student_schema()}.sis_api_drops_and_midterms WHERE sid={csid} and term_id={term_id}"""
+@fixture('query_sis_api_drops_and_midterms_{csid}.csv')
+def get_sis_api_drops_and_midterms(csid, term_ids):
+    sql = f"""SELECT term_id, feed from {student_schema()}.sis_api_drops_and_midterms
+              WHERE sid={csid} AND term_id = ANY('{{{','.join(term_ids)}}}')"""
     return redshift.fetch(sql)
 
 
@@ -93,8 +95,8 @@ def get_sis_api_profile(csid):
     return redshift.fetch(sql)
 
 
-@fixture('query_sis_enrollments_{uid}_{term_id}.csv')
-def get_sis_enrollments(uid, term_id):
+@fixture('query_sis_enrollments_{uid}.csv')
+def get_sis_enrollments(uid):
     sql = f"""SELECT
                   enr.grade, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id, enr.ldap_uid,
                   crs.sis_course_title, crs.sis_course_name,
@@ -105,8 +107,7 @@ def get_sis_enrollments(uid, term_id):
                   AND crs.sis_term_id = enr.sis_term_id
               WHERE enr.ldap_uid = {uid}
                   AND enr.sis_enrollment_status != 'D'
-                  AND enr.sis_term_id = {term_id}
-              ORDER BY crs.sis_course_name, crs.sis_primary DESC, crs.sis_instruction_format, crs.sis_section_num
+              ORDER BY enr.sis_term_id, crs.sis_course_name, crs.sis_primary DESC, crs.sis_instruction_format, crs.sis_section_num
         """
     return redshift.fetch(sql)
 
@@ -127,13 +128,14 @@ def get_sis_section(term_id, sis_section_id):
     return redshift.fetch(sql)
 
 
-@fixture('query_sis_sections_in_canvas_course_{canvas_course_id}.csv')
-def get_sis_sections_in_canvas_course(canvas_course_id):
+@fixture('query_sis_sections_for_canvas_courses.csv')
+def get_sis_sections_for_canvas_courses(canvas_course_ids):
     # The GROUP BY clause eliminates duplicates when multiple site sections include the same SIS class section.
-    sql = f"""SELECT sis_section_id
+    sql = f"""SELECT canvas_course_id, sis_section_id
         FROM {intermediate_schema()}.course_sections
-        WHERE canvas_course_id={canvas_course_id}
-        GROUP BY sis_section_id
+        WHERE canvas_course_id = ANY('{{{','.join(canvas_course_ids)}}}')
+        GROUP BY canvas_course_id, sis_section_id
+        ORDER BY canvas_course_id
         """
     return redshift.fetch(sql)
 
@@ -149,24 +151,11 @@ def get_student_canvas_courses(uid):
     return redshift.fetch(sql)
 
 
-@fixture('query_submissions_turned_in_relative_to_user_{course_id}_{user_id}.csv')
-def get_submissions_turned_in_relative_to_user(course_id, user_id):
-    sql = f"""SELECT canvas_user_id,
-        COUNT(CASE WHEN
-          assignment_status IN ('graded', 'late', 'on_time', 'submitted')
-        THEN 1 ELSE NULL END) AS submissions_turned_in
-        FROM {boac_schema()}.assignment_submissions_scores
-        WHERE assignment_id IN
-        (
-          SELECT DISTINCT assignment_id FROM {boac_schema()}.assignment_submissions_scores
-          WHERE canvas_user_id = {user_id} AND course_id = {course_id}
-        )
-        GROUP BY canvas_user_id
-        HAVING count(*) = (
-          SELECT count(*) FROM {boac_schema()}.assignment_submissions_scores
-          WHERE canvas_user_id = {user_id} AND course_id = {course_id}
-        )
-        """
+@fixture('query_submissions_turned_in_relative_to_user_{user_id}.csv')
+def get_submissions_turned_in_relative_to_user(user_id):
+    sql = f"""SELECT course_id, canvas_user_id, submissions_turned_in
+              FROM {boac_schema()}.assignment_submissions_relative
+              WHERE reference_user_id = {user_id}"""
     return redshift.fetch(sql)
 
 

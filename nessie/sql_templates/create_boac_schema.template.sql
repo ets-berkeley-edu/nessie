@@ -222,6 +222,32 @@ AS (
         AND {redshift_schema_canvas}.submission_dim.workflow_state != 'deleted'
 );
 
+
+CREATE TABLE {redshift_schema_boac}.assignment_submissions_relative
+SORTKEY (reference_user_id, course_id)
+DISTKEY (reference_user_id)
+AS (
+    SELECT
+        ac1.canvas_user_id AS reference_user_id,
+        ac1.course_id AS course_id,
+        ac2.canvas_user_id AS canvas_user_id,
+        COUNT(
+            CASE WHEN ac2.assignment_status IN ('graded', 'late', 'on_time', 'submitted')
+            THEN 1 ELSE NULL END
+        ) AS submissions_turned_in
+    FROM {redshift_schema_boac}.assignment_submissions_scores ac1
+    JOIN {redshift_schema_boac}.assignment_submissions_scores ac2
+    ON
+        ac1.uid IN (SELECT ldap_uid FROM {redshift_schema_calnet}.persons)
+        AND ac1.assignment_id = ac2.assignment_id
+    GROUP BY reference_user_id, ac1.course_id, ac2.canvas_user_id
+    HAVING count(*) = (
+        SELECT count(*) FROM {redshift_schema_boac}.assignment_submissions_scores
+        WHERE canvas_user_id = reference_user_id AND course_id = ac1.course_id
+    )
+);
+
+
 CREATE TABLE {redshift_schema_boac}.course_enrollments
 SORTKEY (course_id)
 AS (
