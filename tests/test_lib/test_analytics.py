@@ -50,7 +50,11 @@ class TestAnalyticsFromAssignmentsSubmitted:
     canvas_course_id = 7654321
 
     def test_from_fixture(self, app):
-        digested = analytics.assignments_submitted(self.canvas_user_id, self.canvas_course_id)
+        digested = analytics.assignments_submitted(
+            self.canvas_user_id,
+            self.canvas_course_id,
+            analytics.get_relative_submission_counts(self.canvas_user_id),
+        )
         assert digested['student']['raw'] == 8
         assert digested['student']['percentile'] == 64
         assert digested['student']['roundedUpPercentile'] == 81
@@ -61,18 +65,29 @@ class TestAnalyticsFromAssignmentsSubmitted:
     def test_small_difference(self, app):
         """Notices that small difference."""
         rows = [
-            'canvas_user_id,submissions_turned_in',
-            '9000000,1',
-            str(self.canvas_user_id) + ',3',
+            'canvas_user_id,course_id,submissions_turned_in',
+            ','.join(['9000000', str(self.canvas_course_id), '1']),
+            ','.join([str(self.canvas_user_id), str(self.canvas_course_id), '3']),
         ]
         for i in range(101, 301):
-            rows.append(str(i) + ',2')
+            rows.append(','.join([str(i), str(self.canvas_course_id), '2']))
         mr = MockRows(io.StringIO('\n'.join(rows)))
         with register_mock(queries.get_submissions_turned_in_relative_to_user, mr):
-            worst = analytics.assignments_submitted('9000000', self.canvas_course_id)
-            best = analytics.assignments_submitted(self.canvas_user_id, self.canvas_course_id)
-            median = analytics.assignments_submitted('101', self.canvas_course_id)
-
+            worst = analytics.assignments_submitted(
+                '9000000',
+                self.canvas_course_id,
+                analytics.get_relative_submission_counts('9000000'),
+            )
+            best = analytics.assignments_submitted(
+                self.canvas_user_id,
+                self.canvas_course_id,
+                analytics.get_relative_submission_counts(self.canvas_user_id),
+            )
+            median = analytics.assignments_submitted(
+                '101',
+                self.canvas_course_id,
+                analytics.get_relative_submission_counts('101'),
+            )
             for digested in [worst, best, median]:
                 assert digested['boxPlottable'] is False
                 assert digested['student']['percentile'] is not None
@@ -85,15 +100,14 @@ class TestAnalyticsFromAssignmentsSubmitted:
             assert best['displayPercentile'] == '100th'
             assert best['student']['raw'] == 3
 
-    def test_with_empty_redshift(self, app):
-        bad_course_id = 'NoSuchSite'
-        digested = analytics.assignments_submitted(self.canvas_user_id, bad_course_id)
-        assert digested == {'error': 'Redshift query returned no results'}
-
     def test_when_no_data(self, app):
-        mr = MockRows(io.StringIO('canvas_user_id,assignments_submitted'))
+        mr = MockRows(io.StringIO('canvas_user_id,course_id,assignments_submitted'))
         with register_mock(queries.get_submissions_turned_in_relative_to_user, mr):
-            digested = analytics.assignments_submitted(self.canvas_user_id, self.canvas_course_id)
+            digested = analytics.assignments_submitted(
+                self.canvas_user_id,
+                self.canvas_course_id,
+                analytics.get_relative_submission_counts(self.canvas_user_id),
+            )
         assert digested['student']['raw'] is None
         assert digested['student']['percentile'] is None
         assert digested['boxPlottable'] is False
@@ -104,8 +118,16 @@ class TestStudentAnalytics:
     canvas_user_id = 9000100
     canvas_course_id = 7654321
 
+    def get_canvas_site_map(self):
+        return {
+            '7654321': {
+                'sis_sections': queries.get_sis_sections_for_canvas_courses([self.canvas_course_id]),
+                'enrollments': queries.get_canvas_course_scores([self.canvas_course_id]),
+            },
+        }
+
     def test_from_fixture(self, app):
-        digested = analytics.student_analytics(self.canvas_user_id, self.canvas_course_id)
+        digested = analytics.student_analytics(self.canvas_user_id, self.canvas_course_id, self.get_canvas_site_map())
         score = digested['currentScore']
         assert score['student']['raw'] == 84
         assert score['student']['percentile'] == 73
@@ -124,16 +146,16 @@ class TestStudentAnalytics:
 
     def test_with_empty_redshift(self, app):
         bad_course_id = 'NoSuchSite'
-        digested = analytics.student_analytics(self.canvas_user_id, bad_course_id)
+        digested = analytics.student_analytics(self.canvas_user_id, bad_course_id, self.get_canvas_site_map())
         _error = {'error': 'Redshift query returned no results'}
         assert digested == {'currentScore': _error, 'lastActivity': _error}
 
     def test_when_no_data(self, app):
-        exclusive_rows = 'canvas_user_id,course_scores,last_activity_at,sis_enrollment_status\n' \
-            '1,1,1,E'
+        exclusive_rows = 'course_id,canvas_user_id,course_scores,last_activity_at,sis_enrollment_status\n' \
+            '7654321,1,1,1,E'
         mr = MockRows(io.StringIO(exclusive_rows))
         with register_mock(queries.get_canvas_course_scores, mr):
-            digested = analytics.student_analytics(self.canvas_user_id, self.canvas_course_id)
+            digested = analytics.student_analytics(self.canvas_user_id, self.canvas_course_id, self.get_canvas_site_map())
         score = digested['currentScore']
         assert score['student']['raw'] is None
         assert score['student']['percentile'] is None

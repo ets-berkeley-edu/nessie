@@ -24,7 +24,9 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
+from itertools import groupby
 import math
+import operator
 from statistics import mean
 import time
 
@@ -33,18 +35,18 @@ from nessie.lib import queries
 import pandas
 
 
-def merge_analytics_for_user(user_courses, canvas_user_id):
+def merge_analytics_for_user(user_courses, canvas_user_id, relative_submission_counts, canvas_site_map):
     if user_courses:
         for course in user_courses:
             canvas_course_id = course['canvasCourseId']
             course['analytics'] = {
-                'assignmentsSubmitted': assignments_submitted(canvas_user_id, canvas_course_id),
+                'assignmentsSubmitted': assignments_submitted(canvas_user_id, canvas_course_id, relative_submission_counts),
             }
-            course['analytics'].update(student_analytics(canvas_user_id, canvas_course_id))
+            course['analytics'].update(student_analytics(canvas_user_id, canvas_course_id, canvas_site_map))
 
 
-def mean_course_analytics_for_user(user_courses, canvas_user_id):
-    merge_analytics_for_user(user_courses, canvas_user_id)
+def mean_course_analytics_for_user(user_courses, canvas_user_id, relative_submission_counts, canvas_site_map):
+    merge_analytics_for_user(user_courses, canvas_user_id, relative_submission_counts, canvas_site_map)
     mean_values = {}
     for metric in ['assignmentsSubmitted', 'currentScore', 'lastActivity']:
         percentiles = []
@@ -68,10 +70,8 @@ def _get_canvas_sites_dict(student):
     return {str(canvas_site['canvasCourseId']): canvas_site for canvas_site in canvas_sites}
 
 
-def assignments_submitted(canvas_user_id, canvas_course_id):
-    course_rows = queries.get_submissions_turned_in_relative_to_user(canvas_course_id, canvas_user_id)
-    if course_rows is None:
-        return {'error': 'Redshift query returned no results'}
+def assignments_submitted(canvas_user_id, canvas_course_id, relative_submission_counts):
+    course_rows = relative_submission_counts.get(canvas_course_id, [])
     app.logger.debug(f'Assignments query complete, will calculate statistics (canvas_user_id={canvas_user_id}, canvas_course_id={canvas_course_id})')
     df = pandas.DataFrame(course_rows, columns=['canvas_user_id', 'submissions_turned_in'])
     student_row = df.loc[df['canvas_user_id'].values == int(canvas_user_id)]
@@ -84,8 +84,8 @@ def assignments_submitted(canvas_user_id, canvas_course_id):
     return analytics_for_column(df, student_row, 'submissions_turned_in')
 
 
-def student_analytics(canvas_user_id, canvas_course_id):
-    enrollments = queries.get_canvas_course_scores(canvas_course_id)
+def student_analytics(canvas_user_id, canvas_course_id, canvas_site_map):
+    enrollments = canvas_site_map.get(str(canvas_course_id), {}).get('enrollments')
     if enrollments is None:
         _error = {'error': 'Redshift query returned no results'}
         return {'currentScore': _error, 'lastActivity': _error}
@@ -114,6 +114,14 @@ def student_analytics(canvas_user_id, canvas_course_id):
         'lastActivity': last_activity,
         'courseEnrollmentCount': len(enrollments),
     }
+
+
+def get_relative_submission_counts(canvas_user_id):
+    results = queries.get_submissions_turned_in_relative_to_user(canvas_user_id)
+    submissions_by_course = {}
+    for key, group in groupby(results, key=operator.itemgetter('course_id')):
+        submissions_by_course[key] = list(group)
+    return submissions_by_course
 
 
 def analytics_for_column(df, student_row, column_name):

@@ -23,24 +23,30 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from itertools import groupby
 import json
+import operator
 
 from nessie.lib import berkeley, queries
 
 
-def get_merged_enrollment_term(canvas_course_sites, uid, cs_id, term_id):
-    enrollments = queries.get_sis_enrollments(uid, term_id) or []
-    term_name = berkeley.term_name_for_sis_id(term_id)
-    result = queries.get_sis_api_drops_and_midterms(cs_id, term_id)
-    drops_and_midterms = (result and result[0] and json.loads(result[0]['feed'])) or {}
-    term_feed = merge_enrollment(cs_id, enrollments, term_id, term_name, drops_and_midterms)
-
-    for site in canvas_course_sites:
-        merge_canvas_course_site(term_feed, site)
-
-    sort_canvas_course_sites(term_feed)
-
-    return term_feed
+def get_merged_enrollment_terms(uid, cs_id, term_ids, canvas_courses_feed, canvas_site_map):
+    enrollment_results = queries.get_sis_enrollments(uid) or []
+    enrollments_by_term = {}
+    for key, group in groupby(enrollment_results, key=operator.itemgetter('sis_term_id')):
+        enrollments_by_term[str(key)] = list(group)
+    drops_and_midterms_result = queries.get_sis_api_drops_and_midterms(cs_id, term_ids) or []
+    term_feeds = {}
+    for term_id in term_ids:
+        enrollments = enrollments_by_term.get(term_id, [])
+        term_name = berkeley.term_name_for_sis_id(term_id)
+        drops_and_midterms = next((json.loads(row['feed']) for row in drops_and_midterms_result if str(row['term_id']) == str(term_id)), {})
+        term_feed = merge_enrollment(cs_id, enrollments, term_id, term_name, drops_and_midterms)
+        for site in canvas_courses_feed:
+            merge_canvas_course_site(term_feed, site, canvas_site_map)
+        sort_canvas_course_sites(term_feed)
+        term_feeds[term_id] = term_feed
+    return term_feeds
 
 
 def get_canvas_courses_feed(uid):
@@ -48,6 +54,24 @@ def get_canvas_courses_feed(uid):
     if not courses:
         return []
     return [canvas_course_feed(course) for course in courses]
+
+
+def merge_canvas_site_map(canvas_site_map, canvas_courses_feed):
+    unmapped_canvas_course_ids = []
+    for course in canvas_courses_feed:
+        str_id = str(course['canvasCourseId'])
+        if str_id not in canvas_site_map:
+            unmapped_canvas_course_ids.append(str_id)
+            canvas_site_map[str_id] = {
+                'enrollments': [],
+                'sis_sections': [],
+            }
+    score_results = queries.get_canvas_course_scores(unmapped_canvas_course_ids)
+    for key, group in groupby(score_results, key=operator.itemgetter('course_id')):
+        canvas_site_map[str(key)]['enrollments'] = list(group)
+    section_results = queries.get_sis_sections_for_canvas_courses(unmapped_canvas_course_ids)
+    for key, group in groupby(section_results, key=operator.itemgetter('canvas_course_id')):
+        canvas_site_map[str(key)]['sis_sections'] = list(group)
 
 
 def merge_drops_and_midterms(term_feed, drops_and_midterms):
@@ -171,11 +195,11 @@ def is_enrolled_primary_section(section_feed):
     return section_feed['primary'] and section_feed['enrollmentStatus'] == 'E'
 
 
-def merge_canvas_course_site(term_feed, site):
+def merge_canvas_course_site(term_feed, site, canvas_site_map):
     if site['courseTerm'] != term_feed['termName']:
         return
     enrollments_matched = set()
-    canvas_sections = queries.get_sis_sections_in_canvas_course(site['canvasCourseId'])
+    canvas_sections = canvas_site_map.get(str(site['canvasCourseId']), {}).get('sis_sections')
     if not canvas_sections:
         return
     for canvas_section in canvas_sections:

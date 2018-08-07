@@ -24,14 +24,20 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-from nessie.merged.student_terms import get_canvas_courses_feed, get_merged_enrollment_term
+from nessie.merged.student_terms import get_canvas_courses_feed, get_merged_enrollment_terms, merge_canvas_site_map
 
 
 class TestMergedSisEnrollments:
 
+    def get_canvas_site_map(self, canvas_courses_feed):
+        canvas_site_map = {}
+        merge_canvas_site_map(canvas_site_map, canvas_courses_feed)
+        return canvas_site_map
+
     def test_merges_midterm_grades(self, app):
         canvas_courses_feed = get_canvas_courses_feed('61889')
-        term_feed = get_merged_enrollment_term(canvas_courses_feed, '61889', '11667051', '2178')
+        terms_feed = get_merged_enrollment_terms('61889', '11667051', ['2178'], canvas_courses_feed, self.get_canvas_site_map(canvas_courses_feed))
+        term_feed = terms_feed['2178']
         assert '2178' == term_feed['termId']
         enrollments = term_feed['enrollments']
         assert 4 == len(enrollments)
@@ -42,7 +48,8 @@ class TestMergedSisEnrollments:
     def test_includes_course_site_section_mappings(self, app):
         """Maps Canvas sites to SIS courses and sections."""
         canvas_courses_feed = get_canvas_courses_feed('61889')
-        term_feed = get_merged_enrollment_term(canvas_courses_feed, '61889', '11667051', '2178')
+        terms_feed = get_merged_enrollment_terms('61889', '11667051', ['2178'], canvas_courses_feed, self.get_canvas_site_map(canvas_courses_feed))
+        term_feed = terms_feed['2178']
         enrollments = term_feed['enrollments']
         assert len(enrollments[0]['canvasSites']) == 1
         assert enrollments[0]['canvasSites'][0]['canvasCourseId'] == 7654320
