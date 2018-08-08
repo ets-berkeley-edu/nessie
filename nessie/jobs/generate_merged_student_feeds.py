@@ -137,22 +137,21 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             if not self.verify_table(table):
                 return False
 
-        redshift.execute('BEGIN TRANSACTION')
-        for table in tables:
-            if not self.refresh_from_staging(table, term_id, sids):
-                app.logger.error(f'Failed to refresh {self.destination_schema}.{table} from staging.')
+        with redshift.transaction() as transaction:
+            for table in tables:
+                if not self.refresh_from_staging(table, term_id, sids, transaction):
+                    app.logger.error(f'Failed to refresh {self.destination_schema}.{table} from staging.')
+                    return False
+            if not transaction.commit():
+                app.logger.error(f'Final transaction commit failed for {self.destination_schema}.')
                 return False
-        if not redshift.execute('COMMIT TRANSACTION'):
-            app.logger.error(f'Final transaction commit failed for {self.destination_schema}.')
-            return False
 
-        with rds.get_cursor() as cursor:
-            rds.execute(cursor, 'BEGIN TRANSACTION')
-            if self.refresh_rds_indexes(sids, cursor):
-                rds.execute(cursor, 'COMMIT TRANSACTION')
+        with rds.transaction() as transaction:
+            if self.refresh_rds_indexes(sids, transaction):
+                transaction.commit()
                 app.logger.info('Refreshed RDS indexes.')
             else:
-                rds.execute(cursor, 'ROLLBACK TRANSACTION')
+                transaction.rollback()
                 app.logger.error('Failed to refresh RDS indexes.')
                 return False
 
@@ -271,7 +270,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 f'{datetime.now().timestamp() - ts} seconds)'
             )
 
-    def refresh_from_staging(self, table, term_id, sids):
+    def refresh_from_staging(self, table, term_id, sids, transaction):
         # If our job is restricted to a particular term id or set of sids, then drop rows from the destination table
         # matching those restrictions. If there are no restrictions, the entire destination table can be truncated.
         delete_conditions = []
@@ -283,7 +282,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             delete_conditions.append('sid = ANY(%s)')
             delete_params.append(sids)
         if not delete_conditions:
-            redshift.execute(
+            transaction.execute(
                 'TRUNCATE {schema}.{table}',
                 schema=self.destination_schema_identifier,
                 table=psycopg2.sql.Identifier(table),
@@ -291,7 +290,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             app.logger.info(f'Truncated destination table {self.destination_schema}.{table}.')
         else:
             delete_sql = 'DELETE FROM {schema}.{table} WHERE ' + ' AND '.join(delete_conditions)
-            redshift.execute(
+            transaction.execute(
                 delete_sql,
                 schema=self.destination_schema_identifier,
                 table=psycopg2.sql.Identifier(table),
@@ -303,7 +302,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             )
 
         # Load new data from the staging tables into the destination table.
-        result = redshift.execute(
+        result = transaction.execute(
             'INSERT INTO {schema}.{table} (SELECT * FROM {staging_schema}.{table})',
             schema=self.destination_schema_identifier,
             staging_schema=self.staging_schema_identifier,
@@ -311,12 +310,12 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         )
         if not result:
             app.logger.error(f'Failed to populate table {self.destination_schema}.{table} from staging schema.')
-            redshift.execute('ROLLBACK TRANSACTION')
+            transaction.rollback()
             return False
         app.logger.info(f'Populated {self.destination_schema}.{table} from staging schema.')
 
         # Truncate staging table.
-        redshift.execute(
+        transaction.execute(
             'TRUNCATE {schema}.{table}',
             schema=self.staging_schema_identifier,
             table=psycopg2.sql.Identifier(table),
@@ -324,7 +323,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         app.logger.info(f'Truncated staging table {self.staging_schema}.{table}.')
         return True
 
-    def refresh_rds_indexes(self, sids, cursor):
+    def refresh_rds_indexes(self, sids, transaction):
         def delete_existing_rows(table):
             if sids:
                 sql = f'DELETE FROM {self.destination_schema}.{table} WHERE sid = ANY(%s)'
@@ -332,7 +331,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             else:
                 sql = f'TRUNCATE {self.destination_schema}.{table}'
                 params = None
-            return rds.execute(cursor, sql, params)
+            return transaction.execute(sql, params)
 
         if len(self.rows['student_academic_status']):
             if not delete_existing_rows('student_academic_status'):
@@ -340,8 +339,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
             def split_tsv_row(row):
                 return [v if len(v) else None for v in row.split('\t')]
-            result = rds.insert_bulk(
-                cursor,
+            result = transaction.insert_bulk(
                 f"""INSERT INTO {self.destination_schema}.student_academic_status
                     (sid, uid, first_name, last_name, level, gpa, units) VALUES %s""",
                 [tuple(split_tsv_row(r)) for r in self.rows['student_academic_status']],
@@ -351,8 +349,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         if len(self.rows['student_majors']):
             if not delete_existing_rows('student_majors'):
                 return False
-            result = rds.insert_bulk(
-                cursor,
+            result = transaction.insert_bulk(
                 f'INSERT INTO {self.destination_schema}.student_majors (sid, major) VALUES %s',
                 [tuple(r.split('\t')) for r in self.rows['student_majors']],
             )
