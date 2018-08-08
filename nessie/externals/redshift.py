@@ -27,6 +27,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """Client code to run queries against Redshift."""
 
 
+from contextlib import contextmanager
 from datetime import datetime
 
 from flask import current_app as app
@@ -38,7 +39,10 @@ import psycopg2.sql
 
 def execute(sql, **kwargs):
     """Execute SQL write operation with optional keyword arguments for formatting, returning a status string."""
-    return _execute(sql, 'write', **kwargs)
+    with _get_cursor() as cursor:
+        if not cursor:
+            return None
+        return _execute(sql, operation='write', cursor=cursor, **kwargs)
 
 
 def execute_ddl_script(sql):
@@ -99,15 +103,60 @@ def drop_external_schema(schema_name):
 
 def fetch(sql, **kwargs):
     """Execute SQL read operation with optional keyword arguments for formatting, returning an array of dictionaries."""
-    rows = _execute(sql, 'read', **kwargs)
-    if rows is None:
-        return None
-    else:
-        # For Pandas compatibility, copy psycopg's list-like object of dict-like objects to a real list of dicts.
-        return [r.copy() for r in rows]
+    with _get_cursor(operation='read') as cursor:
+        if not cursor:
+            return None
+        rows = _execute(sql, 'read', cursor, **kwargs)
+        if rows is None:
+            return None
+        else:
+            # For Pandas compatibility, copy psycopg's list-like object of dict-like objects to a real list of dicts.
+            return [r.copy() for r in rows]
 
 
-def _execute(sql, operation, **kwargs):
+class Transaction():
+    def __init__(self, cursor):
+        self.cursor = cursor
+        self.execute('BEGIN TRANSACTION')
+
+    def execute(self, sql, **kwargs):
+        return _execute(sql, 'write', self.cursor, **kwargs)
+
+    def commit(self):
+        return self.execute('COMMIT TRANSACTION')
+
+    def rollback(self):
+        return self.execute('ROLLBACK TRANSACTION')
+
+
+@contextmanager
+def transaction():
+    with _get_cursor(autocommit=False) as cursor:
+        yield Transaction(cursor)
+
+
+@contextmanager
+def _get_cursor(autocommit=True, operation='write'):
+    try:
+        with get_psycopg_cursor(
+            operation=operation,
+            autocommit=autocommit,
+            dbname=app.config.get('REDSHIFT_DATABASE'),
+            host=app.config.get('REDSHIFT_HOST'),
+            port=app.config.get('REDSHIFT_PORT'),
+            user=app.config.get('REDSHIFT_USER'),
+            password=app.config.get('REDSHIFT_PASSWORD'),
+        ) as cursor:
+            yield cursor
+    except psycopg2.Error as e:
+        error_str = str(e)
+        if e.pgcode:
+            error_str += f'{e.pgcode}: {e.pgerror}\n'
+        app.logger.warn({'message': error_str})
+        yield None
+
+
+def _execute(sql, operation, cursor, **kwargs):
     """Execute SQL string with optional keyword arguments for formatting.
 
     If 'operation' is set to 'write', a transaction is enforced and a status string is returned. If 'operation' is
@@ -119,24 +168,16 @@ def _execute(sql, operation, **kwargs):
         if kwargs:
             params = kwargs.pop('params', None)
             sql = psycopg2.sql.SQL(sql).format(**kwargs)
-        with get_psycopg_cursor(
-                operation=operation,
-                dbname=app.config.get('REDSHIFT_DATABASE'),
-                host=app.config.get('REDSHIFT_HOST'),
-                port=app.config.get('REDSHIFT_PORT'),
-                user=app.config.get('REDSHIFT_USER'),
-                password=app.config.get('REDSHIFT_PASSWORD'),
-        ) as cursor:
-            ts = datetime.now().timestamp()
-            cursor.execute(sql, params)
-            if operation == 'read':
-                result = [row for row in cursor]
-                query_time = datetime.now().timestamp() - ts
-                app.logger.debug(f'Redshift query returned {len(result)} rows in {query_time} seconds:\n{sql}\n{params or ""}')
-            else:
-                result = cursor.statusmessage
-                query_time = datetime.now().timestamp() - ts
-                app.logger.debug(f'Redshift query returned status {result} in {query_time} seconds:\n{sql}\n{params or ""}')
+        ts = datetime.now().timestamp()
+        cursor.execute(sql, params)
+        if operation == 'read':
+            result = [row for row in cursor]
+            query_time = datetime.now().timestamp() - ts
+            app.logger.debug(f'Redshift query returned {len(result)} rows in {query_time} seconds:\n{sql}\n{params or ""}')
+        else:
+            result = cursor.statusmessage
+            query_time = datetime.now().timestamp() - ts
+            app.logger.debug(f'Redshift query returned status {result} in {query_time} seconds:\n{sql}\n{params or ""}')
     except psycopg2.Error as e:
         error_str = str(e)
         if e.pgcode:

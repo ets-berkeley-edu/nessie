@@ -35,13 +35,46 @@ import psycopg2
 import psycopg2.extras
 
 
+def execute(sql, params=None):
+    with _get_cursor() as cursor:
+        _execute(sql, cursor, params)
+
+
+class Transaction():
+    def __init__(self, cursor):
+        self.cursor = cursor
+        self.execute('BEGIN TRANSACTION')
+
+    def execute(self, sql, params=None):
+        return _execute(sql, self.cursor, params)
+
+    def insert_bulk(self, sql, rows):
+        return _insert_bulk(sql, self.cursor, rows)
+
+    def commit(self):
+        return self.execute('COMMIT TRANSACTION')
+
+    def rollback(self):
+        return self.execute('ROLLBACK TRANSACTION')
+
+
 @contextmanager
-def get_cursor():
-    with get_psycopg_cursor(operation='write', autocommit=False, uri=app.config.get('SQLALCHEMY_DATABASE_URI')) as cursor:
+def transaction():
+    with _get_cursor(autocommit=False) as cursor:
+        yield Transaction(cursor)
+
+
+@contextmanager
+def _get_cursor(autocommit=True):
+    with get_psycopg_cursor(
+        operation='write',
+        autocommit=autocommit,
+        uri=app.config.get('SQLALCHEMY_DATABASE_URI'),
+    ) as cursor:
         yield cursor
 
 
-def execute(cursor, sql, params=None):
+def _execute(sql, cursor, params=None):
     result = None
     try:
         ts = datetime.now().timestamp()
@@ -54,7 +87,7 @@ def execute(cursor, sql, params=None):
     return result
 
 
-def insert_bulk(cursor, sql, rows):
+def _insert_bulk(sql, cursor, rows):
     result = None
     try:
         psycopg2.extras.execute_values(cursor, sql, rows, page_size=5000)
