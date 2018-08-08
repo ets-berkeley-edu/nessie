@@ -66,6 +66,8 @@ def merge_canvas_site_map(canvas_site_map, canvas_courses_feed):
                 'enrollments': [],
                 'sis_sections': [],
             }
+    if not unmapped_canvas_course_ids:
+        return
     score_results = queries.get_canvas_course_scores(unmapped_canvas_course_ids)
     for key, group in groupby(score_results, key=operator.itemgetter('course_id')):
         canvas_site_map[str(key)]['enrollments'] = list(group)
