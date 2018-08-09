@@ -39,14 +39,21 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 --------------------------------------------------------------------
 
 -- advisor_student_mappings
-CREATE EXTERNAL TABLE {redshift_schema_coe_external}.advisor_students(
+CREATE EXTERNAL TABLE {redshift_schema_coe_external}.students(
     sid VARCHAR,
-    advisor_ldap_uid VARCHAR
+    advisor_ldap_uid VARCHAR,
+    gender VARCHAR,
+    ethnicity VARCHAR,
+    minority VARCHAR,
+    did_prep VARCHAR,
+    prep_eligible VARCHAR,
+    did_tprep VARCHAR,
+    tprep_eligible VARCHAR
 )
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_coe_data_path}/advisor_students/';
+LOCATION '{loch_s3_coe_data_path}/students/';
 
 --------------------------------------------------------------------
 -- Internal Schema
@@ -65,8 +72,15 @@ INTERLEAVED SORTKEY (sid, advisor_ldap_uid)
 AS (
     SELECT
     s.sid,
-    s.advisor_ldap_uid
-    FROM {redshift_schema_coe_external}.advisor_students s
+    s.advisor_ldap_uid,
+    s.gender,
+    s.ethnicity,
+    (CASE WHEN s.minority = 'y' THEN true ELSE false END) AS minority,
+    (CASE WHEN s.did_prep = 'y' THEN true ELSE false END) AS did_prep,
+    (CASE WHEN s.prep_eligible = 'y' THEN true ELSE false END) AS prep_eligible,
+    (CASE WHEN s.did_tprep = 'y' THEN true ELSE false END) AS did_tprep,
+    (CASE WHEN s.tprep_eligible = 'y' THEN true ELSE false END) AS tprep_eligible
+    FROM {redshift_schema_coe_external}.students s
 );
 
 CREATE TABLE {redshift_schema_coe}.student_profiles

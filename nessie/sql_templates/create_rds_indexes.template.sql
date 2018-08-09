@@ -24,6 +24,13 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_coe}.students
 (
     sid VARCHAR NOT NULL,
     advisor_ldap_uid VARCHAR,
+    gender VARCHAR,
+    ethnicity VARCHAR,
+    minority BOOLEAN,
+    did_prep BOOLEAN,
+    prep_eligible BOOLEAN,
+    did_tprep BOOLEAN,
+    tprep_eligible BOOLEAN,
     PRIMARY KEY (sid, advisor_ldap_uid)
 );
 

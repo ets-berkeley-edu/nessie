@@ -69,9 +69,15 @@ class CreateCoeSchema(BackgroundJob):
             app.logger.info(f'Generating COE profile for SID {sid} ({index} of {len(coe_rows)})')
             index += 1
             row_for_student = list(rows_for_student)[0]
-            # TODO More COE-specific attributes will get merged into this profile as we receive them.
             coe_profile = {
                 'advisorUid': row_for_student.get('advisor_ldap_uid'),
+                'gender': row_for_student.get('gender'),
+                'ethnicity': row_for_student.get('ethnicity'),
+                'minority': row_for_student.get('minority'),
+                'didPrep': row_for_student.get('did_prep'),
+                'prepEligible': row_for_student.get('prep_eligible'),
+                'didTprep': row_for_student.get('did_tprep'),
+                'tprepEligible': row_for_student.get('tprep_eligible'),
             }
             profile_rows.append('\t'.join([str(sid), json.dumps(coe_profile)]))
 
@@ -112,7 +118,7 @@ class CreateCoeSchema(BackgroundJob):
             result = transaction.execute(f'TRUNCATE {internal_schema}.students')
             if not result:
                 return False
-            columns = ['sid', 'advisor_ldap_uid']
+            columns = ['sid', 'advisor_ldap_uid', 'gender', 'ethnicity', 'minority', 'did_prep', 'prep_eligible', 'did_tprep', 'tprep_eligible']
             result = transaction.insert_bulk(
                 f'INSERT INTO {internal_schema}.students ({", ".join(columns)}) VALUES %s',
                 [tuple([r[c] for c in columns]) for r in coe_rows],
