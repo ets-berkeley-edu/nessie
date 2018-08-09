@@ -52,6 +52,7 @@ class GenerateAscProfiles(BackgroundJob):
         )
 
         profile_rows = []
+        sids_for_inactive_deletion = []
 
         for sid, rows_for_student in groupby(asc_rows, operator.itemgetter('sid')):
             rows_for_student = list(rows_for_student)
@@ -61,6 +62,7 @@ class GenerateAscProfiles(BackgroundJob):
             any_active_athletics = reduce(operator.or_, [r['active'] for r in rows_for_student], False)
             if any_active_athletics:
                 rows_for_student = [r for r in rows_for_student if r['active']]
+                sids_for_inactive_deletion.append(sid)
             athletics_profile = {
                 'athletics': [],
                 'inIntensiveCohort': rows_for_student[0]['intensive'],
@@ -108,6 +110,16 @@ class GenerateAscProfiles(BackgroundJob):
                 transaction.rollback()
                 app.logger.error('Error refreshing RDS indexes.')
                 return False
+
+        if sids_for_inactive_deletion:
+            redshift.execute(
+                f'DELETE FROM {asc_schema}.students WHERE active IS false AND sid = ANY(%s)',
+                params=(sids_for_inactive_deletion,),
+            )
+            rds.execute(
+                f'DELETE FROM {asc_schema}.students WHERE active IS false AND sid = ANY(%s)',
+                params=(sids_for_inactive_deletion,),
+            )
 
         return 'ASC profile generation complete.'
 
