@@ -25,6 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import redshift
+from nessie.lib.berkeley import term_name_for_sis_id
 from nessie.lib.mockingdata import fixture
 
 # Lazy init to support testing.
@@ -72,6 +73,18 @@ def get_canvas_course_scores(course_ids):
               FROM {boac_schema()}.course_enrollments
               WHERE course_id=ANY('{{{','.join(course_ids)}}}')
               ORDER BY course_id, canvas_user_id
+        """
+    return redshift.fetch(sql)
+
+
+def get_enrolled_canvas_sites_for_term(term_id):
+    sql = f"""SELECT DISTINCT enr.canvas_course_id
+              FROM {intermediate_schema()}.active_student_enrollments enr
+              JOIN {intermediate_schema()}.course_sections cs
+                ON cs.canvas_course_id = enr.canvas_course_id
+                AND cs.canvas_course_term = '{term_name_for_sis_id(term_id)}'
+                AND enr.uid IN (SELECT uid FROM {student_schema()}.student_academic_status)
+              ORDER BY canvas_course_id
         """
     return redshift.fetch(sql)
 

@@ -64,6 +64,9 @@ CANVAS_DATA_API_KEY = 'some key'
 CANVAS_DATA_API_SECRET = 'some secret'
 CANVAS_DATA_HOST = 'foo.instructure.com'
 
+CANVAS_HTTP_URL = 'https://wottsamatta.instructure.com'
+CANVAS_HTTP_TOKEN = 'yet another secret'
+
 CURRENT_TERM = 'Fall 2017'
 
 DEGREE_PROGRESS_API_URL = 'https://secreturl.berkeley.edu/PSFT_CS'
@@ -81,6 +84,7 @@ JOB_SCHEDULING_ENABLED = True
 # See http://apscheduler.readthedocs.io/en/latest/modules/triggers/cron.html for supported schedule formats.
 JOB_SYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 0}
 JOB_RESYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 40}
+JOB_IMPORT_CANVAS_ENROLLMENTS = {'hour': 2, 'minute': 00}
 JOB_IMPORT_STUDENT_POPULATION = {'hour': 2, 'minute': 00}
 JOB_IMPORT_DEGREE_PROGRESS = {'hour': 2, 'minute': 20}
 JOB_IMPORT_SIS_ENROLLMENTS = {'hour': 2, 'minute': 20}

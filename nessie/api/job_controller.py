@@ -39,6 +39,7 @@ from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
 from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.jobs.import_calnet_data import ImportCalNetData
+from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
 from nessie.jobs.import_degree_progress import ImportDegreeProgress
 from nessie.jobs.import_sis_enrollments_api import ImportSisEnrollmentsApi
 from nessie.jobs.import_sis_student_api import ImportSisStudentApi
@@ -124,6 +125,18 @@ def generate_merged_student_feeds(term_id):
     else:
         backfill = False
     job_started = GenerateMergedStudentFeeds(term_id=term_id, backfill_new_students=backfill).run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/import_canvas_enrollments_api', methods=['POST'])
+@auth_required
+def import_canvas_enrollments_api():
+    args = get_json_args(request)
+    if args:
+        term_id = args.get('term')
+    else:
+        term_id = None
+    job_started = ImportCanvasEnrollmentsApi(term_id=term_id).run_async()
     return respond_with_status(job_started)
 
 
