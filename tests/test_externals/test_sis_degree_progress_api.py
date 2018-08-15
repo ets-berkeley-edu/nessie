@@ -58,11 +58,11 @@ class TestSisDegreeProgressApi:
         assert re.search(r'<UC_AA_PROGRESS>', xml)
 
     def test_user_not_found(self, app, caplog):
-        """Returns False when CS delivers an error in the XML."""
+        """Returns empty when CS delivers an error in the XML."""
         response = sis_degree_progress_api._get_degree_progress(9999999)
         assert response
-        parsed = sis_degree_progress_api.get_degree_progress(9999999)
-        assert not parsed
+        parsed = sis_degree_progress_api.parsed_degree_progress(9999999)
+        assert parsed == {}
 
     def test_server_error(self, app, caplog):
         """Logs unexpected server errors and returns informative message."""
