@@ -41,11 +41,16 @@ def get_merged_sis_profile(csid):
 
     sis_profile = {}
     merge_sis_profile_academic_status(sis_student_api_feed, sis_profile)
-    merge_sis_profile_emails(sis_student_api_feed, sis_profile)
 
-    # We have encountered at least one malformed Hub Student Profile feed in which the top-level
-    # 'names' key points to an embedded 'names' array rather than simply pointing to the array.
-    # See BOAC-362 for details.
+    # We have encountered multiple malformed Hub Student Profile feeds in which the top-level
+    # 'names' and/or 'emails' key points to an embedded 'names' or 'emails' array rather than
+    # simply pointing to the array. See BOAC-362 and NS-202 for details.
+    try:
+        merge_sis_profile_emails(sis_student_api_feed, sis_profile)
+    except AttributeError as e:
+        app.logger.error(f'Hub Student API returned malformed response for SID {csid}')
+        app.logger.error(e)
+
     try:
         merge_sis_profile_names(sis_student_api_feed, sis_profile)
     except AttributeError as e:
