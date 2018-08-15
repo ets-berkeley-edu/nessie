@@ -81,6 +81,8 @@ AS (
     (CASE WHEN s.did_tprep = 'y' THEN true ELSE false END) AS did_tprep,
     (CASE WHEN s.tprep_eligible = 'y' THEN true ELSE false END) AS tprep_eligible
     FROM {redshift_schema_coe_external}.students s
+    -- Avoid header rows and other surprises by selecting numeric sids only.
+    WHERE sid SIMILAR TO '[0-9]+'
 );
 
 CREATE TABLE {redshift_schema_coe}.student_profiles
