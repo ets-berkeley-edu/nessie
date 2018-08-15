@@ -27,6 +27,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """Background job scheduling."""
 
 
+import os
+
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 from nessie.lib.berkeley import current_term_id
@@ -166,7 +168,7 @@ def run_startup_jobs(_app):
     from nessie.jobs.create_rds_indexes import CreateRdsIndexes
     from nessie.jobs.create_student_schema import CreateStudentSchema
 
-    if _app.config['JOB_SCHEDULING_ENABLED']:
+    if _app.config['JOB_SCHEDULING_ENABLED'] and os.environ.get('NESSIE_ENV') != 'test':
         _app.logger.info('Checking for required schemas...')
         CreateAscSchema().run()
         CreateMetadataSchema().run()
