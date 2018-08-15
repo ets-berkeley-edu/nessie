@@ -38,7 +38,9 @@ def parsed_degree_progress(cs_id):
     if cs_feed is None:
         return None
     data = {}
-    requirements_list = cs_feed.get('UC_AA_PROGRESS', {}).get('PROGRESSES', {}).get('PROGRESS', {}).get('REQUIREMENTS', {}).get('REQUIREMENT')
+    requirements_list = (
+        cs_feed and cs_feed.get('UC_AA_PROGRESS', {}).get('PROGRESSES', {}).get('PROGRESS', {}).get('REQUIREMENTS', {}).get('REQUIREMENT')
+    )
     if requirements_list:
         data['reportDate'] = cs_feed['UC_AA_PROGRESS']['PROGRESSES']['PROGRESS']['RPT_DATE']
         data['requirements'] = {
