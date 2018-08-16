@@ -31,7 +31,7 @@ DROP SCHEMA IF EXISTS {redshift_schema_boac} CASCADE;
 CREATE SCHEMA {redshift_schema_boac};
 
 CREATE TABLE {redshift_schema_boac}.assignment_submissions_scores
-INTERLEAVED SORTKEY (canvas_user_id, course_id, assignment_id)
+SORTKEY (canvas_user_id, assignment_id)
 AS (
     /*
      * Following Canvas code, in cases where multiple assignment overrides associate a student with an assignment,
@@ -82,7 +82,7 @@ AS (
             LEFT JOIN {redshift_schema_canvas}.course_dim
                 ON {redshift_schema_intermediate}.active_student_enrollments.canvas_course_id = {redshift_schema_canvas}.course_dim.canvas_id
     )
-    SELECT
+    SELECT DISTINCT
         distinct_user_enrollments.uid AS uid,
         distinct_user_enrollments.canvas_user_id,
         distinct_user_enrollments.course_id,
