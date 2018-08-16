@@ -40,24 +40,22 @@ def get_merged_sis_profile(csid):
         return False
 
     sis_profile = {}
-    merge_sis_profile_academic_status(sis_student_api_feed, sis_profile)
 
-    # We have encountered multiple malformed Hub Student Profile feeds in which the top-level
-    # 'names' and/or 'emails' key points to an embedded 'names' or 'emails' array rather than
-    # simply pointing to the array. See BOAC-362 and NS-202 for details.
-    try:
-        merge_sis_profile_emails(sis_student_api_feed, sis_profile)
-    except AttributeError as e:
-        app.logger.error(f'Hub Student API returned malformed response for SID {csid}')
-        app.logger.error(e)
+    # We sometimes get malformed feed structures from the Hub, most often in the form of
+    # duplicate wrapped dictionaries (BOAC-362, NS-202, NS-203). Retrieve as much as we
+    # can, separately handling exceptions in different parts of the feed.
+    for merge_method in [
+        merge_sis_profile_academic_status,
+        merge_sis_profile_emails,
+        merge_sis_profile_names,
+        merge_sis_profile_phones,
+    ]:
+        try:
+            merge_method(sis_student_api_feed, sis_profile)
+        except AttributeError as e:
+            app.logger.error(f'Hub Student API returned malformed response for SID {csid}')
+            app.logger.error(e)
 
-    try:
-        merge_sis_profile_names(sis_student_api_feed, sis_profile)
-    except AttributeError as e:
-        app.logger.error(f'Hub Student API returned malformed response for SID {csid}')
-        app.logger.error(e)
-
-    merge_sis_profile_phones(sis_student_api_feed, sis_profile)
     if sis_profile.get('academicCareer') == 'UGRD':
         dp_result = queries.get_sis_api_degree_progress(csid)
         degree_progress_api_feed = dp_result and dp_result[0] and json.loads(dp_result[0]['feed'])
