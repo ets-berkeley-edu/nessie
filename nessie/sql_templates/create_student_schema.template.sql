@@ -25,6 +25,17 @@
 
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_student};
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.canvas_api_enrollments
+(
+    course_id VARCHAR NOT NULL,
+    user_id VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    last_activity_at TIMESTAMP,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY(course_id)
+SORTKEY(course_id);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_degree_progress
 (
     sid VARCHAR NOT NULL,

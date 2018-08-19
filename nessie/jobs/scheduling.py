@@ -46,6 +46,7 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_IMPORT_DEGREE_PROGRESS': 2500,
     'JOB_IMPORT_SIS_ENROLLMENTS': 2600,
     'JOB_IMPORT_SIS_STUDENTS': 2700,
+    'JOB_IMPORT_CANVAS_ENROLLMENTS': 2900,
     'JOB_GENERATE_ALL_TABLES': 3000,
     'JOB_GENERATE_CURRENT_TERM_FEEDS': 3500,
     'JOB_REFRESH_BOAC_CACHE': 4000,
@@ -67,6 +68,7 @@ def initialize_job_schedules(_app, force=False):
     from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
     from nessie.jobs.import_asc_athletes import ImportAscAthletes
     from nessie.jobs.import_calnet_data import ImportCalNetData
+    from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
     from nessie.jobs.import_degree_progress import ImportDegreeProgress
     from nessie.jobs.import_sis_enrollments_api import ImportSisEnrollmentsApi
     from nessie.jobs.import_sis_student_api import ImportSisStudentApi
@@ -99,6 +101,7 @@ def initialize_job_schedules(_app, force=False):
         schedule_job(sched, 'JOB_IMPORT_DEGREE_PROGRESS', ImportDegreeProgress, force)
         schedule_job(sched, 'JOB_IMPORT_SIS_ENROLLMENTS', ImportSisEnrollmentsApi, force)
         schedule_job(sched, 'JOB_IMPORT_SIS_STUDENTS', ImportSisStudentApi, force)
+        schedule_job(sched, 'JOB_IMPORT_CANVAS_ENROLLMENTS', ImportCanvasEnrollmentsApi, force)
         schedule_chained_job(
             sched,
             'JOB_GENERATE_ALL_TABLES',
