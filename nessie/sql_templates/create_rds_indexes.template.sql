@@ -66,3 +66,16 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_majors
 
 CREATE INDEX IF NOT EXISTS students_major_sid_idx ON {redshift_schema_student}.student_majors (sid);
 CREATE INDEX IF NOT EXISTS students_major_major_idx ON {redshift_schema_student}.student_majors (major);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_term_gpas
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    gpa DECIMAL(4,3),
+    units_taken_for_gpa DECIMAL(4,1)
+);
+
+CREATE INDEX IF NOT EXISTS students_term_gpa_sid_idx ON {redshift_schema_student}.student_term_gpas (sid);
+CREATE INDEX IF NOT EXISTS students_term_gpa_term_idx ON {redshift_schema_student}.student_term_gpas (term_id);
+CREATE INDEX IF NOT EXISTS students_term_gpa_gpa_idx ON {redshift_schema_student}.student_term_gpas (gpa);
+CREATE INDEX IF NOT EXISTS students_term_gpa_units_idx ON {redshift_schema_student}.student_term_gpas (units_taken_for_gpa);

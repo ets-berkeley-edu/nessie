@@ -98,3 +98,13 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_enrollment_terms
 )
 DISTKEY (sid)
 SORTKEY (sid, term_id);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_term_gpas
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    gpa DECIMAL(4,3),
+    units_taken_for_gpa DECIMAL(4,1)
+)
+DISTKEY (sid)
+SORTKEY (sid, term_id);
