@@ -257,8 +257,12 @@ AS (
         ase.canvas_course_id AS course_id,
         /*
          * There must be only one summary row for each course site membership.
+         *
+         * API-derived activity timestamps are more current than those contained in Canvas Data dumps,
+         * but we may not have them stored for all terms. Use the API timestamp only when present and
+         * more recent.
          */
-        MAX(ase.last_activity_at) AS last_activity_at,
+        GREATEST(MAX(ase.last_activity_at), MAX(api.last_activity_at)) AS last_activity_at,
         MIN(ase.sis_enrollment_status) AS sis_enrollment_status,
         MAX(csf.current_score) AS current_score,
         MAX(csf.final_score) AS final_score
@@ -270,6 +274,9 @@ AS (
             ON ase.canvas_course_id = cd.canvas_id
         LEFT JOIN {redshift_schema_canvas}.course_score_fact csf
             ON csf.enrollment_id = ase.canvas_enrollment_id
+        LEFT JOIN {redshift_schema_student}.canvas_api_enrollments api
+            ON ase.canvas_user_id = api.user_id
+            AND ase.canvas_course_id = api.course_id
     GROUP BY
         ase.uid,
         ase.canvas_user_id,
