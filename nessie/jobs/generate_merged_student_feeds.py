@@ -35,6 +35,7 @@ import operator
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.import_term_gpas import ImportTermGpas
 from nessie.lib import berkeley, queries
 from nessie.lib.analytics import get_relative_submission_counts, mean_course_analytics_for_user
 from nessie.lib.metadata import update_merged_feed_status
@@ -68,6 +69,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             # backfill get an update for the requested term only.
             if len(new_sids):
                 app.logger.info(f'Found {len(new_sids)} new students, will backfill all terms.')
+                ImportTermGpas().run(csids=new_sids)
                 backfill_status = self.generate_feeds(sids=list(new_sids))
                 if not backfill_status:
                     app.logger.warn('Backfill job aborted, will continue with non-backfill job.')
