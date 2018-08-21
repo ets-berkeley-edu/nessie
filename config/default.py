@@ -139,6 +139,10 @@ STUDENT_API_ID = 'secretid'
 STUDENT_API_KEY = 'secretkey'
 STUDENT_API_URL = 'https://secreturl.berkeley.edu/students'
 
+TERMS_API_ID = 'secretid'
+TERMS_API_KEY = 'secretkey'
+TERMS_API_URL = 'https://secreturl.berkeley.edu/terms'
+
 WORKER_HOST = 'hard-working-nessie.berkeley.edu'
 
 # True on worker nodes, false on master node.
