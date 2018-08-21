@@ -174,6 +174,13 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             )
         return profiles
 
+    def fetch_term_gpas(self, sid):
+        return redshift.fetch(
+            'SELECT term_id, gpa, units_taken_for_gpa FROM {student_schema}.student_term_gpas WHERE sid = %s',
+            student_schema=psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_STUDENT']),
+            params=(sid,),
+        )
+
     def generate_or_fetch_merged_profile(self, term_id, sid, calnet_profile):
         merged_profile = None
         if term_id is None or term_id == berkeley.current_term_id():
@@ -242,6 +249,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         canvas_courses_feed = get_canvas_courses_feed(uid)
         merge_canvas_site_map(self.canvas_site_map, canvas_courses_feed)
         terms_feed = get_merged_enrollment_terms(uid, sid, term_ids, canvas_courses_feed, self.canvas_site_map)
+        term_gpas = self.fetch_term_gpas(sid)
 
         relative_submission_counts = get_relative_submission_counts(canvas_user_id)
 
@@ -250,6 +258,12 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             ts = datetime.now().timestamp()
             term_feed = terms_feed.get(term_id)
             if term_feed and (len(term_feed['enrollments']) or len(term_feed['unmatchedCanvasSites'])):
+                term_gpa = next((t for t in term_gpas if t['term_id'] == term_id), None)
+                if term_gpa:
+                    term_feed['termGpa'] = {
+                        'gpa': float(term_gpa['gpa']),
+                        'unitsTakenForGpa': float(term_gpa['units_taken_for_gpa']),
+                    }
                 # Rebuild our Canvas courses list to remove any courses that were screened out during association (for instance,
                 # dropped or athletic enrollments).
                 canvas_courses = []
