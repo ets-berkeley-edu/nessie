@@ -50,6 +50,10 @@ def localize_datetime(dt):
     return dt.astimezone(pytz.timezone(app.config['TIMEZONE']))
 
 
+def split_tsv_row(row):
+    return [v if len(v) else None for v in row.split('\t')]
+
+
 def vacuum_whitespace(_str):
     """Collapse multiple-whitespace sequences into a single space; remove leading and trailing whitespace."""
     if not _str:
@@ -111,6 +115,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_schema_intermediate': app.config['REDSHIFT_SCHEMA_INTERMEDIATE'],
         'redshift_schema_metadata': app.config['REDSHIFT_SCHEMA_METADATA'],
         'redshift_schema_sis': app.config['REDSHIFT_SCHEMA_SIS'],
+        'redshift_schema_sis_internal': app.config['REDSHIFT_SCHEMA_SIS_INTERNAL'],
         'redshift_schema_student': app.config['REDSHIFT_SCHEMA_STUDENT'],
         'redshift_iam_role': app.config['REDSHIFT_IAM_ROLE'],
         'loch_s3_asc_data_path': s3_prefix + get_s3_asc_daily_path(),

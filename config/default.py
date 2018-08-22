@@ -133,6 +133,7 @@ REDSHIFT_SCHEMA_COE_EXTERNAL = 'External COE schema name'
 REDSHIFT_SCHEMA_INTERMEDIATE = 'Intermediate schema name'
 REDSHIFT_SCHEMA_METADATA = 'Metadata schema name'
 REDSHIFT_SCHEMA_SIS = 'SIS schema name'
+REDSHIFT_SCHEMA_SIS_INTERNAL = 'Internal SIS schema name'
 REDSHIFT_SCHEMA_STUDENT = 'Student schema name'
 
 STUDENT_API_ID = 'secretid'
