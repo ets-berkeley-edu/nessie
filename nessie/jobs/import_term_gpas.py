@@ -30,7 +30,7 @@ from flask import current_app as app
 from nessie.externals import rds, redshift, s3, sis_student_api
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.queries import get_all_student_ids
-from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
+from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
 
 
 class ImportTermGpas(BackgroundJob):
@@ -110,9 +110,6 @@ class ImportTermGpas(BackgroundJob):
     def refresh_rds_indexes(self, rows, transaction):
         if not transaction.execute(f'DELETE FROM {self.destination_schema}.student_term_gpas'):
             return False
-
-        def split_tsv_row(row):
-            return [v if len(v) else None for v in row.split('\t')]
         if not transaction.insert_bulk(
             f"""INSERT INTO {self.destination_schema}.student_term_gpas
                 (sid, term_id, gpa, units_taken_for_gpa) VALUES %s""",

@@ -79,3 +79,20 @@ CREATE INDEX IF NOT EXISTS students_term_gpa_sid_idx ON {redshift_schema_student
 CREATE INDEX IF NOT EXISTS students_term_gpa_term_idx ON {redshift_schema_student}.student_term_gpas (term_id);
 CREATE INDEX IF NOT EXISTS students_term_gpa_gpa_idx ON {redshift_schema_student}.student_term_gpas (gpa);
 CREATE INDEX IF NOT EXISTS students_term_gpa_units_idx ON {redshift_schema_student}.student_term_gpas (units_taken_for_gpa);
+
+CREATE SCHEMA IF NOT EXISTS {redshift_schema_sis_internal};
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_sis_internal}.sis_terms
+(
+    term_id VARCHAR(4) NOT NULL,
+    term_name VARCHAR NOT NULL,
+    academic_career VARCHAR NOT NULL,
+    term_begins DATE NOT NULL,
+    term_ends DATE NOT NULL,
+    session_id VARCHAR NOT NULL,
+    session_name VARCHAR NOT NULL,
+    session_begins DATE NOT NULL,
+    session_ends DATE NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS sis_terms_term_id_academic_career_idx ON {redshift_schema_sis_internal}.sis_terms (term_id, academic_career);

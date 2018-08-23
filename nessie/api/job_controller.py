@@ -43,6 +43,7 @@ from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
 from nessie.jobs.import_degree_progress import ImportDegreeProgress
 from nessie.jobs.import_sis_enrollments_api import ImportSisEnrollmentsApi
 from nessie.jobs.import_sis_student_api import ImportSisStudentApi
+from nessie.jobs.import_sis_terms_api import ImportSisTermsApi
 from nessie.jobs.import_term_gpas import ImportTermGpas
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
@@ -164,6 +165,17 @@ def import_sis_enrollments_api():
 @auth_required
 def import_sis_student_api():
     job_started = ImportSisStudentApi().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/import_sis_terms_api/<term_id>', methods=['POST'])
+@auth_required
+def import_sis_terms_api(term_id):
+    if term_id == 'all':
+        term_ids = None
+    else:
+        term_ids = [term_id]
+    job_started = ImportSisTermsApi(term_ids=term_ids).run_async()
     return respond_with_status(job_started)
 
 

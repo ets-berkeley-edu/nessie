@@ -41,7 +41,7 @@ def get_term(term_id):
 
 @fixture('sis_terms_api_{term_id}')
 def _get_term(term_id, mock=None):
-    url = f"{app.config['TERMS_API_URL']}/term_id"
+    url = f"{app.config['TERMS_API_URL']}/{term_id}"
     with mock(url):
         return authorized_request(url)
 

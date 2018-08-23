@@ -40,7 +40,7 @@ from nessie.lib import berkeley, queries
 from nessie.lib.analytics import get_relative_submission_counts, mean_course_analytics_for_user
 from nessie.lib.metadata import update_merged_feed_status
 from nessie.lib.queries import get_all_student_ids, get_successfully_backfilled_students
-from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
+from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
 from nessie.merged.sis_profile import get_merged_sis_profile
 from nessie.merged.student_terms import get_canvas_courses_feed, get_merged_enrollment_terms, merge_canvas_site_map
 import psycopg2.sql
@@ -352,9 +352,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         if len(self.rows['student_academic_status']):
             if not delete_existing_rows('student_academic_status'):
                 return False
-
-            def split_tsv_row(row):
-                return [v if len(v) else None for v in row.split('\t')]
             result = transaction.insert_bulk(
                 f"""INSERT INTO {self.destination_schema}.student_academic_status
                     (sid, uid, first_name, last_name, level, gpa, units) VALUES %s""",

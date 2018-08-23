@@ -89,3 +89,27 @@ WITH SERDEPROPERTIES (
 )
 STORED AS TEXTFILE
 LOCATION '{loch_s3_sis_data_path}/manifests/enrollments.json';
+
+--------------------------------------------------------------------
+-- Internal schema
+--------------------------------------------------------------------
+
+CREATE SCHEMA IF NOT EXISTS {redshift_schema_sis_internal};
+
+--------------------------------------------------------------------
+-- Internal tables
+--------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_sis_internal}.sis_terms
+(
+    term_id VARCHAR(4) NOT NULL,
+    term_name VARCHAR NOT NULL,
+    academic_career VARCHAR NOT NULL,
+    term_begins DATE NOT NULL,
+    term_ends DATE NOT NULL,
+    session_id VARCHAR NOT NULL,
+    session_name VARCHAR NOT NULL,
+    session_begins DATE NOT NULL,
+    session_ends DATE NOT NULL
+)
+SORTKEY(term_id, academic_career);
