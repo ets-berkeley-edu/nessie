@@ -28,7 +28,6 @@ from itertools import groupby
 import math
 import operator
 from statistics import mean
-import time
 
 from flask import current_app as app
 from nessie.lib import queries
@@ -105,13 +104,9 @@ def student_analytics(canvas_user_id, canvas_course_id, canvas_site_map):
         df = df.append(student_row, ignore_index=True)
         # Fetch newly appended row, mostly for the sake of its properly set-up index.
         student_row = df.loc[df['canvas_user_id'].values == int(canvas_user_id)]
-    last_activity = analytics_for_column(df, student_row, 'last_activity_at')
-    if last_activity.get('student', {}).get('raw'):
-        seconds_since_last_activity = int(time.time()) - last_activity['student']['raw']
-        last_activity['student']['daysSinceLastActivity'] = seconds_since_last_activity // (24 * 3600)
     return {
         'currentScore': analytics_for_column(df, student_row, 'current_score'),
-        'lastActivity': last_activity,
+        'lastActivity': analytics_for_column(df, student_row, 'last_activity_at'),
         'courseEnrollmentCount': len(enrollments),
     }
 
