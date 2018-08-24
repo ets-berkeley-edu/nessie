@@ -137,7 +137,6 @@ class TestStudentAnalytics:
         assert score['courseDeciles'][10] == 104
         last_activity = digested['lastActivity']
         assert last_activity['student']['raw'] == 1535275620
-        assert 'daysSinceLastActivity' in last_activity['student']
         assert last_activity['student']['percentile'] == 93
         assert last_activity['student']['roundedUpPercentile'] == 90
         assert last_activity['courseDeciles'][0] == 1533021840
@@ -163,4 +162,3 @@ class TestStudentAnalytics:
         assert score['courseDeciles'] is None
         last_activity = digested['lastActivity']
         assert last_activity['student']['raw'] is 0
-        assert 'daysSinceLastActivity' not in last_activity['student']
