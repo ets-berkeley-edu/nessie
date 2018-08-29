@@ -41,7 +41,7 @@ from nessie.lib.analytics import get_relative_submission_counts, mean_course_ana
 from nessie.lib.metadata import update_merged_feed_status
 from nessie.lib.queries import get_all_student_ids, get_successfully_backfilled_students
 from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
-from nessie.merged.sis_profile import get_merged_sis_profile
+from nessie.merged.sis_profile import get_holds, get_merged_sis_profile
 from nessie.merged.student_terms import get_canvas_courses_feed, get_merged_enrollment_terms, merge_canvas_site_map
 import psycopg2.sql
 
@@ -99,7 +99,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         if term_id and term_id != berkeley.current_term_id():
             tables = ['student_enrollment_terms']
         else:
-            tables = ['student_profiles', 'student_academic_status', 'student_majors', 'student_enrollment_terms']
+            tables = ['student_profiles', 'student_academic_status', 'student_majors', 'student_enrollment_terms', 'student_holds']
 
         # In-memory storage for generated feeds prior to TSV output.
         self.rows = {
@@ -107,6 +107,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'student_academic_status': [],
             'student_majors': [],
             'student_enrollment_terms': [],
+            'student_holds': [],
         }
 
         # Track the results of course-level queries to avoid requerying.
@@ -130,6 +131,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             merged_profile = self.generate_or_fetch_merged_profile(term_id, sid, list(profile_group)[0])
             if merged_profile:
                 self.generate_merged_enrollment_terms(merged_profile, term_id)
+                self.parse_holds(sid)
                 successes.append(sid)
             else:
                 failures.append(sid)
@@ -285,6 +287,11 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 f'Enrollment term merge complete (uid={uid}, sid={sid}, term_id={term_id}, '
                 f'{datetime.now().timestamp() - ts} seconds)'
             )
+
+    def parse_holds(self, sid):
+        holds = get_holds(sid) or []
+        for hold in holds:
+            self.rows['student_holds'].append('\t'.join([str(sid), json.dumps(hold)]))
 
     def refresh_from_staging(self, table, term_id, sids, transaction):
         # If our job is restricted to a particular term id or set of sids, then drop rows from the destination table

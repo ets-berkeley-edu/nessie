@@ -24,11 +24,29 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-from nessie.merged.sis_profile import get_merged_sis_profile
+from nessie.merged.sis_profile import get_holds, get_merged_sis_profile
 
 
-class TestSisProfile:
-    """Test SIS profile."""
+class TestSisHolds:
+    """Test SIS holds."""
+
+    def test_no_holds(self, app):
+        holds = get_holds('11667051')
+        assert holds == []
+
+    def test_multiple_holds(self, app):
+        holds = get_holds('2345678901')
+        assert len(holds) == 2
+        assert holds[0]['reason']['code'] == 'CSBAL'
+        assert holds[1]['reason']['code'] == 'ADVHD'
+
+    def test_sid_not_found(self, app):
+        holds = get_holds('99999')
+        assert holds is False
+
+
+class TestMergedSisProfile:
+    """Test merged SIS profile."""
 
     def test_skips_concurrent_academic_status(self, app):
         """Skips concurrent academic status."""

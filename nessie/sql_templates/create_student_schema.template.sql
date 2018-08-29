@@ -82,6 +82,14 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_status
 DISTKEY (units)
 INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_holds
+(
+    sid VARCHAR NOT NULL,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_majors
 (
     sid VARCHAR NOT NULL,

@@ -311,7 +311,80 @@
                 "description": "Male"
               }
             },
-            "holds": [],
+            "holds": [
+              {
+                "amountRequired": 0,
+                "comments": "",
+                "contact": {
+                  "code": "",
+                  "description": ""
+                },
+                "department": {
+                  "code": "UCBKL",
+                  "description": "Department"
+                },
+                "fromDate": "2018-07-18",
+                "impacts": [
+                  {
+                    "code": "TRAN",
+                    "description": "Transcript Hold"
+                  }
+                ],
+                "reason": {
+                  "code": "CSBAL",
+                  "description": "Past due balance",
+                  "formalDescription": "Your student account has a past due balance. A hold is now placed against official registration for next semester. A hold prevents release of your transcript or diploma. Other campus services may also be withheld.\n\nUse the My Finances tab to make an online payment. \n\nFor billing questions, contact Cal Student Central at 510-664-9181 or open a case at https://studentcentral.berkeley.edu."
+                },
+                "reference": "",
+                "type": {
+                  "code": "S01",
+                  "description": "Past Due Balance"
+                }
+              },
+              {
+                "amountRequired": 0,
+                "comments": "",
+                "contact": {
+                  "code": "",
+                  "description": ""
+                },
+                "department": {
+                  "code": "UCBKL",
+                  "description": "Department"
+                },
+                "fromTerm": {
+                  "academicYear": "2019",
+                  "beginDate": "2018-08-15",
+                  "category": {
+                    "code": "R",
+                    "description": "Regular Term"
+                  },
+                  "endDate": "2018-12-14",
+                  "id": "2188",
+                  "name": "2018 Fall"
+                },
+                "impacts": [
+                  {
+                    "code": "AENR",
+                    "description": "Allow Drops, No Adds"
+                  },
+                  {
+                    "code": "IENR",
+                    "description": "No Initial Enroll, Add/Drop OK"
+                  }
+                ],
+                "reason": {
+                  "code": "ADVHD",
+                  "description": "Advisor Hold",
+                  "formalDescription": "You must see your College advisor immediately."
+                },
+                "reference": "",
+                "type": {
+                  "code": "V00",
+                  "description": "AA - Advising Holds"
+                }
+              }
+            ],
             "identifiers": [
               {
                 "disclose": false,
