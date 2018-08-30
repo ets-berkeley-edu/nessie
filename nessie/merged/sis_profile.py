@@ -34,8 +34,7 @@ from nessie.lib.util import vacuum_whitespace
 
 
 def get_merged_sis_profile(csid):
-    result = queries.get_sis_api_profile(csid)
-    sis_student_api_feed = result and result[0] and json.loads(result[0]['feed'])
+    sis_student_api_feed = fetch_sis_student_api_feed(csid)
     if not sis_student_api_feed:
         return False
 
@@ -63,6 +62,18 @@ def get_merged_sis_profile(csid):
             sis_profile['degreeProgress'] = degree_progress_api_feed
 
     return sis_profile
+
+
+def get_holds(csid):
+    sis_student_api_feed = fetch_sis_student_api_feed(csid)
+    if not sis_student_api_feed:
+        return False
+    return sis_student_api_feed.get('holds', [])
+
+
+def fetch_sis_student_api_feed(csid):
+    result = queries.get_sis_api_profile(csid)
+    return result and result[0] and json.loads(result[0]['feed'])
 
 
 def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
