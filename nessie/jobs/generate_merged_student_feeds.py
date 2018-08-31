@@ -95,6 +95,11 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         """Loop through all records stored in the Calnet external schema and write merged student data to the internal student schema."""
         calnet_profiles = self.fetch_calnet_profiles(sids)
 
+        # Jobs targeted toward a specific sid set (such as backfills) may return no CalNet profiles. Warn, don't error.
+        if not calnet_profiles:
+            app.logger.warn(f'No CalNet profiles returned, aborting job. (sids={sids})')
+            return False
+
         # Jobs for non-current terms generate enrollment feeds only.
         if term_id and term_id != berkeley.current_term_id():
             tables = ['student_enrollment_terms']
