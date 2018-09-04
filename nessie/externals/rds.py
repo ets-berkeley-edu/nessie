@@ -37,7 +37,10 @@ import psycopg2.extras
 
 def execute(sql, params=None):
     with _get_cursor() as cursor:
-        _execute(sql, cursor, params)
+        if not cursor:
+            return None
+        else:
+            return _execute(sql, cursor, params)
 
 
 class Transaction():
