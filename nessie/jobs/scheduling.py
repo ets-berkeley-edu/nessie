@@ -58,6 +58,18 @@ def get_scheduler():
 
 
 def initialize_job_schedules(_app, force=False):
+    global app
+    app = _app
+
+    global sched
+    if app.config['JOB_SCHEDULING_ENABLED']:
+        db_jobstore = SQLAlchemyJobStore(url=app.config['SQLALCHEMY_DATABASE_URI'], tablename='apscheduler_jobs')
+        sched = BackgroundScheduler(jobstores={'default': db_jobstore})
+        sched.start()
+        schedule_all_jobs(force)
+
+
+def schedule_all_jobs(force=False):
     from nessie.jobs.create_calnet_schema import CreateCalNetSchema
     from nessie.jobs.create_canvas_schema import CreateCanvasSchema
     from nessie.jobs.create_coe_schema import CreateCoeSchema
@@ -76,52 +88,44 @@ def initialize_job_schedules(_app, force=False):
     from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
     from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 
-    global app
-    app = _app
-
-    global sched
-    if app.config['JOB_SCHEDULING_ENABLED']:
-        db_jobstore = SQLAlchemyJobStore(url=app.config['SQLALCHEMY_DATABASE_URI'], tablename='apscheduler_jobs')
-        sched = BackgroundScheduler(jobstores={'default': db_jobstore})
-        sched.start()
-        schedule_job(sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots, force)
-        schedule_job(sched, 'JOB_RESYNC_CANVAS_SNAPSHOTS', ResyncCanvasSnapshots, force)
-        schedule_chained_job(
-            sched,
-            'JOB_IMPORT_STUDENT_POPULATION',
-            [
-                CreateCoeSchema,
-                ImportAscAthletes,
-                GenerateAscProfiles,
-                ImportCalNetData,
-                CreateCalNetSchema,
-            ],
-            force,
-        )
-        schedule_job(sched, 'JOB_IMPORT_DEGREE_PROGRESS', ImportDegreeProgress, force)
-        schedule_job(sched, 'JOB_IMPORT_SIS_ENROLLMENTS', ImportSisEnrollmentsApi, force)
-        schedule_job(sched, 'JOB_IMPORT_SIS_STUDENTS', ImportSisStudentApi, force)
-        schedule_job(sched, 'JOB_IMPORT_CANVAS_ENROLLMENTS', ImportCanvasEnrollmentsApi, force)
-        schedule_chained_job(
-            sched,
-            'JOB_GENERATE_ALL_TABLES',
-            [
-                CreateCanvasSchema,
-                CreateSisSchema,
-                GenerateIntermediateTables,
-                GenerateBoacAnalytics,
-            ],
-            force,
-        )
-        schedule_job(
-            sched,
-            'JOB_GENERATE_CURRENT_TERM_FEEDS',
-            GenerateMergedStudentFeeds,
-            force,
-            term_id=current_term_id(),
-            backfill_new_students=True,
-        )
-        schedule_job(sched, 'JOB_REFRESH_BOAC_CACHE', RefreshBoacCache, force)
+    schedule_job(sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots, force)
+    schedule_job(sched, 'JOB_RESYNC_CANVAS_SNAPSHOTS', ResyncCanvasSnapshots, force)
+    schedule_chained_job(
+        sched,
+        'JOB_IMPORT_STUDENT_POPULATION',
+        [
+            CreateCoeSchema,
+            ImportAscAthletes,
+            GenerateAscProfiles,
+            ImportCalNetData,
+            CreateCalNetSchema,
+        ],
+        force,
+    )
+    schedule_job(sched, 'JOB_IMPORT_DEGREE_PROGRESS', ImportDegreeProgress, force)
+    schedule_job(sched, 'JOB_IMPORT_SIS_ENROLLMENTS', ImportSisEnrollmentsApi, force)
+    schedule_job(sched, 'JOB_IMPORT_SIS_STUDENTS', ImportSisStudentApi, force)
+    schedule_job(sched, 'JOB_IMPORT_CANVAS_ENROLLMENTS', ImportCanvasEnrollmentsApi, force)
+    schedule_chained_job(
+        sched,
+        'JOB_GENERATE_ALL_TABLES',
+        [
+            CreateCanvasSchema,
+            CreateSisSchema,
+            GenerateIntermediateTables,
+            GenerateBoacAnalytics,
+        ],
+        force,
+    )
+    schedule_job(
+        sched,
+        'JOB_GENERATE_CURRENT_TERM_FEEDS',
+        GenerateMergedStudentFeeds,
+        force,
+        term_id=current_term_id(),
+        backfill_new_students=True,
+    )
+    schedule_job(sched, 'JOB_REFRESH_BOAC_CACHE', RefreshBoacCache, force)
 
 
 def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):
