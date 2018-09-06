@@ -29,8 +29,8 @@ createdb nessie_test --owner=nessie
 If you plan to use any resources outside localhost, put your configurations in a separately encrypted area:
 
 ```
-mkdir /Volumes/XYZ/nessie_config
-export NESSIE_LOCAL_CONFIGS=/Volumes/XYZ/nessie_config
+mkdir /Volumes/ABC/nessie_config
+export NESSIE_LOCAL_CONFIGS=/Volumes/ABC/nessie_config
 ```
 
 ## Run tests, lint the code
