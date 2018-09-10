@@ -142,6 +142,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 failures.append(sid)
 
         for table in tables:
+            if not self.rows[table]:
+                continue
             self.upload_to_staging(table)
             if not self.verify_table(table):
                 return False
