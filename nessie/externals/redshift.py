@@ -152,7 +152,7 @@ def _get_cursor(autocommit=True, operation='write'):
         error_str = str(e)
         if e.pgcode:
             error_str += f'{e.pgcode}: {e.pgerror}\n'
-        app.logger.warn({'message': error_str})
+        app.logger.warning({'message': error_str})
         yield None
 
 
@@ -183,5 +183,5 @@ def _execute(sql, operation, cursor, **kwargs):
         if e.pgcode:
             error_str += f'{e.pgcode}: {e.pgerror}\n'
         error_str += f'on SQL: {sql}'
-        app.logger.warn({'message': error_str})
+        app.logger.warning({'message': error_str})
     return result

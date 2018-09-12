@@ -23,6 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import logging
 from nessie.externals import canvas_data, redshift
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.lib import metadata
@@ -35,6 +36,7 @@ class TestResyncCanvasSnapshots:
 
     def test_resync_canvas_snapshots(self, app, metadata_db, caplog):
         """Dispatches a complete resync job against fixtures."""
+        caplog.set_level(logging.INFO)
         snapshots = canvas_data.get_snapshots()['files']
 
         def mock_metadata(job_id, snapshot, status, destination_size):

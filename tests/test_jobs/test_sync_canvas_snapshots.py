@@ -23,6 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import logging
 from nessie.externals import redshift, s3
 from nessie.jobs.sync_canvas_snapshots import delete_objects_with_prefix, SyncCanvasSnapshots
 import pytest
@@ -34,6 +35,7 @@ class TestSyncCanvasSnapshots:
 
     def test_sync_canvas_snapshots(self, app, metadata_db, caplog):
         """Dispatches a complete sync job against fixtures."""
+        caplog.set_level(logging.INFO)
         with capture_app_logs(app):
             # The cleanup job requires an S3 connection. Since our mock S3 library (moto) doesn't play well with our
             # mock HTTP library (httpretty), disable it for tests.
