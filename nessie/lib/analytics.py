@@ -95,7 +95,7 @@ def student_analytics(canvas_user_id, canvas_course_id, canvas_site_map):
     df = pandas.DataFrame(enrollments, columns=['canvas_user_id', 'current_score', 'last_activity_at'])
     student_row = df.loc[df['canvas_user_id'].values == int(canvas_user_id)]
     if enrollments and student_row.empty:
-        app.logger.warn(f'Canvas user {canvas_user_id} not found in Data Loch for course site {canvas_course_id}')
+        app.logger.warning(f'Canvas user {canvas_user_id} not found in Data Loch for course site {canvas_course_id}')
         student_row = pandas.DataFrame({
             'canvas_user_id': [int(canvas_user_id)],
             'current_score': [None],

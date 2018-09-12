@@ -1,4 +1,4 @@
-Flask==0.12.2
+Flask==1.0.2
 Flask-SQLAlchemy==2.3.2
 SQLAlchemy==1.2.10
 Werkzeug==0.14
@@ -17,13 +17,13 @@ https://github.com/ets-berkeley-edu/smart_open/archive/master.zip
 # Dependencies for pandas 0.23.3. Note that pandas is not included in this requirements.txt file because
 # of potential conflicts during installation; it must be separately installed once its dependencies are
 # in place.
-numpy==1.15.0
+numpy==1.15.1
 python-dateutil==2.7.3
 
 # For testing
 
 https://github.com/gabrielfalcao/HTTPretty/archive/master.zip
 moto==1.3.3
-pytest==3.6.3
-pytest-flask==0.10.0
-tox==3.1.2
+pytest==3.8.0
+pytest-flask==0.12.0
+tox==3.3.0

@@ -74,7 +74,7 @@ class TestSisStudentApi:
     def test_user_not_found(self, app, caplog):
         """Logs 404 for unknown user and returns informative message."""
         response = student_api._get_student(9999999)
-        assert 'HTTP/1.1" 404' in caplog.text
+        assert '404 Client Error' in caplog.text
         assert not response
         assert response.raw_response.status_code == 404
         assert response.raw_response.json()['message']
@@ -84,7 +84,7 @@ class TestSisStudentApi:
         api_error = MockResponse(500, {}, '{"message": "Internal server error."}')
         with register_mock(student_api._get_student, api_error):
             response = student_api._get_student(11667051)
-            assert 'HTTP/1.1" 500' in caplog.text
+            assert '500 Server Error' in caplog.text
             assert not response
             assert response.raw_response.status_code == 500
             assert response.raw_response.json()['message']

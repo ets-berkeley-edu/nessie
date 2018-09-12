@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
+import logging
 import nessie.externals.sis_enrollments_api as enrollments_api
 from nessie.lib.mockingbird import MockResponse, register_mock
 
@@ -127,6 +128,7 @@ class TestSisEnrollmentsApi:
 
     def test_user_not_found(self, app, caplog):
         """Logs 404 for unknown user and returns informative message."""
+        caplog.set_level(logging.DEBUG)
         response = enrollments_api._get_enrollments(9999999, 2178)
         assert 'HTTP/1.1" 404' in caplog.text
         assert not response
@@ -138,7 +140,7 @@ class TestSisEnrollmentsApi:
         api_error = MockResponse(500, {}, '{"message": "Internal server error."}')
         with register_mock(enrollments_api._get_enrollments, api_error):
             response = enrollments_api._get_enrollments(11667051, 2178)
-            assert 'HTTP/1.1" 500' in caplog.text
+            assert '500 Server Error' in caplog.text
             assert not response
             assert response.raw_response.status_code == 500
             assert response.raw_response.json()['message']

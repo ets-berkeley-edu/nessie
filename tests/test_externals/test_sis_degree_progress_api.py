@@ -69,7 +69,7 @@ class TestSisDegreeProgressApi:
         api_error = MockResponse(500, {}, '{"message": "Internal server error."}')
         with register_mock(sis_degree_progress_api._get_degree_progress, api_error):
             response = sis_degree_progress_api._get_degree_progress(11667051)
-            assert 'HTTP/1.1" 500' in caplog.text
+            assert '500 Server Error' in caplog.text
             assert not response
             assert response.raw_response.status_code == 500
             assert response.raw_response.json()['message']

@@ -46,7 +46,7 @@ class TestCanvasApi:
         """Logs 404 for unknown course."""
         with capture_app_logs(app):
             response = canvas_api.get_course_enrollments(9999999)
-            assert 'HTTP/1.1" 404' in caplog.text
+            assert '404 Client Error' in caplog.text
             assert not response
 
     def test_server_error(self, app, caplog):
@@ -54,5 +54,5 @@ class TestCanvasApi:
         canvas_error = MockResponse(500, {}, '{"message": "Internal server error."}')
         with register_mock(canvas_api.get_course_enrollments, canvas_error):
             response = canvas_api.get_course_enrollments(7654320)
-            assert 'HTTP/1.1" 500' in caplog.text
+            assert '500 Server Error' in caplog.text
             assert not response

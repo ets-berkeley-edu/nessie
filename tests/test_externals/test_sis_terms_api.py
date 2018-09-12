@@ -47,5 +47,5 @@ class TestSisTermsApi:
         api_error = MockResponse(500, {}, '{"message": "Internal server error."}')
         with register_mock(sis_terms_api._get_term, api_error):
             term = sis_terms_api.get_term('2172')
-            assert 'HTTP/1.1" 500' in caplog.text
+            assert '500 Server Error' in caplog.text
             assert term is None
