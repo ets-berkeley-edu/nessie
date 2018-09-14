@@ -104,6 +104,7 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
             break
 
     merge_sis_profile_plans(academic_status, sis_profile)
+    merge_sis_profile_withdrawal_cancel(academic_status, sis_profile)
 
 
 def merge_sis_profile_emails(sis_student_api_feed, sis_profile):
@@ -164,3 +165,14 @@ def merge_sis_profile_plans(academic_status, sis_profile):
         # Add plan unless it's a duplicate.
         if not next((p for p in sis_profile['plans'] if p.get('description') == plan_feed.get('description')), None):
             sis_profile['plans'].append(plan_feed)
+
+
+def merge_sis_profile_withdrawal_cancel(academic_status, sis_profile):
+    withdrawal_cancel = academic_status.get('currentRegistration', {}).get('withdrawalCancel', {})
+    if not withdrawal_cancel:
+        return
+    sis_profile['withdrawalCancel'] = {
+        'description': withdrawal_cancel.get('type', {}).get('description'),
+        'reason': withdrawal_cancel.get('reason', {}).get('code'),
+        'date': withdrawal_cancel.get('date'),
+    }

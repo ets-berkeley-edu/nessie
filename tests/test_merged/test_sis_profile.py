@@ -52,3 +52,13 @@ class TestMergedSisProfile:
         """Skips concurrent academic status."""
         profile = get_merged_sis_profile('11667051')
         assert profile['academicCareer'] == 'UGRD'
+
+    def test_withdrawal_cancel_ignored_if_empty(self, app):
+        profile = get_merged_sis_profile('11667051')
+        assert 'withdrawalCancel' not in profile
+
+    def test_withdrawal_cancel_included_if_present(self, app):
+        profile = get_merged_sis_profile('2345678901')
+        assert profile['withdrawalCancel']['description'] == 'Withdrew'
+        assert profile['withdrawalCancel']['reason'] == 'Personal'
+        assert profile['withdrawalCancel']['date'] == '2017-03-31'
