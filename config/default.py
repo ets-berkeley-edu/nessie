@@ -80,7 +80,9 @@ ENROLLMENTS_API_KEY = 'secretkey'
 ENROLLMENTS_API_URL = 'https://secreturl.berkeley.edu/enrollments'
 
 # True on master node, false on worker nodes.
+# Override by embedding "master" or "worker" in the EB_ENVIRONMENT environment variable.
 JOB_SCHEDULING_ENABLED = True
+
 # See http://apscheduler.readthedocs.io/en/latest/modules/triggers/cron.html for supported schedule formats.
 JOB_SYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 0}
 JOB_RESYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 40}

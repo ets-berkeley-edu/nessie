@@ -40,6 +40,7 @@ def create_app():
 
     load_configs(app)
     initialize_logger(app)
+    configure_scheduler_mode(app)
     db.init_app(app)
 
     with app.app_context():
@@ -52,3 +53,19 @@ def create_app():
             run_startup_jobs(app)
 
     return app
+
+
+def configure_scheduler_mode(app):
+    """Determine whether this app instance is running as 'master' or 'worker'."""
+    default_scheduler_mode = app.config['JOB_SCHEDULING_ENABLED']
+    eb_environment = os.environ.get('EB_ENVIRONMENT')
+    if eb_environment is not None:
+        if 'worker' in eb_environment:
+            override_mode = False
+        elif 'master' in eb_environment:
+            override_mode = True
+        else:
+            override_mode = None
+        if override_mode is not None and override_mode is not default_scheduler_mode:
+            app.logger.info(f'Changing JOB_SCHEDULING_ENABLED config to {override_mode}')
+            app.config['JOB_SCHEDULING_ENABLED'] = override_mode
