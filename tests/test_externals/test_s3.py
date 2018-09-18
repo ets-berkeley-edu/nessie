@@ -24,9 +24,9 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from botocore.exceptions import ConnectionError
-import httpretty
 from nessie.externals import s3
 import pytest
+import responses
 from tests.util import capture_app_logs, mock_s3
 
 
@@ -63,13 +63,13 @@ class TestS3:
 class TestS3Testext:
     """S3 client with live external connections."""
 
-    @httpretty.activate
+    @responses.activate
     def test_source_url_error_handling(self, app, caplog):
         """Handles and logs connection errors to source URL."""
         with capture_app_logs(app):
             url = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
             key = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001/sonnet-xlv.html'
-            httpretty.register_uri(httpretty.GET, url, status=500, body='{"message": "Internal server error."}')
+            responses.add(responses.GET, url, status=500, body='{"message": "Internal server error."}')
             with pytest.raises(ConnectionError):
                 s3.upload_from_url(url, key)
                 assert 'Received unexpected status code, aborting S3 upload' in caplog.text

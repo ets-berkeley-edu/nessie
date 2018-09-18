@@ -127,10 +127,9 @@ class TestSisEnrollmentsApi:
         assert enrollments[5]['grades'][0]['mark'] == 'P'
 
     def test_user_not_found(self, app, caplog):
-        """Logs 404 for unknown user and returns informative message."""
+        """Notes 404 for unknown user and returns informative message, but does not add noise to the log."""
         caplog.set_level(logging.DEBUG)
         response = enrollments_api._get_enrollments(9999999, 2178)
-        assert 'HTTP/1.1" 404' in caplog.text
         assert not response
         assert response.raw_response.status_code == 404
         assert response.raw_response.json()['message']
