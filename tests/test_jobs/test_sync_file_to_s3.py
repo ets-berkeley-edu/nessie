@@ -23,6 +23,8 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import logging
+
 from nessie.externals import redshift
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
 from nessie.lib import metadata
@@ -40,6 +42,7 @@ class TestSyncFileToS3:
         url = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
         key = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001/sonnet-xlv.html'
 
+        caplog.set_level(logging.DEBUG)
         with capture_app_logs(app):
             result = SyncFileToS3().run(url=url, key=key)
             assert result is True

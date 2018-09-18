@@ -27,7 +27,7 @@ import logging
 from nessie.externals import redshift, s3
 from nessie.jobs.sync_canvas_snapshots import delete_objects_with_prefix, SyncCanvasSnapshots
 import pytest
-from tests.util import assert_background_job_status, capture_app_logs
+from tests.util import assert_background_job_status, capture_app_logs, mock_s3
 
 
 class TestSyncCanvasSnapshots:
@@ -37,10 +37,8 @@ class TestSyncCanvasSnapshots:
         """Dispatches a complete sync job against fixtures."""
         caplog.set_level(logging.INFO)
         with capture_app_logs(app):
-            # The cleanup job requires an S3 connection. Since our mock S3 library (moto) doesn't play well with our
-            # mock HTTP library (httpretty), disable it for tests.
-            # TODO resolve the incompatibility, possibly by switching from httpretty to responses.
-            result = SyncCanvasSnapshots().run_wrapped(cleanup=False)
+            with mock_s3(app):
+                result = SyncCanvasSnapshots().run_wrapped()
             assert 'Canvas snapshot sync job dispatched to workers' in result
             assert_background_job_status('sync')
             assert 'Dispatched S3 sync of snapshot quiz_dim-00000-0ab80c7c.gz' in caplog.text
@@ -69,6 +67,7 @@ class TestSyncCanvasSnapshots:
     @pytest.mark.testext
     def test_remove_obsolete_files(self, app, caplog, cleanup_s3):
         """Removes files from S3 following prefix and whitelist rules."""
+        caplog.set_level(logging.INFO)
         with capture_app_logs(app):
             prefix1 = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/001'
             prefix2 = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/002'

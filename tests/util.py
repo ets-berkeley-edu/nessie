@@ -31,7 +31,6 @@ import logging
 import boto3
 import moto
 from nessie.externals import redshift
-import responses
 
 
 @contextmanager
@@ -49,9 +48,6 @@ def capture_app_logs(app):
 
 @contextmanager
 def mock_s3(app):
-    # Allow calls to live external URLs during tests; currently our tests are using shakespeare.mit.edu.
-    # TODO See if we can get httpretty and/or responses to sit nicely beside moto in non-testext mode.
-    responses.add_passthru('http://')
     with moto.mock_s3():
         s3 = boto3.resource('s3', app.config['LOCH_S3_REGION'])
         s3.create_bucket(Bucket=app.config['LOCH_S3_BUCKET'])
