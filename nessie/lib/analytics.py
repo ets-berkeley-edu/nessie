@@ -31,6 +31,7 @@ from statistics import mean
 
 from flask import current_app as app
 from nessie.lib import queries
+from numpy import nan
 import pandas
 
 
@@ -139,6 +140,7 @@ def analytics_for_column(df, student_row, column_name):
                 'roundedUpPercentile': None,
             },
             'courseDeciles': None,
+            'courseMean': None,
             'displayPercentile': None,
         }
 
@@ -158,6 +160,10 @@ def analytics_for_column(df, student_row, column_name):
     # Note, however, that if all students have the same score, then all students are in the "100th percentile."
     display_percentile = ordinal(intuitive_percentile)
 
+    # Ignore zeros for purposes of calculating the course-level mean. As described above, these might indicate real zeros
+    # or missing data, and including them in our current metrics (especially lastActivity) skews the result.
+    course_mean = dfcol.replace(0, nan).dropna().mean()
+
     app.logger.debug(f'Returning calculated analytics (column_name={column_name})')
     return {
         'boxPlottable': box_plottable,
@@ -167,6 +173,7 @@ def analytics_for_column(df, student_row, column_name):
             'roundedUpPercentile': intuitive_percentile,
         },
         'courseDeciles': column_quantiles,
+        'courseMean': course_mean,
         'displayPercentile': display_percentile,
     }
 
