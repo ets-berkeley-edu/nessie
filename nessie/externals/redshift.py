@@ -29,8 +29,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from contextlib import contextmanager
 from datetime import datetime
+import io
 
 from flask import current_app as app
+from nessie.externals import s3
 from nessie.lib.db import get_psycopg_cursor
 import psycopg2
 import psycopg2.extras
@@ -66,6 +68,27 @@ def execute_ddl_script(sql):
             app.logger.error('Error executing statement from DDL script; aborting remainder of script.')
             return False
     return True
+
+
+def copy_tsv_from_s3(table, s3_key):
+    # In a test environment, retrieve object contents from mock S3 and use Postgres COPY FROM STDIN.
+    if app.config['NESSIE_ENV'] == 'test':
+        try:
+            buf = io.StringIO(s3.get_object_text(s3_key))
+            with _get_cursor(operation='read') as cursor:
+                cursor.copy_from(buf, table)
+            return True
+        except psycopg2.Error as e:
+            error_str = str(e)
+            if e.pgcode:
+                error_str += f'{e.pgcode}: {e.pgerror}\n'
+            app.logger.warning({'message': error_str})
+            return False
+    # Real Redshift accepts an S3 URL with IAM role.
+    else:
+        iam_role = app.config['REDSHIFT_IAM_ROLE']
+        s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
+        return execute(f"COPY {table} FROM '{s3_prefix}{s3_key}' IAM_ROLE '{iam_role}' DELIMITER '\\t';")
 
 
 def drop_external_schema(schema_name):

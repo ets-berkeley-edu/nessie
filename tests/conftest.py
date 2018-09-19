@@ -110,6 +110,22 @@ def metadata_db(app):
 
 
 @pytest.fixture()
+def student_tables(app):
+    """Use Postgres to mock the Redshift student schemas on local test runs."""
+    from nessie.externals import rds, redshift
+    from nessie.lib.util import resolve_sql_template_string, resolve_sql_template
+    rds.execute(resolve_sql_template('create_rds_indexes.template.sql'))
+    fixture_path = f"{app.config['BASE_DIR']}/fixtures"
+    with open(f'{fixture_path}/students.sql', 'r') as sql_file:
+        student_sql = sql_file.read()
+    redshift.execute(resolve_sql_template_string(student_sql))
+    yield
+    for schema in ['asc_test', 'coe_test', 'student_test']:
+        rds.execute(f'DROP SCHEMA {schema} CASCADE')
+        redshift.execute(f'DROP SCHEMA {schema} CASCADE')
+
+
+@pytest.fixture()
 def cleanup_s3(app):
     yield
     from nessie.externals import s3

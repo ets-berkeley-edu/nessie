@@ -23,30 +23,26 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-# The test environment mocks the Redshift interface with a local Postgres db.
+from decimal import Decimal
+import logging
 
-TESTING = True
+from nessie.externals import redshift
+from tests.util import capture_app_logs, mock_s3
 
-LOCH_S3_BUCKET = 'mock-bucket'
 
-REDSHIFT_DATABASE = 'nessie_redshift_test'
-REDSHIFT_HOST = 'localhost'
-REDSHIFT_PASSWORD = 'nessie'
-REDSHIFT_PORT = 5432
-REDSHIFT_USER = 'nessie'
+class TestImportTermGpas:
 
-REDSHIFT_SCHEMA_ASC = 'asc_test'
-REDSHIFT_SCHEMA_BOAC = 'boac_test'
-REDSHIFT_SCHEMA_CALNET = 'calnet_test'
-REDSHIFT_SCHEMA_CANVAS = 'canvas_test'
-REDSHIFT_SCHEMA_COE = 'coe_test'
-REDSHIFT_SCHEMA_COE_EXTERNAL = 'coe_external_test'
-REDSHIFT_SCHEMA_INTERMEDIATE = 'intermediate_test'
-REDSHIFT_SCHEMA_METADATA = 'nessie_metadata_test'
-REDSHIFT_SCHEMA_SIS = 'sis_test'
-REDSHIFT_SCHEMA_SIS_INTERNAL = 'sis_internal_test'
-REDSHIFT_SCHEMA_STUDENT = 'student_test'
-
-SQLALCHEMY_DATABASE_URI = 'postgres://nessie:nessie@localhost:5432/nessie_test'
-
-LOGGING_LOCATION = 'STDOUT'
+    def test_import_term_gpas(self, app, metadata_db, student_tables, caplog):
+        from nessie.jobs.import_term_gpas import ImportTermGpas
+        caplog.set_level(logging.DEBUG)
+        with capture_app_logs(app):
+            with mock_s3(app):
+                result = ImportTermGpas().run_wrapped()
+            assert result == 'Term GPA import completed: 1 succeeded, 0 returned no registrations, 7 failed.'
+            rows = redshift.fetch('SELECT * FROM student_test.student_term_gpas')
+            assert len(rows) == 7
+            for row in rows:
+                assert row['sid'] == '11667051'
+            row_2178 = next(r for r in rows if r['term_id'] == '2178')
+            assert row_2178['gpa'] == Decimal('3.000')
+            assert row_2178['units_taken_for_gpa'] == Decimal('8.0')
