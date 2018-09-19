@@ -74,23 +74,22 @@ class ImportTermGpas(BackgroundJob):
             return False
 
         app.logger.info('Will copy S3 feeds into Redshift...')
-        query = resolve_sql_template_string(
-            """
-            TRUNCATE TABLE {redshift_schema_student}_staging.student_term_gpas;
-            COPY {redshift_schema_student}_staging.student_term_gpas
-                FROM '{loch_s3_sis_api_data_path}/term_gpas.tsv'
-                IAM_ROLE '{redshift_iam_role}'
-                DELIMITER '\\t';
+        if not redshift.execute(f'TRUNCATE {self.destination_schema}_staging.student_term_gpas'):
+            app.logger.error('Error truncating old staging rows: aborting job.')
+            return False
+        if not redshift.copy_tsv_from_s3(f'{self.destination_schema}_staging.student_term_gpas', s3_key):
+            app.logger.error('Error on Redshift copy: aborting job.')
+            return False
+        staging_to_destination_query = resolve_sql_template_string("""
             DELETE FROM {redshift_schema_student}.student_term_gpas
                 WHERE sid IN
                 (SELECT sid FROM {redshift_schema_student}_staging.student_term_gpas);
             INSERT INTO {redshift_schema_student}.student_term_gpas
                 (SELECT * FROM {redshift_schema_student}_staging.student_term_gpas);
             TRUNCATE TABLE {redshift_schema_student}_staging.student_term_gpas;
-            """
-        )
-        if not redshift.execute(query):
-            app.logger.error('Error on Redshift copy: aborting job.')
+            """)
+        if not redshift.execute(staging_to_destination_query):
+            app.logger.error('Error inserting staging entries into destination: aborting job.')
             return False
 
         with rds.transaction() as transaction:
