@@ -41,6 +41,34 @@ CREATE TABLE {redshift_schema_coe}.student_profiles
 
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_student};
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.canvas_api_enrollments
+(
+    course_id VARCHAR NOT NULL,
+    user_id VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    last_activity_at TIMESTAMP,
+    feed TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_degree_progress
+(
+    sid VARCHAR NOT NULL,
+    feed TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_drops_and_midterms
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    feed TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_profiles
+(
+    sid VARCHAR NOT NULL,
+    feed TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_status
 (
     sid VARCHAR NOT NULL,
@@ -52,11 +80,30 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_status
     units DECIMAL (4,1)
 );
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_enrollment_terms
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    enrollment_term TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_holds
+(
+    sid VARCHAR NOT NULL,
+    feed TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_majors
 (
     sid VARCHAR NOT NULL,
     major VARCHAR NOT NULL,
     PRIMARY KEY (sid, major)
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles
+(
+    sid VARCHAR NOT NULL,
+    profile TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_term_gpas
@@ -69,6 +116,34 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_term_gpas
 
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_student}_staging;
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.canvas_api_enrollments
+(
+    course_id VARCHAR NOT NULL,
+    user_id VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    last_activity_at TIMESTAMP,
+    feed TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.sis_api_degree_progress
+(
+    sid VARCHAR NOT NULL,
+    feed TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.sis_api_drops_and_midterms
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    feed TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.sis_api_profiles
+(
+    sid VARCHAR NOT NULL,
+    feed TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_academic_status
 (
     sid VARCHAR NOT NULL,
@@ -80,11 +155,30 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_academic_st
     units DECIMAL (4,1)
 );
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_enrollment_terms
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    enrollment_term TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_holds
+(
+    sid VARCHAR NOT NULL,
+    feed TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_majors
 (
     sid VARCHAR NOT NULL,
     major VARCHAR NOT NULL,
     PRIMARY KEY (sid, major)
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_profiles
+(
+    sid VARCHAR NOT NULL,
+    profile TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_term_gpas
@@ -122,3 +216,19 @@ VALUES
 ('7890123456', '1133399', 'f', 'B', TRUE, FALSE, TRUE, FALSE, FALSE),
 ('9000000000', '1133399', 'f', 'B', TRUE, FALSE, TRUE, FALSE, FALSE),
 ('9100000000', '90412', 'm', 'X', FALSE, FALSE, FALSE, FALSE, TRUE);
+
+INSERT INTO {redshift_schema_student}.sis_api_degree_progress
+(sid, feed)
+VALUES
+('11667051', %(sis_degree_progress_11667051)s);
+
+INSERT INTO {redshift_schema_student}.sis_api_drops_and_midterms
+(sid, term_id, feed)
+VALUES
+('11667051', '2178', %(sis_api_drops_and_midterms_11667051_2178)s);
+
+INSERT INTO {redshift_schema_student}.sis_api_profiles
+(sid, feed)
+VALUES
+('11667051', %(sis_student_api_11667051)s),
+('2345678901', %(sis_student_api_2345678901)s);

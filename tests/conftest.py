@@ -23,7 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
+import json
 import os
 
 import nessie.factory
@@ -118,7 +118,19 @@ def student_tables(app):
     fixture_path = f"{app.config['BASE_DIR']}/fixtures"
     with open(f'{fixture_path}/students.sql', 'r') as sql_file:
         student_sql = sql_file.read()
-    redshift.execute(resolve_sql_template_string(student_sql))
+    params = {}
+    for key in [
+        'sis_api_drops_and_midterms_11667051_2178',
+        'sis_degree_progress_11667051',
+        'sis_student_api_11667051',
+        'sis_student_api_2345678901',
+    ]:
+        with open(f'{fixture_path}/{key}.json', 'r') as f:
+            feed = f.read()
+            if key.startswith('sis_student_api'):
+                feed = json.dumps(json.loads(feed)['apiResponse']['response']['any']['students'][0])
+            params[key] = feed
+    redshift.execute(resolve_sql_template_string(student_sql), params=params)
     yield
     for schema in ['asc_test', 'coe_test', 'student_test']:
         rds.execute(f'DROP SCHEMA {schema} CASCADE')

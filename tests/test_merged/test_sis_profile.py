@@ -30,11 +30,11 @@ from nessie.merged.sis_profile import get_holds, get_merged_sis_profile
 class TestSisHolds:
     """Test SIS holds."""
 
-    def test_no_holds(self, app):
+    def test_no_holds(self, app, student_tables):
         holds = get_holds('11667051')
         assert holds == []
 
-    def test_multiple_holds(self, app):
+    def test_multiple_holds(self, app, student_tables):
         holds = get_holds('2345678901')
         assert len(holds) == 2
         assert holds[0]['reason']['code'] == 'CSBAL'
@@ -48,17 +48,23 @@ class TestSisHolds:
 class TestMergedSisProfile:
     """Test merged SIS profile."""
 
-    def test_skips_concurrent_academic_status(self, app):
+    def test_skips_concurrent_academic_status(self, app, student_tables):
         """Skips concurrent academic status."""
         profile = get_merged_sis_profile('11667051')
         assert profile['academicCareer'] == 'UGRD'
 
-    def test_withdrawal_cancel_ignored_if_empty(self, app):
+    def test_withdrawal_cancel_ignored_if_empty(self, app, student_tables):
         profile = get_merged_sis_profile('11667051')
         assert 'withdrawalCancel' not in profile
 
-    def test_withdrawal_cancel_included_if_present(self, app):
+    def test_withdrawal_cancel_included_if_present(self, app, student_tables):
         profile = get_merged_sis_profile('2345678901')
         assert profile['withdrawalCancel']['description'] == 'Withdrew'
         assert profile['withdrawalCancel']['reason'] == 'Personal'
         assert profile['withdrawalCancel']['date'] == '2017-03-31'
+
+    def test_degree_progress(self, app, student_tables):
+        profile = get_merged_sis_profile('11667051')
+        assert profile['degreeProgress']['reportDate'] == '2017-03-03'
+        assert len(profile['degreeProgress']['requirements']) == 4
+        assert profile['degreeProgress']['requirements'][0] == {'entryLevelWriting': {'status': 'Satisfied'}}

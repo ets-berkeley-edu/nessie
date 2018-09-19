@@ -34,7 +34,7 @@ class TestMergedSisEnrollments:
         merge_canvas_site_map(canvas_site_map, canvas_courses_feed)
         return canvas_site_map
 
-    def test_merges_midterm_grades(self, app):
+    def test_merges_midterm_grades(self, app, student_tables):
         canvas_courses_feed = get_canvas_courses_feed('61889')
         terms_feed = get_merged_enrollment_terms('61889', '11667051', ['2178'], canvas_courses_feed, self.get_canvas_site_map(canvas_courses_feed))
         term_feed = terms_feed['2178']
