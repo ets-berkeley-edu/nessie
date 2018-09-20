@@ -163,6 +163,10 @@ def analytics_for_column(df, student_row, column_name):
     # Ignore zeros for purposes of calculating the course-level mean. As described above, these might indicate real zeros
     # or missing data, and including them in our current metrics (especially lastActivity) skews the result.
     course_mean = dfcol.replace(0, nan).dropna().mean()
+    if course_mean and not math.isnan(course_mean):
+        comparative_percentile_of_mean = zptile(zscore(dfcol, course_mean))
+    else:
+        comparative_percentile_of_mean = None
 
     app.logger.debug(f'Returning calculated analytics (column_name={column_name})')
     return {
@@ -173,7 +177,10 @@ def analytics_for_column(df, student_row, column_name):
             'roundedUpPercentile': intuitive_percentile,
         },
         'courseDeciles': column_quantiles,
-        'courseMean': course_mean,
+        'courseMean': {
+            'percentile': comparative_percentile_of_mean,
+            'raw': course_mean,
+        },
         'displayPercentile': display_percentile,
     }
 
