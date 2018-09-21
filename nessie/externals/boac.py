@@ -31,11 +31,14 @@ from nessie.lib import http
 
 
 def kickoff_refresh():
-    return authorized_request(app.config['BOAC_CACHE_REFRESH_URL'])
+    successful = True
+    for boac in app.config['BOAC_REFRESHERS']:
+        successful = authorized_request(boac['URL'], boac['API_KEY']) and successful
+    return successful
 
 
-def authorized_request(url):
+def authorized_request(url, api_key):
     # The more typical underscored "app_key" header will be stripped out by the AWS load balancer.
     # A hyphened "app-key" header passes through.
-    auth_headers = {'app-key': app.config['BOAC_API_KEY']}
+    auth_headers = {'app-key': api_key}
     return http.request(url, auth_headers)
