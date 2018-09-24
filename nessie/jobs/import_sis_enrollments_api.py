@@ -38,6 +38,8 @@ from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_stri
 
 class ImportSisEnrollmentsApi(BackgroundJob):
 
+    destination_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
+
     def run(self, csids=None, term_id=None):
         if not csids:
             csids = [row['sid'] for row in get_all_student_ids()]
@@ -71,13 +73,14 @@ class ImportSisEnrollmentsApi(BackgroundJob):
             return False
 
         app.logger.info('Will copy S3 feeds into Redshift...')
-        query = resolve_sql_template_string(
+        if not redshift.execute(f"DELETE FROM {self.destination_schema}_staging.sis_api_drops_and_midterms WHERE term_id = '{term_id}'"):
+            app.logger.error('Error truncating old staging rows: aborting job.')
+            return False
+        if not redshift.copy_tsv_from_s3(f'{self.destination_schema}_staging.sis_api_drops_and_midterms', s3_key):
+            app.logger.error('Error on Redshift copy: aborting job.')
+            return False
+        staging_to_destination_query = resolve_sql_template_string(
             """
-            DELETE FROM {redshift_schema_student}_staging.sis_api_drops_and_midterms WHERE term_id = '{term_id}';
-            COPY {redshift_schema_student}_staging.sis_api_drops_and_midterms
-                FROM '{loch_s3_sis_api_data_path}/drops_and_midterms_{term_id}.tsv'
-                IAM_ROLE '{redshift_iam_role}'
-                DELIMITER '\\t';
             DELETE FROM {redshift_schema_student}.sis_api_drops_and_midterms
                 WHERE term_id = '{term_id}'
                 AND sid IN
@@ -89,7 +92,7 @@ class ImportSisEnrollmentsApi(BackgroundJob):
             """,
             term_id=term_id,
         )
-        if not redshift.execute(query):
+        if not redshift.execute(staging_to_destination_query):
             app.logger.error('Error on Redshift copy: aborting job.')
             return False
 
