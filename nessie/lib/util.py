@@ -61,14 +61,14 @@ def vacuum_whitespace(_str):
     return ' '.join(_str.split())
 
 
-def get_s3_asc_daily_path(cutoff=datetime.now()):
-    today = localize_datetime(cutoff).strftime('%Y-%m-%d')
+def get_s3_asc_daily_path(cutoff=None):
+    today = localize_datetime(cutoff or datetime.now()).strftime('%Y-%m-%d')
     today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
     return app.config['LOCH_S3_ASC_DATA_PATH'] + '/daily/' + today_hash + '-' + today
 
 
-def get_s3_calnet_daily_path(cutoff=datetime.now()):
-    today = localize_datetime(cutoff).strftime('%Y-%m-%d')
+def get_s3_calnet_daily_path(cutoff=None):
+    today = localize_datetime(cutoff or datetime.now()).strftime('%Y-%m-%d')
     today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
     return app.config['LOCH_S3_CALNET_DATA_PATH'] + '/daily/' + today_hash + '-' + today
 
@@ -81,7 +81,7 @@ def get_s3_canvas_daily_path():
     return app.config['LOCH_S3_CANVAS_DATA_PATH_DAILY'] + '/' + today_hash + '-' + today
 
 
-def get_s3_coe_daily_path(cutoff=datetime.now()):
+def get_s3_coe_daily_path(cutoff=None):
     # TODO: When COE is delivering data daily then unleash the following logic
     # today = localize_datetime(cutoff).strftime('%Y-%m-%d')
     # today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
@@ -89,15 +89,15 @@ def get_s3_coe_daily_path(cutoff=datetime.now()):
     return app.config['LOCH_S3_COE_DATA_PATH']
 
 
-def get_s3_sis_daily_path(cutoff=datetime.now()):
-    today = localize_datetime(cutoff).strftime('%Y-%m-%d')
+def get_s3_sis_daily_path(cutoff=None):
+    today = localize_datetime(cutoff or datetime.now()).strftime('%Y-%m-%d')
     today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
     return app.config['LOCH_S3_SIS_DATA_PATH'] + '/daily/' + today_hash + '-' + today
 
 
-def get_s3_sis_api_daily_path(cutoff=datetime.now()):
+def get_s3_sis_api_daily_path(cutoff=None):
     # Path for stashed SIS API data that doesn't need to be queried by Redshift Spectrum.
-    today = localize_datetime(cutoff).strftime('%Y-%m-%d')
+    today = localize_datetime(cutoff or datetime.now()).strftime('%Y-%m-%d')
     today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
     return app.config['LOCH_S3_SIS_API_DATA_PATH'] + '/daily/' + today_hash + '-' + today
 
