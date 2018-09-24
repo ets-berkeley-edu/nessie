@@ -35,10 +35,10 @@ from nessie.jobs.background_job import BackgroundJob
 class RefreshBoacCache(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting BOAC refresh kickoff...')
+        app.logger.info(f'Starting BOAC refresh kickoffs...')
         if boac.kickoff_refresh():
-            app.logger.info(f'BOAC refresh kickoff completed.')
+            app.logger.info(f'BOAC refresh kickoffs completed.')
             return True
         else:
-            app.logger.error(f'BOAC refresh kickoff returned an error.')
+            app.logger.error(f'BOAC refresh kickoffs returned an error.')
             return False
