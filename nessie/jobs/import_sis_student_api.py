@@ -37,6 +37,8 @@ from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_stri
 
 class ImportSisStudentApi(BackgroundJob):
 
+    destination_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
+
     def run(self, csids=None):
         if not csids:
             csids = [row['sid'] for row in get_all_student_ids()]
@@ -64,13 +66,14 @@ class ImportSisStudentApi(BackgroundJob):
             return False
 
         app.logger.info('Will copy S3 feeds into Redshift...')
-        query = resolve_sql_template_string(
+        if not redshift.execute(f'TRUNCATE {self.destination_schema}_staging.sis_api_profiles'):
+            app.logger.error('Error truncating old staging rows: aborting job.')
+            return False
+        if not redshift.copy_tsv_from_s3(f'{self.destination_schema}_staging.sis_api_profiles', s3_key):
+            app.logger.error('Error on Redshift copy: aborting job.')
+            return False
+        staging_to_destination_query = resolve_sql_template_string(
             """
-            TRUNCATE {redshift_schema_student}_staging.sis_api_profiles;
-            COPY {redshift_schema_student}_staging.sis_api_profiles
-                FROM '{loch_s3_sis_api_data_path}/profiles.tsv'
-                IAM_ROLE '{redshift_iam_role}'
-                DELIMITER '\\t';
             DELETE FROM {redshift_schema_student}.sis_api_profiles WHERE sid IN
                 (SELECT sid FROM {redshift_schema_student}_staging.sis_api_profiles);
             INSERT INTO {redshift_schema_student}.sis_api_profiles
@@ -78,7 +81,7 @@ class ImportSisStudentApi(BackgroundJob):
             TRUNCATE {redshift_schema_student}_staging.sis_api_profiles;
             """,
         )
-        if not redshift.execute(query):
+        if not redshift.execute(staging_to_destination_query):
             app.logger.error('Error on Redshift copy: aborting job.')
             return False
 
