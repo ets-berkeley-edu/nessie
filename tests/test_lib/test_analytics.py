@@ -62,7 +62,7 @@ class TestAnalyticsFromAssignmentsSubmitted:
         assert digested['courseDeciles'][9] == 10
         assert digested['courseDeciles'][10] == 17
         assert round(digested['courseMean']['raw']) == 7
-        assert digested['courseMean']['percentile'] == 51
+        assert digested['courseMean']['percentile'] == 50
 
     def test_small_difference(self, app):
         """Notices that small difference."""
@@ -144,10 +144,10 @@ class TestStudentAnalytics:
         assert last_activity['student']['raw'] == 1535275620
         assert last_activity['student']['percentile'] == 93
         assert last_activity['student']['roundedUpPercentile'] == 90
-        assert last_activity['courseDeciles'][0] == 1533021840
+        assert last_activity['courseDeciles'][0] == 0
         assert last_activity['courseDeciles'][9] == 1535264940
         assert last_activity['courseDeciles'][10] == 1535533860
-        assert round(last_activity['courseMean']['raw']) == 1534450943
+        assert round(last_activity['courseMean']['raw']) == 1534450050
         assert last_activity['courseMean']['percentile'] == 50
 
     def test_with_empty_redshift(self, app):
