@@ -126,7 +126,7 @@ def analytics_for_column(df, student_row, column_name):
     # If no data exists for a column, the Pandas 'nunique' function reports zero unique values.
     # However, some feeds (such as Canvas student summaries) return (mostly) zero values rather than empty lists,
     # and we've also seen some Canvas feeds which mix nulls and zeroes.
-    # Setting non-numbers to zero works acceptably for the current analyzed feeds.
+    # Setting non-numbers to zero works acceptably for most current analyzed feeds, apart from lastActivity (see below).
     dfcol.fillna(0, inplace=True)
     student_row = student_row.fillna(0)
 
@@ -144,25 +144,30 @@ def analytics_for_column(df, student_row, column_name):
             'displayPercentile': None,
         }
 
-    column_value = student_row[column_name].values[0]
-    intuitive_percentile = rounded_up_percentile(dfcol, student_row)
-    raw_value = round(column_value.item())
-    column_quantiles = quantiles(dfcol, 10)
-    column_zscore = zscore(dfcol, column_value)
-    comparative_percentile = zptile(column_zscore)
-
     # If only ten or fewer values are shared across the student population, the 'universal' percentile figure and the
     # box-and-whisker graph will usually look odd. With such sparse data sets, a text summary and an (optional)
     # histogram are more readable.
     box_plottable = (nunique > 10)
 
+    intuitive_percentile = rounded_up_percentile(dfcol, student_row)
     # The intuitive percentile is our best option for display, whether or not the distribution is boxplottable.
     # Note, however, that if all students have the same score, then all students are in the "100th percentile."
     display_percentile = ordinal(intuitive_percentile)
 
-    # Ignore zeros for purposes of calculating the course-level mean. As described above, these might indicate real zeros
-    # or missing data, and including them in our current metrics (especially lastActivity) skews the result.
-    course_mean = dfcol.replace(0, nan).dropna().mean()
+    column_value = student_row[column_name].values[0]
+    raw_value = round(column_value.item())
+
+    column_quantiles = quantiles(dfcol, 10)
+
+    # When calculating z-scores and means for lastActivity, zeroed-out "no activity" values must be dropped, since zeros
+    # and Unix timestamps don't play well in the same distribution.
+    if column_name == 'last_activity_at':
+        dfcol = dfcol.replace(0, nan).dropna()
+
+    column_zscore = zscore(dfcol, column_value)
+    comparative_percentile = zptile(column_zscore)
+
+    course_mean = dfcol.mean()
     if course_mean and not math.isnan(course_mean):
         comparative_percentile_of_mean = zptile(zscore(dfcol, course_mean))
     else:
