@@ -50,6 +50,7 @@ HOST = '0.0.0.0'
 PORT = 1234
 
 AWS_ACCESS_KEY_ID = 'key'
+AWS_DMS_VPC_ROLE = 'dms vpc role'
 AWS_SECRET_ACCESS_KEY = 'secret'
 AWS_REGION = 'aws region'
 
