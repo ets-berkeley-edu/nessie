@@ -40,7 +40,7 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 
 CREATE EXTERNAL TABLE {redshift_schema_lrs_external}.statements(
     uuid VARCHAR,
-    statement VARCHAR,
+    statement VARCHAR(max),
     verb VARCHAR,
     "timestamp" TIMESTAMP,
     activity_type VARCHAR,
