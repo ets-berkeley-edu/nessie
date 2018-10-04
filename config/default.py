@@ -99,6 +99,8 @@ LDAP_HOST = 'nds-test.berkeley.edu'
 LDAP_BIND = 'mybind'
 LDAP_PASSWORD = 'secret'
 
+LRS_DATABASE_URI = 'postgres://lrs:lrs@localhost:5432/lrs'
+
 LOCH_S3_BUCKET = 'bucket_name'
 LOCH_S3_REGION = 'us-west-2'
 
