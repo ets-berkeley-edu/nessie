@@ -1,20 +1,47 @@
-# nessie
+# Nessie
+
+![Picture of Loch Ness, Scotland](public/loch-ness.jpg)
+
 Networked engines supply statistics in education.
 
 ## Installation
 
-### Install Python 3
-
-### Create your virtual environment
-
-### Install dependencies
-
+* Install Python 3
+* Create your virtual environment (venv)
+* Install dependencies
 ```
 pip3 install -r requirements.txt [--upgrade]
 pip3 install pandas==0.23.3
 ```
 
-### Create Postgres user and databases
+### Front-end dependencies
+
+[Vue CLI 3](https://cli.vuejs.org/) was used to provision the front-end.
+
+```
+nvm use
+npm install
+```
+#### NPM features
+
+* Compile and hot-reloads for dev:
+```
+npm run serve
+```
+* Compile and minify for production:
+```
+npm run build
+```
+* Run front-end tests:
+```
+npm run test
+```
+* Lint:
+```
+npm run lint
+```
+
+### Postgres user and databases
 
 ```
 createuser nessie --no-createdb --no-superuser --no-createrole --pwprompt
@@ -33,6 +60,23 @@ mkdir /Volumes/XYZ/nessie_config
 export NESSIE_LOCAL_CONFIGS=/Volumes/XYZ/nessie_config
 ```
 
+## Start it up!
+
+1. Open up a terminal and start the Python app:
+```
+python3 run.py
+```
+2. Nessie back-end APIs now available at http://localhost:5001
+3. If you are doing front-end development then open a second terminal and
+use the underlying `vue-cli-service` to start Vue.js app:
+```
+npm run serve
+```
+4. Nessie Admin Console (front-end) is now available at http://localhost:8080
+
+**NOTE:** Deployments to Elastic Beanstalk will use `npm run build`. There
+is more work to be done in making this work.
+
 ## Run tests, lint the code
 
 We use [Tox](https://tox.readthedocs.io) for continuous integration. Under the hood, you'll find [PyTest](https://docs.pytest.org) and [Flake8](http://flake8.pycqa.org).
@@ -40,11 +84,12 @@ We use [Tox](https://tox.readthedocs.io) for continuous integration. Under the h
 # Run all tests and linters
 tox
 
-# Pytest only
+# Pytest
 tox -e test
 
-# Flake8 only
+# Linters, à la carte
 tox -e lint-py
+tox -e lint-js
 
 # Run specific test(s)
 tox -e test -- tests/test_models/test_authorized_user.py
