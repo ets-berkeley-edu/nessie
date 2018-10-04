@@ -69,6 +69,12 @@ def get_client():
     )
 
 
+def get_replication_task(identifier):
+    tasks = get_replication_tasks(identifier)
+    if tasks and len(tasks):
+        return tasks[0]
+
+
 def get_replication_tasks(identifier=None):
     client = get_client()
     try:
@@ -107,20 +113,19 @@ def list_endpoints():
 
 def start_replication_task(identifier):
     client = get_client()
-    tasks = get_replication_tasks(identifier)
-    task_arn = None
-    if tasks and len(tasks):
-        task_arn = tasks[0].get('ReplicationTaskArn')
-    if not task_arn:
+    task = get_replication_task(identifier)
+    if not task or 'ReplicationTaskArn' not in task:
         app.logger.error(f'Could not find replication task matching identifier {identifier}, aborting')
         return
+    task_arn = task['ReplicationTaskArn']
     try:
         response = client.start_replication_task(
             ReplicationTaskArn=task_arn,
-            StartReplicationTaskType='start-replication',
+            StartReplicationTaskType='reload-target',
         )
-        if response and response.get('ReplicationTaskStats'):
-            app.logger.info(f"Replication task started (id={identifier}, arn={task_arn}, stats={response['ReplicationTaskStats']})")
+        if response and response.get('ReplicationTask', {}).get('Status') == 'starting':
+            app.logger.info(f'Replication task started (id={identifier}, arn={task_arn})')
+            return response
         else:
             app.logger.error(f'Failed to start replication tasks (id={identifier}, arn={task_arn}, response={response})')
             return None

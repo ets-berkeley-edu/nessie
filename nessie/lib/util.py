@@ -50,6 +50,15 @@ def localize_datetime(dt):
     return dt.astimezone(pytz.timezone(app.config['TIMEZONE']))
 
 
+def localized_datestamp(date_to_stamp=None):
+    return localize_datetime(date_to_stamp or datetime.now()).strftime('%Y-%m-%d')
+
+
+def hashed_datestamp(date_to_stamp=None):
+    datestamp = localized_datestamp(date_to_stamp)
+    return hashlib.md5(datestamp.encode('utf-8')).hexdigest() + '-' + datestamp
+
+
 def split_tsv_row(row):
     return [v if len(v) else None for v in row.split('\t')]
 
@@ -62,44 +71,30 @@ def vacuum_whitespace(_str):
 
 
 def get_s3_asc_daily_path(cutoff=None):
-    today = localize_datetime(cutoff or datetime.now()).strftime('%Y-%m-%d')
-    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
-    return app.config['LOCH_S3_ASC_DATA_PATH'] + '/daily/' + today_hash + '-' + today
+    return app.config['LOCH_S3_ASC_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
 
 def get_s3_calnet_daily_path(cutoff=None):
-    today = localize_datetime(cutoff or datetime.now()).strftime('%Y-%m-%d')
-    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
-    return app.config['LOCH_S3_CALNET_DATA_PATH'] + '/daily/' + today_hash + '-' + today
+    return app.config['LOCH_S3_CALNET_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
 
 def get_s3_canvas_daily_path():
-    # TODO Temporarily share Data Loch's existing hash algorithm, even if it doesn't match PDG standard practice.
-    # today = localize_datetime(datetime.now()).strftime('%Y-%m-%d')
-    today = localize_datetime(datetime.now()).strftime('%m-%d-%Y')
-    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
-    return app.config['LOCH_S3_CANVAS_DATA_PATH_DAILY'] + '/' + today_hash + '-' + today
+    return app.config['LOCH_S3_CANVAS_DATA_PATH_DAILY'] + '/' + hashed_datestamp()
 
 
 def get_s3_coe_daily_path(cutoff=None):
     # TODO: When COE is delivering data daily then unleash the following logic
-    # today = localize_datetime(cutoff).strftime('%Y-%m-%d')
-    # today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
-    # return app.config['LOCH_S3_COE_DATA_PATH'] + '/daily/' + today_hash + '-' + today
+    # return app.config['LOCH_S3_COE_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
     return app.config['LOCH_S3_COE_DATA_PATH']
 
 
 def get_s3_sis_daily_path(cutoff=None):
-    today = localize_datetime(cutoff or datetime.now()).strftime('%Y-%m-%d')
-    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
-    return app.config['LOCH_S3_SIS_DATA_PATH'] + '/daily/' + today_hash + '-' + today
+    return app.config['LOCH_S3_SIS_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
 
 def get_s3_sis_api_daily_path(cutoff=None):
     # Path for stashed SIS API data that doesn't need to be queried by Redshift Spectrum.
-    today = localize_datetime(cutoff or datetime.now()).strftime('%Y-%m-%d')
-    today_hash = hashlib.md5(today.encode('utf-8')).hexdigest()
-    return app.config['LOCH_S3_SIS_API_DATA_PATH'] + '/daily/' + today_hash + '-' + today
+    return app.config['LOCH_S3_SIS_API_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
 
 def resolve_sql_template_string(template_string, **kwargs):

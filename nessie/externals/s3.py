@@ -43,6 +43,24 @@ def build_s3_url(key, credentials=True):
         return f's3://{bucket}/{key}'
 
 
+def copy(source_bucket, source_key, dest_bucket, dest_key):
+    client = get_client()
+    source = {
+        'Bucket': source_bucket,
+        'Key': source_key,
+    }
+    try:
+        return client.copy_object(
+            Bucket=dest_bucket,
+            Key=dest_key,
+            CopySource=source,
+            ServerSideEncryption='AES256',
+        )
+    except (ClientError, ConnectionError, ValueError) as e:
+        app.logger.error(f'Error on S3 object copy: ({source_bucket}/{source_key} to {dest_bucket}/{dest_key}, error={e}')
+        return False
+
+
 def delete_objects(keys):
     client = get_client()
     bucket = app.config['LOCH_S3_BUCKET']
@@ -65,9 +83,10 @@ def get_client():
     )
 
 
-def get_keys_with_prefix(prefix, full_objects=False):
+def get_keys_with_prefix(prefix, full_objects=False, bucket=None):
     client = get_client()
-    bucket = app.config['LOCH_S3_BUCKET']
+    if not bucket:
+        bucket = app.config['LOCH_S3_BUCKET']
     objects = []
     paginator = client.get_paginator('list_objects')
     page_iterator = paginator.paginate(Bucket=bucket, Prefix=prefix)

@@ -101,6 +101,12 @@ LDAP_PASSWORD = 'secret'
 
 LRS_DATABASE_URI = 'postgres://lrs:lrs@localhost:5432/lrs'
 
+LRS_INCREMENTAL_REPLICATION_TASK_ID = 'task-id'
+LRS_INCREMENTAL_TRANSIENT_BUCKET = 'transient bucket'
+LRS_INCREMENTAL_TRANSIENT_PATH = 'lrs/transient/path'
+LRS_INCREMENTAL_DESTINATION_BUCKETS = ['bucket', 'list']
+LRS_INCREMENTAL_DESTINATION_PATH = 'lrs/destination/path'
+
 LOCH_S3_BUCKET = 'bucket_name'
 LOCH_S3_REGION = 'us-west-2'
 
@@ -135,6 +141,7 @@ REDSHIFT_SCHEMA_CANVAS = 'Canvas schema name'
 REDSHIFT_SCHEMA_COE = 'COE schema name'
 REDSHIFT_SCHEMA_COE_EXTERNAL = 'External COE schema name'
 REDSHIFT_SCHEMA_INTERMEDIATE = 'Intermediate schema name'
+REDSHIFT_SCHEMA_LRS = 'External LRS schema name'
 REDSHIFT_SCHEMA_METADATA = 'Metadata schema name'
 REDSHIFT_SCHEMA_SIS = 'SIS schema name'
 REDSHIFT_SCHEMA_SIS_INTERNAL = 'Internal SIS schema name'
