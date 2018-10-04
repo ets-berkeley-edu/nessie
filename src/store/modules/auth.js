@@ -1,7 +1,7 @@
 /* eslint-disable promise/param-names */
-import { AUTH_REQUEST, AUTH_ERROR, AUTH_SUCCESS, AUTH_LOGOUT } from '../actions/auth';
-import { USER_REQUEST } from '../actions/user';
-import authApi from '../../api/auth';
+import { AUTH_REQUEST, AUTH_ERROR, AUTH_SUCCESS, AUTH_LOGOUT } from '@/store/actions/auth';
+import { USER_REQUEST } from '@/store/actions/user';
+import authApi from '@/api/auth';
 
 const state = { token: localStorage.getItem('user-token') || '', status: '', hasLoadedOnce: false };
 

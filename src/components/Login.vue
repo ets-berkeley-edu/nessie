@@ -22,7 +22,7 @@
 </style>
 
 <script>
-import { AUTH_REQUEST } from '../store/actions/auth';
+import { AUTH_REQUEST } from '@/store/actions/auth';
 
 export default {
   name: 'login',

@@ -22,23 +22,9 @@ pip3 install pandas==0.23.3
 nvm use
 npm install
 ```
-#### NPM features
-
-* Compile and hot-reloads for dev:
-```
-npm run serve
-```
-* Compile and minify for production:
+#### Compile and minify for production:
 ```
 npm run build
-```
-* Run front-end tests:
-```
-npm run test
-```
-* Lint:
-```
-npm run lint
 ```
 
 ### Postgres user and databases
@@ -68,9 +54,9 @@ python3 run.py
 ```
 2. Nessie back-end APIs now available at http://localhost:5001
 3. If you are doing front-end development then open a second terminal and
-use the underlying `vue-cli-service` to start Vue.js app:
+use the underlying `vue-cli-service` to start Vue.js app. Compile and hot-reloads for dev:
 ```
-npm run serve
+npm run vue-start-dev
 ```
 4. Nessie Admin Console (front-end) is now available at http://localhost:8080
 
@@ -84,12 +70,13 @@ We use [Tox](https://tox.readthedocs.io) for continuous integration. Under the h
 # Run all tests and linters
 tox
 
-# Pytest
+# Test
 tox -e test
+tox -e vue-test
 
 # Linters, à la carte
 tox -e lint-py
-tox -e lint-js
+tox -e vue-lint
 
 # Run specific test(s)
 tox -e test -- tests/test_models/test_authorized_user.py

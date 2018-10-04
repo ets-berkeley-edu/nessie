@@ -3,7 +3,7 @@
     <ul>
       <li>
         <router-link class="brand" to="/">
-          <img src="../assets/logo.png" width="40px"/><strong>Nessie</strong>
+          <img src="@/assets/logo.png" width="40px"/><strong>Nessie</strong>
         </router-link>
       </li>
     </ul>
@@ -55,7 +55,7 @@
 
 <script>
 import { mapGetters, mapState } from 'vuex';
-import { AUTH_LOGOUT } from '../store/actions/auth';
+import { AUTH_LOGOUT } from '@/store/actions/auth';
 
 export default {
   name: 'navigation',
