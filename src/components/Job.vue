@@ -34,7 +34,8 @@
 </template>
 
 <script>
-import axios from 'axios';
+import JobApi from '@/services/api/JobApi.js';
+import ScheduleApi from '@/services/api/ScheduleApi.js';
 
 export default {
   created() {
@@ -48,19 +49,16 @@ export default {
   },
   methods: {
     getJob(jobId) {
-      axios.get(`/api/schedule/${jobId}`).then((response) => {
-        this.job = response.data;
-      }).catch((error) => {
-        // TODO: What is error handling strategy?
-        console.log(error); // eslint-disable-line no-console
-      });
+      ScheduleApi.getJobSchedule(jobId)
+        .then((data) => { this.job = data; })
+        .catch(error => console.log(error)) // eslint-disable-line no-console
+        .finally(() => { this.loading = false; });
     },
     startJob() {
-      axios.post(`/api/job/${this.job.id}`).then((response) => {
-        this.jobStatus = response.data;
-      }).catch((error) => {
-        console.log(error); // eslint-disable-line no-console
-      });
+      JobApi.startJob(jobId)
+        .then((data) => { this.jobStatus = data; })
+        .catch(error => console.log(error)) // eslint-disable-line no-console
+        .finally(() => { this.loading = false; });
     },
   },
 };

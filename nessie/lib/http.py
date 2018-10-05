@@ -126,4 +126,7 @@ def sanitize_headers(headers):
 
 
 def tolerant_jsonify(obj, **kwargs):
-    return Response(json.dumps(obj, ignore_nan=True, separators=(',', ':'), **kwargs), mimetype='application/json')
+    # In development the response can be shared with requesting code from any local origin.
+    headers = {'Access-Control-Allow-Origin': '*'} if app.config['NESSIE_ENV'] == 'development' else {}
+    content = json.dumps(obj, ignore_nan=True, separators=(',', ':'), **kwargs)
+    return Response(content, mimetype='application/json', headers=headers)

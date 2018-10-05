@@ -60,9 +60,6 @@ npm run vue-start-dev
 ```
 4. Nessie Admin Console (front-end) is now available at http://localhost:8080
 
-**NOTE:** Deployments to Elastic Beanstalk will use `npm run build`. There
-is more work to be done in making this work.
-
 ## Run tests, lint the code
 
 We use [Tox](https://tox.readthedocs.io) for continuous integration. Under the hood, you'll find [PyTest](https://docs.pytest.org) and [Flake8](http://flake8.pycqa.org).

@@ -1,6 +1,6 @@
 import Vue from 'vue';
 import { USER_REQUEST, USER_ERROR, USER_SUCCESS } from '@/store/actions/user';
-import authApi from '@/api/auth';
+import authApi from '@/services/api/auth';
 import { AUTH_LOGOUT } from '@/store/actions/auth';
 
 const state = { status: '', profile: {} };
