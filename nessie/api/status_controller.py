@@ -29,14 +29,19 @@ from flask import current_app as app
 from nessie import __version__ as version
 from nessie import db
 from nessie.externals import redshift
+from nessie.lib.berkeley import sis_term_id_for_name
 from nessie.lib.http import tolerant_jsonify
 
 
 @app.route('/api/config')
 def app_config():
+    current_term_name = app.config['CURRENT_TERM']
+    current_term_id = sis_term_id_for_name(current_term_name)
     return tolerant_jsonify({
-        'nessieEnv': app.config['NESSIE_ENV'],
+        'currentEnrollmentTerm': current_term_name,
+        'currentEnrollmentTermId': int(current_term_id),
         'ebEnvironment': app.config['EB_ENVIRONMENT'] if 'EB_ENVIRONMENT' in app.config else None,
+        'nessieEnv': app.config['NESSIE_ENV'],
     })
 
 

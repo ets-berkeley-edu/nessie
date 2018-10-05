@@ -1,11 +1,11 @@
 <template>
-  <div class="sq-footer">
-    Made with love at <a target="_blank" href="https://www.ets.berkeley.edu/">ETS</a>.
+  <div class="nessie-footer">
+    This is a footer.
   </div>
 </template>
 
 <style scoped>
-  .sq-footer {
+  .nessie-footer {
     background-color: rgb(183, 72, 14);
     height: 20px;
     font-size: 12px;

@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="headline">
-      <img src="../assets/blue-kelpie-profile.png">
+      <img src="@/assets/blue-kelpie-profile.png">
       <h1>Your profile</h1>
     </div>
     <p v-if="profile.name">

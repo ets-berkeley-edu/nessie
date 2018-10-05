@@ -13,6 +13,7 @@ nessie/static/lib
 node_modules
 
 # Local configs
+.env.*local
 config/*-local.py
 config/build-summary.json
 
