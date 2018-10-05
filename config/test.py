@@ -50,3 +50,7 @@ REDSHIFT_SCHEMA_STUDENT = 'student_test'
 SQLALCHEMY_DATABASE_URI = 'postgres://nessie:nessie@localhost:5432/nessie_test'
 
 LOGGING_LOCATION = 'STDOUT'
+
+JOB_SYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 0}
+JOB_RESYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 40}
+JOB_GENERATE_ALL_TABLES = {'hour': 3, 'minute': 30}

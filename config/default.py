@@ -84,16 +84,18 @@ ENROLLMENTS_API_URL = 'https://secreturl.berkeley.edu/enrollments'
 JOB_SCHEDULING_ENABLED = True
 
 # See http://apscheduler.readthedocs.io/en/latest/modules/triggers/cron.html for supported schedule formats.
-JOB_SYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 0}
-JOB_RESYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 40}
-JOB_IMPORT_CANVAS_ENROLLMENTS = {'hour': 2, 'minute': 00}
-JOB_IMPORT_STUDENT_POPULATION = {'hour': 2, 'minute': 00}
-JOB_IMPORT_DEGREE_PROGRESS = {'hour': 2, 'minute': 20}
-JOB_IMPORT_SIS_ENROLLMENTS = {'hour': 2, 'minute': 20}
-JOB_IMPORT_SIS_STUDENTS = {'hour': 2, 'minute': 20}
-JOB_GENERATE_ALL_TABLES = {'hour': 3, 'minute': 30}
-JOB_GENERATE_CURRENT_TERM_FEEDS = {'hour': 4, 'minute': 00}
-JOB_REFRESH_BOAC_CACHE = {'hour': 4, 'minute': 30}
+# Schedules should be provided as dictionaries in configs, e.g. {'hour': 12, 'minute': 30}
+JOB_SYNC_CANVAS_SNAPSHOTS = {}
+JOB_RESYNC_CANVAS_SNAPSHOTS = {}
+JOB_IMPORT_CANVAS_ENROLLMENTS = {}
+JOB_IMPORT_STUDENT_POPULATION = {}
+JOB_IMPORT_DEGREE_PROGRESS = {}
+JOB_IMPORT_LRS_INCREMENTALS = {}
+JOB_IMPORT_SIS_ENROLLMENTS = {}
+JOB_IMPORT_SIS_STUDENTS = {}
+JOB_GENERATE_ALL_TABLES = {}
+JOB_GENERATE_CURRENT_TERM_FEEDS = {}
+JOB_REFRESH_BOAC_CACHE = {}
 
 LDAP_HOST = 'nds-test.berkeley.edu'
 LDAP_BIND = 'mybind'
