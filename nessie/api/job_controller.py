@@ -41,6 +41,7 @@ from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.jobs.import_calnet_data import ImportCalNetData
 from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
 from nessie.jobs.import_degree_progress import ImportDegreeProgress
+from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
 from nessie.jobs.import_sis_enrollments_api import ImportSisEnrollmentsApi
 from nessie.jobs.import_sis_student_api import ImportSisStudentApi
 from nessie.jobs.import_sis_terms_api import ImportSisTermsApi
@@ -146,6 +147,13 @@ def import_canvas_enrollments_api():
 @auth_required
 def import_degree_progress():
     job_started = ImportDegreeProgress().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/import_lrs_incrementals', methods=['POST'])
+@auth_required
+def import_lrs_incrementals():
+    job_started = ImportLrsIncrementals().run_async()
     return respond_with_status(job_started)
 
 

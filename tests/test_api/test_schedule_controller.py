@@ -43,7 +43,7 @@ class TestGetSchedule:
     def test_get_schedule(self, app, client):
         """Returns job schedule based on default config values."""
         jobs = client.get('/api/schedule').json
-        assert len(jobs) == 10
+        assert len(jobs) == 11
         for job in jobs:
             assert job['locked'] is False
         assert next(job for job in jobs if job['id'] == 'job_sync_canvas_snapshots')
@@ -90,7 +90,7 @@ class TestUpdateSchedule:
         )
         assert response.status_code == 200
         jobs = response.json
-        assert len(jobs) == 10
+        assert len(jobs) == 11
         sync_job = next(job for job in jobs if job['id'] == 'job_sync_canvas_snapshots')
         assert sync_job['trigger'] == "cron[hour='1', minute='0']"
         resync_job = next(job for job in jobs if job['id'] == 'job_resync_canvas_snapshots')

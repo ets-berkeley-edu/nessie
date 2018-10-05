@@ -42,6 +42,7 @@ sched = None
 PG_ADVISORY_LOCK_IDS = {
     'JOB_SYNC_CANVAS_SNAPSHOTS': 1000,
     'JOB_RESYNC_CANVAS_SNAPSHOTS': 1500,
+    'JOB_IMPORT_LRS_INCREMENTALS': 2800,
     'JOB_IMPORT_STUDENT_POPULATION': 2000,
     'JOB_IMPORT_DEGREE_PROGRESS': 2500,
     'JOB_IMPORT_SIS_ENROLLMENTS': 2600,
@@ -82,6 +83,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.import_calnet_data import ImportCalNetData
     from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
     from nessie.jobs.import_degree_progress import ImportDegreeProgress
+    from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
     from nessie.jobs.import_sis_enrollments_api import ImportSisEnrollmentsApi
     from nessie.jobs.import_sis_student_api import ImportSisStudentApi
     from nessie.jobs.refresh_boac_cache import RefreshBoacCache
@@ -103,6 +105,7 @@ def schedule_all_jobs(force=False):
         force,
     )
     schedule_job(sched, 'JOB_IMPORT_DEGREE_PROGRESS', ImportDegreeProgress, force)
+    schedule_job(sched, 'JOB_IMPORT_LRS_INCREMENTALS', ImportLrsIncrementals, force)
     schedule_job(sched, 'JOB_IMPORT_SIS_ENROLLMENTS', ImportSisEnrollmentsApi, force)
     schedule_job(sched, 'JOB_IMPORT_SIS_STUDENTS', ImportSisStudentApi, force)
     schedule_job(sched, 'JOB_IMPORT_CANVAS_ENROLLMENTS', ImportCanvasEnrollmentsApi, force)
@@ -130,12 +133,15 @@ def schedule_all_jobs(force=False):
 
 def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):
     job_schedule = app.config.get(job_id)
-    if job_schedule:
+    if job_schedule is not None:
         existing_job = sched.get_job(job_id)
         if existing_job and (force is False):
             app.logger.info(f'Found existing cron trigger for job {job_id}, will not reschedule: {existing_job.next_run_time}')
             return False
         else:
+            # An empty hash in configs will add the job to the scheduler as paused.
+            if job_schedule == {}:
+                job_schedule = {'next_run_time': None}
             sched.add_job(job_func, 'cron', args=(job_arg, job_id, job_opts), id=job_id, replace_existing=True, **job_schedule)
             return job_schedule
 
