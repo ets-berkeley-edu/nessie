@@ -61,9 +61,10 @@ def copy(source_bucket, source_key, dest_bucket, dest_key):
         return False
 
 
-def delete_objects(keys):
+def delete_objects(keys, bucket=None):
     client = get_client()
-    bucket = app.config['LOCH_S3_BUCKET']
+    if not bucket:
+        bucket = app.config['LOCH_S3_BUCKET']
     try:
         for i in range(0, len(keys), 1000):
             objects_to_delete = [{'Key': key} for key in keys[i:i + 1000]]
