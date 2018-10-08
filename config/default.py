@@ -36,6 +36,9 @@ TIMEZONE = 'America/Los_Angeles'
 SQLALCHEMY_DATABASE_URI = 'postgres://nessie:nessie@localhost:5432/nessie'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+CAS_SERVER = 'https://auth-test.berkeley.edu/cas/'
+CAS_LOGOUT_URL = 'https://auth-test.berkeley.edu/cas/logout'
+
 # Some defaults.
 CSRF_ENABLED = True
 CSRF_SESSION_KEY = 'secret'
@@ -44,6 +47,8 @@ SECRET_KEY = 'secret'
 # Used to authorize administrative API.
 API_USERNAME = 'username'
 API_PASSWORD = 'password'
+# UIDs of authorized 'Admin' users
+AUTHORIZED_USERS = [0000000, 1111111, 2222222]
 
 # Override in local configs.
 HOST = '0.0.0.0'

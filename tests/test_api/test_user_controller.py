@@ -24,22 +24,27 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-from functools import wraps
-from flask import current_app as app, request
-from flask_login import current_user
-from nessie.api.errors import UnauthorizedRequestError
+class TestCasAuth:
+    """CAS login URL generation and redirects."""
+
+    def test_cas_login_url(self, client):
+        """Returns berkeley.edu URL of CAS login page."""
+        response = client.get('/api/user/cas_login_url')
+        assert response.status_code == 200
+        assert 'berkeley.edu/cas/login' in response.json.get('casLoginURL')
+
+    def test_cas_callback_with_invalid_ticket(self, client):
+        """Fails if CAS can not verify the ticket."""
+        response = client.get('/cas/callback?ticket=is_invalid')
+        assert response.status_code == 302
+        assert 'casLoginError' in response.location
 
 
-def auth_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not current_user.is_authenticated:
-            auth = request.authorization
-            if not auth or not valid_worker_credentials(auth.username, auth.password):
-                raise UnauthorizedRequestError('Invalid credentials.')
-        return f(*args, **kwargs)
-    return decorated
+class TestUserProfile:
+    """User Profile API."""
 
-
-def valid_worker_credentials(username, password):
-    return username == app.config['API_USERNAME'] and password == app.config['API_PASSWORD']
+    def test_not_authenticated(self, client):
+        """Returns empty profile when user is not logged in."""
+        response = client.get('/api/user/profile')
+        assert response.status_code == 200
+        assert not response.json

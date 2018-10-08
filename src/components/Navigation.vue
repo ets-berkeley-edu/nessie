@@ -2,74 +2,80 @@
   <div class="navigation">
     <ul>
       <li>
-        <router-link class="brand" to="/">
-          <img src="@/assets/logo.png" width="40px"/><strong>Nessie</strong>
+        <router-link
+          class="brand"
+          to="/">
+          <img
+            src="@/assets/logo.png"
+            width="40px"><strong>Nessie</strong>
         </router-link>
       </li>
     </ul>
     <ul>
-      <li v-if="isProfileLoaded">
-        <router-link to="/account">{{name}}</router-link>
-      </li>
-      <li v-if="isAuthenticated" @click="logout">
+      <li
+        v-if="user"
+        @click="logOut">
         <span class="logout">Logout</span>
       </li>
-      <li v-if="!isAuthenticated && !authLoading">
-        <router-link to="/login">Login</router-link>
+      <li v-if="!user">
+        <button @click="logIn">Log in</button>
       </li>
     </ul>
   </div>
 </template>
 
 <style lang="scss" scoped>
-  a {
-    color: white;
-    text-decoration: none;
-  }
-  .navigation {
+a {
+  color: white;
+  text-decoration: none;
+}
+.navigation {
+  display: flex;
+  color: white;
+  align-items: center;
+  background-color: #ffa035;
+  padding: 5px;
+  ul {
     display: flex;
-    color: white;
-    align-items: center;
-    background-color: #ffa035;
-    padding: 5px;
-    ul{
-      display: flex;
-      &:first-child{
-        flex-grow: 1;
-      }
-      li {
-        padding-right: 1em;
-      }
+    &:first-child {
+      flex-grow: 1;
+    }
+    li {
+      padding-right: 1em;
     }
   }
-  .brand {
-    display: flex;
-    align-items: center;
+}
+.brand {
+  display: flex;
+  align-items: center;
+}
+.logout {
+  &:hover {
+    cursor: pointer;
   }
-  .logout {
-    &:hover {
-      cursor: pointer;
-    }
-  }
+}
 </style>
 
 <script>
-import { mapGetters, mapState } from 'vuex';
-import { AUTH_LOGOUT } from '@/store/actions/auth';
+import UserApi from "@/services/api/UserApi.js";
+import store from "@/store";
 
 export default {
-  name: 'navigation',
-  methods: {
-    logout() {
-      this.$store.dispatch(AUTH_LOGOUT).then(() => this.$router.push('/login'));
-    },
-  },
+  name: "Navigation",
   computed: {
-    ...mapGetters(['getProfile', 'isAuthenticated', 'isProfileLoaded']),
-    ...mapState({
-      authLoading: state => state.auth.status === 'loading',
-      name: state => `${state.user.profile.title} ${state.user.profile.name}`,
-    }),
+    user() {
+      return store.getters.user;
+    }
   },
+  methods: {
+    logOut() {
+      this.$store.dispatch("logout");
+    },
+    logIn() {
+      UserApi.getCasLoginURL().then(url => {
+        window.location = url;
+      });
+    }
+  }
 };
 </script>
