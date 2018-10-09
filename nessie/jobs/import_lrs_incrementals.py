@@ -85,7 +85,12 @@ class ImportLrsIncrementals(BackgroundJob):
         timestamp_path = localize_datetime(datetime.now()).strftime('%Y/%m/%d/%H%M%S')
         destination_path = app.config['LRS_INCREMENTAL_DESTINATION_PATH'] + '/' + timestamp_path
         for destination_bucket in app.config['LRS_INCREMENTAL_DESTINATION_BUCKETS']:
-            if not self.migrate_transient_to_destination(transient_keys, destination_bucket, destination_path):
+            if not self.migrate_transient_to_destination(
+                transient_keys,
+                destination_bucket,
+                destination_path,
+                unload_to_etl=True,
+            ):
                 return False
 
         if truncate_lrs:
@@ -114,7 +119,7 @@ class ImportLrsIncrementals(BackgroundJob):
                 app.logger.info(f'Deleted {len(old_incrementals)} old incremental files from {self.transient_bucket}.')
         return True
 
-    def migrate_transient_to_destination(self, keys, destination_bucket, destination_path):
+    def migrate_transient_to_destination(self, keys, destination_bucket, destination_path, unload_to_etl=False):
             destination_url = 's3://' + destination_bucket + '/' + destination_path
             destination_schema = app.config['REDSHIFT_SCHEMA_LRS']
 
@@ -125,8 +130,31 @@ class ImportLrsIncrementals(BackgroundJob):
                     return False
             if not self.verify_migration(destination_url, destination_schema):
                 return False
+            if unload_to_etl:
+                if not self.unload_to_etl(destination_schema, destination_bucket):
+                    app.logger.error(f'Redshift statements unload from {destination_schema} to {destination_bucket} failed.')
+                    return False
             redshift.drop_external_schema(destination_schema)
             return True
+
+    def unload_to_etl(self, schema, bucket):
+        timestamp_path = localize_datetime(datetime.now()).strftime('%Y/%m/%d/statements_%Y%m%d_%H%M%S_')
+        credentials = ';'.join([
+            f"aws_access_key_id={app.config['AWS_ACCESS_KEY_ID']}",
+            f"aws_secret_access_key={app.config['AWS_SECRET_ACCESS_KEY']}",
+        ])
+        return redshift.execute(
+            f"""
+                UNLOAD ('SELECT statement FROM {schema}.statements')
+                TO 's3://{bucket}/{app.config['LRS_INCREMENTAL_ETL_PATH_REDSHIFT']}/{timestamp_path}'
+                CREDENTIALS '{credentials}'
+                DELIMITER AS '  '
+                NULL AS ''
+                ALLOWOVERWRITE
+                PARALLEL OFF
+                MAXFILESIZE 1 gb
+            """
+        )
 
     def verify_migration(self, incremental_url, incremental_schema):
         redshift.drop_external_schema(incremental_schema)
