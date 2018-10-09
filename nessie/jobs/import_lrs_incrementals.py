@@ -41,6 +41,13 @@ class ImportLrsIncrementals(BackgroundJob):
     def run(self, truncate_lrs=False):
         app.logger.info('Starting DMS replication task...')
         task_id = app.config['LRS_INCREMENTAL_REPLICATION_TASK_ID']
+
+        self.transient_bucket = app.config['LRS_INCREMENTAL_TRANSIENT_BUCKET']
+        self.transient_path = app.config['LRS_INCREMENTAL_TRANSIENT_PATH']
+
+        if not self.delete_old_incrementals():
+            return False
+
         response = dms.start_replication_task(task_id)
         if not response:
             app.logger.error('Failed to start DMS replication task (response={response}).')
@@ -64,8 +71,6 @@ class ImportLrsIncrementals(BackgroundJob):
             app.logger.error(f'Failed to retrieve LRS statements for comparison.')
             return False
 
-        self.transient_bucket = app.config['LRS_INCREMENTAL_TRANSIENT_BUCKET']
-        self.transient_path = app.config['LRS_INCREMENTAL_TRANSIENT_PATH']
         transient_keys = s3.get_keys_with_prefix(self.transient_path, bucket=self.transient_bucket)
         if not transient_keys:
             app.logger.error('Could not retrieve S3 keys from transient bucket.')
@@ -94,6 +99,20 @@ class ImportLrsIncrementals(BackgroundJob):
             f'Migrated {self.lrs_statement_count} statements to S3'
             f"(buckets={app.config['LRS_INCREMENTAL_DESTINATION_BUCKETS']}, path={destination_path})"
         )
+
+    def delete_old_incrementals(self):
+        old_incrementals = s3.get_keys_with_prefix(self.transient_path, bucket=self.transient_bucket)
+        if old_incrementals is None:
+            app.logger.error('Error listing old incrementals, aborting job.')
+            return False
+        if len(old_incrementals) > 0:
+            delete_response = s3.delete_objects(old_incrementals, bucket=self.transient_bucket)
+            if not delete_response:
+                app.logger.error(f'Error deleting old incremental files from {self.transient_bucket}, aborting job.')
+                return False
+            else:
+                app.logger.info(f'Deleted {len(old_incrementals)} old incremental files from {self.transient_bucket}.')
+        return True
 
     def migrate_transient_to_destination(self, keys, destination_bucket, destination_path):
             destination_url = 's3://' + destination_bucket + '/' + destination_path
