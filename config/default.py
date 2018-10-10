@@ -165,6 +165,6 @@ TERMS_API_URL = 'https://secreturl.berkeley.edu/terms'
 
 WORKER_HOST = 'hard-working-nessie.berkeley.edu'
 
-# True on worker nodes, false on master node.
-WORKER_QUEUE_ENABLED = False
+# Thread queues will be ignored if "master" is embedded in the EB_ENVIRONMENT environment variable.
+WORKER_QUEUE_ENABLED = True
 WORKER_THREADS = 5

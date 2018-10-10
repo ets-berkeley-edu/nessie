@@ -36,9 +36,18 @@ class TestFactory:
         with override_config(app, 'JOB_SCHEDULING_ENABLED', True):
             factory.configure_scheduler_mode(app)
             assert app.config['JOB_SCHEDULING_ENABLED'] is True
+            assert app.config['WORKER_QUEUE_ENABLED'] is True
 
     def test_disable_scheduling_through_env(self, app):
         with override_config(app, 'JOB_SCHEDULING_ENABLED', True):
             os.environ['EB_ENVIRONMENT'] = 'nessie-worker-bee'
             factory.configure_scheduler_mode(app)
             assert app.config['JOB_SCHEDULING_ENABLED'] is False
+            assert app.config['WORKER_QUEUE_ENABLED'] is True
+
+    def test_no_thread_limits_if_master_env(self, app):
+        with override_config(app, 'JOB_SCHEDULING_ENABLED', True):
+            os.environ['EB_ENVIRONMENT'] = 'nessie-master-bee'
+            factory.configure_scheduler_mode(app)
+            assert app.config['JOB_SCHEDULING_ENABLED'] is True
+            assert app.config['WORKER_QUEUE_ENABLED'] is False
