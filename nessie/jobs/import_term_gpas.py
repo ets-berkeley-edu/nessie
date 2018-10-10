@@ -93,7 +93,7 @@ class ImportTermGpas(BackgroundJob):
             return False
 
         with rds.transaction() as transaction:
-            if self.refresh_rds_indexes(rows, transaction):
+            if self.refresh_rds_indexes(csids, rows, transaction):
                 transaction.commit()
                 app.logger.info('Refreshed RDS indexes.')
             else:
@@ -106,8 +106,10 @@ class ImportTermGpas(BackgroundJob):
             f'{no_registrations_count} returned no registrations, {failure_count} failed.'
         )
 
-    def refresh_rds_indexes(self, rows, transaction):
-        if not transaction.execute(f'DELETE FROM {self.destination_schema}.student_term_gpas'):
+    def refresh_rds_indexes(self, csids, rows, transaction):
+        sql = f'DELETE FROM {self.destination_schema}.student_term_gpas WHERE sid = ANY(%s)'
+        params = (csids,)
+        if not transaction.execute(sql, params):
             return False
         if not transaction.insert_bulk(
             f"""INSERT INTO {self.destination_schema}.student_term_gpas

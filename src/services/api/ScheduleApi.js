@@ -1,12 +1,15 @@
-import axios from 'axios';
+import axios from "axios";
+import store from "@/store";
 
 export default {
   getJobSchedule(jobId) {
-    return axios.get(`${process.env.VUE_APP_API_BASE_URL}/api/schedule/${jobId}`)
+    return axios
+      .get(`${store.state.apiBaseURL}/api/schedule/${jobId}`)
       .then(response => response.data);
   },
   getSchedule() {
-    return axios.get(`${process.env.VUE_APP_API_BASE_URL}/api/schedule`)
+    return axios
+      .get(`${store.state.apiBaseURL}/api/schedule`)
       .then(response => response.data);
-  },
+  }
 };

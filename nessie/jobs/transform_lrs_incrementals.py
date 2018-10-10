@@ -24,30 +24,15 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-import os
-
-from nessie import factory
-from tests.util import override_config
+"""Logic for transforming LRS Caliper statements."""
 
 
-class TestFactory:
+from flask import current_app as app
+# from nessie.externals import glue, redshift, s3
+from nessie.jobs.background_job import BackgroundJob
 
-    def test_enable_scheduling_through_config(self, app):
-        with override_config(app, 'JOB_SCHEDULING_ENABLED', True):
-            factory.configure_scheduler_mode(app)
-            assert app.config['JOB_SCHEDULING_ENABLED'] is True
-            assert app.config['WORKER_QUEUE_ENABLED'] is True
 
-    def test_disable_scheduling_through_env(self, app):
-        with override_config(app, 'JOB_SCHEDULING_ENABLED', True):
-            os.environ['EB_ENVIRONMENT'] = 'nessie-worker-bee'
-            factory.configure_scheduler_mode(app)
-            assert app.config['JOB_SCHEDULING_ENABLED'] is False
-            assert app.config['WORKER_QUEUE_ENABLED'] is True
+class TransformLrsIncrementals(BackgroundJob):
 
-    def test_no_thread_limits_if_master_env(self, app):
-        with override_config(app, 'JOB_SCHEDULING_ENABLED', True):
-            os.environ['EB_ENVIRONMENT'] = 'nessie-master-bee'
-            factory.configure_scheduler_mode(app)
-            assert app.config['JOB_SCHEDULING_ENABLED'] is True
-            assert app.config['WORKER_QUEUE_ENABLED'] is False
+    def run(self):
+        app.logger.info('Starting ETL process on LRS incrementals...')

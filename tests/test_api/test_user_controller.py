@@ -24,30 +24,27 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-import os
+class TestCasAuth:
+    """CAS login URL generation and redirects."""
 
-from nessie import factory
-from tests.util import override_config
+    def test_cas_login_url(self, client):
+        """Returns berkeley.edu URL of CAS login page."""
+        response = client.get('/api/user/cas_login_url')
+        assert response.status_code == 200
+        assert 'berkeley.edu/cas/login' in response.json.get('casLoginURL')
+
+    def test_cas_callback_with_invalid_ticket(self, client):
+        """Fails if CAS can not verify the ticket."""
+        response = client.get('/cas/callback?ticket=is_invalid')
+        assert response.status_code == 302
+        assert 'casLoginError' in response.location
 
 
-class TestFactory:
+class TestUserProfile:
+    """User Profile API."""
 
-    def test_enable_scheduling_through_config(self, app):
-        with override_config(app, 'JOB_SCHEDULING_ENABLED', True):
-            factory.configure_scheduler_mode(app)
-            assert app.config['JOB_SCHEDULING_ENABLED'] is True
-            assert app.config['WORKER_QUEUE_ENABLED'] is True
-
-    def test_disable_scheduling_through_env(self, app):
-        with override_config(app, 'JOB_SCHEDULING_ENABLED', True):
-            os.environ['EB_ENVIRONMENT'] = 'nessie-worker-bee'
-            factory.configure_scheduler_mode(app)
-            assert app.config['JOB_SCHEDULING_ENABLED'] is False
-            assert app.config['WORKER_QUEUE_ENABLED'] is True
-
-    def test_no_thread_limits_if_master_env(self, app):
-        with override_config(app, 'JOB_SCHEDULING_ENABLED', True):
-            os.environ['EB_ENVIRONMENT'] = 'nessie-master-bee'
-            factory.configure_scheduler_mode(app)
-            assert app.config['JOB_SCHEDULING_ENABLED'] is True
-            assert app.config['WORKER_QUEUE_ENABLED'] is False
+    def test_not_authenticated(self, client):
+        """Returns empty profile when user is not logged in."""
+        response = client.get('/api/user/profile')
+        assert response.status_code == 200
+        assert not response.json
