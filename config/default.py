@@ -115,6 +115,17 @@ LRS_INCREMENTAL_DESTINATION_BUCKETS = ['bucket', 'list']
 LRS_INCREMENTAL_DESTINATION_PATH = 'lrs/destination/path'
 LRS_INCREMENTAL_ETL_PATH_REDSHIFT = 'lrs/etl/path/redshift'
 
+LRS_CANVAS_CALIPER_SCHEMA_PATH = 'lrs/path/to/caliper/schema'
+LRS_CANVAS_CALIPER_INPUT_DATA_PATH = 'lrs/input/data/s3/location'
+LRS_CANVAS_CALIPER_EXPLODE_OUTPUT_PATH = 'lrs/glue/output/s3/location'
+
+LRS_CANVAS_GLUE_JOB_NAME = 'job_name_env'
+LRS_CANVAS_GLUE_JOB_CAPACITY = 2
+LRS_CANVAS_GLUE_JOB_TIMEOUT = 20
+LRS_CANVAS_GLUE_JOB_SCRIPT_PATH = 's3://<bucket>/path/to/glue/script'
+LRS_GLUE_TEMP_DIR = 'glue/temp/dir'
+LRS_GLUE_SERVICE_ROLE = 'glue-service-role-name'
+
 LOCH_S3_BUCKET = 'bucket_name'
 LOCH_S3_REGION = 'us-west-2'
 
