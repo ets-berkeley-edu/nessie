@@ -1,59 +1,54 @@
-import Vue from 'vue';
-import Router from 'vue-router';
-import store from '@/store';
-
-const ifNotAuthenticated = (to, from, next) => {
-  if (!store.getters.isAuthenticated) {
-    next();
-    return;
-  }
-  next('/');
-};
-
-const ifAuthenticated = (to, from, next) => {
-  if (store.getters.isAuthenticated) {
-    next();
-    return;
-  }
-  next('/login');
-};
-
-const routerOptions = [
-  {
-    path: '/',
-    component: 'Home',
-    beforeEnter: ifAuthenticated,
-  },
-  {
-    path: '/account',
-    component: 'Account',
-    beforeEnter: ifAuthenticated,
-  },
-  {
-    path: '/job/:id',
-    component: 'Job',
-    beforeEnter: ifAuthenticated,
-  },
-  {
-    path: '/login',
-    component: 'Login',
-    beforeEnter: ifNotAuthenticated,
-  },
-  {
-    path: '*',
-    component: 'NotFound',
-  },
-];
-
-const routes = routerOptions.map(route => ({
-  ...route,
-  component: () => import(`@/components/${route.component}.vue`),
-  name: route.component,
-}));
+import Vue from "vue";
+import Router from "vue-router";
+import store from "@/store";
+import UserApi from "@/services/api/UserApi.js";
+import Home from "@/components/Home";
+import Job from "@/components/Job";
+import NotFound from "@/components/NotFound";
 
 Vue.use(Router);
 
-export default new Router({
-  mode: 'history',
-  routes,
+const router = new Router({
+  mode: "history",
+  routes: [
+    {
+      component: Home,
+      name: "home",
+      path: "/"
+    },
+    {
+      component: Job,
+      name: "job",
+      meta: {
+        requiresAuth: true
+      },
+      path: "/job/:id"
+    },
+    {
+      component: NotFound,
+      path: "*"
+    }
+  ]
 });
+
+router.beforeEach((to, from, next) => {
+  if (
+    to.matched.some(record => record.meta.requiresAuth) &&
+    !store.getters.user
+  ) {
+    UserApi.getMyProfile().then(me => {
+      if (me) {
+        store.commit("registerMe", me);
+        next();
+      } else {
+        UserApi.getCasLoginURL().then(url => {
+          window.location = url;
+        });
+      }
+    });
+  } else {
+    next();
+  }
+});
+
+export default router;

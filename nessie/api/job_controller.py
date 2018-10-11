@@ -153,7 +153,12 @@ def import_degree_progress():
 @app.route('/api/job/import_lrs_incrementals', methods=['POST'])
 @auth_required
 def import_lrs_incrementals():
-    job_started = ImportLrsIncrementals().run_async()
+    args = get_json_args(request)
+    if args:
+        truncate_lrs = args.get('truncate_lrs')
+    else:
+        truncate_lrs = False
+    job_started = ImportLrsIncrementals(truncate_lrs=truncate_lrs).run_async()
     return respond_with_status(job_started)
 
 

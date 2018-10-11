@@ -36,6 +36,9 @@ TIMEZONE = 'America/Los_Angeles'
 SQLALCHEMY_DATABASE_URI = 'postgres://nessie:nessie@localhost:5432/nessie'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+CAS_SERVER = 'https://auth-test.berkeley.edu/cas/'
+CAS_LOGOUT_URL = 'https://auth-test.berkeley.edu/cas/logout'
+
 # Some defaults.
 CSRF_ENABLED = True
 CSRF_SESSION_KEY = 'secret'
@@ -44,6 +47,8 @@ SECRET_KEY = 'secret'
 # Used to authorize administrative API.
 API_USERNAME = 'username'
 API_PASSWORD = 'password'
+# UIDs of authorized 'Admin' users
+AUTHORIZED_USERS = [0000000, 1111111, 2222222]
 
 # Override in local configs.
 HOST = '0.0.0.0'
@@ -108,6 +113,7 @@ LRS_INCREMENTAL_TRANSIENT_BUCKET = 'transient bucket'
 LRS_INCREMENTAL_TRANSIENT_PATH = 'lrs/transient/path'
 LRS_INCREMENTAL_DESTINATION_BUCKETS = ['bucket', 'list']
 LRS_INCREMENTAL_DESTINATION_PATH = 'lrs/destination/path'
+LRS_INCREMENTAL_ETL_PATH_REDSHIFT = 'lrs/etl/path/redshift'
 
 LOCH_S3_BUCKET = 'bucket_name'
 LOCH_S3_REGION = 'us-west-2'
@@ -159,6 +165,6 @@ TERMS_API_URL = 'https://secreturl.berkeley.edu/terms'
 
 WORKER_HOST = 'hard-working-nessie.berkeley.edu'
 
-# True on worker nodes, false on master node.
-WORKER_QUEUE_ENABLED = False
+# Thread queues will be ignored if "master" is embedded in the EB_ENVIRONMENT environment variable.
+WORKER_QUEUE_ENABLED = True
 WORKER_THREADS = 5
