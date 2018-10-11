@@ -26,17 +26,15 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from functools import wraps
 from flask import current_app as app, request
-from flask_login import current_user
 from nessie.api.errors import UnauthorizedRequestError
 
 
 def auth_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not current_user.is_authenticated:
-            auth = request.authorization
-            if not auth or not valid_worker_credentials(auth.username, auth.password):
-                raise UnauthorizedRequestError('Invalid credentials.')
+        auth = request.authorization
+        if not auth or not valid_worker_credentials(auth.username, auth.password):
+            raise UnauthorizedRequestError('Invalid credentials.')
         return f(*args, **kwargs)
     return decorated
 

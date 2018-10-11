@@ -27,27 +27,19 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """Logic for LRS incremental import job."""
 
 
-from datetime import datetime
 from time import sleep
 
 from flask import current_app as app
 from nessie.externals import dms, lrs, redshift, s3
 from nessie.jobs.background_job import BackgroundJob
-from nessie.lib.util import localize_datetime, resolve_sql_template
+from nessie.lib.util import localized_datestamp, resolve_sql_template
 
 
 class ImportLrsIncrementals(BackgroundJob):
 
-    def run(self, truncate_lrs=False):
+    def run(self):
         app.logger.info('Starting DMS replication task...')
         task_id = app.config['LRS_INCREMENTAL_REPLICATION_TASK_ID']
-
-        self.transient_bucket = app.config['LRS_INCREMENTAL_TRANSIENT_BUCKET']
-        self.transient_path = app.config['LRS_INCREMENTAL_TRANSIENT_PATH']
-
-        if not self.delete_old_incrementals():
-            return False
-
         response = dms.start_replication_task(task_id)
         if not response:
             app.logger.error('Failed to start DMS replication task (response={response}).')
@@ -66,97 +58,50 @@ class ImportLrsIncrementals(BackgroundJob):
 
         lrs_response = lrs.fetch('select count(*) from statements')
         if lrs_response:
-            self.lrs_statement_count = lrs_response[0][0]
+            lrs_statement_count = lrs_response[0][0]
         else:
             app.logger.error(f'Failed to retrieve LRS statements for comparison.')
             return False
 
-        transient_keys = s3.get_keys_with_prefix(self.transient_path, bucket=self.transient_bucket)
+        transient_bucket = app.config['LRS_INCREMENTAL_TRANSIENT_BUCKET']
+        transient_path = app.config['LRS_INCREMENTAL_TRANSIENT_PATH']
+        transient_url = f's3://{transient_bucket}/{transient_path}'
+        transient_keys = s3.get_keys_with_prefix(transient_path, bucket=transient_bucket)
         if not transient_keys:
             app.logger.error('Could not retrieve S3 keys from transient bucket.')
             return False
 
-        transient_url = f's3://{self.transient_bucket}/{self.transient_path}'
         transient_schema = app.config['REDSHIFT_SCHEMA_LRS'] + '_transient'
-        if not self.verify_migration(transient_url, transient_schema):
+        if not self.verify_migration(transient_url, transient_schema, lrs_statement_count):
             return False
         redshift.drop_external_schema(transient_schema)
 
-        timestamp_path = localize_datetime(datetime.now()).strftime('%Y/%m/%d/%H%M%S')
-        destination_path = app.config['LRS_INCREMENTAL_DESTINATION_PATH'] + '/' + timestamp_path
+        destination_path = app.config['LRS_INCREMENTAL_DESTINATION_PATH'] + '/' + localized_datestamp()
         for destination_bucket in app.config['LRS_INCREMENTAL_DESTINATION_BUCKETS']:
-            if not self.migrate_transient_to_destination(
-                transient_keys,
-                destination_bucket,
-                destination_path,
-                unload_to_etl=True,
-            ):
-                return False
-
-        if truncate_lrs:
-            if lrs.execute('TRUNCATE statements'):
-                app.logger.info('Truncated incremental LRS table.')
-            else:
-                app.logger.error('Failed to truncate incremental LRS table.')
-                return False
-
-        return (
-            f'Migrated {self.lrs_statement_count} statements to S3'
-            f"(buckets={app.config['LRS_INCREMENTAL_DESTINATION_BUCKETS']}, path={destination_path})"
-        )
-
-    def delete_old_incrementals(self):
-        old_incrementals = s3.get_keys_with_prefix(self.transient_path, bucket=self.transient_bucket)
-        if old_incrementals is None:
-            app.logger.error('Error listing old incrementals, aborting job.')
-            return False
-        if len(old_incrementals) > 0:
-            delete_response = s3.delete_objects(old_incrementals, bucket=self.transient_bucket)
-            if not delete_response:
-                app.logger.error(f'Error deleting old incremental files from {self.transient_bucket}, aborting job.')
-                return False
-            else:
-                app.logger.info(f'Deleted {len(old_incrementals)} old incremental files from {self.transient_bucket}.')
-        return True
-
-    def migrate_transient_to_destination(self, keys, destination_bucket, destination_path, unload_to_etl=False):
             destination_url = 's3://' + destination_bucket + '/' + destination_path
             destination_schema = app.config['REDSHIFT_SCHEMA_LRS']
 
-            for transient_key in keys:
-                destination_key = transient_key.replace(self.transient_path, destination_path)
-                if not s3.copy(self.transient_bucket, transient_key, destination_bucket, destination_key):
+            for transient_key in transient_keys:
+                destination_key = transient_key.replace(transient_path, destination_path)
+                if not s3.copy(transient_bucket, transient_key, destination_bucket, destination_key):
                     app.logger.error(f'Copy from transient bucket to destination bucket {destination_bucket} failed.')
                     return False
-            if not self.verify_migration(destination_url, destination_schema):
+            if not self.verify_migration(destination_url, destination_schema, lrs_statement_count):
                 return False
-            if unload_to_etl:
-                if not self.unload_to_etl(destination_schema, destination_bucket):
-                    app.logger.error(f'Redshift statements unload from {destination_schema} to {destination_bucket} failed.')
-                    return False
             redshift.drop_external_schema(destination_schema)
-            return True
 
-    def unload_to_etl(self, schema, bucket):
-        timestamp_path = localize_datetime(datetime.now()).strftime('%Y/%m/%d/statements_%Y%m%d_%H%M%S_')
-        credentials = ';'.join([
-            f"aws_access_key_id={app.config['AWS_ACCESS_KEY_ID']}",
-            f"aws_secret_access_key={app.config['AWS_SECRET_ACCESS_KEY']}",
-        ])
-        return redshift.execute(
-            f"""
-                UNLOAD ('SELECT statement FROM {schema}.statements')
-                TO 's3://{bucket}/{app.config['LRS_INCREMENTAL_ETL_PATH_REDSHIFT']}/{timestamp_path}'
-                CREDENTIALS '{credentials}'
-                DELIMITER AS '  '
-                NULL AS ''
-                ALLOWOVERWRITE
-                PARALLEL OFF
-                MAXFILESIZE 1 gb
-            """
+        if lrs.execute('TRUNCATE STATEMENTS'):
+            app.logger.info('Truncated incremental LRS table.')
+        else:
+            app.logger.error('Failed to truncate incremental LRS table.')
+            return False
+
+        return (
+            f'Migrated {lrs_statement_count} statements to S3'
+            f"(buckets={app.config['LRS_INCREMENTAL_DESTINATION_BUCKETS']}, path={destination_path})"
         )
 
-    def verify_migration(self, incremental_url, incremental_schema):
+    def verify_migration(self, incremental_url, incremental_schema, lrs_statement_count):
         redshift.drop_external_schema(incremental_schema)
         resolved_ddl_transient = resolve_sql_template(
             'create_lrs_schema.template.sql',
@@ -176,12 +121,12 @@ class ImportLrsIncrementals(BackgroundJob):
             app.logger.error(f"Failed to verify LRS incremental schema '{incremental_schema}'.")
             return False
 
-        if redshift_statement_count == self.lrs_statement_count:
+        if redshift_statement_count == lrs_statement_count:
             app.logger.info(f'Verified {redshift_statement_count} rows migrated from LRS to {incremental_url}.')
             return True
         else:
             app.logger.error(
-                f'Discrepancy between LRS ({self.lrs_statement_count} statements)'
+                f'Discrepancy between LRS ({lrs_statement_count} statements)'
                 f'and {incremental_url} ({redshift_statement_count} statements).'
             )
             return False

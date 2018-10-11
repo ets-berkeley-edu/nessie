@@ -69,11 +69,11 @@ tox
 
 # Test
 tox -e test
-tox -e test-vue
+tox -e vue-test
 
 # Linters, à la carte
 tox -e lint-py
-tox -e lint-vue
+tox -e vue-lint
 
 # Run specific test(s)
 tox -e test -- tests/test_models/test_authorized_user.py

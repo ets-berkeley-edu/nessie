@@ -32,7 +32,6 @@ from nessie.jobs.background_job import ChainedBackgroundJob
 from nessie.jobs.create_calnet_schema import CreateCalNetSchema
 from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.create_coe_schema import CreateCoeSchema
-from nessie.jobs.create_lrs_glue_jobs import CreateLrsGlueJobs
 from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
@@ -50,7 +49,6 @@ from nessie.jobs.import_term_gpas import ImportTermGpas
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
-from nessie.jobs.transform_lrs_incrementals import TransformLrsIncrementals
 from nessie.lib.http import tolerant_jsonify
 from nessie.lib.metadata import update_canvas_sync_status
 
@@ -155,26 +153,7 @@ def import_degree_progress():
 @app.route('/api/job/import_lrs_incrementals', methods=['POST'])
 @auth_required
 def import_lrs_incrementals():
-    args = get_json_args(request)
-    if args:
-        truncate_lrs = args.get('truncate_lrs')
-    else:
-        truncate_lrs = False
-    job_started = ImportLrsIncrementals(truncate_lrs=truncate_lrs).run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/transform_lrs_incrementals', methods=['POST'])
-@auth_required
-def transform_lrs_incrementals():
-    job_started = TransformLrsIncrementals().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/create_lrs_glue_jobs', methods=['POST'])
-@auth_required
-def create_lrs_glue_jobs():
-    job_started = CreateLrsGlueJobs().run_async()
+    job_started = ImportLrsIncrementals().run_async()
     return respond_with_status(job_started)
 
 

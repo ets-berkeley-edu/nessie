@@ -64,9 +64,6 @@ def configure_scheduler_mode(app):
             override_mode = False
         elif 'master' in eb_environment:
             override_mode = True
-            if app.config['WORKER_QUEUE_ENABLED']:
-                app.logger.info('Changing WORKER_QUEUE_ENABLED to False')
-                app.config['WORKER_QUEUE_ENABLED'] = False
         else:
             override_mode = None
         if override_mode is not None and override_mode is not default_scheduler_mode:

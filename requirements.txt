@@ -1,5 +1,4 @@
 Flask==1.0.2
-Flask-Login==0.4.1
 Flask-SQLAlchemy==2.3.2
 SQLAlchemy==1.2.10
 Werkzeug==0.14
@@ -14,7 +13,6 @@ simplejson==3.16.0
 xmltodict==0.11.0
 # ETS fork of https://github.com/RaRe-Technologies/smart_open, with added support for S3 upload arguments.
 https://github.com/ets-berkeley-edu/smart_open/archive/master.zip
-https://github.com/python-cas/python-cas/archive/master.zip
 
 # Dependencies for pandas 0.23.3. Note that pandas is not included in this requirements.txt file because
 # of potential conflicts during installation; it must be separately installed once its dependencies are

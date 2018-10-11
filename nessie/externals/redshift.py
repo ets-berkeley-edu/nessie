@@ -30,7 +30,6 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from contextlib import contextmanager
 from datetime import datetime
 import io
-import re
 
 from flask import current_app as app
 from nessie.externals import s3
@@ -192,22 +191,20 @@ def _execute(sql, operation, cursor, **kwargs):
         if kwargs:
             params = kwargs.pop('params', None)
             sql = psycopg2.sql.SQL(sql).format(**kwargs)
-        # Don't log sensitive credentials in the SQL.
-        sql_for_log = re.sub(r"CREDENTIALS '[^']+'", "CREDENTIALS '<credentials>'", str(sql))
         ts = datetime.now().timestamp()
         cursor.execute(sql, params)
         if operation == 'read':
             result = [row for row in cursor]
             query_time = datetime.now().timestamp() - ts
-            app.logger.debug(f'Redshift query returned {len(result)} rows in {query_time} seconds:\n{sql_for_log}\n{params or ""}')
+            app.logger.debug(f'Redshift query returned {len(result)} rows in {query_time} seconds:\n{sql}\n{params or ""}')
         else:
             result = cursor.statusmessage
             query_time = datetime.now().timestamp() - ts
-            app.logger.debug(f'Redshift query returned status {result} in {query_time} seconds:\n{sql_for_log}\n{params or ""}')
+            app.logger.debug(f'Redshift query returned status {result} in {query_time} seconds:\n{sql}\n{params or ""}')
     except psycopg2.Error as e:
         error_str = str(e)
         if e.pgcode:
             error_str += f'{e.pgcode}: {e.pgerror}\n'
-        error_str += f'on SQL: {sql_for_log}'
+        error_str += f'on SQL: {sql}'
         app.logger.warning({'message': error_str})
     return result

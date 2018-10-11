@@ -105,7 +105,7 @@ def schedule_all_jobs(force=False):
         force,
     )
     schedule_job(sched, 'JOB_IMPORT_DEGREE_PROGRESS', ImportDegreeProgress, force)
-    schedule_job(sched, 'JOB_IMPORT_LRS_INCREMENTALS', ImportLrsIncrementals, force, truncate_lrs=True)
+    schedule_job(sched, 'JOB_IMPORT_LRS_INCREMENTALS', ImportLrsIncrementals, force)
     schedule_job(sched, 'JOB_IMPORT_SIS_ENROLLMENTS', ImportSisEnrollmentsApi, force)
     schedule_job(sched, 'JOB_IMPORT_SIS_STUDENTS', ImportSisStudentApi, force)
     schedule_job(sched, 'JOB_IMPORT_CANVAS_ENROLLMENTS', ImportCanvasEnrollmentsApi, force)

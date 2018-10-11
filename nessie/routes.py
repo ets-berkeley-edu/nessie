@@ -24,26 +24,12 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-from flask import jsonify, make_response, request
-from flask_login import LoginManager, UserMixin
+from flask import request
 
 
 def register_routes(app):
     """Register app routes."""
-    # Register authentication before routes are registered.
-    login_manager = LoginManager()
-
-    def _find_by_uid(current_user_uid):
-        if current_user_uid:
-            uid = next((uid for uid in app.config['AUTHORIZED_USERS'] if uid == int(current_user_uid)), None)
-            return User(uid) if uid else None
-        else:
-            return None
-    login_manager.user_loader(_find_by_uid)
-    login_manager.init_app(app)
-
     # Register API routes.
-    import nessie.api.user_controller
     import nessie.api.job_controller
     import nessie.api.schedule_controller
     import nessie.api.status_controller
@@ -51,21 +37,12 @@ def register_routes(app):
     # Register error handlers.
     import nessie.api.error_handlers
 
-    @app.login_manager.unauthorized_handler
-    def unauthorized_handler():
-        return jsonify(success=False, data={'login_required': True}, message='Unauthorized'), 401
-
-    # Unmatched API routes return a 404.
-    @app.route('/api/<path:path>')
+    # Unmatched routes return a 404.
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
     def handle_unmatched_api_route(**kwargs):
         app.logger.error('The requested resource could not be found.')
         raise nessie.api.errors.ResourceNotFoundError('The requested resource could not be found.')
-
-    # Non-API routes are handled by the front end.
-    @app.route('/', defaults={'path': ''})
-    @app.route('/<path:path>')
-    def front_end_route(**kwargs):
-        return make_response(open('public/index.html').read())
 
     @app.after_request
     def log_api_requests(response):
@@ -83,13 +60,3 @@ def register_routes(app):
             else:
                 app.logger.debug(log_message)
         return response
-
-
-class User(UserMixin):
-
-    def __init__(self, uid):
-        self.id = uid
-        self.name = f'uid:{str(uid)}'
-
-    def __repr__(self):
-        return self.id

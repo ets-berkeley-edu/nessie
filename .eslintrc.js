@@ -8,17 +8,10 @@ module.exports = {
   env: {
     browser: true,
   },
-  extends: [
-    'plugin:vue/essential',
-    "plugin:vue/recommended",
-    'plugin:prettier/recommended',
-    "prettier",
-    "prettier/standard"
-  ],
+  extends: ['plugin:vue/essential', 'airbnb-base'],
   // required to lint *.vue files
   plugins: [
-    'vue',
-    'prettier'
+    'vue'
   ],
   // check if imports actually resolve
   settings: {
@@ -30,6 +23,11 @@ module.exports = {
   },
   // add your custom rules here
   rules: {
+    // don't require .vue extension when importing
+    'import/extensions': ['error', 'always', {
+      js: 'never',
+      vue: 'never'
+    }],
     // disallow reassignment of function parameters
     // disallow parameter object manipulation except for specific exclusions
     'no-param-reassign': ['warn', {
@@ -39,6 +37,10 @@ module.exports = {
         'acc', // for reduce accumulators
         'e' // for e.returnvalue
       ]
+    }],
+    // allow optionalDependencies
+    'import/no-extraneous-dependencies': ['error', {
+      optionalDependencies: ['test/unit/index.js']
     }],
     // allow debugger during development
     'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off'
