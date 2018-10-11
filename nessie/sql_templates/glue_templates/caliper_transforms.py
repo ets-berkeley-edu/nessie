@@ -60,7 +60,7 @@ lrs_canvas_caliper_input_path = args['LRS_CANVAS_CALIPER_INPUT_DATA_PATH']
 lrs_canvas_caliper_explode_path = args['LRS_CANVAS_CALIPER_EXPLODE_OUTPUT_PATH']
 
 
-# Import prepared canavs caliper json schema and convert to struct type that can be applied to spark dataframe as template
+# Import prepared canvas caliper json schema and convert to struct type that can be applied to spark dataframe as template
 def import_caliper_schema(bucket, key):
     s3 = boto3.client('s3', region_name='us-west-2')
     json_file = s3.get_object(Bucket=bucket, Key=key)
