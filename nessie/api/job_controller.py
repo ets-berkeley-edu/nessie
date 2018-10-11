@@ -34,6 +34,7 @@ from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.create_coe_schema import CreateCoeSchema
 from nessie.jobs.create_lrs_glue_jobs import CreateLrsGlueJobs
 from nessie.jobs.create_sis_schema import CreateSisSchema
+from nessie.jobs.delete_lrs_glue_jobs import DeleteLrsGlueJobs
 from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
 from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
@@ -175,6 +176,13 @@ def create_lrs_glue_jobs():
 @auth_required
 def transform_lrs_incrementals():
     job_started = TransformLrsIncrementals().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/delete_lrs_glue_jobs', methods=['POST'])
+@auth_required
+def delete_lrs_glue_jobs():
+    job_started = DeleteLrsGlueJobs().run_async()
     return respond_with_status(job_started)
 
 
