@@ -40,10 +40,10 @@ class ImportLrsIncrementals(BackgroundJob):
 
     def run(self, truncate_lrs=False):
         app.logger.info('Starting DMS replication task...')
-        task_id = app.config['LRS_INCREMENTAL_REPLICATION_TASK_ID']
+        task_id = app.config['LRS_CANVAS_INCREMENTAL_REPLICATION_TASK_ID']
 
-        self.transient_bucket = app.config['LRS_INCREMENTAL_TRANSIENT_BUCKET']
-        self.transient_path = app.config['LRS_INCREMENTAL_TRANSIENT_PATH']
+        self.transient_bucket = app.config['LRS_CANVAS_INCREMENTAL_TRANSIENT_BUCKET']
+        self.transient_path = app.config['LRS_CANVAS_INCREMENTAL_TRANSIENT_PATH']
 
         if not self.delete_old_incrementals():
             return False
@@ -83,8 +83,8 @@ class ImportLrsIncrementals(BackgroundJob):
         redshift.drop_external_schema(transient_schema)
 
         timestamp_path = localize_datetime(datetime.now()).strftime('%Y/%m/%d/%H%M%S')
-        destination_path = app.config['LRS_INCREMENTAL_DESTINATION_PATH'] + '/' + timestamp_path
-        for destination_bucket in app.config['LRS_INCREMENTAL_DESTINATION_BUCKETS']:
+        destination_path = app.config['LRS_CANVAS_INCREMENTAL_DESTINATION_PATH'] + '/' + timestamp_path
+        for destination_bucket in app.config['LRS_CANVAS_INCREMENTAL_DESTINATION_BUCKETS']:
             if not self.migrate_transient_to_destination(
                 transient_keys,
                 destination_bucket,
@@ -102,7 +102,7 @@ class ImportLrsIncrementals(BackgroundJob):
 
         return (
             f'Migrated {self.lrs_statement_count} statements to S3'
-            f"(buckets={app.config['LRS_INCREMENTAL_DESTINATION_BUCKETS']}, path={destination_path})"
+            f"(buckets={app.config['LRS_CANVAS_INCREMENTAL_DESTINATION_BUCKETS']}, path={destination_path})"
         )
 
     def delete_old_incrementals(self):
@@ -146,7 +146,7 @@ class ImportLrsIncrementals(BackgroundJob):
         return redshift.execute(
             f"""
                 UNLOAD ('SELECT statement FROM {schema}.statements')
-                TO 's3://{bucket}/{app.config['LRS_INCREMENTAL_ETL_PATH_REDSHIFT']}/{timestamp_path}'
+                TO 's3://{bucket}/{app.config['LRS_CANVAS_INCREMENTAL_ETL_PATH_REDSHIFT']}/{timestamp_path}'
                 CREDENTIALS '{credentials}'
                 DELIMITER AS '  '
                 NULL AS ''
