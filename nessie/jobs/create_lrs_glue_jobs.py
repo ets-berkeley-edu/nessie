@@ -46,10 +46,13 @@ class CreateLrsGlueJobs(BackgroundJob):
         glue_role = app.config['LRS_GLUE_SERVICE_ROLE']
         job_command = {
             'Name': 'glueetl',
-            'ScriptLocation': 's3://{}/{}'.format(app.config['LRS_INCREMENTAL_TRANSIENT_BUCKET'], app.config['LRS_CANVAS_GLUE_JOB_SCRIPT_PATH']),
+            'ScriptLocation': 's3://{}/{}'.format(
+                app.config['LRS_CANVAS_INCREMENTAL_TRANSIENT_BUCKET'],
+                app.config['LRS_CANVAS_GLUE_JOB_SCRIPT_PATH'],
+            ),
         }
         default_arguments = {
-            '--LRS_INCREMENTAL_TRANSIENT_BUCKET': app.config['LRS_INCREMENTAL_TRANSIENT_BUCKET'],
+            '--LRS_INCREMENTAL_TRANSIENT_BUCKET': app.config['LRS_CANVAS_INCREMENTAL_TRANSIENT_BUCKET'],
             '--LRS_CANVAS_CALIPER_SCHEMA_PATH': app.config['LRS_CANVAS_CALIPER_SCHEMA_PATH'],
             '--LRS_CANVAS_CALIPER_INPUT_DATA_PATH': app.config['LRS_CANVAS_CALIPER_INPUT_DATA_PATH'],
             '--LRS_GLUE_TEMP_DIR': app.config['LRS_GLUE_TEMP_DIR'],
