@@ -26,9 +26,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 """Logic for transforming LRS Caliper statements."""
 
+from time import sleep
 
 from flask import current_app as app
-# from nessie.externals import glue, redshift, s3
+from nessie.externals import glue, s3
 from nessie.jobs.background_job import BackgroundJob
 
 
@@ -36,3 +37,75 @@ class TransformLrsIncrementals(BackgroundJob):
 
     def run(self):
         app.logger.info('Starting ETL process on LRS incrementals...')
+        app.logger.info('Clear old exports in Glue destination location before running Caliper ETL process')
+
+        self.transient_bucket = app.config['LRS_CANVAS_INCREMENTAL_TRANSIENT_BUCKET']
+        self.transient_path = app.config['LRS_CANVAS_CALIPER_EXPLODE_OUTPUT_PATH']
+        self.job_name = app.config['LRS_CANVAS_GLUE_JOB_NAME']
+        self.glue_role = app.config['LRS_GLUE_SERVICE_ROLE']
+        self.job_run_id = None
+
+        # Check Glue export location and clear any files from prior runs
+        if not self.delete_old_incrementals():
+            return False
+
+        # Run glue tranformation jobs to explode canvas caliper data into flat files
+        if not self.start_caliper_transform_job():
+            return False
+
+        # Add logic to write glue job details to redshift metadata table.
+        return True
+
+    def delete_old_incrementals(self):
+        app.logger.debug(f' Bucket: {self.transient_bucket}')
+        old_incrementals = s3.get_keys_with_prefix(self.transient_path, bucket=self.transient_bucket)
+        if old_incrementals is None:
+            app.logger.error('Error listing old incrementals, aborting job.')
+            return False
+        if len(old_incrementals) > 0:
+            delete_response = s3.delete_objects(old_incrementals, bucket=self.transient_bucket)
+            if delete_response is None:
+                app.logger.error(f'Error deleting old incremental files from {self.transient_bucket}, aborting job.')
+                return False
+            else:
+                app.logger.info(f'Deleted {len(old_incrementals)} old incremental files from {self.transient_bucket}.')
+        return True
+
+    def start_caliper_transform_job(self):
+        job_arguments = {
+            '--LRS_INCREMENTAL_TRANSIENT_BUCKET': app.config['LRS_CANVAS_INCREMENTAL_TRANSIENT_BUCKET'],
+            '--LRS_CANVAS_CALIPER_SCHEMA_PATH': app.config['LRS_CANVAS_CALIPER_SCHEMA_PATH'],
+            '--LRS_CANVAS_CALIPER_INPUT_DATA_PATH': app.config['LRS_CANVAS_CALIPER_INPUT_DATA_PATH'],
+            '--LRS_GLUE_TEMP_DIR': app.config['LRS_GLUE_TEMP_DIR'],
+            '--LRS_CANVAS_CALIPER_EXPLODE_OUTPUT_PATH': app.config['LRS_CANVAS_CALIPER_EXPLODE_OUTPUT_PATH'],
+            '--job-bookmark-option': 'job-bookmark-disable',
+        }
+
+        response = glue.start_glue_job(
+            self.job_name, job_arguments,
+            app.config['LRS_CANVAS_GLUE_JOB_CAPACITY'],
+            app.config['LRS_CANVAS_GLUE_JOB_TIMEOUT'],
+        )
+        if not response:
+            app.logger.error('Failed to create Glue job')
+            return False
+        elif 'JobRunId' in response:
+            self.job_run_id = response['JobRunId']
+            app.logger.debug(f'Response : {response}')
+            app.logger.info('Started job run successfully for the Job Name {} with Job Run id {}'.format(self.job_name, self.job_run_id))
+
+            # Once the Caliper glue job is started successfully poll the job run every 30 seconds to get the status of the run
+            while True:
+                response = glue.check_job_run_status(self.job_name, self.job_run_id)
+                if not response:
+                    app.logger.error('Failed to check Glue job status')
+                    return False
+                elif response['JobRun']['JobRunState'] == 'SUCCEEDED':
+                    app.logger.info(f'Caliper glue transformation job completed successfully: {response}')
+                    break
+                elif response['JobRun']['JobRunState'] == 'FAILED' or response['JobRun']['JobRunState'] == 'TIMEOUT':
+                    app.logger.error(f'Caliper glue transformation job failed or timed out: {response}')
+                    return False
+
+                sleep(30)
+            return True

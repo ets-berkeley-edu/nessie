@@ -54,12 +54,13 @@ def create_glue_job(name, glue_role, job_command_params, glue_job_args, allocate
     return response
 
 
-def start_glue_job(glue_job_name, glue_job_args, glue_job_capacity):
+def start_glue_job(glue_job_name, glue_job_args, glue_job_capacity, timeout):
     client = get_client()
     response = client.start_job_run(
         JobName=glue_job_name,
         Arguments=glue_job_args,
         AllocatedCapacity=glue_job_capacity,
+        Timeout=timeout,
     )
     return response
 
@@ -89,7 +90,7 @@ def get_job_runs(job_name):
     return response
 
 
-def check_glue_job_run_status(job_name, job_run_id):
+def check_job_run_status(job_name, job_run_id):
     client = get_client()
     response = client.get_job_run(
         JobName=job_name,
