@@ -54,6 +54,9 @@ AUTHORIZED_USERS = [0000000, 1111111, 2222222]
 HOST = '0.0.0.0'
 PORT = 1234
 
+# 'dist' is generated with 'vue-cli-service build'
+INDEX_HTML = 'dist/index.html'
+
 AWS_ACCESS_KEY_ID = 'key'
 AWS_DMS_VPC_ROLE = 'dms vpc role'
 AWS_SECRET_ACCESS_KEY = 'secret'

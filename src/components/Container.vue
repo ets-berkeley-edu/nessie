@@ -4,16 +4,16 @@
   </div>
 </template>
 
-<style scoped>
+<script>
+export default {
+  name: 'Container'
+};
+</script>
+
+<style scoped lang="scss">
 .center-container {
   display: flex;
   align-items: center;
   flex-direction: column;
 }
 </style>
-
-<script>
-export default {
-  name: "Container"
-};
-</script>

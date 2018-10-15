@@ -26,3 +26,5 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 # Development environment.
 DEBUG = True
+
+INDEX_HTML = 'public/index.html'

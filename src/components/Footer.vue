@@ -1,27 +1,35 @@
 <template>
-  <div class="nessie-footer">
-    This is a footer.
+  <div class="footer-container">
+    <div>
+      <img src="@/assets/uc-berkeley-logo.svg"/>
+    </div>
+    <div class="footer-copyright">
+      &copy; 2018 The Regents of the University of California
+    </div>
   </div>
 </template>
 
-<style scoped>
-.nessie-footer {
-  background-color: rgb(183, 72, 14);
-  height: 20px;
-  font-size: 12px;
-  display: flex;
-  justify-content: flex-end;
-  color: white;
-  align-items: center;
-  padding-right: 1em;
-}
-a {
-  color: white;
-}
-</style>
-
 <script>
 export default {
-  name: "Footer"
+  name: 'Footer'
 };
 </script>
+
+<style scoped lang="scss">
+.footer-container {
+  align-items: flex-start;
+  align-self: end;
+  display: flex;
+  flex-direction: row;
+  font-weight: 300;
+  justify-content: space-between;
+  padding-top: 20px;
+}
+
+.footer-copyright {
+  display: inline-block;
+  margin: 0 20px 0 20px;
+  text-align: right;
+  white-space: nowrap;
+}
+</style>

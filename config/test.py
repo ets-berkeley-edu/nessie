@@ -54,3 +54,5 @@ LOGGING_LOCATION = 'STDOUT'
 JOB_SYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 0}
 JOB_RESYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 40}
 JOB_GENERATE_ALL_TABLES = {'hour': 3, 'minute': 30}
+
+INDEX_HTML = 'public/index.html'

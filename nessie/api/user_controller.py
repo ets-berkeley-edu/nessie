@@ -24,7 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 import cas
 from flask import current_app as app, flash, redirect, request, url_for
@@ -34,18 +34,19 @@ from nessie.lib.http import add_param_to_url, tolerant_jsonify
 
 @app.route('/api/user/cas_login_url', methods=['GET'])
 def cas_login_url():
-    target_url = request.referrer or None
     return tolerant_jsonify({
-        'casLoginURL': _cas_client(target_url).get_login_url(),
+        'casLoginURL': _cas_client(request.referrer).get_login_url(),
     })
 
 
-@app.route('/api/user/logout')
+@app.route('/api/user/cas_logout_url', methods=['GET'])
 @login_required
 def logout():
+    referrer = urlparse(request.referrer)
+    base_url = f'{referrer.scheme}://{referrer.netloc}'
     logout_user()
     return tolerant_jsonify({
-        'casLogoutURL': _cas_client().get_logout_url(),
+        'casLogoutURL': _cas_client().get_logout_url(base_url),
     })
 
 

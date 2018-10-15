@@ -17,14 +17,9 @@ pip3 install pandas==0.23.3
 ### Front-end dependencies
 
 [Vue CLI 3](https://cli.vuejs.org/) was used to provision the front-end.
-
 ```
 nvm use
 npm install
-```
-#### Compile and minify for production:
-```
-npm run build
 ```
 
 ### Postgres user and databases
@@ -40,7 +35,6 @@ createdb nessie_test --owner=nessie
 ### Create local configurations
 
 If you plan to use any resources outside localhost, put your configurations in a separately encrypted area:
-
 ```
 mkdir /Volumes/XYZ/nessie_config
 export NESSIE_LOCAL_CONFIGS=/Volumes/XYZ/nessie_config
@@ -56,7 +50,7 @@ python3 run.py
 3. If you are doing front-end development then open a second terminal and
 use the underlying `vue-cli-service` to start Vue.js app. Compile and hot-reloads for dev:
 ```
-npm run vue-start-dev
+npm run serve-vue
 ```
 4. Nessie Admin Console (front-end) is now available at http://localhost:8080
 
