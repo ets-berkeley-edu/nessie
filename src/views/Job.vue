@@ -4,8 +4,8 @@
       {{ job.id }}
     </h2>
     <div>
-      <button 
-        @click="startJob" 
+      <button
+        @click="startJob"
         @click.prevent="!!jobStatus">Start Job</button>
     </div>
     <div v-if="jobStatus">
@@ -22,16 +22,16 @@
     </div>
     <div v-if="job.components">
       <h3>Components</h3>
-      <div 
-        v-for="component in job.components" 
+      <div
+        v-for="component in job.components"
         :key="component">
         <span class="message">{{ component }}</span>
       </div>
     </div>
     <div v-if="job.args">
       <h3>Args</h3>
-      <div 
-        v-for="arg in job.args" 
+      <div
+        v-for="arg in job.args"
         :key="arg">
         <span class="message">{{ arg }}</span>
       </div>
@@ -40,8 +40,8 @@
 </template>
 
 <script>
-import JobApi from "@/services/api/JobApi.js";
-import ScheduleApi from "@/services/api/ScheduleApi.js";
+import { startJob } from '@/api/job';
+import { getJobSchedule } from '@/api/schedule';
 
 export default {
   data() {
@@ -55,7 +55,7 @@ export default {
   },
   methods: {
     getJob(jobId) {
-      ScheduleApi.getJobSchedule(jobId)
+      getJobSchedule(jobId)
         .then(data => {
           this.job = data;
         })
@@ -65,7 +65,7 @@ export default {
         });
     },
     startJob() {
-      JobApi.startJob(this.job.id)
+      startJob(this.job.id)
         .then(data => {
           this.jobStatus = data;
         })

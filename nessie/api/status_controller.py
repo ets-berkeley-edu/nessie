@@ -45,7 +45,6 @@ def app_config():
     })
 
 
-@app.route('/')
 @app.route('/api/ping')
 def app_status():
     def db_status():

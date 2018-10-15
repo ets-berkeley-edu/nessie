@@ -3,58 +3,55 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "vue-start-dev": "vue-cli-service serve",
-    "vue-build-prod": "vue-cli-service build"
+    "build-vue": "vue-cli-service build --modern --dest 'nessie/dist'",
+    "lint-vue": "vue-cli-service lint --no-fix",
+    "serve-vue": "vue-cli-service serve --open",
+    "test-vue": "vue-cli-service test:unit"
   },
   "dependencies": {
-    "@vue/cli-service-global": "^3.0.4",
     "axios": "^0.18.0",
+    "bootstrap-vue": "^2.0.0-rc.11",
     "vue": "^2.5.17",
+    "vue-class-component": "^6.0.0",
+    "vue-property-decorator": "^7.0.0",
     "vue-router": "^3.0.1",
     "vuex": "^3.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.1.2",
+    "@types/jest": "^23.1.4",
     "@vue/cli-plugin-babel": "^3.0.4",
-    "@vue/cli-plugin-eslint": "^3.0.4",
+    "@vue/cli-plugin-e2e-cypress": "^3.0.4",
+    "@vue/cli-plugin-eslint": "^3.0.5",
+    "@vue/cli-plugin-pwa": "^3.0.4",
+    "@vue/cli-plugin-typescript": "^3.0.4",
     "@vue/cli-plugin-unit-jest": "^3.0.4",
     "@vue/cli-service": "^3.0.4",
+    "@vue/cli-service-global": "^3.0.4",
+    "@vue/eslint-config-prettier": "^3.0.5",
+    "@vue/eslint-config-typescript": "^3.0.5",
     "@vue/test-utils": "^1.0.0-beta.20",
-    "babel-core": "7.0.0-bridge.0",
-    "babel-jest": "^23.0.1",
+    "babel-core": "^7.0.0-bridge.0",
+    "babel-jest": "^23.6.0",
     "eslint": "^5.6.1",
     "eslint-config-prettier": "^3.1.0",
-    "eslint-loader": "^2.1.1",
     "eslint-plugin-import": "^2.7.0",
     "eslint-plugin-prettier": "^3.0.0",
-    "eslint-plugin-vue": "^4.0.0",
-    "node-sass": "^4.9.3",
-    "sass-loader": "^7.1.0",
+    "eslint-plugin-vue": "^4.7.1",
+    "lint-staged": "^7.2.2",
+    "node-sass": "^4.9.0",
+    "sass-loader": "^7.0.1",
+    "ts-jest": "^23.0.0",
+    "typescript": "~3.0.1",
     "vue-template-compiler": "^2.5.17"
+  },
+  "vue": {
+    "lintOnSave": true
   },
   "babel": {
     "presets": [
       "@vue/app"
     ]
-  },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/essential",
-      "eslint:recommended"
-    ],
-    "rules": {},
-    "parserOptions": {
-      "parser": "babel-eslint"
-    }
-  },
-  "postcss": {
-    "plugins": {
-      "autoprefixer": {}
-    }
   },
   "browserslist": [
     "> 1%",
@@ -80,11 +77,13 @@
       "jest-serializer-vue"
     ],
     "testMatch": [
-      "**/vue-tests/**/*.spec.(js|jsx|ts|tsx)|**/__tests__/*.(js|jsx|ts|tsx)"
+      "**/tests-vue/**/*.spec.(js|jsx|ts|tsx)"
     ],
-    "testURL": "http://localhost/"
+    "testURL": "http://localhost:8080/"
   },
-  "vue": {
-    "lintOnSave": true
+  "postcss": {
+    "plugins": {
+      "autoprefixer": {}
+    }
   }
 }
