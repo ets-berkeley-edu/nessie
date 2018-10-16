@@ -57,6 +57,7 @@ class CreateLrsGlueJobs(BackgroundJob):
             '--LRS_CANVAS_CALIPER_INPUT_DATA_PATH': app.config['LRS_CANVAS_CALIPER_INPUT_DATA_PATH'],
             '--LRS_GLUE_TEMP_DIR': app.config['LRS_GLUE_TEMP_DIR'],
             '--LRS_CANVAS_CALIPER_EXPLODE_OUTPUT_PATH': app.config['LRS_CANVAS_CALIPER_EXPLODE_OUTPUT_PATH'],
+            '--job-bookmark-option': 'job-bookmark-disable',
         }
 
         response = glue.create_glue_job(job_name, glue_role, job_command, default_arguments)
