@@ -90,6 +90,20 @@ WITH SERDEPROPERTIES (
 STORED AS TEXTFILE
 LOCATION '{loch_s3_sis_data_path}/manifests/enrollments.json';
 
+-- term gpa
+CREATE EXTERNAL TABLE {redshift_schema_sis}.term_gpa
+(
+    sid VARCHAR,
+    term_id INT,
+    units_total DOUBLE PRECISION,
+    units_taken_for_gpa DOUBLE PRECISION,
+    gpa DOUBLE PRECISION
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+STORED AS TEXTFILE
+LOCATION '{loch_s3_sis_data_path}/historical/gpa';
+
 --------------------------------------------------------------------
 -- Internal schema
 --------------------------------------------------------------------

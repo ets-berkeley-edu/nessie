@@ -30,6 +30,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from nessie.externals import redshift
 from nessie.jobs.background_job import BackgroundJob
+from nessie.lib.berkeley import reverse_term_ids
 from nessie.lib.util import resolve_sql_template
 
 
@@ -37,7 +38,12 @@ class GenerateBoacAnalytics(BackgroundJob):
 
     def run(self):
         app.logger.info(f'Starting BOAC analytics job...')
-        resolved_ddl = resolve_sql_template('create_boac_schema.template.sql')
+        term_id_series = reverse_term_ids()
+        resolved_ddl = resolve_sql_template(
+            'create_boac_schema.template.sql',
+            last_term_id=term_id_series[1],
+            previous_term_id=term_id_series[2],
+        )
         if redshift.execute_ddl_script(resolved_ddl):
             return 'BOAC analytics creation job completed.'
         else:
