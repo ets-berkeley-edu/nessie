@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_status
     last_name VARCHAR NOT NULL,
     level VARCHAR(2),
     gpa DECIMAL(4,3),
-    units DECIMAL (4,1),
+    units DECIMAL (6,3),
     PRIMARY KEY (sid)
 );
 

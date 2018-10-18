@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_status
     last_name VARCHAR NOT NULL,
     level VARCHAR(2),
     gpa DECIMAL(4,3),
-    units DECIMAL (4,1)
+    units DECIMAL (6,3)
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_enrollment_terms
@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_academic_st
     last_name VARCHAR NOT NULL,
     level VARCHAR(2),
     gpa DECIMAL(4,3),
-    units DECIMAL (4,1)
+    units DECIMAL (6,3)
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_enrollment_terms
