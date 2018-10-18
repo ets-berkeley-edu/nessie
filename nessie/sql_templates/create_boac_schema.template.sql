@@ -282,3 +282,29 @@ AS (
         ase.canvas_user_id,
         ase.canvas_course_id
 );
+
+
+CREATE TABLE {redshift_schema_boac}.section_mean_gpas
+SORTKEY(sis_term_id, sis_section_id)
+AS (
+    SELECT
+        enr.sis_term_id,
+        enr.sis_section_id,
+        'cumulative' AS gpa_term_id,
+        AVG(cg.cumulative_gpa) AS avg_gpa
+    FROM {redshift_schema_intermediate}.sis_enrollments enr
+    JOIN {redshift_schema_intermediate}.users u ON enr.ldap_uid = u.uid
+    JOIN {redshift_schema_intermediate}.cumulative_gpa cg ON u.sis_user_id = cg.sid
+    GROUP BY enr.sis_term_id, enr.sis_section_id
+    UNION
+    SELECT
+        enr.sis_term_id,
+        enr.sis_section_id,
+        tg.term_id::varchar AS gpa_term_id,
+        AVG(tg.gpa) AS avg_gpa
+    FROM {redshift_schema_intermediate}.sis_enrollments enr
+    JOIN {redshift_schema_intermediate}.users u ON enr.ldap_uid = u.uid
+    JOIN {redshift_schema_intermediate}.term_gpa tg ON u.sis_user_id = tg.sid
+        AND tg.term_id = ANY('{{{last_term_id},{previous_term_id}}}')
+    GROUP BY enr.sis_term_id, enr.sis_section_id, gpa_term_id
+);

@@ -30,6 +30,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from nessie.externals import redshift
 from nessie.jobs.background_job import BackgroundJob
+from nessie.lib.berkeley import current_term_id
 from nessie.lib.util import resolve_sql_template
 
 
@@ -37,7 +38,10 @@ class GenerateIntermediateTables(BackgroundJob):
 
     def run(self):
         app.logger.info(f'Starting intermediate table generation job...')
-        resolved_ddl = resolve_sql_template('create_intermediate_schema.template.sql')
+        resolved_ddl = resolve_sql_template(
+            'create_intermediate_schema.template.sql',
+            current_term_id=current_term_id(),
+        )
         if redshift.execute_ddl_script(resolved_ddl):
             return 'Intermediate table creation job completed.'
         else:

@@ -50,10 +50,6 @@ AS (
         en.enrollment_status != 'D'
 );
 
-/*
- * Copy S3 external data to Redshift table for faster client queries.
- */
-
 CREATE TABLE {redshift_schema_intermediate}.sis_sections
 INTERLEAVED SORTKEY (sis_term_id, sis_section_id)
 AS (
@@ -76,6 +72,37 @@ AS (
         sc.meeting_start_date,
         sc.meeting_end_date
     FROM {redshift_schema_sis}.courses sc
+);
+
+/*
+ * NOTE: GPA data below is derived from the EDO DB and is less reliable than GPA data in the student
+ * schema, which is derived from API polling. This data covers a wider population than API-sourced GPA
+ * data and is intended as a source for aggregate statistics, not individually surfaced values.
+ */
+
+CREATE TABLE {redshift_schema_intermediate}.term_gpa
+DISTKEY (sid)
+SORTKEY (sid, term_id)
+AS (
+    SELECT
+        tg.sid,
+        tg.term_id,
+        tg.gpa,
+        tg.units_total,
+        tg.units_taken_for_gpa
+    FROM {redshift_schema_sis}.term_gpa tg
+    WHERE tg.units_taken_for_gpa > 0
+    AND term_id < '{current_term_id}'
+);
+
+CREATE TABLE {redshift_schema_intermediate}.cumulative_gpa
+DISTKEY (sid)
+SORTKEY (sid)
+AS (
+    SELECT sid,
+    CAST((SUM(gpa * units_taken_for_gpa) / SUM(units_taken_for_gpa)) AS DECIMAL(4,3)) AS cumulative_gpa
+    FROM {redshift_schema_intermediate}.term_gpa
+    GROUP BY sid
 );
 
 /*
