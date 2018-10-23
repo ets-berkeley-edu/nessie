@@ -82,6 +82,20 @@ CREATE INDEX IF NOT EXISTS students_term_gpa_units_idx ON {redshift_schema_stude
 
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_sis_internal};
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_sis_internal}.enrolled_primary_sections
+(
+    term_id VARCHAR(4) NOT NULL,
+    sis_section_id VARCHAR(5) NOT NULL,
+    sis_course_name VARCHAR NOT NULL,
+    sis_course_name_compressed VARCHAR NOT NULL,
+    sis_course_title VARCHAR NOT NULL,
+    sis_instruction_format VARCHAR NOT NULL,
+    sis_section_num VARCHAR NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS enrolled_primary_sections_term_id_sis_course_name_compressed_idx
+ON {redshift_schema_sis_internal}.enrolled_primary_sections (term_id, sis_course_name_compressed);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_sis_internal}.sis_terms
 (
     term_id VARCHAR(4) NOT NULL,

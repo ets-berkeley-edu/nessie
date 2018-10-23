@@ -84,6 +84,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
     from nessie.jobs.import_sis_enrollments_api import ImportSisEnrollmentsApi
     from nessie.jobs.import_sis_student_api import ImportSisStudentApi
+    from nessie.jobs.index_enrollments import IndexEnrollments
     from nessie.jobs.refresh_boac_cache import RefreshBoacCache
     from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
     from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
@@ -114,6 +115,7 @@ def schedule_all_jobs(force=False):
             CreateCanvasSchema,
             CreateSisSchema,
             GenerateIntermediateTables,
+            IndexEnrollments,
             GenerateBoacAnalytics,
         ],
         force,

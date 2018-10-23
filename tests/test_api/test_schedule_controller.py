@@ -48,7 +48,13 @@ class TestGetSchedule:
         assert next(job for job in jobs if job['id'] == 'job_sync_canvas_snapshots')
         assert next(job for job in jobs if job['id'] == 'job_resync_canvas_snapshots')
         generate_tables_job = next(job for job in jobs if job['id'] == 'job_generate_all_tables')
-        assert generate_tables_job['components'] == ['CreateCanvasSchema', 'CreateSisSchema', 'GenerateIntermediateTables', 'GenerateBoacAnalytics']
+        assert generate_tables_job['components'] == [
+            'CreateCanvasSchema',
+            'CreateSisSchema',
+            'GenerateIntermediateTables',
+            'IndexEnrollments',
+            'GenerateBoacAnalytics',
+        ]
         assert generate_tables_job['trigger'] == "cron[hour='3', minute='30']"
         assert re.match('\d{4}-\d{2}-\d{2} 03:30:00', generate_tables_job['nextRun'])
 
