@@ -76,11 +76,8 @@ class ImportLrsIncrementals(BackgroundJob):
             app.logger.error('Could not retrieve S3 keys from transient bucket.')
             return False
 
-        transient_url = f's3://{self.transient_bucket}/{self.transient_path}'
-        transient_schema = app.config['REDSHIFT_SCHEMA_LRS'] + '_transient'
-        if not self.verify_migration(transient_url, transient_schema):
+        if not self.verify_and_unload_transient():
             return False
-        redshift.drop_external_schema(transient_schema)
 
         timestamp_path = localize_datetime(datetime.now()).strftime('%Y/%m/%d/%H%M%S')
         destination_path = app.config['LRS_CANVAS_INCREMENTAL_DESTINATION_PATH'] + '/' + timestamp_path
@@ -119,6 +116,20 @@ class ImportLrsIncrementals(BackgroundJob):
                 app.logger.info(f'Deleted {len(old_incrementals)} old incremental files from {self.transient_bucket}.')
         return True
 
+    def delete_old_unloads(self):
+        old_unloads = s3.get_keys_with_prefix(app.config['LRS_CANVAS_INCREMENTAL_ETL_PATH_REDSHIFT'], bucket=self.transient_bucket)
+        if old_unloads is None:
+            app.logger.error('Error listing old unloads, aborting job.')
+            return False
+        if len(old_unloads) > 0:
+            delete_response = s3.delete_objects(old_unloads, bucket=self.transient_bucket)
+            if not delete_response:
+                app.logger.error(f'Error deleting old unloads from {self.transient_bucket}, aborting job.')
+                return False
+            else:
+                app.logger.info(f'Deleted {len(old_unloads)} old unloads from {self.transient_bucket}.')
+        return True
+
     def migrate_transient_to_destination(self, keys, destination_bucket, destination_path, unload_to_etl=False):
             destination_url = 's3://' + destination_bucket + '/' + destination_path
             destination_schema = app.config['REDSHIFT_SCHEMA_LRS']
@@ -137,8 +148,11 @@ class ImportLrsIncrementals(BackgroundJob):
             redshift.drop_external_schema(destination_schema)
             return True
 
-    def unload_to_etl(self, schema, bucket):
-        timestamp_path = localize_datetime(datetime.now()).strftime('%Y/%m/%d/statements_%Y%m%d_%H%M%S_')
+    def unload_to_etl(self, schema, bucket, timestamped=True):
+        if timestamped:
+            path = '/' + localize_datetime(datetime.now()).strftime('%Y/%m/%d/statements_%Y%m%d_%H%M%S_')
+        else:
+            path = ''
         credentials = ';'.join([
             f"aws_access_key_id={app.config['AWS_ACCESS_KEY_ID']}",
             f"aws_secret_access_key={app.config['AWS_SECRET_ACCESS_KEY']}",
@@ -146,7 +160,7 @@ class ImportLrsIncrementals(BackgroundJob):
         return redshift.execute(
             f"""
                 UNLOAD ('SELECT statement FROM {schema}.statements')
-                TO 's3://{bucket}/{app.config['LRS_CANVAS_INCREMENTAL_ETL_PATH_REDSHIFT']}/{timestamp_path}'
+                TO 's3://{bucket}/{app.config['LRS_CANVAS_INCREMENTAL_ETL_PATH_REDSHIFT']}{path}'
                 CREDENTIALS '{credentials}'
                 DELIMITER AS '  '
                 NULL AS ''
@@ -155,6 +169,18 @@ class ImportLrsIncrementals(BackgroundJob):
                 MAXFILESIZE 1 gb
             """
         )
+
+    def verify_and_unload_transient(self):
+        transient_url = f's3://{self.transient_bucket}/{self.transient_path}'
+        transient_schema = app.config['REDSHIFT_SCHEMA_LRS'] + '_transient'
+        if not self.verify_migration(transient_url, transient_schema):
+            return False
+        if not self.delete_old_unloads():
+            return False
+        if not self.unload_to_etl(transient_schema, self.transient_bucket, timestamped=False):
+            app.logger.error(f'Redshift statements unload from {transient_schema} to {self.transient_bucket} failed.')
+            return False
+        redshift.drop_external_schema(transient_schema)
 
     def verify_migration(self, incremental_url, incremental_schema):
         redshift.drop_external_schema(incremental_schema)
