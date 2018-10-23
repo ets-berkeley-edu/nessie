@@ -9,11 +9,11 @@
 
 # Front-end
 /dist
-nessie/static/lib
 node_modules
 
 # Local configs
 .env.*local
+config/apache-local.conf
 config/*-local.py
 config/build-summary.json
 

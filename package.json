@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build-vue": "vue-cli-service build --modern --dest 'nessie/dist'",
+    "build-vue": "vue-cli-service build --modern --dest 'dist/static'",
     "lint-vue": "vue-cli-service lint --no-fix",
     "serve-vue": "vue-cli-service serve --open",
     "test-vue": "vue-cli-service test:unit"
@@ -46,6 +46,7 @@
     "vue-template-compiler": "^2.5.17"
   },
   "vue": {
+    "baseUrl": "/static",
     "lintOnSave": true
   },
   "babel": {
