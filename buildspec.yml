@@ -18,8 +18,8 @@ phases:
 
   build:
     commands:
-      - npm install -g @vue/cli
-      - npm run build-vue
+      - sudo npm install -g @vue/cli
+      - sudo npm run build-vue
 
   post_build:
     commands:
