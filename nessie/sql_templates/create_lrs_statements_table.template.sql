@@ -27,7 +27,7 @@
 -- CREATE EXTERNAL SCHEMA
 --------------------------------------------------------------------
 
-CREATE EXTERNAL SCHEMA {redshift_schema_lrs_external}
+CREATE EXTERNAL SCHEMA IF NOT EXISTS {redshift_schema_lrs_external}
 FROM data catalog
 DATABASE '{redshift_schema_lrs_external}'
 IAM_ROLE '{redshift_iam_role}'
@@ -37,6 +37,8 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 --------------------------------------------------------------------
 -- External Tables
 --------------------------------------------------------------------
+
+DROP TABLE IF EXISTS {redshift_schema_lrs_external}.statements;
 
 CREATE EXTERNAL TABLE {redshift_schema_lrs_external}.statements(
     uuid VARCHAR,
