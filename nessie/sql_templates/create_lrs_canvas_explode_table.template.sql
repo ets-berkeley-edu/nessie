@@ -27,7 +27,7 @@
 -- CREATE EXTERNAL SCHEMA
 --------------------------------------------------------------------
 
-CREATE EXTERNAL SCHEMA {redshift_schema_lrs_external}
+CREATE EXTERNAL SCHEMA IF NOT EXISTS {redshift_schema_lrs_external}
 FROM data catalog
 DATABASE '{redshift_schema_lrs_external}'
 IAM_ROLE '{redshift_iam_role}'
@@ -38,12 +38,14 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 -- External Tables
 --------------------------------------------------------------------
 
-/***
-* Fixed caliper explode template with flexible data types.
-* Also, we unload all data in JSON format onto S3 so that it can accomodated changing schemas if more columns are added
-* Since we are working with S3 data doesn't have to be stroed on cluster and we can use Redshift Spectrum to engage with data
-***/
+/**
+ * Fixed Caliper explode template with flexible data types. We unload data in JSON format to S3 so that it can accommodate
+ * changing schemas if more columns are added, and so that it can be accessed via Redshift Spectrum rather than being stored
+ * on a cluster.
+ */
+
 DROP TABLE IF EXISTS {redshift_schema_lrs_external}.caliper_statements_explode_transient;
+
 CREATE EXTERNAL TABLE {redshift_schema_lrs_external}.caliper_statements_explode_transient (
     "@context" VARCHAR,
     action VARCHAR,
@@ -73,7 +75,8 @@ CREATE EXTERNAL TABLE {redshift_schema_lrs_external}.caliper_statements_explode_
     "generated.attempt.type" VARCHAR,
     "generated.extensions.com.instructure.canvas.entity_id" VARCHAR,
     "generated.extensions.com.instructure.canvas.grade" VARCHAR,
-    "generated.id" VARCHAR, "generated.maxscore" VARCHAR,
+    "generated.id" VARCHAR,
+    "generated.maxscore" VARCHAR,
     "generated.scoregiven" VARCHAR,
     "generated.scoredby" VARCHAR,
     "generated.type" VARCHAR,

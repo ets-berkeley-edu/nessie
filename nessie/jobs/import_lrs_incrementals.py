@@ -28,6 +28,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 
 from datetime import datetime
+from os import path
 from time import sleep
 
 from flask import current_app as app
@@ -149,18 +150,19 @@ class ImportLrsIncrementals(BackgroundJob):
             return True
 
     def unload_to_etl(self, schema, bucket, timestamped=True):
+        s3_url = 's3://' + bucket + '/' + app.config['LRS_CANVAS_INCREMENTAL_ETL_PATH_REDSHIFT']
         if timestamped:
-            path = '/' + localize_datetime(datetime.now()).strftime('%Y/%m/%d/statements_%Y%m%d_%H%M%S_')
+            s3_url += '/' + localize_datetime(datetime.now()).strftime('%Y/%m/%d/statements_%Y%m%d_%H%M%S_')
         else:
-            path = ''
+            s3_url += '/statements'
         credentials = ';'.join([
             f"aws_access_key_id={app.config['AWS_ACCESS_KEY_ID']}",
             f"aws_secret_access_key={app.config['AWS_SECRET_ACCESS_KEY']}",
         ])
-        return redshift.execute(
+        if not redshift.execute(
             f"""
                 UNLOAD ('SELECT statement FROM {schema}.statements')
-                TO 's3://{bucket}/{app.config['LRS_CANVAS_INCREMENTAL_ETL_PATH_REDSHIFT']}{path}'
+                TO '{s3_url}'
                 CREDENTIALS '{credentials}'
                 DELIMITER AS '  '
                 NULL AS ''
@@ -168,7 +170,9 @@ class ImportLrsIncrementals(BackgroundJob):
                 PARALLEL OFF
                 MAXFILESIZE 1 gb
             """
-        )
+        ):
+            app.logger.error(f'Error executing Redshift unload to {s3_url}.')
+        return self.verify_unloaded_count(s3_url)
 
     def verify_and_unload_transient(self):
         transient_url = f's3://{self.transient_bucket}/{self.transient_path}'
@@ -181,11 +185,12 @@ class ImportLrsIncrementals(BackgroundJob):
             app.logger.error(f'Redshift statements unload from {transient_schema} to {self.transient_bucket} failed.')
             return False
         redshift.drop_external_schema(transient_schema)
+        return True
 
     def verify_migration(self, incremental_url, incremental_schema):
         redshift.drop_external_schema(incremental_schema)
         resolved_ddl_transient = resolve_sql_template(
-            'create_lrs_schema.template.sql',
+            'create_lrs_statements_table.template.sql',
             redshift_schema_lrs_external=incremental_schema,
             loch_s3_lrs_statements_path=incremental_url,
         )
@@ -209,5 +214,36 @@ class ImportLrsIncrementals(BackgroundJob):
             app.logger.error(
                 f'Discrepancy between LRS ({self.lrs_statement_count} statements)'
                 f'and {incremental_url} ({redshift_statement_count} statements).'
+            )
+            return False
+
+    def verify_unloaded_count(self, url):
+        url = path.split(url)[0]
+        schema = app.config['REDSHIFT_SCHEMA_LRS']
+        resolved_ddl_transient_unloaded = resolve_sql_template(
+            'create_lrs_statements_unloaded_table.template.sql',
+            redshift_schema_lrs_external=schema,
+            loch_s3_lrs_statements_unloaded_path=url,
+        )
+        if redshift.execute_ddl_script(resolved_ddl_transient_unloaded):
+            app.logger.info(f"statements_unloaded table created in schema '{schema}'.")
+        else:
+            app.logger.error(f"Failed to create statements_unloaded table in schema '{schema}'.")
+            return False
+
+        redshift_response = redshift.fetch(f'select count(*) from {schema}.statements_unloaded')
+        if redshift_response:
+            unloaded_statement_count = redshift_response[0].get('count')
+        else:
+            app.logger.error('Failed to get unloaded statement count.')
+            return False
+
+        if unloaded_statement_count == self.lrs_statement_count:
+            app.logger.info(f'Verified {unloaded_statement_count} unloaded from LRS to {url}.')
+            return True
+        else:
+            app.logger.error(
+                f'Discrepancy between LRS ({self.lrs_statement_count} statements)'
+                f'and {url} ({unloaded_statement_count} statements).'
             )
             return False
