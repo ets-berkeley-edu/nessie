@@ -23,10 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Cleanup and resync job to handle failures from sync_canvas_snapshots."""
-
-
 import time
 
 from flask import current_app as app
@@ -35,6 +31,8 @@ from nessie.jobs.background_job import BackgroundJob
 from nessie.lib import metadata
 from nessie.lib.dispatcher import dispatch
 from nessie.lib.util import get_s3_canvas_daily_path
+
+"""Cleanup and resync job to handle failures from sync_canvas_snapshots."""
 
 
 class ResyncCanvasSnapshots(BackgroundJob):

@@ -23,9 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Client code to run queries against RDS."""
-
 from contextlib import contextmanager
 from datetime import datetime
 
@@ -33,6 +30,8 @@ from flask import current_app as app
 from nessie.lib.db import get_psycopg_cursor
 import psycopg2
 import psycopg2.extras
+
+"""Client code to run queries against RDS."""
 
 
 def execute(sql, params=None):

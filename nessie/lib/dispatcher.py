@@ -23,15 +23,14 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Client code allowing a master instance to dispatch requests to workers."""
-
 import base64
 from urllib.parse import urlunparse
 
 from flask import current_app as app
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
+
+"""Client code allowing a master instance to dispatch requests to workers."""
 
 
 @fixture('dispatch_{command}')

@@ -22,10 +22,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES,
 ENHANCEMENTS, OR MODIFICATIONS.
 """
-
-
-"""Logic for SIS student API import job."""
-
 import json
 
 from flask import current_app as app
@@ -33,6 +29,8 @@ from nessie.externals import redshift, s3, sis_student_api
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.queries import get_all_student_ids
 from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
+
+"""Logic for SIS student API import job."""
 
 
 class ImportSisStudentApi(BackgroundJob):

@@ -23,7 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
 import nessie.externals.sis_student_api as student_api
 from nessie.lib.mockingbird import MockResponse, register_mock
 import pytest

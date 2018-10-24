@@ -23,7 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
 from nessie.merged.sis_profile import get_holds, get_merged_sis_profile
 
 

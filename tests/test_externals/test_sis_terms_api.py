@@ -23,7 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
 from nessie.externals import sis_terms_api
 from nessie.lib.mockingbird import MockResponse, register_mock
 

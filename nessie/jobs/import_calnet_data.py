@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import json
+
 from flask import current_app as app
 from nessie.externals import calnet
 from nessie.externals import s3

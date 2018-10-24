@@ -23,14 +23,13 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Logic for transforming LRS Caliper statements."""
-
 from time import sleep
 
 from flask import current_app as app
 from nessie.externals import glue, s3
 from nessie.jobs.background_job import BackgroundJob
+
+"""Logic for transforming LRS Caliper statements."""
 
 
 class TransformLrsIncrementals(BackgroundJob):

@@ -23,12 +23,11 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Official access to SIS term data."""
-
 from flask import current_app as app
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
+
+"""Official access to SIS term data."""
 
 
 def get_term(term_id):

@@ -23,8 +23,8 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
 import json
+
 from flask import current_app as app
 from nessie import __version__ as version
 from nessie import db

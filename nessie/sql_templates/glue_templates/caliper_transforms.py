@@ -25,6 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import json
 import sys
+
 from awsglue.context import GlueContext
 from awsglue.dynamicframe import DynamicFrame
 from awsglue.job import Job
@@ -35,6 +36,7 @@ from pyspark.sql.types import StructType
 
 
 # Pyspark Glue still uses python 2.7 on the AWS cluster while Nessie is running python on 3.6.
+
 args = getResolvedOptions(
     sys.argv,
     [

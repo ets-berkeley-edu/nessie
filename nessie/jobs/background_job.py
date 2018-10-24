@@ -23,10 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Parent class for background jobs."""
-
-
 import os
 import re
 from threading import Thread
@@ -37,6 +33,8 @@ from nessie.externals import redshift
 from nessie.jobs.queue import get_job_queue
 from nessie.lib.metadata import create_background_job_status, update_background_job_status
 from nessie.models.util import advisory_lock
+
+"""Parent class for background jobs."""
 
 
 def verify_external_schema(schema, resolved_ddl):

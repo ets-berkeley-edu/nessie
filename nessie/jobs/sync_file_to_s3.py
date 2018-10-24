@@ -23,15 +23,13 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Logic for file sync to S3."""
-
-
 from botocore.exceptions import ClientError, ConnectionError
 from flask import current_app as app
 from nessie.externals import s3
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.metadata import create_canvas_snapshot, update_canvas_sync_status
+
+"""Logic for file sync to S3."""
 
 
 class SyncFileToS3(BackgroundJob):

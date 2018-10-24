@@ -23,14 +23,12 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Logic for RDS index creation job."""
-
-
 from flask import current_app as app
 from nessie.externals import rds
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.util import resolve_sql_template
+
+"""Logic for RDS index creation job."""
 
 
 class CreateRdsIndexes(BackgroundJob):

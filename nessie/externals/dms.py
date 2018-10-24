@@ -23,13 +23,11 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Client code to run AWS DMS operations."""
-
-
 import boto3
 from botocore.exceptions import ClientError, ConnectionError
 from flask import current_app as app
+
+"""Client code to run AWS DMS operations."""
 
 
 def create_s3_target(identifier, path):

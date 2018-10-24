@@ -23,11 +23,10 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""BOAC auth API."""
-
 from flask import current_app as app
 from nessie.lib import http
+
+"""BOAC auth API."""
 
 
 def kickoff_refresh():

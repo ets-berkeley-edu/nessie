@@ -23,14 +23,12 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Logic for Canvas schema creation job."""
-
-
 from flask import current_app as app
 from nessie.externals import redshift
 from nessie.jobs.background_job import BackgroundJob, verify_external_schema
 from nessie.lib.util import resolve_sql_template
+
+"""Logic for Canvas schema creation job."""
 
 
 class CreateCanvasSchema(BackgroundJob):

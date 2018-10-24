@@ -24,12 +24,12 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-"""Client code to connect to the Canvas API."""
-
-
 from flask import current_app as app
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
+
+
+"""Client code to connect to the Canvas API."""
 
 
 @fixture('canvas_course_enrollments_{course_id}')

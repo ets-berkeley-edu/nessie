@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import logging
+
 from nessie.externals import redshift, s3
 from nessie.jobs.sync_canvas_snapshots import delete_objects_with_prefix, SyncCanvasSnapshots
 import pytest

@@ -23,12 +23,10 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Background job queue."""
-
-
 from queue import Queue
 from threading import Thread
+
+"""Background job queue."""
 
 
 job_queue = None

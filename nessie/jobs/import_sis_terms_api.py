@@ -23,14 +23,13 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Logic for SIS terms API import job."""
-
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3, sis_terms_api
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.berkeley import reverse_term_ids
 from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
+
+"""Logic for SIS terms API import job."""
 
 
 class ImportSisTermsApi(BackgroundJob):

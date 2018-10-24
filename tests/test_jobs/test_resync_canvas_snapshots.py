@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import logging
+
 from nessie.externals import canvas_data, redshift
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.lib import metadata

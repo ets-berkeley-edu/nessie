@@ -23,8 +23,8 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
 import json
+
 from nessie.externals import asc_athletes_api
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.lib.mockingbird import MockResponse, register_mock

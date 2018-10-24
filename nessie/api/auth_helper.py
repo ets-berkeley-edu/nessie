@@ -23,8 +23,8 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
 from functools import wraps
+
 from flask import current_app as app, request
 from flask_login import current_user
 from nessie.api.errors import UnauthorizedRequestError
