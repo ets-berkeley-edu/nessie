@@ -48,6 +48,7 @@ from nessie.jobs.import_sis_enrollments_api import ImportSisEnrollmentsApi
 from nessie.jobs.import_sis_student_api import ImportSisStudentApi
 from nessie.jobs.import_sis_terms_api import ImportSisTermsApi
 from nessie.jobs.import_term_gpas import ImportTermGpas
+from nessie.jobs.index_enrollments import IndexEnrollments
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
@@ -162,6 +163,13 @@ def import_lrs_incrementals():
     else:
         truncate_lrs = False
     job_started = ImportLrsIncrementals(truncate_lrs=truncate_lrs).run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/index_enrollments/<term_id>', methods=['POST'])
+@auth_required
+def index_enrollments(term_id):
+    job_started = IndexEnrollments(term_id=term_id).run_async()
     return respond_with_status(job_started)
 
 
