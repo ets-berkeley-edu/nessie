@@ -23,10 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Logic for LRS incremental import job."""
-
-
 from datetime import datetime
 from os import path
 from time import sleep
@@ -35,6 +31,8 @@ from flask import current_app as app
 from nessie.externals import dms, lrs, redshift, s3
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.util import localize_datetime, resolve_sql_template
+
+"""Logic for LRS incremental import job."""
 
 
 class ImportLrsIncrementals(BackgroundJob):
@@ -169,7 +167,7 @@ class ImportLrsIncrementals(BackgroundJob):
                 ALLOWOVERWRITE
                 PARALLEL OFF
                 MAXFILESIZE 1 gb
-            """
+            """,
         ):
             app.logger.error(f'Error executing Redshift unload to {s3_url}.')
         return self.verify_unloaded_count(s3_url)
@@ -212,8 +210,8 @@ class ImportLrsIncrementals(BackgroundJob):
             return True
         else:
             app.logger.error(
-                f'Discrepancy between LRS ({self.lrs_statement_count} statements)'
-                f'and {incremental_url} ({redshift_statement_count} statements).'
+                f'Discrepancy between LRS ({self.lrs_statement_count} statements)',
+                f'and {incremental_url} ({redshift_statement_count} statements).',
             )
             return False
 
@@ -243,7 +241,7 @@ class ImportLrsIncrementals(BackgroundJob):
             return True
         else:
             app.logger.error(
-                f'Discrepancy between LRS ({self.lrs_statement_count} statements)'
-                f'and {url} ({unloaded_statement_count} statements).'
+                f'Discrepancy between LRS ({self.lrs_statement_count} statements)',
+                f'and {url} ({unloaded_statement_count} statements).',
             )
             return False

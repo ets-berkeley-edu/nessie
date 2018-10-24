@@ -23,8 +23,8 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
 import logging
+
 import nessie.externals.sis_enrollments_api as enrollments_api
 from nessie.lib.mockingbird import MockResponse, register_mock
 

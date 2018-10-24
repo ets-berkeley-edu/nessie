@@ -23,10 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Logic for merged student profile and term generation."""
-
-
 from datetime import datetime
 from itertools import groupby
 import json
@@ -44,6 +40,8 @@ from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_stri
 from nessie.merged.sis_profile import get_holds, get_merged_sis_profile
 from nessie.merged.student_terms import get_canvas_courses_feed, get_merged_enrollment_terms, merge_canvas_site_map
 import psycopg2.sql
+
+"""Logic for merged student profile and term generation."""
 
 
 class GenerateMergedStudentFeeds(BackgroundJob):
@@ -291,8 +289,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 )
                 self.rows['student_enrollment_terms'].append('\t'.join([str(sid), str(term_id), json.dumps(term_feed)]))
             app.logger.debug(
-                f'Enrollment term merge complete (uid={uid}, sid={sid}, term_id={term_id}, '
-                f'{datetime.now().timestamp() - ts} seconds)'
+                f'Enrollment term merge complete (uid={uid}, sid={sid}, term_id={term_id}, ',
+                f'{datetime.now().timestamp() - ts} seconds)',
             )
 
     def parse_holds(self, sid):
@@ -327,8 +325,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 params=tuple(delete_params),
             )
             app.logger.info(
-                f'Deleted existing rows from destination table {self.destination_schema}.{table} '
-                f"(term_id={term_id or 'all'}, {len(sids) if sids else 'all'} sids)."
+                f'Deleted existing rows from destination table {self.destination_schema}.{table} ',
+                f"(term_id={term_id or 'all'}, {len(sids) if sids else 'all'} sids).",
             )
 
         # Load new data from the staging tables into the destination table.

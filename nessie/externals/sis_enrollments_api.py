@@ -23,12 +23,11 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Official access to student enrollment data."""
-
 from flask import current_app as app
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
+
+"""Official access to student enrollment data."""
 
 
 def get_drops_and_midterms(cs_id, term_id):

@@ -23,15 +23,13 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Client code to run file operations against S3."""
-
-
 import boto3
 from botocore.exceptions import ClientError, ConnectionError
 from flask import current_app as app
 import requests
 import smart_open
+
+"""Client code to run file operations against S3."""
 
 
 def build_s3_url(key, credentials=True):

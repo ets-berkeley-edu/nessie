@@ -23,13 +23,11 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Official access to student data."""
-
-
 from flask import current_app as app
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
+
+"""Official access to student data."""
 
 
 def get_student(cs_id):

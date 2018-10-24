@@ -23,10 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Client code to run queries against Redshift."""
-
-
 from contextlib import contextmanager
 from datetime import datetime
 import io
@@ -38,6 +34,8 @@ from nessie.lib.db import get_psycopg_cursor
 import psycopg2
 import psycopg2.extras
 import psycopg2.sql
+
+"""Client code to run queries against Redshift."""
 
 
 def execute(sql, **kwargs):

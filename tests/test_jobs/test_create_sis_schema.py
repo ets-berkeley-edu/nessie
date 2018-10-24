@@ -25,6 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from datetime import datetime, timedelta
 import json
+
 from nessie.externals import s3
 from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.lib.util import get_s3_sis_daily_path
@@ -56,8 +57,8 @@ class TestCreateSisSchema:
 
             enrollments_manifest = json.loads(s3.get_object_text(manifest_path + '/enrollments.json'))
             assert len(enrollments_manifest['entries']) == 3
-            assert (enrollments_manifest['entries'][2]['url'] ==
-                    f's3://{app.config["LOCH_S3_BUCKET"]}/{historical_path}/enrollments/enrollments-fff.gz')
+            assert (enrollments_manifest['entries'][2]['url']
+                    == f's3://{app.config["LOCH_S3_BUCKET"]}/{historical_path}/enrollments/enrollments-fff.gz')
             assert enrollments_manifest['entries'][2]['meta']['content_length'] == 38
 
     def test_fallback_update_manifests(self, app):
@@ -84,6 +85,6 @@ class TestCreateSisSchema:
 
             enrollments_manifest = json.loads(s3.get_object_text(manifest_path + '/enrollments.json'))
             assert len(enrollments_manifest['entries']) == 3
-            assert (enrollments_manifest['entries'][2]['url'] ==
-                    f's3://{app.config["LOCH_S3_BUCKET"]}/{historical_path}/enrollments/enrollments-fff.gz')
+            assert (enrollments_manifest['entries'][2]['url']
+                    == f's3://{app.config["LOCH_S3_BUCKET"]}/{historical_path}/enrollments/enrollments-fff.gz')
             assert enrollments_manifest['entries'][2]['meta']['content_length'] == 38

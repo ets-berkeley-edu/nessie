@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from contextlib import contextmanager
+
 import psycopg2
 import psycopg2.extras
 import psycopg2.sql

@@ -23,7 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
 from nessie.externals import canvas_api
 from nessie.lib.mockingbird import MockResponse, register_mock
 from tests.util import capture_app_logs

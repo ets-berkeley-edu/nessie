@@ -23,7 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
 from itertools import groupby
 import math
 import operator
@@ -90,8 +89,8 @@ def student_analytics(canvas_user_id, canvas_course_id, canvas_site_map):
         _error = {'error': 'Redshift query returned no results'}
         return {'currentScore': _error, 'lastActivity': _error}
     app.logger.debug(
-        'Score/activity query complete, will calculate statistics'
-        f'(canvas_user_id={canvas_user_id}, canvas_course_id={canvas_course_id})'
+        'Score/activity query complete, will calculate statistics',
+        f'(canvas_user_id={canvas_user_id}, canvas_course_id={canvas_course_id})',
     )
     df = pandas.DataFrame(enrollments, columns=['canvas_user_id', 'current_score', 'last_activity_at'])
     student_row = df.loc[df['canvas_user_id'].values == int(canvas_user_id)]

@@ -23,10 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Logic for Canvas snapshot sync job."""
-
-
 import re
 import time
 
@@ -36,6 +32,8 @@ from nessie.jobs.background_job import BackgroundJob
 from nessie.lib import metadata
 from nessie.lib.dispatcher import dispatch
 from nessie.lib.util import get_s3_canvas_daily_path
+
+"""Logic for Canvas snapshot sync job."""
 
 
 def delete_objects_with_prefix(prefix, whitelist=[]):

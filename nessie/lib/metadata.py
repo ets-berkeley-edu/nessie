@@ -23,7 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
 from datetime import datetime
 import os
 
@@ -151,7 +150,7 @@ def update_merged_feed_status(term_id, successes, failures):
             IAM_ROLE '{redshift_iam_role}'
             DELIMITER '\\t'
             TIMEFORMAT 'YYYY-MM-DDTHH:MI:SS';
-        """
+        """,
     )
     if not redshift.execute(query):
         app.logger.error('Error copying merged feed status updates to Redshift.')

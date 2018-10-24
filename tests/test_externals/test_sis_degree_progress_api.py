@@ -23,8 +23,8 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
 import re
+
 from nessie.externals import sis_degree_progress_api
 from nessie.lib.mockingbird import MockResponse, register_mock
 

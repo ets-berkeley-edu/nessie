@@ -23,13 +23,11 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Logic for Creating LRS Caliper glue job to transform canvas caliper statements."""
-
-
 from flask import current_app as app
 from nessie.externals import glue
 from nessie.jobs.background_job import BackgroundJob
+
+"""Logic for Creating LRS Caliper glue job to transform canvas caliper statements."""
 
 
 class CreateLrsGlueJobs(BackgroundJob):

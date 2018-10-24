@@ -23,7 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
 from nessie.merged.student_terms import get_canvas_courses_feed, get_merged_enrollment_terms, merge_canvas_site_map
 
 

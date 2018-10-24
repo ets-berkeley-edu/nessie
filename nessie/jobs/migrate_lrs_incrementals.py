@@ -23,16 +23,14 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Logic for migrating LRS incrementals after transformation."""
-
-
 from datetime import datetime
 
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.util import localize_datetime, resolve_sql_template
+
+"""Logic for migrating LRS incrementals after transformation."""
 
 
 class MigrateLrsIncrementals(BackgroundJob):
@@ -127,7 +125,7 @@ class MigrateLrsIncrementals(BackgroundJob):
             return True
         else:
             app.logger.error(
-                f'Discrepancy between pre-transform statement count ({self.pre_transform_statement_count} statements)'
-                f'and transformed statements at {url} ({exploded_statement_count} statements).'
+                f'Discrepancy between pre-transform statement count ({self.pre_transform_statement_count} statements)',
+                f'and transformed statements at {url} ({exploded_statement_count} statements).',
             )
             return False

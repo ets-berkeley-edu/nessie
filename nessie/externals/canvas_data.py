@@ -23,9 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Client code to connect to the Canvas Data API."""
-
 import base64
 from datetime import datetime
 import hashlib
@@ -35,6 +32,8 @@ from urllib.parse import urlparse, urlunparse
 from flask import current_app as app
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
+
+"""Client code to connect to the Canvas Data API."""
 
 
 @fixture('canvas_data_file_sync')

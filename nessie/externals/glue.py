@@ -23,12 +23,10 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Client code to run AWS Glue operations."""
-
-
 import boto3
 from flask import current_app as app
+
+"""Client code to run AWS Glue operations."""
 
 
 def get_client():

@@ -23,6 +23,8 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from nessie.factory import create_app
+from pprintpp import pprint as pp # noqa
 
 """Run Flask-wrapped code from a Python console.
 
@@ -44,9 +46,6 @@ ENHANCEMENTS, OR MODIFICATIONS.
 [
     Record(id=12340000001234567, canvas_id=1234567 course_id=12340000009876564, title='Diagnostic Essay'...
 """
-
-from nessie.factory import create_app
-from pprintpp import pprint as pp # noqa
 
 app = create_app()
 ac = app.app_context()

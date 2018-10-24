@@ -34,7 +34,6 @@ from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.util import get_s3_asc_daily_path, resolve_sql_template_string
 import psycopg2
 
-
 """Logic for ASC profile generation job."""
 
 

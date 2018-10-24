@@ -23,13 +23,11 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Logic for BOAC cache refresh kickoff."""
-
-
 from flask import current_app as app
 from nessie.externals import boac
 from nessie.jobs.background_job import BackgroundJob
+
+"""Logic for BOAC cache refresh kickoff."""
 
 
 class RefreshBoacCache(BackgroundJob):

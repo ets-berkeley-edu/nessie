@@ -23,9 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Logic for SIS enrollments API import job."""
-
 import json
 
 from flask import current_app as app
@@ -34,6 +31,8 @@ from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.berkeley import current_term_id
 from nessie.lib.queries import get_all_student_ids
 from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
+
+"""Logic for SIS enrollments API import job."""
 
 
 class ImportSisEnrollmentsApi(BackgroundJob):

@@ -23,14 +23,13 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
-"""Official access to undergraduate degree progress."""
-
 from flask import current_app as app
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
 from requests.auth import HTTPBasicAuth
 import xmltodict
+
+"""Official access to undergraduate degree progress."""
 
 
 def parsed_degree_progress(cs_id):
