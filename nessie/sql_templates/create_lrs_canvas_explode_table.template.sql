@@ -44,9 +44,9 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
  * on a cluster.
  */
 
-DROP TABLE IF EXISTS {redshift_schema_lrs_external}.caliper_statements_explode_transient;
+DROP TABLE IF EXISTS {redshift_schema_lrs_external}.{canvas_caliper_explode_table};
 
-CREATE EXTERNAL TABLE {redshift_schema_lrs_external}.caliper_statements_explode_transient (
+CREATE EXTERNAL TABLE {redshift_schema_lrs_external}.{canvas_caliper_explode_table} (
     "@context" VARCHAR,
     action VARCHAR,
     "actor.extensions.com.instructure.canvas.entity_id" VARCHAR,
@@ -158,4 +158,4 @@ CREATE EXTERNAL TABLE {redshift_schema_lrs_external}.caliper_statements_explode_
     type VARCHAR
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
-LOCATION '{loch_s3_caliper_transient_explode_path}';
+LOCATION '{loch_s3_caliper_explode_path}';
