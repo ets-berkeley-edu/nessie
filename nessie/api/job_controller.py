@@ -37,6 +37,7 @@ from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.jobs.delete_lrs_glue_jobs import DeleteLrsGlueJobs
 from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
+from nessie.jobs.generate_canvas_caliper_analytics import GenerateCanvasCaliperAnalytics
 from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
 from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
@@ -111,6 +112,13 @@ def generate_asc_profiles():
 @auth_required
 def generate_boac_analytics():
     job_started = GenerateBoacAnalytics().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/generate_canvas_caliper_analytics', methods=['POST'])
+@auth_required
+def generate_canvas_caliper_analytics():
+    job_started = GenerateCanvasCaliperAnalytics().run_async()
     return respond_with_status(job_started)
 
 
