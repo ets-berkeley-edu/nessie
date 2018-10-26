@@ -28,6 +28,5 @@ install:
   - pip3 install tox
   - npm install
 
-# TODO: Add `npm run test` to the list below
 script:
   - tox

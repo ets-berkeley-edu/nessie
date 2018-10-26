@@ -40,7 +40,9 @@ class ImportDegreeProgress(BackgroundJob):
 
     def run(self, csids=None):
         if not csids:
-            csids = [row['sid'] for row in get_all_student_ids()]
+            all_sids = get_all_student_ids()
+            if all_sids:
+                csids = [row['sid'] for row in all_sids]
         app.logger.info(f'Starting SIS degree progress API import job for {len(csids)} students...')
 
         rows = []

@@ -103,6 +103,15 @@ def delete_canvas_snapshots(keys):
     return redshift.execute(sql, params=[tuple(filenames)], schema=_schema())
 
 
+def background_job_status_by_date(created_date):
+    sql = 'SELECT * FROM {schema}.background_job_status WHERE cast(created_at as date) = %s'
+    return redshift.fetch(
+        sql,
+        params=[created_date.strftime('%Y-%m-%d')],
+        schema=_schema(),
+    )
+
+
 def create_background_job_status(job_id):
     sql = """INSERT INTO {schema}.background_job_status
                (job_id, status, instance_id, created_at, updated_at)
