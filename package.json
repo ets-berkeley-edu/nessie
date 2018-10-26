@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build-vue": "vue-cli-service build --modern --dest 'dist/static'",
-    "lint-vue": "vue-cli-service lint --no-fix",
+    "lint-vue": "vue-cli-service lint",
     "serve-vue": "vue-cli-service serve --open",
     "test-vue": "vue-cli-service test:unit"
   },
@@ -44,10 +44,6 @@
     "ts-jest": "^23.0.0",
     "typescript": "~3.0.1",
     "vue-template-compiler": "^2.5.17"
-  },
-  "vue": {
-    "baseUrl": "/static",
-    "lintOnSave": true
   },
   "babel": {
     "presets": [

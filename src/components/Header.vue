@@ -6,11 +6,11 @@
         to="/">
         <img
           src="@/assets/logo.png"
-          width="40px"><strong>Nessie</strong>
+          width="40px">
       </router-link>
     </div>
     <div v-if="user">
-      <div>Hello {{ user }}</div>
+      <div>Hello {{ user.uid }}</div>
       <button class="logout" @click="logOut">
         Logout
       </button>
