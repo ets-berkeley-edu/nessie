@@ -85,7 +85,6 @@ class ImportLrsIncrementals(BackgroundJob):
                 transient_keys,
                 destination_bucket,
                 destination_path,
-                unload_to_etl=True,
             ):
                 return False
 
@@ -129,7 +128,7 @@ class ImportLrsIncrementals(BackgroundJob):
                 app.logger.info(f'Deleted {len(old_unloads)} old unloads from {self.transient_bucket}.')
         return True
 
-    def migrate_transient_to_destination(self, keys, destination_bucket, destination_path, unload_to_etl=False):
+    def migrate_transient_to_destination(self, keys, destination_bucket, destination_path):
             destination_url = 's3://' + destination_bucket + '/' + destination_path
             destination_schema = app.config['REDSHIFT_SCHEMA_LRS']
 
@@ -140,10 +139,6 @@ class ImportLrsIncrementals(BackgroundJob):
                     return False
             if not self.verify_migration(destination_url, destination_schema):
                 return False
-            if unload_to_etl:
-                if not self.unload_to_etl(destination_schema, destination_bucket):
-                    app.logger.error(f'Redshift statements unload from {destination_schema} to {destination_bucket} failed.')
-                    return False
             redshift.drop_external_schema(destination_schema)
             return True
 
