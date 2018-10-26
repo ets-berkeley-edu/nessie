@@ -1,13 +1,11 @@
 <template>
   <div class="header">
     <div>
-      <router-link
-        class="brand"
-        to="/">
-        <img
-          src="@/assets/logo.png"
-          width="40px">
-      </router-link>
+      <router-link to="/"><img src="@/assets/logo.png" width="40px"></router-link>
+    </div>
+    <div class="breadcrumb">
+      <router-link to="/">Home</router-link>
+      | <router-link to="schedule" v-if="user">Schedule</router-link>
     </div>
     <div v-if="user">
       <div>Hello {{ user.uid }}</div>
@@ -56,9 +54,12 @@ a {
   justify-content: space-between;
   padding: 25px;
 }
-.brand {
+.breadcrumb {
   display: flex;
   align-items: center;
+}
+.breadcrumb a {
+  padding: 0 10px 0 10px;
 }
 .logout {
   &:hover {

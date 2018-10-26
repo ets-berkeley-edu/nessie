@@ -1,6 +1,5 @@
 <template>
   <div>
-    <p class="failed" v-if="error" v-bind="error"></p>
     <h2>Failures from last sync: {{ lastSyncJobId }}</h2>
     <div v-if="!failuresFromLastSync.length">
       None
@@ -8,27 +7,53 @@
     <div v-for="failure in failuresFromLastSync" :key="failure">
       {{ failure }}
     </div>
-    <h2>Background Jobs of {{ date.toLocaleDateString() }}</h2>
-    <b-table striped hover :items="jobStatuses"></b-table>
+    <h2>Background Jobs of <datepicker placeholder="Select Date"
+                                       v-model="jobsDate"
+                                       @disabled="jobStatuses.loading"
+                                       @closed="getBackgroundJobStatus"></datepicker></h2>
+
+    <div v-if="jobStatuses.loading">
+      <i class="fas fa-sync fa-spin fa-5x"></i>
+      <span role="alert" aria-live="passive" class="sr-only">Loading...</span>
+    </div>
+    <b-table striped
+             hover
+             :items="jobStatuses.rows"
+             :fields="jobStatuses.fields"
+             v-if="!jobStatuses.loading"></b-table>
   </div>
 </template>
 
 <script>
 import { getBackgroundJobStatus, getFailuresFromLastSync } from '@/api/job';
+import Datepicker from 'vuejs-datepicker';
 
 export default {
   name: 'JobMetadata',
+  components: {
+    Datepicker
+  },
   created() {
     this.getFailuresFromLastSync();
-    this.getJobStatusesFromToday();
+    this.getBackgroundJobStatus();
   },
   data() {
     return {
-      date: new Date(),
+      jobsDate: new Date(),
       error: null,
       lastSyncJobId: null,
       failuresFromLastSync: [],
-      jobStatuses: []
+      jobStatuses: {
+        rows: [],
+        fields: [
+          { key: 'id', sortable: true },
+          { key: 'status', sortable: true },
+          { key: 'details' },
+          { key: 'started', sortable: true },
+          { key: 'finished', sortable: true }
+        ],
+        loading: true
+      }
     };
   },
   methods: {
@@ -40,9 +65,13 @@ export default {
         })
         .catch(err => (this.error = err.message));
     },
-    getJobStatusesFromToday() {
-      getBackgroundJobStatus(this.date)
-        .then(data => (this.jobStatuses = data))
+    getBackgroundJobStatus() {
+      this.jobStatuses.loading = true;
+      getBackgroundJobStatus(this.jobsDate)
+        .then(data => {
+          this.jobStatuses.rows = data;
+          this.jobStatuses.loading = false;
+        })
         .catch(err => (this.error = err.message));
     }
   }

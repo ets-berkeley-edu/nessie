@@ -3,7 +3,7 @@ import Router from 'vue-router';
 import store from './store';
 import { getMyProfile, getCasLoginURL } from './api/user';
 import Home from '@/views/Home.vue';
-import Job from '@/views/Job.vue';
+import Schedule from '@/views/Schedule.vue';
 
 Vue.use(Router);
 
@@ -16,9 +16,9 @@ const router = new Router({
       component: Home
     },
     {
-      path: '/job/:id',
-      name: 'job',
-      component: Job,
+      path: '/schedule',
+      name: 'schedule',
+      component: Schedule,
       meta: {
         requiresAuth: true
       }
