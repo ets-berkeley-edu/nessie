@@ -44,18 +44,21 @@ class MigrateLrsIncrementals(BackgroundJob):
             app.logger.error(f'Failed to retrieve pre-transform statement count.')
             return False
 
-        output_path = app.config['LRS_CANVAS_CALIPER_EXPLODE_OUTPUT_PATH']
-        output_url = 's3://' + self.transient_bucket + '/' + output_path
+        self.source_output_path = app.config['LRS_CANVAS_CALIPER_EXPLODE_OUTPUT_PATH']
+        if self.source_output_path.endswith('/'):
+            self.source_output_path = self.source_output_path[:-1]
+
+        output_url = 's3://' + self.transient_bucket + '/' + self.source_output_path
         if not self.verify_post_transform_statement_count(output_url):
             app.logger.error(f'Failed to verify transformed statements at {output_url}.')
             return False
 
-        etl_output_keys = s3.get_keys_with_prefix(output_path, bucket=self.transient_bucket)
+        etl_output_keys = s3.get_keys_with_prefix(self.source_output_path, bucket=self.transient_bucket)
         if not etl_output_keys:
             app.logger.error('Could not retrieve S3 keys from transient bucket.')
             return False
 
-        timestamped_destination_path = output_path + '/' + localize_datetime(datetime.now()).strftime('%Y/%m/%d/%H%M%S')
+        timestamped_destination_path = self.source_output_path + '/' + localize_datetime(datetime.now()).strftime('%Y/%m/%d/%H%M%S')
         for destination_bucket in app.config['LRS_CANVAS_INCREMENTAL_DESTINATION_BUCKETS']:
             if not self.migrate_transient_to_destination(
                 etl_output_keys,
@@ -65,14 +68,14 @@ class MigrateLrsIncrementals(BackgroundJob):
                 return False
 
         return (
-            f'Migrated {self.lrs_statement_count} statements to S3'
+            f'Migrated {self.pre_transform_statement_count} statements to S3'
             f"(buckets={app.config['LRS_CANVAS_INCREMENTAL_DESTINATION_BUCKETS']}, path={timestamped_destination_path})"
         )
 
     def migrate_transient_to_destination(self, keys, destination_bucket, destination_path):
         destination_url = 's3://' + destination_bucket + '/' + destination_path
         for source_key in keys:
-            destination_key = source_key.replace(self.transient_path, destination_path)
+            destination_key = source_key.replace(self.source_output_path, destination_path)
             if not s3.copy(self.transient_bucket, source_key, destination_bucket, destination_key):
                 app.logger.error(f'Copy from transient bucket to destination bucket {destination_bucket} failed.')
                 return False
