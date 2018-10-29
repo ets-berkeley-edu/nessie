@@ -3,22 +3,42 @@ import Vuex from 'vuex';
 
 Vue.use(Vuex);
 
-export default new Vuex.Store({
-  state: {
-    apiBaseURL: process.env.VUE_APP_API_BASE_URL,
-    user: null
+const state = {
+  apiBaseURL: process.env.VUE_APP_API_BASE_URL,
+  errors: [],
+  user: null
+};
+
+const getters = {
+  errors: (state: any) => {
+    return state.errors;
   },
-  getters: {
-    user(state) {
-      return state.user;
-    }
+  user: (state: any) => {
+    return state.user;
+  }
+};
+
+const mutations = {
+  logout: (state: any) => {
+    state.user = null;
   },
-  mutations: {
-    registerMe(state, user) {
-      state.user = user;
-    },
-    logout(state) {
-      state.user = null;
+  registerMe: (state: any, user: any) => {
+    state.user = user;
+  },
+  reportError: (state: any, error: any) => {
+    error.id = new Date().getTime();
+    state.errors.push(error);
+  },
+  dismissError: (state: any, id: number) => {
+    const indexOf = state.errors.findIndex((e: any) => e.id === id);
+    if (indexOf > -1) {
+      state.errors.splice(indexOf, 1);
     }
   }
+};
+
+export default new Vuex.Store({
+  state,
+  getters,
+  mutations
 });

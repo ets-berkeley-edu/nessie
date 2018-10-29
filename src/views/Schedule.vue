@@ -54,11 +54,7 @@ export default {
   },
   methods: {
     getSchedule() {
-      getSchedule()
-        .then(data => {
-          this.jobs = data;
-        })
-        .catch(error => console.log(error));
+      getSchedule().then(data => this.jobs = data);
     }
   }
 };
