@@ -209,6 +209,13 @@ def create_lrs_glue_jobs():
     return respond_with_status(job_started)
 
 
+@app.route('/api/job/migrate_lrs_incrementals', methods=['POST'])
+@auth_required
+def migrate_lrs_incrementals():
+    job_started = MigrateLrsIncrementals().run_async()
+    return respond_with_status(job_started)
+
+
 @app.route('/api/job/transform_lrs_incrementals', methods=['POST'])
 @auth_required
 def transform_lrs_incrementals():
