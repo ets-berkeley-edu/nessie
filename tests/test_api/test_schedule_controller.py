@@ -53,6 +53,7 @@ class TestGetSchedule:
             'CreateSisSchema',
             'GenerateIntermediateTables',
             'IndexEnrollments',
+            'GenerateCanvasCaliperAnalytics',
             'GenerateBoacAnalytics',
         ]
         assert generate_tables_job['trigger'] == "cron[hour='3', minute='30']"
