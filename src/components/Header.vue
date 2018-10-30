@@ -3,18 +3,15 @@
     <div>
       <router-link to="/"><img src="@/assets/logo.png" width="40px"></router-link>
     </div>
-    <div class="breadcrumb">
+    <div class="breadcrumb" v-if="user">
       <router-link to="/">Home</router-link>
-      | <router-link to="schedule" v-if="user">Schedule</router-link>
+      | <router-link to="schedule">Schedule</router-link>
     </div>
     <div v-if="user">
       <div>Hello {{ user.uid }}</div>
       <button class="logout" @click="logOut">
         Logout
       </button>
-    </div>
-    <div v-if="!user">
-      <button @click="logIn">Log in</button>
     </div>
   </div>
 </template>
