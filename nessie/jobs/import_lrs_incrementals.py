@@ -37,7 +37,7 @@ from nessie.lib.util import localize_datetime, resolve_sql_template
 
 class ImportLrsIncrementals(BackgroundJob):
 
-    def run(self, truncate_lrs=False):
+    def run(self, truncate_lrs=True):
         app.logger.info('Starting DMS replication task...')
         task_id = app.config['LRS_CANVAS_INCREMENTAL_REPLICATION_TASK_ID']
 

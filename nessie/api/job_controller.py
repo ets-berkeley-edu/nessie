@@ -87,26 +87,6 @@ def create_sis_schema():
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/full_caliper_import', methods=['POST'])
-@auth_required
-def full_caliper_import():
-    args = get_json_args(request)
-    if args:
-        truncate_lrs = args.get('truncate_lrs')
-    else:
-        truncate_lrs = False
-    chained_job = ChainedBackgroundJob(
-        steps=[
-            ImportLrsIncrementals(truncate_lrs=truncate_lrs),
-            TransformLrsIncrementals(),
-            MigrateLrsIncrementals(),
-            GenerateCanvasCaliperAnalytics(),
-        ],
-    )
-    job_started = chained_job.run_async()
-    return respond_with_status(job_started)
-
-
 @app.route('/api/job/generate_all_tables', methods=['POST'])
 @auth_required
 def generate_all_tables():
@@ -115,6 +95,8 @@ def generate_all_tables():
             CreateCanvasSchema(),
             CreateSisSchema(),
             GenerateIntermediateTables(),
+            IndexEnrollments(),
+            GenerateCanvasCaliperAnalytics(),
             GenerateBoacAnalytics(),
         ],
     )
@@ -206,6 +188,25 @@ def index_enrollments(term_id):
 @auth_required
 def create_lrs_glue_jobs():
     job_started = CreateLrsGlueJobs().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/load_lrs_incrementals', methods=['POST'])
+@auth_required
+def full_caliper_import():
+    args = get_json_args(request)
+    if args:
+        truncate_lrs = args.get('truncate_lrs')
+    else:
+        truncate_lrs = False
+    chained_job = ChainedBackgroundJob(
+        steps=[
+            ImportLrsIncrementals(truncate_lrs=truncate_lrs),
+            TransformLrsIncrementals(),
+            MigrateLrsIncrementals(),
+        ],
+    )
+    job_started = chained_job.run_async()
     return respond_with_status(job_started)
 
 

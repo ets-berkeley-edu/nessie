@@ -75,6 +75,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.create_sis_schema import CreateSisSchema
     from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
+    from nessie.jobs.generate_canvas_caliper_analytics import GenerateCanvasCaliperAnalytics
     from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
     from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
     from nessie.jobs.import_asc_athletes import ImportAscAthletes
@@ -85,9 +86,11 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.import_sis_enrollments_api import ImportSisEnrollmentsApi
     from nessie.jobs.import_sis_student_api import ImportSisStudentApi
     from nessie.jobs.index_enrollments import IndexEnrollments
+    from nessie.jobs.migrate_lrs_incrementals import MigrateLrsIncrementals
     from nessie.jobs.refresh_boac_cache import RefreshBoacCache
     from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
     from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
+    from nessie.jobs.transform_lrs_incrementals import TransformLrsIncrementals
 
     schedule_job(sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots, force)
     schedule_job(sched, 'JOB_RESYNC_CANVAS_SNAPSHOTS', ResyncCanvasSnapshots, force)
@@ -104,10 +107,19 @@ def schedule_all_jobs(force=False):
         force,
     )
     schedule_job(sched, 'JOB_IMPORT_DEGREE_PROGRESS', ImportDegreeProgress, force)
-    schedule_job(sched, 'JOB_IMPORT_LRS_INCREMENTALS', ImportLrsIncrementals, force, truncate_lrs=True)
     schedule_job(sched, 'JOB_IMPORT_SIS_ENROLLMENTS', ImportSisEnrollmentsApi, force)
     schedule_job(sched, 'JOB_IMPORT_SIS_STUDENTS', ImportSisStudentApi, force)
     schedule_job(sched, 'JOB_IMPORT_CANVAS_ENROLLMENTS', ImportCanvasEnrollmentsApi, force)
+    schedule_chained_job(
+        sched,
+        'JOB_LOAD_LRS_INCREMENTALS',
+        [
+            ImportLrsIncrementals,
+            TransformLrsIncrementals,
+            MigrateLrsIncrementals,
+        ],
+        force,
+    )
     schedule_chained_job(
         sched,
         'JOB_GENERATE_ALL_TABLES',
@@ -116,6 +128,7 @@ def schedule_all_jobs(force=False):
             CreateSisSchema,
             GenerateIntermediateTables,
             IndexEnrollments,
+            GenerateCanvasCaliperAnalytics,
             GenerateBoacAnalytics,
         ],
         force,

@@ -114,7 +114,7 @@ AS (
             LEFT JOIN course_home_nav_events home_nav
                 ON requests.uuid = home_nav.uuid
     ),
-    last_user_activty
+    last_user_activity
     AS (
         SELECT
             "actor.id" AS canvas_global_user_id,
@@ -130,7 +130,7 @@ AS (
         q3.canvas_id as canvas_course_id,
         q1.last_activity,
         DATEDIFF(days, q1.last_activity, getdate()) AS days_since_last_activity
-    FROM last_user_activty q1
+    FROM last_user_activity q1
         LEFT JOIN {redshift_schema_canvas}.user_dim q2
             ON q1.canvas_global_user_id = q2.global_canvas_id
         LEFT JOIN {redshift_schema_canvas}.course_dim q3

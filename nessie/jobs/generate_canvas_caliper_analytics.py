@@ -39,7 +39,6 @@ class GenerateCanvasCaliperAnalytics(BackgroundJob):
         caliper_explode_url = 's3://{}/{}'.format(app.config['LOCH_S3_BUCKET'], app.config['LRS_CANVAS_CALIPER_EXPLODE_OUTPUT_PATH'])
         resolved_ddl_caliper_explode = resolve_sql_template(
             'create_lrs_canvas_explode_table.template.sql',
-            redshift_schema_lrs_external=redshift_schema_lrs_external,
             canvas_caliper_explode_table=canvas_caliper_explode_table,
             loch_s3_caliper_explode_path=caliper_explode_url,
         )
@@ -56,18 +55,10 @@ class GenerateCanvasCaliperAnalytics(BackgroundJob):
         if redshift_response:
             if redshift_response[0].get('count'):
                 app.logger.info('Generating user request tables and caliper analytics.')
-                redshift_schema_canvas = app.config['REDSHIFT_SCHEMA_CANVAS']
-                redshift_schema_caliper_analytics = app.config['REDSHIFT_SCHEMA_CALIPER']
 
-                resolved_ddl_caliper_analytics = resolve_sql_template(
-                    'generate_caliper_analytics.template.sql',
-                    redshift_schema_lrs_external=redshift_schema_lrs_external,
-                    redshift_schema_canvas=redshift_schema_canvas,
-                    redshift_schema_caliper_analytics=redshift_schema_caliper_analytics,
-                )
+                resolved_ddl_caliper_analytics = resolve_sql_template('generate_caliper_analytics.template.sql')
                 if redshift.execute_ddl_script(resolved_ddl_caliper_analytics):
-                    app.logger.info('Caliper analytics tables successfully created.')
-                    return True
+                    return 'Caliper analytics tables successfully created.'
                 else:
                     app.logger.error('Caliper analytics tables creation failed.')
                     return False
