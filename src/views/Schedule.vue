@@ -54,7 +54,7 @@ export default {
   },
   methods: {
     getSchedule() {
-      getSchedule().then(data => this.jobs = data);
+      getSchedule().then(data => (this.jobs = data));
     }
   }
 };
