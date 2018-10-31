@@ -70,10 +70,12 @@ class IndexEnrollments(BackgroundJob):
                 row['sis_course_title'],
                 row['sis_instruction_format'],
                 row['sis_section_num'],
+                row['instructors'],
             ])
         insert_result = transaction.insert_bulk(
             f"""INSERT INTO {self.destination_schema}.enrolled_primary_sections
-                (term_id, sis_section_id, sis_course_name, sis_course_name_compressed, sis_course_title, sis_instruction_format, sis_section_num)
+                (term_id, sis_section_id, sis_course_name, sis_course_name_compressed, sis_course_title,
+                sis_instruction_format, sis_section_num, instructors)
                 VALUES %s""",
             [insertable_tuple(r) for r in section_results],
         )
