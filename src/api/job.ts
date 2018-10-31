@@ -15,11 +15,11 @@ export function getBackgroundJobStatus(date: Date) {
         store.state.apiBaseURL
       }/api/metadata/background_job_status?date=${isoString}`
     )
-    .then(response => response.data);
+    .then(response => response.data, err => err.response);
 }
 
-export function getFailuresFromLastSync() {
+export function getRunnableJobs() {
   return axios
-    .post(`${store.state.apiBaseURL}/api/metadata/failures_from_last_sync`)
+    .get(`${store.state.apiBaseURL}/api/admin/runnable_jobs`)
     .then(response => response.data, err => err.response);
 }

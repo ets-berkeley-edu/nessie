@@ -1,12 +1,29 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import store from '@/store';
+import { getRunnableJobs } from '@/api/job';
 import { getMyProfile } from '@/api/user';
 import Login from '@/views/Login.vue';
 import Home from '@/views/Home.vue';
 import Schedule from '@/views/Schedule.vue';
 
 Vue.use(VueRouter);
+
+let registerMe = () => {
+  return Promise.resolve(
+    getMyProfile().then(me => {
+      if (me) {
+        store.commit('registerMe', me);
+        getRunnableJobs().then(data => {
+          store.commit('cacheRunnableJobs', data);
+          return me;
+        });
+      } else {
+        return null;
+      }
+    })
+  );
+};
 
 let beforeEach = (to: any, from: any, next: any) => {
   let safeNext = (to: any, next: any) => {
@@ -19,12 +36,7 @@ let beforeEach = (to: any, from: any, next: any) => {
   if (store.getters.user) {
     safeNext(to, next);
   } else {
-    getMyProfile().then(me => {
-      if (me) {
-        store.commit('registerMe', me);
-      }
-      safeNext(to, next);
-    });
+    registerMe().then(() => safeNext(to, next));
   }
 };
 

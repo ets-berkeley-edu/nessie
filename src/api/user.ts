@@ -8,7 +8,6 @@ export function getCasLoginURL() {
 }
 
 export function getMyProfile() {
-  console.log(`${store.state.apiBaseURL}/api/user/profile`);
   return axios
     .get(`${store.state.apiBaseURL}/api/user/profile`)
     .then(response => response.data, err => err.response);

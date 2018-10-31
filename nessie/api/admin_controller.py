@@ -32,6 +32,21 @@ from nessie.lib import metadata
 from nessie.lib.http import tolerant_jsonify
 
 
+@app.route('/api/admin/runnable_jobs')
+@auth_required
+def console_available_jobs():
+    job_api_endpoints = []
+    for rule in app.url_map.iter_rules():
+        if isinstance(rule.rule, str) and rule.rule.startswith('/api/job/'):
+            job_api_endpoints.append({
+                'name': rule.endpoint.replace('_', ' ').capitalize(),
+                'path': rule.rule,
+                'requiredParameters': list(rule.arguments),
+                'methods': list(rule.methods),
+            })
+    return tolerant_jsonify(job_api_endpoints)
+
+
 @app.route('/api/metadata/background_job_status', methods=['POST'])
 @auth_required
 def background_job_status():
@@ -50,16 +65,3 @@ def background_job_status():
             'finished': row['updated_at'].strftime('%c'),
         }
     return tolerant_jsonify([to_api_json(row) for row in rows])
-
-
-@app.route('/api/metadata/failures_from_last_sync', methods=['POST'])
-@auth_required
-def failures_from_last_sync():
-    result = metadata.get_failures_from_last_sync()
-
-    def to_api_json(result):
-        return {
-            'jobId': result['job_id'],
-            'failures': result['failures'],
-        }
-    return tolerant_jsonify(to_api_json(result))
