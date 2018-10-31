@@ -27,7 +27,7 @@ from flask import current_app as app
 from nessie.externals import rds, redshift, s3, sis_terms_api
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.berkeley import reverse_term_ids
-from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
+from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
 
 """Logic for SIS terms API import job."""
 
@@ -53,7 +53,7 @@ class ImportSisTermsApi(BackgroundJob):
                 for academic_career_term in feed:
                     for session in academic_career_term.get('sessions', []):
                         rows.append(
-                            '\t'.join([
+                            encoded_tsv_row([
                                 academic_career_term.get('id', ''),
                                 academic_career_term.get('name', ''),
                                 academic_career_term.get('academicCareer', {}).get('code', ''),
@@ -72,7 +72,7 @@ class ImportSisTermsApi(BackgroundJob):
 
         s3_key = f'{get_s3_sis_api_daily_path()}/terms.tsv'
         app.logger.info(f'Will stash {len(rows)} rows from {success_count} feeds in S3: {s3_key}')
-        if not s3.upload_data('\n'.join(rows), s3_key):
+        if not s3.upload_tsv_rows(rows, s3_key):
             app.logger.error('Error on S3 upload: aborting job.')
             return False
 
@@ -121,7 +121,7 @@ class ImportSisTermsApi(BackgroundJob):
             f"""INSERT INTO {self.destination_schema}.sis_terms
                 (term_id ,term_name , academic_career, term_begins, term_ends, session_id, session_name, session_begins, session_ends)
                 VALUES %s""",
-            [tuple(split_tsv_row(r)) for r in rows],
+            [split_tsv_row(r) for r in rows],
         ):
             return False
         return True

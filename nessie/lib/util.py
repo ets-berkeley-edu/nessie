@@ -34,6 +34,10 @@ import pytz
 """Generic utilities."""
 
 
+def encoded_tsv_row(elements):
+    return '\t'.join([str(e) for e in elements]).encode()
+
+
 def fill_pattern_from_args(pattern, func, *args, **kw):
     return pattern.format(**get_args_dict(func, *args, **kw))
 
@@ -59,7 +63,7 @@ def hashed_datestamp(date_to_stamp=None):
 
 
 def split_tsv_row(row):
-    return [v if len(v) else None for v in row.split('\t')]
+    return tuple([v if len(v) else None for v in row.decode().split('\t')])
 
 
 def vacuum_whitespace(_str):

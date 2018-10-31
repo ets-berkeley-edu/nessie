@@ -174,3 +174,8 @@ def upload_from_url(url, s3_key, on_stream_opened=None):
     if s3_response:
         app.logger.info(f'S3 upload complete: source_url={url}, bucket={bucket}, key={s3_key}')
         return s3_response
+
+
+def upload_tsv_rows(rows, s3_key):
+    data = b'\n'.join(rows)
+    return upload_data(data, s3_key)

@@ -31,7 +31,7 @@ import operator
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob
-from nessie.lib.util import get_s3_asc_daily_path, resolve_sql_template_string
+from nessie.lib.util import encoded_tsv_row, get_s3_asc_daily_path, resolve_sql_template_string
 import psycopg2
 
 """Logic for ASC profile generation job."""
@@ -77,11 +77,11 @@ class GenerateAscProfiles(BackgroundJob):
                     'teamName': row['team_name'],
                 })
 
-            profile_rows.append('\t'.join([str(sid), json.dumps(athletics_profile)]))
+            profile_rows.append(encoded_tsv_row([sid, json.dumps(athletics_profile)]))
 
         s3_key = f'{get_s3_asc_daily_path()}/athletics_profiles.tsv'
         app.logger.info(f'Will stash {len(profile_rows)} feeds in S3: {s3_key}')
-        if not s3.upload_data('\n'.join(profile_rows), s3_key):
+        if not s3.upload_tsv_rows(profile_rows, s3_key):
             app.logger.error('Error on S3 upload: aborting job.')
             return False
 
