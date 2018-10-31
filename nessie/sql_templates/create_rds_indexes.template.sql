@@ -90,7 +90,8 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_sis_internal}.enrolled_primary_secti
     sis_course_name_compressed VARCHAR NOT NULL,
     sis_course_title VARCHAR NOT NULL,
     sis_instruction_format VARCHAR NOT NULL,
-    sis_section_num VARCHAR NOT NULL
+    sis_section_num VARCHAR NOT NULL,
+    instructors VARCHAR
 );
 
 CREATE INDEX IF NOT EXISTS enrolled_primary_sections_term_id_sis_course_name_compressed_idx

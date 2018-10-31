@@ -90,13 +90,14 @@ def get_enrolled_canvas_sites_for_term(term_id):
 
 
 def get_enrolled_primary_sections_for_term(term_id):
-    sql = f"""SELECT DISTINCT
+    sql = f"""SELECT
                 sec.sis_section_id,
                 sec.sis_course_name,
-                translate(sec.sis_course_name, '&-, ', '') AS sis_course_name_compressed,
+                TRANSLATE(sec.sis_course_name, '&-, ', '') AS sis_course_name_compressed,
                 sec.sis_course_title,
                 sec.sis_instruction_format,
-                sec.sis_section_num
+                sec.sis_section_num,
+                LISTAGG(DISTINCT sec.instructor_name, ', ') WITHIN GROUP (ORDER BY sec.instructor_name) AS instructors
               FROM {intermediate_schema()}.sis_enrollments enr
               JOIN {intermediate_schema()}.sis_sections sec
                 ON enr.sis_term_id = {term_id}
@@ -104,7 +105,8 @@ def get_enrolled_primary_sections_for_term(term_id):
                 AND sec.is_primary = TRUE
                 AND enr.sis_section_id = sec.sis_section_id
                 AND enr.ldap_uid IN (SELECT uid FROM {student_schema()}.student_academic_status)
-              ORDER BY sis_section_id
+              GROUP BY sec.sis_section_id, sis_course_name, sis_course_title, sis_instruction_format, sis_section_num
+              ORDER BY sec.sis_section_id
         """
     return redshift.fetch(sql)
 
