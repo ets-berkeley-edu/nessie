@@ -28,7 +28,7 @@ import os
 
 from flask import current_app as app
 from nessie.externals import redshift, s3
-from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
+from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string
 import psycopg2.sql
 
 
@@ -145,11 +145,11 @@ def update_merged_feed_status(term_id, successes, failures):
         params=((successes + failures), term_id),
     )
     now = datetime.utcnow().isoformat()
-    success_records = ['\t'.join([sid, term_id, 'success', now]) for sid in successes]
-    failure_records = ['\t'.join([sid, term_id, 'failure', now]) for sid in failures]
+    success_records = [encoded_tsv_row([sid, term_id, 'success', now]) for sid in successes]
+    failure_records = [encoded_tsv_row([sid, term_id, 'failure', now]) for sid in failures]
     rows = success_records + failure_records
     s3_key = f'{get_s3_sis_api_daily_path()}/merged_feed_status.tsv'
-    if not s3.upload_data('\n'.join(rows), s3_key):
+    if not s3.upload_tsv_rows(rows, s3_key):
         app.logger.error('Error uploading merged feed status updates to S3.')
         return
     query = resolve_sql_template_string(

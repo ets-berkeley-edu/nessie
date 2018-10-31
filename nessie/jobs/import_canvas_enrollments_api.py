@@ -30,7 +30,7 @@ from nessie.externals import canvas_api, redshift, s3
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.berkeley import current_term_id
 from nessie.lib.queries import get_enrolled_canvas_sites_for_term
-from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
+from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string
 
 """Logic for Canvas enrollments API import job."""
 
@@ -54,9 +54,9 @@ class ImportCanvasEnrollmentsApi(BackgroundJob):
             if feed:
                 success_count += 1
                 for enrollment in feed:
-                    user_id = str(enrollment.get('user_id'))
-                    last_activity_at = str(enrollment.get('last_activity_at') or '')
-                    rows.append('\t'.join([str(course_id), user_id, str(term_id), last_activity_at, json.dumps(enrollment)]))
+                    user_id = enrollment.get('user_id')
+                    last_activity_at = enrollment.get('last_activity_at') or ''
+                    rows.append(encoded_tsv_row([course_id, user_id, term_id, last_activity_at, json.dumps(enrollment)]))
             else:
                 failure_count += 1
                 app.logger.error(f'Canvas enrollments API import failed for course id {course_id}.')
@@ -64,7 +64,7 @@ class ImportCanvasEnrollmentsApi(BackgroundJob):
 
         s3_key = f'{get_s3_sis_api_daily_path()}/canvas_api_enrollments_{term_id}.tsv'
         app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
-        if not s3.upload_data('\n'.join(rows), s3_key):
+        if not s3.upload_tsv_row(rows, s3_key):
             app.logger.error('Error on S3 upload: aborting job.')
             return False
 

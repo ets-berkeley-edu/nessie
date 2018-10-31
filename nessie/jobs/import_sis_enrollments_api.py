@@ -30,7 +30,7 @@ from nessie.externals import redshift, s3, sis_enrollments_api
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.berkeley import current_term_id
 from nessie.lib.queries import get_all_student_ids
-from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
+from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string
 
 """Logic for SIS enrollments API import job."""
 
@@ -56,7 +56,7 @@ class ImportSisEnrollmentsApi(BackgroundJob):
             feed = sis_enrollments_api.get_drops_and_midterms(csid, term_id)
             if feed:
                 success_count += 1
-                rows.append('\t'.join([str(csid), str(term_id), json.dumps(feed)]))
+                rows.append(encoded_tsv_row([csid, term_id, json.dumps(feed)]))
             elif feed is False:
                 app.logger.info(f'SID {csid} returned no enrollments for term {term_id}.')
                 no_enrollments_count += 1
@@ -67,7 +67,7 @@ class ImportSisEnrollmentsApi(BackgroundJob):
 
         s3_key = f'{get_s3_sis_api_daily_path()}/drops_and_midterms_{term_id}.tsv'
         app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
-        if not s3.upload_data('\n'.join(rows), s3_key):
+        if not s3.upload_tsv_rows(rows, s3_key):
             app.logger.error('Error on S3 upload: aborting job.')
             return False
 

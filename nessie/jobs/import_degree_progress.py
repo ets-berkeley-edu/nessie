@@ -29,7 +29,7 @@ from flask import current_app as app
 from nessie.externals import redshift, s3, sis_degree_progress_api
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.queries import get_all_student_ids
-from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
+from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string
 
 """Logic for SIS degree progress API import job."""
 
@@ -59,7 +59,7 @@ class ImportDegreeProgress(BackgroundJob):
             feed = sis_degree_progress_api.parsed_degree_progress(csid)
             if feed:
                 success_count += 1
-                rows.append('\t'.join([str(csid), json.dumps(feed)]))
+                rows.append(encoded_tsv_row([csid, json.dumps(feed)]))
             elif feed == {}:
                 app.logger.info(f'No degree progress information found for SID {csid}.')
                 no_information_count += 1
@@ -70,7 +70,7 @@ class ImportDegreeProgress(BackgroundJob):
 
         s3_key = f'{get_s3_sis_api_daily_path()}/degree_progress.tsv'
         app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
-        if not s3.upload_data('\n'.join(rows), s3_key):
+        if not s3.upload_tsv_rows(rows, s3_key):
             app.logger.error('Error on S3 upload: aborting job.')
             return False
 

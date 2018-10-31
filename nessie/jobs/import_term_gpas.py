@@ -27,7 +27,7 @@ from flask import current_app as app
 from nessie.externals import rds, redshift, s3, sis_student_api
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.queries import get_all_student_ids
-from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
+from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
 
 """Logic for term GPA import job."""
 
@@ -53,7 +53,7 @@ class ImportTermGpas(BackgroundJob):
             if feed:
                 success_count += 1
                 for term_id, term_data in feed.items():
-                    rows.append('\t'.join([str(csid), str(term_id), str(term_data.get('gpa') or '0'), str(term_data.get('unitsTakenForGpa') or '0')]))
+                    rows.append(encoded_tsv_row([csid, term_id, (term_data.get('gpa') or '0'), (term_data.get('unitsTakenForGpa') or '0')]))
             elif feed == {}:
                 app.logger.info(f'No registrations found for SID {csid}.')
                 no_registrations_count += 1
@@ -68,7 +68,7 @@ class ImportTermGpas(BackgroundJob):
 
         s3_key = f'{get_s3_sis_api_daily_path()}/term_gpas.tsv'
         app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
-        if not s3.upload_data('\n'.join(rows), s3_key):
+        if not s3.upload_tsv_rows(rows, s3_key):
             app.logger.error('Error on S3 upload: aborting job.')
             return False
 
@@ -113,7 +113,7 @@ class ImportTermGpas(BackgroundJob):
         if not transaction.insert_bulk(
             f"""INSERT INTO {self.destination_schema}.student_term_gpas
                 (sid, term_id, gpa, units_taken_for_gpa) VALUES %s""",
-            [tuple(split_tsv_row(r)) for r in rows],
+            [split_tsv_row(r) for r in rows],
         ):
             return False
 

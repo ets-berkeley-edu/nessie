@@ -36,7 +36,7 @@ from nessie.lib import berkeley, queries
 from nessie.lib.analytics import get_relative_submission_counts, mean_course_analytics_for_user
 from nessie.lib.metadata import update_merged_feed_status
 from nessie.lib.queries import get_all_student_ids, get_successfully_backfilled_students
-from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
+from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
 from nessie.merged.sis_profile import get_holds, get_merged_sis_profile
 from nessie.merged.student_terms import get_canvas_courses_feed, get_merged_enrollment_terms, merge_canvas_site_map
 import psycopg2.sql
@@ -226,7 +226,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'canvasUserName': canvas_profile.get('name'),
             'sisProfile': sis_profile,
         }
-        self.rows['student_profiles'].append('\t'.join([str(sid), json.dumps(merged_profile)]))
+        self.rows['student_profiles'].append(encoded_tsv_row([sid, json.dumps(merged_profile)]))
 
         if sis_profile:
             first_name = merged_profile['firstName'] or ''
@@ -235,10 +235,10 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             gpa = str(sis_profile.get('cumulativeGPA') or '')
             units = str(sis_profile.get('cumulativeUnits') or '')
 
-            self.rows['student_academic_status'].append('\t'.join([str(sid), str(uid), first_name, last_name, level, gpa, units]))
+            self.rows['student_academic_status'].append(encoded_tsv_row([sid, uid, first_name, last_name, level, gpa, units]))
 
             for plan in sis_profile.get('plans', []):
-                self.rows['student_majors'].append('\t'.join([str(sid), plan['description']]))
+                self.rows['student_majors'].append(encoded_tsv_row([sid, plan['description']]))
 
         app.logger.debug(f'Merged profile generation complete for SID {sid} in {datetime.now().timestamp() - ts} seconds.')
         return merged_profile
@@ -287,7 +287,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                     relative_submission_counts,
                     self.canvas_site_map,
                 )
-                self.rows['student_enrollment_terms'].append('\t'.join([str(sid), str(term_id), json.dumps(term_feed)]))
+                self.rows['student_enrollment_terms'].append(encoded_tsv_row([sid, term_id, json.dumps(term_feed)]))
             app.logger.debug(
                 f'Enrollment term merge complete (uid={uid}, sid={sid}, term_id={term_id}, ',
                 f'{datetime.now().timestamp() - ts} seconds)',
@@ -296,7 +296,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     def parse_holds(self, sid):
         holds = get_holds(sid) or []
         for hold in holds:
-            self.rows['student_holds'].append('\t'.join([str(sid), json.dumps(hold)]))
+            self.rows['student_holds'].append(encoded_tsv_row([sid, json.dumps(hold)]))
 
     def refresh_from_staging(self, table, term_id, sids, transaction):
         # If our job is restricted to a particular term id or set of sids, then drop rows from the destination table
@@ -367,7 +367,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             result = transaction.insert_bulk(
                 f"""INSERT INTO {self.destination_schema}.student_academic_status
                     (sid, uid, first_name, last_name, level, gpa, units) VALUES %s""",
-                [tuple(split_tsv_row(r)) for r in self.rows['student_academic_status']],
+                [split_tsv_row(r) for r in self.rows['student_academic_status']],
             )
             if not result:
                 return False
@@ -376,7 +376,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 return False
             result = transaction.insert_bulk(
                 f'INSERT INTO {self.destination_schema}.student_majors (sid, major) VALUES %s',
-                [tuple(r.split('\t')) for r in self.rows['student_majors']],
+                [split_tsv_row(r) for r in self.rows['student_majors']],
             )
             if not result:
                 return False
@@ -386,7 +386,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         rows = self.rows[table]
         s3_key = f'{get_s3_sis_api_daily_path()}/staging_{table}.tsv'
         app.logger.info(f'Will stash {len(rows)} feeds in S3: {s3_key}')
-        if not s3.upload_data('\n'.join(rows), s3_key):
+        if not s3.upload_tsv_rows(rows, s3_key):
             app.logger.error('Error on S3 upload: aborting job.')
             return False
 

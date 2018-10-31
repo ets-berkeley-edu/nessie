@@ -27,7 +27,7 @@ from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.externals.asc_athletes_api import get_asc_feed
 from nessie.jobs.background_job import BackgroundJob
-from nessie.lib.util import get_s3_asc_daily_path, resolve_sql_template_string
+from nessie.lib.util import encoded_tsv_row, get_s3_asc_daily_path, resolve_sql_template_string
 
 SPORT_TRANSLATIONS = {
     'MBB': 'BAM',
@@ -106,13 +106,13 @@ class ImportAscAthletes(BackgroundJob):
                                 SPORT_TRANSLATIONS[asc_code],
                                 r['SportCore'],
                             ]
-                            rows.append('\t'.join(data))
+                            rows.append(encoded_tsv_row(data))
                         else:
                             sid = r['SID']
                             app.logger.error(f'ASC import: Unmapped asc_code {asc_code} has ActiveYN for sid={sid}')
 
                 s3_key = f'{get_s3_asc_daily_path()}/asc_api_raw_response_{sync_date}.tsv'
-                if not s3.upload_data('\n'.join(rows), s3_key):
+                if not s3.upload_tsv_rows(rows, s3_key):
                     app.logger.error('Error on S3 upload: aborting job.')
                     return False
 
