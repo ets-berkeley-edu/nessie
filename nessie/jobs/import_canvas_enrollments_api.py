@@ -64,7 +64,7 @@ class ImportCanvasEnrollmentsApi(BackgroundJob):
 
         s3_key = f'{get_s3_sis_api_daily_path()}/canvas_api_enrollments_{term_id}.tsv'
         app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
-        if not s3.upload_tsv_row(rows, s3_key):
+        if not s3.upload_tsv_rows(rows, s3_key):
             app.logger.error('Error on S3 upload: aborting job.')
             return False
 
