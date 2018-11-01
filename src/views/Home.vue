@@ -1,15 +1,15 @@
 <template>
   <div role="tablist">
-    <JobMetadata/>
+    <Jobs/>
   </div>
 </template>
 
 <script>
-import JobMetadata from '@/components/JobMetadata.vue';
+import Jobs from '@/components/Jobs.vue';
 
 export default {
   components: {
-    JobMetadata
+    Jobs
   }
 };
 </script>

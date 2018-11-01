@@ -1,11 +1,11 @@
+import 'bootstrap-vue/dist/bootstrap-vue.min.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import App from '@/App.vue';
+import Vue from 'vue';
 import axios from 'axios';
 import BootstrapVue from 'bootstrap-vue';
 import router from '@/router';
 import store from '@/store';
-import Vue from 'vue';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap-vue/dist/bootstrap-vue.min.css';
 
 // Allow cookies in Access-Control requests
 axios.defaults.withCredentials = true;
@@ -14,7 +14,9 @@ axios.interceptors.response.use(response => response, function(error) {
   return Promise.reject(error);
 });
 
+Vue.config.productionTip = false;
 Vue.use(BootstrapVue);
+Vue.use(require('vue-moment'));
 
 new Vue({
   router,

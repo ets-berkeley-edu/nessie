@@ -11,7 +11,7 @@
             <b>Trigger:</b> {{ job.trigger }}
           </div>
           <div>
-            <b>Next run:</b> {{ job.nextRun }}
+            <b>Next run:</b> {{job.nextRun | moment('calendar') }}
           </div>
           <div>
             <b>Locked:</b> {{ job.locked }}

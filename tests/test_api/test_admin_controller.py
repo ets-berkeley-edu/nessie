@@ -23,11 +23,11 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from tests.util import credentials, post_basic_auth
+from tests.util import credentials, get_basic_auth, post_basic_auth
 
 
-class TestMetadataController:
-    """Metadata API."""
+class TestAdminController:
+    """Admin API."""
 
     def test_no_authentication(self, client):
         """Refuse a request with no authentication."""
@@ -45,13 +45,10 @@ class TestMetadataController:
         assert response.json == []
 
     def test_failures_from_last_sync(self, app, client):
-        """Returns a well-formed response."""
-        response = post_basic_auth(
-            client,
-            '/api/metadata/failures_from_last_sync',
-            credentials(app),
-        )
+        """Returns jobs runnable via Admin Console."""
+        response = get_basic_auth(client=client, path='/api/admin/runnable_jobs', credentials=credentials(app))
         assert response.status_code == 200
-        json_ = response.json
-        assert 'jobId' in json_
-        assert 'failures' in json_
+        job = next((job for job in response.json if job.get('name') == 'Generate merged student feeds'), None)
+        assert job.get('path') == '/api/job/generate_merged_student_feeds/<term_id>'
+        assert job.get('requiredParameters') == ['term_id']
+        assert 'POST' in job.get('methods')
