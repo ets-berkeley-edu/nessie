@@ -10,6 +10,7 @@ ldap3==2.5.1
 psycopg2==2.7.5
 pytz==2018.5
 requests==2.20.0
+scipy==1.1.0
 simplejson==3.16.0
 xmltodict==0.11.0
 # ETS fork of https://github.com/RaRe-Technologies/smart_open, with added support for S3 upload arguments.

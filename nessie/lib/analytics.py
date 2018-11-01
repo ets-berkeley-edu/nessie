@@ -32,6 +32,7 @@ from flask import current_app as app
 from nessie.lib import queries
 from numpy import nan
 import pandas
+from scipy.stats import percentileofscore
 
 
 def merge_analytics_for_user(user_courses, canvas_user_id, relative_submission_counts, canvas_site_map):
@@ -165,25 +166,36 @@ def analytics_for_column(df, student_row, column_name):
 
     column_zscore = zscore(dfcol, column_value)
     comparative_percentile = zptile(column_zscore)
+    # For purposes of matrix plotting, improve visual spread by calculating percentile against a range of unique scores.
+    unique_scores = dfcol.unique().tolist()
+    matrixy_comparative_percentile = percentileofscore(unique_scores, column_value, kind='strict')
 
     course_mean = dfcol.mean()
     if course_mean and not math.isnan(course_mean):
+        # Spoiler: this will be '50.0'.
         comparative_percentile_of_mean = zptile(zscore(dfcol, course_mean))
+        matrixy_comparative_percentile_of_mean = percentileofscore(unique_scores, course_mean, kind='strict')
+        intuitive_percentile_of_mean = int(percentileofscore(unique_scores, course_mean, kind='weak'))
     else:
         comparative_percentile_of_mean = None
+        matrixy_comparative_percentile_of_mean = None
+        intuitive_percentile_of_mean = None
 
     app.logger.debug(f'Returning calculated analytics (column_name={column_name})')
     return {
         'boxPlottable': box_plottable,
         'student': {
+            'matrixyPercentile': matrixy_comparative_percentile,
             'percentile': comparative_percentile,
             'raw': raw_value,
             'roundedUpPercentile': intuitive_percentile,
         },
         'courseDeciles': column_quantiles,
         'courseMean': {
+            'matrixyPercentile': matrixy_comparative_percentile_of_mean,
             'percentile': comparative_percentile_of_mean,
             'raw': course_mean,
+            'roundedUpPercentile': intuitive_percentile_of_mean,
         },
         'displayPercentile': display_percentile,
     }
