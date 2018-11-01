@@ -58,28 +58,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         redshift.execute('VACUUM; ANALYZE;')
 
         if backfill_new_students:
-            status = ''
-            previous_backfills = {row['sid'] for row in get_successfully_backfilled_students()}
-            sids = {row['sid'] for row in get_all_student_ids()}
-            old_sids = sids.intersection(previous_backfills)
-            new_sids = sids.difference(previous_backfills)
-            # Any students without a previous backfill will have feeds generated for all terms. Students with a previous
-            # backfill get an update for the requested term only.
-            if len(new_sids):
-                app.logger.info(f'Found {len(new_sids)} new students, will backfill all terms.')
-                ImportTermGpas().run(csids=new_sids)
-                backfill_status = self.generate_feeds(sids=list(new_sids))
-                if not backfill_status:
-                    app.logger.warn('Backfill job aborted, will continue with non-backfill job.')
-                    backfill_status = 'aborted'
-                else:
-                    app.logger.info(f'Backfill complete.')
-                status += f'Backfill: {backfill_status}; non-backfill: '
-                app.logger.info(f'Will continue merged feed job for {len(old_sids)} previously backfilled students.')
-            continuation_status = self.generate_feeds(sids=list(old_sids), term_id=term_id)
-            if not continuation_status:
-                return False
-            status += continuation_status
+            status = self.generate_with_backfills(term_id)
         else:
             status = self.generate_feeds(term_id)
 
@@ -88,6 +67,46 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         app.logger.info(f'Vacuumed and analyzed.')
 
         return status
+
+    def generate_with_backfills(self, term_id):
+        """For students without a previous backfill, generate feeds for all terms."""
+        previous_backfills = {row['sid'] for row in get_successfully_backfilled_students()}
+        sids = {row['sid'] for row in get_all_student_ids()}
+        new_sids = list(sids.difference(previous_backfills))
+        if not new_sids:
+            app.logger.info(f'No new students to backfill.')
+            return self.generate_feeds(term_id)
+        app.logger.info(f'Found {len(new_sids)} new students, will backfill all terms.')
+        ImportTermGpas().run(csids=new_sids)
+        summary = ''
+        if not term_id:
+            # Equivalent to generating feeds for all terms for all students.
+            status = self.generate_feeds(term_id)
+        elif term_id == berkeley.current_term_id():
+            # The generate_feeds code will not fully refresh non-term-specific student profile data
+            # if called with a specific list of SIDs. Therefore we need the job to, at some point,
+            # run generate_feeds without such a list. But we also want to avoid repeating
+            # any refresh of term-specific data. (A refactoring is perhaps in order.)
+            status = self.generate_feeds(term_id)
+            other_terms = [t for t in berkeley.reverse_term_ids() if t != term_id]
+            for other_term_id in other_terms:
+                backfill_status = self.generate_feeds(sids=new_sids, term_id=other_term_id)
+                summary += f'Backfill for {other_term_id}: {backfill_status}. '
+                if not backfill_status:
+                    app.logger.warn('Backfill job aborted.')
+                    break
+        else:
+            old_sids = sids.intersection(previous_backfills)
+            backfill_status = self.generate_feeds(sids=new_sids)
+            if not backfill_status:
+                app.logger.warn('Backfill job aborted, will continue with non-backfill job.')
+            else:
+                app.logger.info(f'Backfill complete.')
+            summary += f'Backfill: {backfill_status}. '
+            app.logger.info(f'Will continue merged feed job for {len(old_sids)} previously backfilled students: ')
+            status = self.generate_feeds(sids=list(old_sids), term_id=term_id)
+        summary += f'Feed generation: {status}'
+        return summary
 
     def generate_feeds(self, term_id=None, sids=None):
         """Loop through all records stored in the Calnet external schema and write merged student data to the internal student schema."""
