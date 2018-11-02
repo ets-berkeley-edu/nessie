@@ -51,7 +51,7 @@ AS (
         "actor.extensions.com.instructure.canvas.user_login",
         "actor.extensions.com.instructure.canvas.entity_id",
         "group.extensions.com.instructure.canvas.context_type",
-        "group.id",
+        split_part("group.id", ':', 5) AS "group.id",
         "group.type",
         "membership.id",
         split_part("membership.member.id", ':', 5) AS "membership.member.id",
