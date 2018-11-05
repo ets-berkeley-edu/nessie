@@ -169,3 +169,47 @@ class TestStudentAnalytics:
         assert score['courseMean'] is None
         last_activity = digested['lastActivity']
         assert last_activity['student']['raw'] is 0
+
+    def test_mean_with_zero_dates(self, app):
+        site_map = self.get_canvas_site_map()
+        enrollments = []
+        for user_id in range(9000071, 9000075):
+            enrollments.append({
+                'course_id': 7654321, 'canvas_user_id': user_id, 'current_score': 100, 'last_activity_at': 0,
+            })
+        enrollments[1]['last_activity_at'] = 1535340480
+        enrollments[2]['last_activity_at'] = 1535340481
+        enrollments[3]['last_activity_at'] = 1535340482
+        site_map['7654321']['enrollments'] = enrollments
+        digested = analytics.student_analytics(9000071, self.canvas_course_id, site_map)
+        low_student_score = digested['lastActivity']['student']
+        assert(low_student_score['raw']) == 0
+        assert(low_student_score['matrixyPercentile']) == 0
+        assert(low_student_score['roundedUpPercentile']) == 25
+        mean = digested['lastActivity']['courseMean']
+        assert mean['raw'] == 1535340481
+        assert mean['percentile'] == 50
+        assert mean['roundedUpPercentile'] > 50
+        middling_student = analytics.student_analytics(9000073, self.canvas_course_id, site_map)
+        middling_student_score = middling_student['lastActivity']['student']
+        assert(middling_student_score['raw']) == mean['raw']
+        assert(middling_student_score['matrixyPercentile']) == mean['matrixyPercentile']
+        assert(middling_student_score['roundedUpPercentile']) == mean['roundedUpPercentile']
+
+    def test_mean_with_low_dates(self, app):
+        site_map = self.get_canvas_site_map()
+        enrollments = []
+        for user_id in range(9000071, 9000075):
+            enrollments.append({
+                'course_id': 7654321, 'canvas_user_id': user_id, 'current_score': 100, 'last_activity_at': 0,
+            })
+        enrollments[0]['last_activity_at'] = 1535240480
+        enrollments[1]['last_activity_at'] = 1535340480
+        enrollments[2]['last_activity_at'] = 1535340481
+        enrollments[3]['last_activity_at'] = 1535340482
+        site_map['7654321']['enrollments'] = enrollments
+        digested = analytics.student_analytics(9000071, self.canvas_course_id, site_map)
+        mean = digested['lastActivity']['courseMean']
+        assert mean['raw'] < 1535340481
+        assert mean['percentile'] == 50
+        assert mean['roundedUpPercentile'] < 50
