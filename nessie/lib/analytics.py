@@ -160,7 +160,9 @@ def analytics_for_column(df, student_row, column_name):
     column_quantiles = quantiles(dfcol, 10)
 
     # When calculating z-scores and means for lastActivity, zeroed-out "no activity" values must be dropped, since zeros
-    # and Unix timestamps don't play well in the same distribution.
+    # and Unix timestamps don't play well in the same distribution. However, the mean's intuitive-percentile
+    # must match that of any real student who happens to have the same raw value as the mean.
+    original_values = dfcol.tolist()
     if column_name == 'last_activity_at':
         dfcol = dfcol.replace(0, nan).dropna()
 
@@ -174,10 +176,7 @@ def analytics_for_column(df, student_row, column_name):
     if course_mean and not math.isnan(course_mean):
         # Spoiler: this will be '50.0'.
         comparative_percentile_of_mean = zptile(zscore(dfcol, course_mean))
-        # This may or may not be the best choice. On the plus side, it emphasizes that this dot represents the mean.
-        # On the minus, when there is a small number of unique values, the dot will be cheek-by-jowl with
-        # real students who have higher displayed percentiles.
-        intuitive_percentile_of_mean = comparative_percentile_of_mean
+        intuitive_percentile_of_mean = int(percentileofscore(original_values, course_mean, kind='weak'))
         matrixy_comparative_percentile_of_mean = percentileofscore(unique_scores, course_mean, kind='strict')
     else:
         comparative_percentile_of_mean = None
