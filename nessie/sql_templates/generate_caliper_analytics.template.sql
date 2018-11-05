@@ -84,7 +84,7 @@ AS (
 	    OR "object.name" = 'home')
 );
 
-
+-- Calculate last activity metric from canvas caliper user generated requests
 DROP TABLE IF EXISTS {redshift_schema_caliper_analytics}.last_activity_caliper;
 CREATE TABLE {redshift_schema_caliper_analytics}.last_activity_caliper
 SORTKEY (canvas_user_id, canvas_course_id)
@@ -104,15 +104,26 @@ AS (
             AND "object.extensions.com.instructure.canvas.asset_type"= 'course'
             AND "object.name"='home'
     ),
-    curated_requests
+    coalesce_course_in_requests
     AS (
         SELECT
             requests.*,
             home_nav.home_course_global_id,
-            COALESCE(requests."membership.organization.id", requests."group.id", home_nav.home_course_global_id)  AS canvas_global_course_id
+            COALESCE(requests."membership.organization.id", requests."group.id", home_nav.home_course_global_id)  AS candidate_canvas_global_course_id
         FROM {redshift_schema_caliper_analytics}.canvas_caliper_user_requests requests
             LEFT JOIN course_home_nav_events home_nav
                 ON requests.uuid = home_nav.uuid
+    ),
+	curated_requests
+    AS (
+    	SELECT
+	    	requests.*,
+	    	CASE
+	    		WHEN len(candidate_canvas_global_course_id) = 6 THEN '10720000000'+ candidate_canvas_global_course_id
+	    		WHEN len(candidate_canvas_global_course_id) = 7 THEN '1072000000'+ candidate_canvas_global_course_id
+	    		ELSE candidate_canvas_global_course_id
+	    	END AS canvas_global_course_id
+	    	FROM coalesce_course_in_requests requests
     ),
     last_user_activity
     AS (
