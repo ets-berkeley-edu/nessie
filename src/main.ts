@@ -2,7 +2,6 @@ import 'bootstrap-vue/dist/bootstrap-vue.min.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import App from '@/App.vue';
 import Vue from 'vue';
-import VueLodash from 'vue-lodash';
 import axios from 'axios';
 import BootstrapVue from 'bootstrap-vue';
 import router from '@/router';
@@ -18,7 +17,7 @@ axios.interceptors.response.use(response => response, function(error) {
 Vue.config.productionTip = false;
 Vue.use(BootstrapVue);
 Vue.use(require('vue-moment'));
-Vue.use(VueLodash);
+Vue.use(require('vue-lodash'), { name: '_' });
 
 new Vue({
   router,
