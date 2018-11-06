@@ -43,6 +43,7 @@ class TransformLrsIncrementals(BackgroundJob):
         self.job_name = app.config['LRS_CANVAS_GLUE_JOB_NAME']
         self.glue_role = app.config['LRS_GLUE_SERVICE_ROLE']
         self.job_run_id = None
+        self.job_run_response = None
 
         # Check Glue export location and clear any files from prior runs
         if not self.delete_old_incrementals():
@@ -53,7 +54,7 @@ class TransformLrsIncrementals(BackgroundJob):
             return False
 
         # Add logic to write glue job details to redshift metadata table.
-        return True
+        return f'Successfully transformed and flattened the LRS canvas caliper incrmental feeds. JobRun={self.job_run_response}'
 
     def delete_old_incrementals(self):
         app.logger.debug(f' Bucket: {self.transient_bucket}')
@@ -107,4 +108,5 @@ class TransformLrsIncrementals(BackgroundJob):
                     return False
 
                 sleep(30)
+            self.job_run_response = response
             return True

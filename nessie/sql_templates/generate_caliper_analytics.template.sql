@@ -114,7 +114,7 @@ AS (
             LEFT JOIN course_home_nav_events home_nav
                 ON requests.uuid = home_nav.uuid
     ),
-	curated_requests
+    curated_requests
     AS (
     	SELECT
 	    	requests.*,
