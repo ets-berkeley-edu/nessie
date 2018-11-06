@@ -96,11 +96,12 @@ export default {
       });
     },
     runSelectedJob() {
+      /* eslint no-undef: "warn" */
       let apiPath = this.runnableJob.selected.path;
-      this._.each(
+      _.each(
         this.runnableJob.selected.requiredParameters,
         (requiredParameter, index) => {
-          apiPath = this._.replace(
+          apiPath = _.replace(
             apiPath,
             '<' + requiredParameter + '>',
             this.runnableJob.params[index]
