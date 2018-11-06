@@ -14,7 +14,10 @@
             {{requiredParameter}}: <input v-model="runnableJob.params[index]" placeholder="Required">
           </div>
         </div>
-        <button @click="runSelectedJob" :disabled="!runnableJob.ready()">Run it!</button>
+        <div>
+          <button @click="runSelectedJob" :disabled="!runnableJob.ready()" v-if="!runnableJob.isRunning">Run it!</button>
+          <span v-if="runnableJob.isRunning">Running...</span>
+        </div>
       </div>
       <div>
         More info: {{ runnableJob }}
@@ -38,7 +41,7 @@
 </template>
 
 <script>
-import { getBackgroundJobStatus } from '@/api/job';
+import { getBackgroundJobStatus, runJob } from '@/api/job';
 import Datepicker from 'vuejs-datepicker';
 import store from '@/store';
 
@@ -70,6 +73,7 @@ export default {
         loading: true
       },
       runnableJob: {
+        isRunning: false,
         selected: null,
         params: [],
         ready: () => {
@@ -92,7 +96,21 @@ export default {
       });
     },
     runSelectedJob() {
-      console.log('Run job: ' + this.runnableJob.selected.name);
+      let apiPath = this.runnableJob.selected.path;
+      this._.each(
+        this.runnableJob.selected.requiredParameters,
+        (requiredParameter, index) => {
+          apiPath = this._.replace(
+            apiPath,
+            '<' + requiredParameter + '>',
+            this.runnableJob.params[index]
+          );
+        }
+      );
+      runJob(apiPath).then(data => {
+        console.log(data);
+        this.runnableJob.isRunning = true;
+      });
     }
   }
 };
