@@ -23,3 +23,9 @@ export function getRunnableJobs() {
     .get(`${store.state.apiBaseURL}/api/admin/runnable_jobs`)
     .then(response => response.data, err => err.response);
 }
+
+export function runJob(path: string) {
+  return axios
+    .post(`${store.state.apiBaseURL}${path}`)
+    .then(response => response.data, err => err.response);
+}

@@ -44,6 +44,7 @@ def console_available_jobs():
                 'requiredParameters': list(rule.arguments),
                 'methods': list(rule.methods),
             })
+    job_api_endpoints.sort(key=lambda row: row.get('name'))
     return tolerant_jsonify(job_api_endpoints)
 
 
