@@ -31,6 +31,12 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_coe}.students
     prep_eligible BOOLEAN,
     did_tprep BOOLEAN,
     tprep_eligible BOOLEAN,
+    sat1read INT,
+    sat1math INT,
+    sat2math INT,
+    in_met BOOLEAN,
+    grad_term VARCHAR,
+    grad_year VARCHAR,
     PRIMARY KEY (sid, advisor_ldap_uid)
 );
 

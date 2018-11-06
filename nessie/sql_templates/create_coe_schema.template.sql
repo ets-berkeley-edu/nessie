@@ -48,7 +48,13 @@ CREATE EXTERNAL TABLE {redshift_schema_coe_external}.students(
     did_prep VARCHAR,
     prep_eligible VARCHAR,
     did_tprep VARCHAR,
-    tprep_eligible VARCHAR
+    tprep_eligible VARCHAR,
+    sat1read INT,
+    sat1math INT,
+    sat2math INT,
+    in_met VARCHAR,
+    grad_term VARCHAR,
+    grad_year VARCHAR
 )
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
@@ -79,7 +85,13 @@ AS (
     (CASE WHEN s.did_prep = 'y' THEN true ELSE false END) AS did_prep,
     (CASE WHEN s.prep_eligible = 'y' THEN true ELSE false END) AS prep_eligible,
     (CASE WHEN s.did_tprep = 'y' THEN true ELSE false END) AS did_tprep,
-    (CASE WHEN s.tprep_eligible = 'y' THEN true ELSE false END) AS tprep_eligible
+    (CASE WHEN s.tprep_eligible = 'y' THEN true ELSE false END) AS tprep_eligible,
+    s.sat1read,
+    s.sat1math,
+    s.sat2math,
+    (CASE WHEN s.in_met = 'y' THEN true ELSE false END) AS in_met,
+    s.grad_term,
+    s.grad_year
     FROM {redshift_schema_coe_external}.students s
     -- Avoid header rows and other surprises by selecting numeric sids only.
     WHERE sid SIMILAR TO '[0-9]+'

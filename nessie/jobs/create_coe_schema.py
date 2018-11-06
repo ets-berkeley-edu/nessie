@@ -78,6 +78,12 @@ class CreateCoeSchema(BackgroundJob):
                 'prepEligible': row_for_student.get('prep_eligible'),
                 'didTprep': row_for_student.get('did_tprep'),
                 'tprepEligible': row_for_student.get('tprep_eligible'),
+                'sat1read': row_for_student.get('sat1read'),
+                'sat1math': row_for_student.get('sat1math'),
+                'sat2math': row_for_student.get('sat2math'),
+                'inMet': row_for_student.get('in_met'),
+                'gradTerm': row_for_student.get('grad_term'),
+                'gradYear': row_for_student.get('grad_year'),
             }
             profile_rows.append(encoded_tsv_row([sid, json.dumps(coe_profile)]))
 
@@ -118,7 +124,11 @@ class CreateCoeSchema(BackgroundJob):
             result = transaction.execute(f'TRUNCATE {internal_schema}.students')
             if not result:
                 return False
-            columns = ['sid', 'advisor_ldap_uid', 'gender', 'ethnicity', 'minority', 'did_prep', 'prep_eligible', 'did_tprep', 'tprep_eligible']
+            columns = [
+                'sid', 'advisor_ldap_uid', 'gender', 'ethnicity', 'minority',
+                'did_prep', 'prep_eligible', 'did_tprep', 'tprep_eligible',
+                'sat1read', 'sat1math', 'sat2math', 'in_met', 'grad_term', 'grad_year',
+            ]
             result = transaction.insert_bulk(
                 f'INSERT INTO {internal_schema}.students ({", ".join(columns)}) VALUES %s',
                 [tuple([r[c] for c in columns]) for r in coe_rows],
