@@ -1,23 +1,24 @@
 <template>
   <div class="header">
-    <div>
-      <router-link to="/"><img src="@/assets/logo.png" width="40px"></router-link>
+    <div class="logo">
+      <router-link :to="{name: 'home'}"><img src="@/assets/logo.png"></router-link>
     </div>
     <div class="breadcrumb" v-if="user">
-      <router-link to="/">Home</router-link>
-      | <router-link to="schedule">Schedule</router-link>
+      <span><router-link to="/">Home</router-link></span>
+      <span>|</span>
+      <span><router-link to="schedule">Schedule</router-link></span>
     </div>
-    <div v-if="user">
+    <div class="flex-row greeting" v-if="user">
       <div>Hello {{ user.uid }}</div>
-      <button class="logout" @click="logOut">
-        Logout
-      </button>
+      <div>
+        [<b-link v-on:click="logOut()">Logout</b-link>]
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { getCasLoginURL, getCasLogoutURL } from '@/api/user';
+import { getCasLogoutURL } from '@/api/user';
 import store from '@/store';
 
 export default {
@@ -32,35 +33,26 @@ export default {
       getCasLogoutURL().then(data => {
         window.location.href = data.casLogoutURL;
       });
-    },
-    logIn() {
-      getCasLoginURL().then(data => {
-        window.location.href = data.casLoginURL;
-      });
     }
   }
 };
 </script>
 
 <style scoped lang="scss">
-a {
-  text-decoration: none;
+.breadcrumb span {
+  padding: 5px;
 }
 .header {
   display: flex;
   justify-content: space-between;
-  padding: 25px;
 }
-.breadcrumb {
-  display: flex;
-  align-items: center;
+.logo {
+  padding-top: 10px;
 }
-.breadcrumb a {
-  padding: 0 10px 0 10px;
+.greeting {
+  padding-top: 15px;
 }
-.logout {
-  &:hover {
-    cursor: pointer;
-  }
+.greeting div {
+  padding-left: 10px;
 }
 </style>

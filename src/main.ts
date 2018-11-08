@@ -10,7 +10,12 @@ import store from '@/store';
 // Allow cookies in Access-Control requests
 axios.defaults.withCredentials = true;
 axios.interceptors.response.use(response => response, function(error) {
-  store.commit('reportError', error);
+  store.commit('reportError', {
+    message: error.message,
+    text: error.response.text,
+    status: error.response.status,
+    stack: error.stack
+  });
   return Promise.reject(error);
 });
 

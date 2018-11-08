@@ -41,17 +41,18 @@ def console_available_jobs():
             job_api_endpoints.append({
                 'name': rule.endpoint.replace('_', ' ').capitalize(),
                 'path': rule.rule,
-                'requiredParameters': list(rule.arguments),
+                'required': list(rule.arguments),
                 'methods': list(rule.methods),
             })
     job_api_endpoints.sort(key=lambda row: row.get('name'))
     return tolerant_jsonify(job_api_endpoints)
 
 
-@app.route('/api/metadata/background_job_status', methods=['POST'])
+@app.route('/api/admin/background_job_status', methods=['POST'])
 @auth_required
 def background_job_status():
     iso_date = request.args.get('date')
+    date_format = '%Y-%m-%d %H:%M'
     date = dateutil.parser.parse(iso_date) if iso_date else datetime.today()
     rows = metadata.background_job_status_by_date(created_date=date) or []
     rows.sort(key=lambda row: row.get('created_at'))
@@ -62,7 +63,7 @@ def background_job_status():
             'status': row['status'],
             'instanceId': row['instance_id'],
             'details': row['details'],
-            'started': row['created_at'].strftime('%c'),
-            'finished': row['updated_at'].strftime('%c'),
+            'started': row['created_at'].strftime(date_format),
+            'finished': row['updated_at'].strftime(date_format),
         }
     return tolerant_jsonify([to_api_json(row) for row in rows])

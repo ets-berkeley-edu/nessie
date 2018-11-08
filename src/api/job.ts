@@ -4,7 +4,7 @@ import store from '@/store';
 export function startJob(jobId: number) {
   return axios
     .post(`${store.state.apiBaseURL}/api/job/${jobId}`)
-    .then(response => response.data, err => err.response);
+    .then(response => response.data, () => null);
 }
 
 export function getBackgroundJobStatus(date: Date) {
@@ -13,19 +13,19 @@ export function getBackgroundJobStatus(date: Date) {
     .post(
       `${
         store.state.apiBaseURL
-      }/api/metadata/background_job_status?date=${isoString}`
+      }/api/admin/background_job_status?date=${isoString}`
     )
-    .then(response => response.data, err => err.response);
+    .then(response => response.data, () => null);
 }
 
 export function getRunnableJobs() {
   return axios
     .get(`${store.state.apiBaseURL}/api/admin/runnable_jobs`)
-    .then(response => response.data, err => err.response);
+    .then(response => response.data, () => null);
 }
 
 export function runJob(path: string) {
   return axios
     .post(`${store.state.apiBaseURL}${path}`)
-    .then(response => response.data, err => err.response);
+    .then(response => response.data, () => null);
 }
