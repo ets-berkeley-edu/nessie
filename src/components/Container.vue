@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div class="main">
     <slot/>
   </div>
 </template>
@@ -11,9 +11,11 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.center-container {
+.main {
   display: flex;
-  align-items: center;
   flex-direction: column;
+  min-height: 100vh;
+  padding: 0 30px 0 30px;
+  width: 100%;
 }
 </style>

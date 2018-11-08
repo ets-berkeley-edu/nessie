@@ -1,9 +1,9 @@
 <template>
-  <div class="footer-container">
+  <div class="flex-row footer-container">
     <div>
       <img src="@/assets/uc-berkeley-logo.svg"/>
     </div>
-    <div class="footer-copyright">
+    <div class="copyright">
       &copy; 2018 The Regents of the University of California
     </div>
   </div>
@@ -17,19 +17,12 @@ export default {
 
 <style scoped lang="scss">
 .footer-container {
-  align-items: flex-start;
-  align-self: end;
-  display: flex;
-  flex-direction: row;
-  font-weight: 300;
+  align-items: flex-end;
   justify-content: space-between;
-  padding-top: 20px;
+  padding-bottom: 20px;
 }
-
-.footer-copyright {
+.copyright {
   display: inline-block;
-  margin: 0 20px 0 20px;
-  text-align: right;
   white-space: nowrap;
 }
 </style>

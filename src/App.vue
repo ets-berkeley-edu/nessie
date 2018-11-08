@@ -1,13 +1,13 @@
 <template>
   <div id="app">
-    <div class="main-container">
-      <Container>
-        <Header/>
+    <Container>
+      <Header/>
+      <div class="content">
         <display-error/>
         <router-view/>
-        <Footer/>
-      </Container>
-    </div>
+      </div>
+      <Footer/>
+    </Container>
   </div>
 </template>
 
@@ -28,9 +28,5 @@ export default {
 };
 </script>
 
-<style scoped lang="scss">
-#app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
+<style src="./nessie.css">
 </style>

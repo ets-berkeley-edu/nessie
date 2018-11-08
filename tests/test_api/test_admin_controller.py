@@ -31,14 +31,14 @@ class TestAdminController:
 
     def test_no_authentication(self, client):
         """Refuse a request with no authentication."""
-        response = client.post('/api/metadata/background_job_status')
+        response = client.post('/api/admin/background_job_status')
         assert response.status_code == 401
 
     def test_background_job_status(self, app, client):
         """Returns a well-formed response."""
         response = post_basic_auth(
             client,
-            '/api/metadata/background_job_status',
+            '/api/admin/background_job_status',
             credentials(app),
         )
         assert response.status_code == 200
@@ -50,5 +50,5 @@ class TestAdminController:
         assert response.status_code == 200
         job = next((job for job in response.json if job.get('name') == 'Generate merged student feeds'), None)
         assert job.get('path') == '/api/job/generate_merged_student_feeds/<term_id>'
-        assert job.get('requiredParameters') == ['term_id']
+        assert job.get('required') == ['term_id']
         assert 'POST' in job.get('methods')
