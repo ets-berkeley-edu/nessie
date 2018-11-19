@@ -1,5 +1,5 @@
 import Vue from 'vue';
-import VueRouter from 'vue-router';
+import VueRouter, { Route } from 'vue-router';
 import store from '@/store';
 import { getRunnableJobs } from '@/api/job';
 import { getMyProfile } from '@/api/user';
@@ -25,8 +25,8 @@ let registerMe = () => {
   );
 };
 
-let beforeEach = (to: any, from: any, next: any) => {
-  let safeNext = (to: any, next: any) => {
+let beforeEach = (to: Route, from: Route, next: Function) => {
+  let safeNext = (to: Route, next: Function) => {
     if (to.matched.length) {
       next();
     } else {
@@ -40,7 +40,7 @@ let beforeEach = (to: any, from: any, next: any) => {
   }
 };
 
-let requiresAuth = (to: any, from: any, next: any) => {
+let requiresAuth = (to: Route, from: Route, next: Function) => {
   if (store.getters.user) {
     next();
   } else {
@@ -55,7 +55,7 @@ const router = new VueRouter({
       path: '/login',
       name: 'login',
       component: Login,
-      beforeEnter: (to: any, from: any, next: any) => {
+      beforeEnter: (to: Route, from: Route, next: Function) => {
         if (store.getters.user) {
           next('/home');
         } else {

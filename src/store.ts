@@ -11,33 +11,33 @@ const state = {
 };
 
 const getters = {
-  errors: (state: any) => {
+  errors: state => {
     return state.errors;
   },
-  runnableJobs: (state: any) => {
+  runnableJobs: state => {
     return state.runnableJobs;
   },
-  user: (state: any) => {
+  user: state => {
     return state.user;
   }
 };
 
 const mutations = {
-  logout: (state: any) => {
+  logout: state => {
     state.user = null;
   },
-  registerMe: (state: any, user: any) => {
+  registerMe: (state, user) => {
     state.user = user;
   },
-  cacheRunnableJobs: (state: any, runnableJobs: any) => {
+  cacheRunnableJobs: (state, runnableJobs) => {
     state.runnableJobs = runnableJobs;
   },
-  reportError: (state: any, error: any) => {
+  reportError: (state, error) => {
     error.id = new Date().getTime();
     state.errors.push(error);
   },
-  dismissError: (state: any, id: number) => {
-    const indexOf = state.errors.findIndex((e: any) => e.id === id);
+  dismissError: (state, id: number) => {
+    const indexOf = state.errors.findIndex(e => e.id === id);
     if (indexOf > -1) {
       state.errors.splice(indexOf, 1);
     }
