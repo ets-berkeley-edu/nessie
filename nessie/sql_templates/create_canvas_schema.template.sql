@@ -554,6 +554,61 @@ FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
 LOCATION '{loch_s3_canvas_data_path_today}/submission_comment_dim';
 
+-- conversations
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.conversation_dim(
+    id BIGINT,
+    canvas_id BIGINT,
+    has_attachments BOOLEAN,
+    has_media_objects BOOLEAN,
+    subject VARCHAR,
+    course_id BIGINT,
+    group_id BIGINT,
+    account_id BIGINT
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+STORED AS TEXTFILE
+LOCATION '{loch_s3_canvas_data_path_today}/conversation_dim';
+
+-- conversation messages
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.conversation_message_dim(
+    id BIGINT,
+    canvas_id BIGINT,
+    conversation_id BIGINT,
+    author_id BIGINT,
+    created_at TIMESTAMP,
+    generated BOOLEAN,
+    has_attachments BOOLEAN,
+    has_media_objects BOOLEAN,
+    body VARCHAR
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+STORED AS TEXTFILE
+LOCATION '{loch_s3_canvas_data_path_today}/conversation_message_dim';
+
+-- conversation message participants
+CREATE EXTERNAL TABLE {redshift_schema_canvas}.conversation_message_participant_fact
+(
+    conversation_message_id BIGINT,
+    conversation_id BIGINT,
+    user_id BIGINT,
+    course_id BIGINT,
+    enrollment_term_id BIGINT,
+    course_account_id BIGINT,
+    group_id BIGINT,
+    account_id BIGINT,
+    enrollment_rollup_id BIGINT,
+    message_size_bytes INT,
+    message_character_count INT,
+    message_word_count INT,
+    message_line_count INT
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+STORED AS TEXTFILE
+LOCATION '{loch_s3_canvas_data_path_today}/conversation_message_participant_fact';
+
 -- requests
 CREATE EXTERNAL TABLE {redshift_schema_canvas}.requests(
     id VARCHAR,
