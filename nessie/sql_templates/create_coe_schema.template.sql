@@ -54,7 +54,8 @@ CREATE EXTERNAL TABLE {redshift_schema_coe_external}.students(
     sat2math INT,
     in_met VARCHAR,
     grad_term VARCHAR,
-    grad_year VARCHAR
+    grad_year VARCHAR,
+    probation VARCHAR
 )
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
@@ -91,7 +92,8 @@ AS (
     s.sat2math,
     (CASE WHEN s.in_met = 'y' THEN true ELSE false END) AS in_met,
     s.grad_term,
-    s.grad_year
+    s.grad_year,
+    (CASE WHEN s.probation = 'y' THEN true ELSE false END) AS probation,
     FROM {redshift_schema_coe_external}.students s
     -- Avoid header rows and other surprises by selecting numeric sids only.
     WHERE sid SIMILAR TO '[0-9]+'

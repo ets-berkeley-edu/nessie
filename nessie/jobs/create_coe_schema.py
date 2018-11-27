@@ -84,6 +84,7 @@ class CreateCoeSchema(BackgroundJob):
                 'inMet': row_for_student.get('in_met'),
                 'gradTerm': row_for_student.get('grad_term'),
                 'gradYear': row_for_student.get('grad_year'),
+                'probation': row_for_student.get('probation'),
             }
             profile_rows.append(encoded_tsv_row([sid, json.dumps(coe_profile)]))
 
@@ -128,6 +129,7 @@ class CreateCoeSchema(BackgroundJob):
                 'sid', 'advisor_ldap_uid', 'gender', 'ethnicity', 'minority',
                 'did_prep', 'prep_eligible', 'did_tprep', 'tprep_eligible',
                 'sat1read', 'sat1math', 'sat2math', 'in_met', 'grad_term', 'grad_year',
+                'probation',
             ]
             result = transaction.insert_bulk(
                 f'INSERT INTO {internal_schema}.students ({", ".join(columns)}) VALUES %s',

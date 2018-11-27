@@ -36,7 +36,8 @@ CREATE TABLE {redshift_schema_coe}.students
     sat2math INT,
     in_met BOOLEAN NOT NULL,
     grad_term VARCHAR,
-    grad_year VARCHAR
+    grad_year VARCHAR,
+    probation BOOLEAN NOT NULL
 );
 
 CREATE TABLE {redshift_schema_coe}.student_profiles
@@ -217,12 +218,12 @@ VALUES
 
 INSERT INTO {redshift_schema_coe}.students
 (sid, advisor_ldap_uid, gender, ethnicity, minority, did_prep, prep_eligible, did_tprep, tprep_eligible,
-  sat1read, sat1math, sat2math, in_met, grad_term, grad_year)
+  sat1read, sat1math, sat2math, in_met, grad_term, grad_year, probation)
 VALUES
-('11667051', '90412', 'm', 'H', FALSE, TRUE, FALSE, FALSE, FALSE, NULL, NULL, NULL, FALSE, NULL, NULL),
-('7890123456', '1133399', 'f', 'B', TRUE, FALSE, TRUE, FALSE, FALSE, 510, 520, 620, FALSE, 'sp', '2020'),
-('9000000000', '1133399', 'f', 'B', TRUE, FALSE, TRUE, FALSE, FALSE, NULL, NULL, 720, FALSE, NULL, NULL),
-('9100000000', '90412', 'm', 'X', FALSE, FALSE, FALSE, FALSE, TRUE, 720, 760, 770, TRUE, 'fa', '2018');
+('11667051', '90412', 'm', 'H', FALSE, TRUE, FALSE, FALSE, FALSE, NULL, NULL, NULL, FALSE, NULL, NULL, FALSE),
+('7890123456', '1133399', 'f', 'B', TRUE, FALSE, TRUE, FALSE, FALSE, 510, 520, 620, FALSE, 'sp', '2020', FALSE),
+('9000000000', '1133399', 'f', 'B', TRUE, FALSE, TRUE, FALSE, FALSE, NULL, NULL, 720, FALSE, NULL, NULL, FALSE),
+('9100000000', '90412', 'm', 'X', FALSE, FALSE, FALSE, FALSE, TRUE, 720, 760, 770, TRUE, 'fa', '2018', TRUE);
 
 INSERT INTO {redshift_schema_student}.sis_api_degree_progress
 (sid, feed)
