@@ -30,3 +30,4 @@ install:
 
 script:
   - tox
+  - npm run build-vue
