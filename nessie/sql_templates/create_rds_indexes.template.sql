@@ -38,12 +38,14 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_coe}.students
     grad_term VARCHAR,
     grad_year VARCHAR,
     probation BOOLEAN,
+    status VARCHAR,
     PRIMARY KEY (sid, advisor_ldap_uid)
 );
 
 CREATE INDEX IF NOT EXISTS students_coe_sid_idx ON {redshift_schema_coe}.students (sid);
 CREATE INDEX IF NOT EXISTS students_coe_advisor_ldap_uid_idx ON {redshift_schema_coe}.students (advisor_ldap_uid);
 CREATE INDEX IF NOT EXISTS students_coe_probation_idx ON {redshift_schema_coe}.students (probation);
+CREATE INDEX IF NOT EXISTS students_coe_status_idx ON {redshift_schema_coe}.students (status);
 
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_student};
 
