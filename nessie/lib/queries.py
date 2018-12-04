@@ -111,6 +111,17 @@ def get_enrolled_primary_sections_for_term(term_id):
     return redshift.fetch(sql)
 
 
+@fixture('query_enrollment_drops_{csid}.csv')
+def get_enrollment_drops(csid, term_id):
+    sql = f"""SELECT dr.*
+              FROM {intermediate_schema()}.sis_dropped_classes AS dr
+              WHERE dr.sid = '{csid}'
+                AND dr.sis_term_id = {term_id}'
+              ORDER BY dr.sis_course_name
+            """
+    return redshift.fetch(sql)
+
+
 def get_sis_api_degree_progress(csid):
     sql = f"""SELECT feed from {student_schema()}.sis_api_degree_progress WHERE sid='{csid}'"""
     return redshift.fetch(sql)
@@ -130,7 +141,7 @@ def get_sis_api_profile(csid):
 @fixture('query_sis_enrollments_{uid}.csv')
 def get_sis_enrollments(uid):
     sql = f"""SELECT
-                  enr.grade, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id, enr.ldap_uid,
+                  enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id, enr.ldap_uid,
                   crs.sis_course_title, crs.sis_course_name,
                   crs.sis_section_id, crs.sis_primary, crs.sis_instruction_format, crs.sis_section_num
               FROM {intermediate_schema()}.sis_enrollments enr
@@ -138,7 +149,6 @@ def get_sis_enrollments(uid):
                   ON crs.sis_section_id = enr.sis_section_id
                   AND crs.sis_term_id = enr.sis_term_id
               WHERE enr.ldap_uid = {uid}
-                  AND enr.sis_enrollment_status != 'D'
               ORDER BY enr.sis_term_id, crs.sis_course_name, crs.sis_primary DESC, crs.sis_instruction_format, crs.sis_section_num
         """
     return redshift.fetch(sql)

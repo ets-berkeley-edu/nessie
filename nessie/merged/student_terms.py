@@ -24,24 +24,22 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from itertools import groupby
-import json
 import operator
 
 from nessie.lib import berkeley, queries
 
 
-def get_merged_enrollment_terms(uid, cs_id, term_ids, canvas_courses_feed, canvas_site_map):
+def get_merged_enrollment_terms(uid, sid, term_ids, canvas_courses_feed, canvas_site_map):
     enrollment_results = queries.get_sis_enrollments(uid) or []
     enrollments_by_term = {}
     for key, group in groupby(enrollment_results, key=operator.itemgetter('sis_term_id')):
         enrollments_by_term[str(key)] = list(group)
-    drops_and_midterms_result = queries.get_sis_api_drops_and_midterms(cs_id, term_ids) or []
     term_feeds = {}
     for term_id in term_ids:
         enrollments = enrollments_by_term.get(term_id, [])
         term_name = berkeley.term_name_for_sis_id(term_id)
-        drops_and_midterms = next((json.loads(row['feed']) for row in drops_and_midterms_result if str(row['term_id']) == str(term_id)), {})
-        term_feed = merge_enrollment(cs_id, enrollments, term_id, term_name, drops_and_midterms)
+        term_feed = merge_enrollment(enrollments, term_id, term_name)
+        term_feed['droppedSections'] = get_dropped_sections(sid, term_id)
         for site in canvas_courses_feed:
             merge_canvas_course_site(term_feed, site, canvas_site_map)
         sort_canvas_course_sites(term_feed)
@@ -76,20 +74,19 @@ def merge_canvas_site_map(canvas_site_map, canvas_courses_feed):
         canvas_site_map[str(key)]['sis_sections'] = list(group)
 
 
-def merge_drops_and_midterms(term_feed, drops_and_midterms):
-    term_feed['droppedSections'] = drops_and_midterms.get('droppedPrimarySections', [])
-    section_midterms = drops_and_midterms.get('midtermGrades', {})
-    for enrollment in term_feed['enrollments']:
-        for section in enrollment['sections']:
-            section_id = str(section['ccn'])
-            if section_id in section_midterms:
-                midterm_grade = section_midterms[section_id]
-                section['midtermGrade'] = midterm_grade
-                enrollment['midtermGrade'] = midterm_grade
-    return term_feed
+def get_dropped_sections(sid, term_id):
+    drops = []
+    for row in queries.get_enrollment_drops(sid, term_id):
+        drops.append({
+            'displayName': row['sis_course_name'],
+            'component': row['sis_instruction_format'],
+            'sectionNumber': row['sis_section_num'],
+            'withdrawAfterDeadline': (row['grade'] == 'W'),
+        })
+    return drops
 
 
-def merge_enrollment(cs_id, enrollments, term_id, term_name, drops_and_midterms):
+def merge_enrollment(enrollments, term_id, term_name):
     enrollments_by_class = {}
     term_section_ids = {}
     enrolled_units = 0
@@ -108,6 +105,7 @@ def merge_enrollment(cs_id, enrollments, term_id, term_name, drops_and_midterms)
             'units': enrollment['units'],
             'gradingBasis': berkeley.translate_grading_basis(enrollment['grading_basis']),
             'grade': enrollment['grade'],
+            'midtermGrade': enrollment['grade_midterm'],
             'primary': enrollment['sis_primary'],
         }
 
@@ -129,6 +127,7 @@ def merge_enrollment(cs_id, enrollments, term_id, term_name, drops_and_midterms)
         if is_enrolled_primary_section(section_feed) or (
                 section_feed['primary'] and 'units' not in enrollments_by_class[class_name]):
             enrollments_by_class[class_name]['grade'] = section_feed['grade']
+            enrollments_by_class[class_name]['midtermGrade'] = section_feed['midtermGrade']
             enrollments_by_class[class_name]['gradingBasis'] = section_feed['gradingBasis']
             enrollments_by_class[class_name]['units'] = section_feed['units']
 
@@ -141,8 +140,6 @@ def merge_enrollment(cs_id, enrollments, term_id, term_name, drops_and_midterms)
         'enrolledUnits': enrolled_units,
         'unmatchedCanvasSites': [],
     }
-    if drops_and_midterms.get('midtermGrades') or drops_and_midterms.get('droppedPrimarySections'):
-        merge_drops_and_midterms(term_feed, drops_and_midterms)
     return term_feed
 
 
