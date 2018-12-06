@@ -64,13 +64,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_degree_progress
     feed TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_drops_and_midterms
-(
-    sid VARCHAR NOT NULL,
-    term_id VARCHAR(4) NOT NULL,
-    feed TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_profiles
 (
     sid VARCHAR NOT NULL,
@@ -136,13 +129,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.canvas_api_enrollme
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.sis_api_degree_progress
 (
     sid VARCHAR NOT NULL,
-    feed TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.sis_api_drops_and_midterms
-(
-    sid VARCHAR NOT NULL,
-    term_id VARCHAR(4) NOT NULL,
     feed TEXT NOT NULL
 );
 
@@ -230,11 +216,6 @@ INSERT INTO {redshift_schema_student}.sis_api_degree_progress
 (sid, feed)
 VALUES
 ('11667051', %(sis_degree_progress_11667051)s);
-
-INSERT INTO {redshift_schema_student}.sis_api_drops_and_midterms
-(sid, term_id, feed)
-VALUES
-('11667051', '2178', %(sis_api_drops_and_midterms_11667051_2178)s);
 
 INSERT INTO {redshift_schema_student}.sis_api_profiles
 (sid, feed)

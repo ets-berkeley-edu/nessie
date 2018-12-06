@@ -44,15 +44,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_degree_progress
 DISTKEY(sid)
 SORTKEY(sid);
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_drops_and_midterms
-(
-    sid VARCHAR NOT NULL,
-    term_id VARCHAR(4) NOT NULL,
-    feed VARCHAR(max) NOT NULL
-)
-DISTKEY(sid)
-SORTKEY(sid, term_id);
-
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_profiles
 (
     sid VARCHAR NOT NULL,

@@ -177,19 +177,6 @@ def canvas_course_feed(course):
     }
 
 
-def collect_dropped_sections(term_feed):
-    dropped_sections = []
-    for enrollment in term_feed['enrollments']:
-        for section in enrollment['sections']:
-            if section['enrollmentStatus'] == 'D':
-                dropped_sections.append({
-                    'displayName': enrollment['displayName'],
-                    'component': section['component'],
-                    'sectionNumber': section['sectionNumber'],
-                })
-    return dropped_sections
-
-
 def is_enrolled_primary_section(section_feed):
     return section_feed['primary'] and section_feed['enrollmentStatus'] == 'E'
 
@@ -218,12 +205,6 @@ def merge_canvas_course_site(term_feed, site, canvas_site_map):
                         enrollment['canvasSites'].append(site)
     if not enrollments_matched:
         term_feed['unmatchedCanvasSites'].append(site)
-
-
-def remove_dropped_enrollments(term_feed):
-    for enrollment in term_feed['enrollments']:
-        enrollment['sections'] = [sec for sec in enrollment['sections'] if sec['enrollmentStatus'] != 'D']
-    term_feed['enrollments'] = [enrollment for enrollment in term_feed['enrollments'] if len(enrollment['sections'])]
 
 
 def sis_enrollment_class_feed(enrollment):

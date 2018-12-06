@@ -127,12 +127,6 @@ def get_sis_api_degree_progress(csid):
     return redshift.fetch(sql)
 
 
-def get_sis_api_drops_and_midterms(csid, term_ids):
-    sql = f"""SELECT term_id, feed from {student_schema()}.sis_api_drops_and_midterms
-              WHERE sid='{csid}' AND term_id = ANY('{{{','.join(term_ids)}}}')"""
-    return redshift.fetch(sql)
-
-
 def get_sis_api_profile(csid):
     sql = f"""SELECT feed from {student_schema()}.sis_api_profiles WHERE sid='{csid}'"""
     return redshift.fetch(sql)
