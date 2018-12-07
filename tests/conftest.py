@@ -120,7 +120,6 @@ def student_tables(app):
         student_sql = sql_file.read()
     params = {}
     for key in [
-        'sis_api_drops_and_midterms_11667051_2178',
         'sis_degree_progress_11667051',
         'sis_student_api_11667051',
         'sis_student_api_2345678901',

@@ -44,10 +44,43 @@ AS (
         en.enrollment_status AS sis_enrollment_status,
         en.units,
         en.grading_basis,
-        TRIM(en.grade) AS grade
+        TRIM(en.grade) AS grade,
+        TRIM(en.grade_midterm) AS grade_midterm
     FROM {redshift_schema_sis}.enrollments en
     WHERE
         en.enrollment_status != 'D'
+        AND en.grade != 'W'
+);
+
+/*
+ * A final grade of 'W' signals Withdraw Without Academic Penalty, in which a student is allowed to withdraw from
+ * a course after the drop deadline has passed.
+ */
+
+CREATE TABLE {redshift_schema_intermediate}.sis_dropped_classes
+INTERLEAVED SORTKEY (sis_term_id, sid)
+AS (
+    SELECT
+        en.term_id AS sis_term_id,
+        en.section_id AS sis_section_id,
+        en.ldap_uid,
+        en.sis_id AS sid,
+        en.enrollment_status AS sis_enrollment_status,
+        TRIM(en.grade) AS grade,
+        TRIM(en.grade_midterm) AS grade_midterm,
+        sc.course_display_name AS sis_course_name,
+        sc.course_title AS sis_course_title,
+        sc.instruction_format AS sis_instruction_format,
+        sc.section_num AS sis_section_num
+    FROM {redshift_schema_sis}.enrollments en
+    JOIN {redshift_schema_sis}.courses sc
+        ON en.term_id = sc.term_id
+        AND en.section_id = sc.section_id
+    WHERE
+        sc.is_primary = TRUE AND (
+            en.enrollment_status = 'D'
+            OR en.grade = 'W'
+        )
 );
 
 CREATE TABLE {redshift_schema_intermediate}.sis_sections

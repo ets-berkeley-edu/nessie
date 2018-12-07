@@ -79,7 +79,8 @@ CREATE EXTERNAL TABLE {redshift_schema_sis}.enrollments(
     units DOUBLE PRECISION,
     grade VARCHAR,
     grade_points DOUBLE PRECISION,
-    grading_basis VARCHAR
+    grading_basis VARCHAR,
+    grade_midterm VARCHAR
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
 WITH SERDEPROPERTIES (

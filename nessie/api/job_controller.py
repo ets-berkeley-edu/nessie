@@ -45,7 +45,6 @@ from nessie.jobs.import_calnet_data import ImportCalNetData
 from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
 from nessie.jobs.import_degree_progress import ImportDegreeProgress
 from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
-from nessie.jobs.import_sis_enrollments_api import ImportSisEnrollmentsApi
 from nessie.jobs.import_sis_student_api import ImportSisStudentApi
 from nessie.jobs.import_sis_terms_api import ImportSisTermsApi
 from nessie.jobs.import_term_gpas import ImportTermGpas
@@ -228,18 +227,6 @@ def transform_lrs_incrementals():
 @auth_required
 def delete_lrs_glue_jobs():
     job_started = DeleteLrsGlueJobs().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/import_sis_enrollments_api', methods=['POST'])
-@auth_required
-def import_sis_enrollments_api():
-    args = get_json_args(request)
-    if args:
-        term_id = args.get('term')
-    else:
-        term_id = None
-    job_started = ImportSisEnrollmentsApi(term_id=term_id).run_async()
     return respond_with_status(job_started)
 
 

@@ -33,14 +33,22 @@ class TestMergedSisEnrollments:
         merge_canvas_site_map(canvas_site_map, canvas_courses_feed)
         return canvas_site_map
 
-    def test_merges_midterm_grades(self, app, student_tables):
+    def test_merges_drops(self, app, student_tables):
+        canvas_courses_feed = get_canvas_courses_feed('61889')
+        terms_feed = get_merged_enrollment_terms('61889', '11667051', ['2178'], canvas_courses_feed, self.get_canvas_site_map(canvas_courses_feed))
+        drops = terms_feed['2178']['droppedSections']
+        assert 2 == len(drops)
+        assert drops[0] == {'displayName': 'HISTORY 10CH', 'component': 'LEC', 'sectionNumber': '003', 'withdrawAfterDeadline': False}
+        assert drops[1] == {'displayName': 'ENV,RES C9', 'component': 'STD', 'sectionNumber': '001', 'withdrawAfterDeadline': True}
+
+    def test_includes_midterm_grades(self, app, student_tables):
         canvas_courses_feed = get_canvas_courses_feed('61889')
         terms_feed = get_merged_enrollment_terms('61889', '11667051', ['2178'], canvas_courses_feed, self.get_canvas_site_map(canvas_courses_feed))
         term_feed = terms_feed['2178']
         assert '2178' == term_feed['termId']
         enrollments = term_feed['enrollments']
         assert 4 == len(enrollments)
-        assert 'D+' == enrollments[0]['midtermGrade']
+        assert 'D-' == enrollments[0]['midtermGrade']
         assert 'BURMESE 1A' == enrollments[0]['displayName']
         assert 90100 == enrollments[0]['sections'][0]['ccn']
 
