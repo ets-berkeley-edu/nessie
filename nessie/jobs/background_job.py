@@ -70,6 +70,9 @@ class BackgroundJob(object):
         pass
 
     def run_async(self, lock_id=None, **async_opts):
+        if os.environ.get('NESSIE_ENV') in ['test', 'testext']:
+            app.logger.info('Test run in progress; will not muddy the waters by actually kicking off a background thread.')
+            return True
         queue = get_job_queue()
         if queue:
             app.logger.info(f'Current queue size {queue.qsize()}; adding new job.')
@@ -84,11 +87,6 @@ class BackgroundJob(object):
             if lock_id:
                 kwargs['lock_id'] = lock_id
             thread = Thread(target=self.run_in_app_context, args=[app_arg], kwargs=kwargs, daemon=True)
-
-            if os.environ.get('NESSIE_ENV') in ['test', 'testext']:
-                app.logger.info('Test run in progress; will not muddy the waters by actually kicking off a background thread.')
-                return True
-
             thread.start()
             return True
 
