@@ -116,7 +116,7 @@ def get_enrollment_drops(csid, term_id):
     sql = f"""SELECT dr.*
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
               WHERE dr.sid = '{csid}'
-                AND dr.sis_term_id = {term_id}'
+                AND dr.sis_term_id = '{term_id}'
               ORDER BY dr.sis_course_name
             """
     return redshift.fetch(sql)
