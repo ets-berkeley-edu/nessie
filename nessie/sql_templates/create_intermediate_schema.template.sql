@@ -81,6 +81,10 @@ AS (
             en.enrollment_status = 'D'
             OR en.grade = 'W'
         )
+    /* Clear out duplicates. */
+    GROUP BY
+        en.term_id, en.section_id, en.ldap_uid, en.sis_id, en.enrollment_status, en.grade, en.grade_midterm,
+        sc.course_display_name, sc.course_title, sc.instruction_format, sc.section_num
 );
 
 CREATE TABLE {redshift_schema_intermediate}.sis_sections
