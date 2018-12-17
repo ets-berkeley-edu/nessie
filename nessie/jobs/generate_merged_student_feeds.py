@@ -152,7 +152,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             index += 1
             try:
                 merged_profile = self.generate_or_fetch_merged_profile(term_id, sid, list(profile_group)[0])
-                if merged_profile and merged_profile.get('uid') and merged_profile.get('canvas_user_id'):
+                if merged_profile and merged_profile.get('uid') and merged_profile.get('canvasUserId'):
                     self.generate_merged_enrollment_terms(merged_profile, term_id)
                     self.parse_holds(sid)
                     successes.append(sid)
