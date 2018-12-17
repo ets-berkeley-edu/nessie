@@ -150,12 +150,18 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         for sid, profile_group in groupby(calnet_profiles, operator.itemgetter('sid')):
             app.logger.info(f'Generating feeds for sid {sid} ({index} of {len(calnet_profiles)})')
             index += 1
-            merged_profile = self.generate_or_fetch_merged_profile(term_id, sid, list(profile_group)[0])
-            if merged_profile:
-                self.generate_merged_enrollment_terms(merged_profile, term_id)
-                self.parse_holds(sid)
-                successes.append(sid)
-            else:
+            try:
+                merged_profile = self.generate_or_fetch_merged_profile(term_id, sid, list(profile_group)[0])
+                if merged_profile and merged_profile.get('uid') and merged_profile.get('canvas_user_id'):
+                    self.generate_merged_enrollment_terms(merged_profile, term_id)
+                    self.parse_holds(sid)
+                    successes.append(sid)
+                else:
+                    app.logger.warn(f'Could not generate feeds for sid {sid}: missing ID mappings in merged profile.')
+                    failures.append(sid)
+            except Exception as e:
+                app.logger.error(f'Error generating feeds for sid {sid}:')
+                app.logger.exception(e)
                 failures.append(sid)
 
         for table in tables:
