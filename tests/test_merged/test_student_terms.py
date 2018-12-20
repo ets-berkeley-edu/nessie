@@ -40,6 +40,8 @@ class TestMergedSisEnrollments:
         assert 2 == len(drops)
         assert drops[0] == {'displayName': 'HISTORY 10CH', 'component': 'LEC', 'sectionNumber': '003', 'withdrawAfterDeadline': False}
         assert drops[1] == {'displayName': 'ENV,RES C9', 'component': 'STD', 'sectionNumber': '001', 'withdrawAfterDeadline': True}
+        enrollments = terms_feed['2178']['enrollments']
+        assert any(enr['displayName'] == 'ENV,RES C9' for enr in enrollments) is False
 
     def test_includes_midterm_grades(self, app, student_tables):
         canvas_courses_feed = get_canvas_courses_feed('61889')
