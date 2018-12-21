@@ -60,7 +60,7 @@ class TestQueries:
 
     def test_sis_enrollments(self, app):
         enrollments = queries.get_sis_enrollments(61889)
-        assert len(enrollments) == 9
+        assert len(enrollments) == 10
 
         assert enrollments[4]['sis_course_name'] == 'BURMESE 1A'
         assert enrollments[4]['sis_section_num'] == '001'
@@ -75,18 +75,18 @@ class TestQueries:
         assert enrollments[5]['grading_basis'] == 'GRD'
 
         assert enrollments[6]['sis_course_name'] == 'NUC ENG 124'
-        assert enrollments[6]['sis_section_num'] == '201'
+        assert enrollments[6]['sis_section_num'] == '002'
         assert enrollments[6]['sis_enrollment_status'] == 'E'
-        assert enrollments[6]['units'] == 0
-        assert enrollments[6]['grading_basis'] == 'NON'
-        assert not enrollments[6]['grade']
+        assert enrollments[6]['units'] == 3
+        assert enrollments[6]['grading_basis'] == 'PNP'
+        assert enrollments[6]['grade'] == 'P'
 
         assert enrollments[7]['sis_course_name'] == 'NUC ENG 124'
-        assert enrollments[7]['sis_section_num'] == '002'
+        assert enrollments[7]['sis_section_num'] == '201'
         assert enrollments[7]['sis_enrollment_status'] == 'E'
-        assert enrollments[7]['units'] == 3
-        assert enrollments[7]['grading_basis'] == 'PNP'
-        assert enrollments[7]['grade'] == 'P'
+        assert enrollments[7]['units'] == 0
+        assert enrollments[7]['grading_basis'] == 'NON'
+        assert not enrollments[7]['grade']
 
         assert enrollments[8]['sis_course_name'] == 'PHYSED 11'
         assert enrollments[8]['sis_section_num'] == '001'
