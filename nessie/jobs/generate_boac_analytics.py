@@ -27,7 +27,7 @@ from flask import current_app as app
 from nessie.externals import redshift
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.berkeley import reverse_term_ids
-from nessie.lib.util import resolve_sql_template
+from nessie.lib.util import hashed_datestamp, resolve_sql_template
 
 """Logic for BOAC analytics job."""
 
@@ -37,8 +37,20 @@ class GenerateBoacAnalytics(BackgroundJob):
     def run(self):
         app.logger.info(f'Starting BOAC analytics job...')
         term_id_series = reverse_term_ids()
+        boac_snapshot_daily_path = '/'.join([
+            f"s3://{app.config['LOCH_S3_BUCKET']}",
+            app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH'],
+            'term',
+            term_id_series[0],
+            'daily',
+            hashed_datestamp(),
+        ])
         resolved_ddl = resolve_sql_template(
             'create_boac_schema.template.sql',
+            aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
+            aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY'],
+            boac_snapshot_daily_path=boac_snapshot_daily_path,
+            current_term_id=term_id_series[0],
             last_term_id=term_id_series[1],
             previous_term_id=term_id_series[2],
         )
