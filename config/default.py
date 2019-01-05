@@ -136,6 +136,7 @@ LOCH_S3_CANVAS_DATA_PATH_DAILY = 'canvas/path/to/daily'
 LOCH_S3_CANVAS_DATA_PATH_HISTORICAL = 'canvas/path/to/historical'
 
 LOCH_S3_ASC_DATA_PATH = 'asc/path'
+LOCH_S3_BOAC_ANALYTICS_DATA_PATH = 'boac-analytics'
 LOCH_S3_CALNET_DATA_PATH = 'calnet/path'
 LOCH_S3_COE_DATA_PATH = 'coe/path'
 LOCH_S3_SIS_DATA_PATH = 'sis/path'

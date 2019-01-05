@@ -311,3 +311,42 @@ AS (
         AND tg.term_id = ANY('{{{last_term_id},{previous_term_id}}}')
     GROUP BY enr.sis_term_id, enr.sis_section_id, gpa_term_id
 );
+
+/*
+ * After boiled-down derived tables are generated, pull out data for the current term and store snapshots in S3.
+ */
+
+UNLOAD (
+    'SELECT ce.uid, ce.canvas_user_id, ce.course_id, ce.sis_enrollment_status, ce.last_activity_at, ce.current_score, ce.final_score
+    FROM boac_analytics.course_enrollments ce
+    JOIN intermediate.course_sections cs
+    ON ce.course_id = cs.canvas_course_id
+    AND cs.sis_term_id = \'{current_term_id}\'
+    GROUP BY ce.uid, ce.canvas_user_id, ce.course_id, ce.sis_enrollment_status, ce.last_activity_at, ce.current_score, ce.final_score'
+)
+TO '{boac_snapshot_daily_path}/course_scores/snapshot'
+ACCESS_KEY_ID '{aws_access_key_id}'
+SECRET_ACCESS_KEY '{aws_secret_access_key}'
+DELIMITER AS '\t'
+NULL AS ''
+ALLOWOVERWRITE
+GZIP;
+
+
+UNLOAD (
+    'SELECT ass.uid, ass.canvas_user_id, ass.course_id, ass.assignment_id, ass.assignment_status, ass.sis_enrollment_status,
+        ass.due_at, ass.submitted_at, ass.score, ass.points_possible
+    FROM boac_analytics.assignment_submissions_scores ass
+    JOIN intermediate.course_sections cs
+    ON ass.course_id = cs.canvas_course_id
+    AND cs.sis_term_id = \'{current_term_id}\'
+    GROUP BY ass.uid, ass.canvas_user_id, ass.course_id, ass.assignment_id, ass.assignment_status, ass.sis_enrollment_status,
+        ass.due_at, ass.submitted_at, ass.score, ass.points_possible'
+)
+TO '{boac_snapshot_daily_path}/assignment_submissions_scores/snapshot'
+ACCESS_KEY_ID '{aws_access_key_id}'
+SECRET_ACCESS_KEY '{aws_secret_access_key}'
+DELIMITER AS '\t'
+NULL AS ''
+ALLOWOVERWRITE
+GZIP;
