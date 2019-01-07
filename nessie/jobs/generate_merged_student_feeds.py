@@ -51,7 +51,12 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     staging_schema = destination_schema + '_staging'
     staging_schema_identifier = psycopg2.sql.Identifier(staging_schema)
 
-    def run(self, term_id=None, backfill_new_students=False):
+    def run(self, term_id=None, backfill_new_students=True):
+        if not term_id:
+            term_id = berkeley.current_term_id()
+        elif term_id == 'all':
+            term_id = None
+
         app.logger.info(f'Starting merged profile generation job (term_id={term_id}, backfill={backfill_new_students}).')
 
         app.logger.info('Cleaning up old data...')
