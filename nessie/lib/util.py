@@ -115,6 +115,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_schema_lrs_external': app.config['REDSHIFT_SCHEMA_LRS'],
         'redshift_schema_metadata': app.config['REDSHIFT_SCHEMA_METADATA'],
         'redshift_schema_sis': app.config['REDSHIFT_SCHEMA_SIS'],
+        'redshift_schema_sis_advising_notes': app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES'],
         'redshift_schema_sis_internal': app.config['REDSHIFT_SCHEMA_SIS_INTERNAL'],
         'redshift_schema_student': app.config['REDSHIFT_SCHEMA_STUDENT'],
         'redshift_iam_role': app.config['REDSHIFT_IAM_ROLE'],
@@ -124,6 +125,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'loch_s3_canvas_data_path_historical': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_HISTORICAL'],
         'loch_s3_canvas_data_path_current_term': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'],
         'loch_s3_coe_data_path': s3_prefix + get_s3_coe_daily_path(),
+        'loch_s3_sis_advising_notes_data_path': s3_prefix + app.config['LOCH_S3_SIS_ADVISING_NOTES_DATA_PATH'],
         'loch_s3_sis_data_path': s3_prefix + app.config['LOCH_S3_SIS_DATA_PATH'],
         'loch_s3_sis_api_data_path': s3_prefix + get_s3_sis_api_daily_path(),
     }

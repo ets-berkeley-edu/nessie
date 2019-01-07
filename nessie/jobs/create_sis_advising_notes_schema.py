@@ -23,37 +23,25 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-# The test environment mocks the Redshift interface with a local Postgres db.
+from flask import current_app as app
+from nessie.externals import redshift
+from nessie.jobs.background_job import BackgroundJob, verify_external_schema
+from nessie.lib.util import resolve_sql_template
 
-TESTING = True
+"""Logic for SIS Advising Notes schema creation job."""
 
-LOCH_S3_BUCKET = 'mock-bucket'
 
-REDSHIFT_DATABASE = 'nessie_redshift_test'
-REDSHIFT_HOST = 'localhost'
-REDSHIFT_PASSWORD = 'nessie'
-REDSHIFT_PORT = 5432
-REDSHIFT_USER = 'nessie'
+class CreateSisAdvisingNotesSchema(BackgroundJob):
 
-REDSHIFT_SCHEMA_ASC = 'asc_test'
-REDSHIFT_SCHEMA_BOAC = 'boac_test'
-REDSHIFT_SCHEMA_CALNET = 'calnet_test'
-REDSHIFT_SCHEMA_CANVAS = 'canvas_test'
-REDSHIFT_SCHEMA_COE = 'coe_test'
-REDSHIFT_SCHEMA_COE_EXTERNAL = 'coe_external_test'
-REDSHIFT_SCHEMA_INTERMEDIATE = 'intermediate_test'
-REDSHIFT_SCHEMA_METADATA = 'nessie_metadata_test'
-REDSHIFT_SCHEMA_SIS = 'sis_test'
-REDSHIFT_SCHEMA_SIS_ADVISING_NOTES = 'sis_advising_notes_test'
-REDSHIFT_SCHEMA_SIS_INTERNAL = 'sis_internal_test'
-REDSHIFT_SCHEMA_STUDENT = 'student_test'
-
-SQLALCHEMY_DATABASE_URI = 'postgres://nessie:nessie@localhost:5432/nessie_test'
-
-LOGGING_LOCATION = 'STDOUT'
-
-JOB_SYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 0}
-JOB_RESYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 40}
-JOB_GENERATE_ALL_TABLES = {'hour': 3, 'minute': 30}
-
-INDEX_HTML = 'public/index.html'
+    def run(self):
+        app.logger.info(f'Starting SIS Advising Notes schema creation job...')
+        app.logger.info(f'Executing SQL...')
+        external_schema = app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES']
+        redshift.drop_external_schema(external_schema)
+        resolved_ddl = resolve_sql_template('create_sis_advising_notes_schema.template.sql')
+        if redshift.execute_ddl_script(resolved_ddl):
+            app.logger.info(f'SIS Advising Notes schema creation job completed.')
+            return verify_external_schema(external_schema, resolved_ddl)
+        else:
+            app.logger.error(f'SIS Advising Notes schema creation job failed.')
+            return False
