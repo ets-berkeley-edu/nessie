@@ -27,7 +27,6 @@ import os
 
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
-from nessie.lib.berkeley import current_term_id
 
 """Background job scheduling."""
 
@@ -130,15 +129,15 @@ def schedule_all_jobs(force=False):
         ],
         force,
     )
-    schedule_job(
+    schedule_chained_job(
         sched,
         'JOB_GENERATE_CURRENT_TERM_FEEDS',
-        GenerateMergedStudentFeeds,
+        [
+            GenerateMergedStudentFeeds,
+            RefreshBoacCache,
+        ],
         force,
-        term_id=current_term_id(),
-        backfill_new_students=True,
     )
-    schedule_job(sched, 'JOB_REFRESH_BOAC_CACHE', RefreshBoacCache, force)
 
 
 def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):

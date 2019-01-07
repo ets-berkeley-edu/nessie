@@ -134,8 +134,6 @@ def generate_intermediate_tables():
 @app.route('/api/job/generate_merged_student_feeds/<term_id>', methods=['POST'])
 @auth_required
 def generate_merged_student_feeds(term_id):
-    if term_id == 'all':
-        term_id = None
     args = get_json_args(request)
     if args:
         backfill = args.get('backfill')
