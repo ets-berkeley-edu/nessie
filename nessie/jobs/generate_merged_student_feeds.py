@@ -123,10 +123,11 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             return False
 
         # Jobs for non-current terms generate enrollment feeds only.
-        if term_id and term_id != berkeley.current_term_id():
-            tables = ['student_enrollment_terms']
-        else:
+        refresh_student_attributes = term_id is None or term_id == berkeley.current_term_id()
+        if refresh_student_attributes:
             tables = ['student_profiles', 'student_academic_status', 'student_majors', 'student_enrollment_terms', 'student_holds']
+        else:
+            tables = ['student_enrollment_terms']
 
         # In-memory storage for generated feeds prior to TSV output.
         self.rows = {
@@ -155,10 +156,9 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         for sid, profile_group in groupby(calnet_profiles, operator.itemgetter('sid')):
             app.logger.info(f'Generating feeds for sid {sid} ({index} of {len(calnet_profiles)})')
             index += 1
-            merged_profile = self.generate_or_fetch_merged_profile(term_id, sid, list(profile_group)[0])
+            merged_profile = self.generate_or_fetch_merged_profile(refresh_student_attributes, sid, list(profile_group)[0])
             if merged_profile:
                 self.generate_merged_enrollment_terms(merged_profile, term_id)
-                self.parse_holds(sid)
                 successes.append(sid)
             else:
                 failures.append(sid)
@@ -214,9 +214,9 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             params=(sid,),
         )
 
-    def generate_or_fetch_merged_profile(self, term_id, sid, calnet_profile):
+    def generate_or_fetch_merged_profile(self, force_refresh, sid, calnet_profile):
         merged_profile = None
-        if term_id is None or term_id == berkeley.current_term_id():
+        if force_refresh:
             merged_profile = self.generate_merged_profile(sid, calnet_profile)
         else:
             profile_result = redshift.fetch(
@@ -263,6 +263,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
             for plan in sis_profile.get('plans', []):
                 self.rows['student_majors'].append(encoded_tsv_row([sid, plan['description']]))
+
+            self.parse_holds(sid)
 
         app.logger.debug(f'Merged profile generation complete for SID {sid} in {datetime.now().timestamp() - ts} seconds.')
         return merged_profile

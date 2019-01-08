@@ -58,7 +58,8 @@ AS (
  */
 
 CREATE TABLE {redshift_schema_intermediate}.sis_dropped_classes
-INTERLEAVED SORTKEY (sis_term_id, sid)
+DISTKEY (sid)
+SORTKEY (sid)
 AS (
     SELECT
         en.term_id AS sis_term_id,
