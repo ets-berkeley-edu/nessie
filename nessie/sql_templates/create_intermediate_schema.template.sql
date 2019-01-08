@@ -31,28 +31,6 @@ DROP SCHEMA IF EXISTS {redshift_schema_intermediate} CASCADE;
 CREATE SCHEMA {redshift_schema_intermediate};
 
 /*
- * Copy S3 external data to Redshift table for faster client queries.
- */
-
-CREATE TABLE {redshift_schema_intermediate}.sis_enrollments
-INTERLEAVED SORTKEY (sis_term_id, sis_section_id, ldap_uid)
-AS (
-    SELECT
-        en.term_id AS sis_term_id,
-        en.section_id AS sis_section_id,
-        en.ldap_uid,
-        en.enrollment_status AS sis_enrollment_status,
-        en.units,
-        en.grading_basis,
-        TRIM(en.grade) AS grade,
-        TRIM(en.grade_midterm) AS grade_midterm
-    FROM {redshift_schema_sis}.enrollments en
-    WHERE
-        en.enrollment_status != 'D'
-        AND en.grade != 'W'
-);
-
-/*
  * A final grade of 'W' signals Withdraw Without Academic Penalty, in which a student is allowed to withdraw from
  * a course after the drop deadline has passed.
  */
@@ -204,6 +182,32 @@ AS (
         sc.course_display_name, sc.course_title, sc.instruction_format, sc.section_num, sc.is_primary
 );
 
+CREATE TABLE {redshift_schema_intermediate}.sis_enrollments
+INTERLEAVED SORTKEY (sis_term_id, sis_section_id, ldap_uid)
+AS (
+    SELECT
+        en.term_id AS sis_term_id,
+        en.section_id AS sis_section_id,
+        en.ldap_uid,
+        en.enrollment_status AS sis_enrollment_status,
+        en.units,
+        en.grading_basis,
+        TRIM(en.grade) AS grade,
+        TRIM(en.grade_midterm) AS grade_midterm,
+        crs.sis_course_title,
+        crs.sis_course_name,
+        crs.sis_primary,
+        crs.sis_instruction_format,
+        crs.sis_section_num
+    FROM {redshift_schema_sis}.enrollments en
+    JOIN intermediate.course_sections crs
+        ON crs.sis_section_id = en.section_id
+        AND crs.sis_term_id = en.term_id
+    WHERE
+        en.enrollment_status != 'D'
+        AND en.grade != 'W'
+);
+
 /*
  * Combine Canvas Data user_dim and pseudonym_dim tabeles to map Canvas and SIS user ids to global Canvas Data ids.
  * Since multiple mappings frequently exist for a given Canvas id, track only the user_ids which have an active
@@ -240,7 +244,7 @@ AS (
  */
 
 CREATE TABLE {redshift_schema_intermediate}.active_student_enrollments
-INTERLEAVED SORTKEY (canvas_user_id, canvas_course_id)
+INTERLEAVED SORTKEY (uid, canvas_course_id)
 AS (
     SELECT
         {redshift_schema_intermediate}.users.uid AS uid,
@@ -252,7 +256,10 @@ AS (
          * MIN ordering happens to match our desired precedence when reconciling enrollment status among multiple
          * sections: 'E', then 'W', then NULL.
          */
-        MIN({redshift_schema_intermediate}.sis_enrollments.sis_enrollment_status) AS sis_enrollment_status
+        MIN({redshift_schema_intermediate}.sis_enrollments.sis_enrollment_status) AS sis_enrollment_status,
+        {redshift_schema_canvas}.course_dim.name AS canvas_course_name,
+        {redshift_schema_canvas}.course_dim.code AS canvas_course_code,
+        {redshift_schema_intermediate}.course_sections.canvas_course_term
     FROM
         {redshift_schema_canvas}.enrollment_fact
         JOIN {redshift_schema_canvas}.enrollment_dim
@@ -276,7 +283,10 @@ AS (
         {redshift_schema_intermediate}.users.canvas_id,
         {redshift_schema_canvas}.course_dim.canvas_id,
         {redshift_schema_canvas}.enrollment_dim.id,
-        {redshift_schema_canvas}.enrollment_dim.last_activity_at
+        {redshift_schema_canvas}.enrollment_dim.last_activity_at,
+        {redshift_schema_canvas}.course_dim.name,
+        {redshift_schema_canvas}.course_dim.code,
+        {redshift_schema_intermediate}.course_sections.canvas_course_term
 );
 
 /*
