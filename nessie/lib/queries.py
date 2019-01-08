@@ -112,12 +112,11 @@ def get_enrolled_primary_sections_for_term(term_id):
 
 
 @fixture('query_enrollment_drops_{csid}.csv')
-def get_enrollment_drops(csid, term_id):
+def get_enrollment_drops(csid):
     sql = f"""SELECT dr.*
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
               WHERE dr.sid = '{csid}'
-                AND dr.sis_term_id = '{term_id}'
-              ORDER BY dr.sis_course_name
+              ORDER BY dr.sis_term_id DESC, dr.sis_course_name
             """
     return redshift.fetch(sql)
 
@@ -143,7 +142,7 @@ def get_sis_enrollments(uid):
                   ON crs.sis_section_id = enr.sis_section_id
                   AND crs.sis_term_id = enr.sis_term_id
               WHERE enr.ldap_uid = {uid}
-              ORDER BY enr.sis_term_id, crs.sis_course_name, crs.sis_primary DESC, crs.sis_instruction_format, crs.sis_section_num
+              ORDER BY enr.sis_term_id DESC, crs.sis_course_name, crs.sis_primary DESC, crs.sis_instruction_format, crs.sis_section_num
         """
     return redshift.fetch(sql)
 

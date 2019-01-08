@@ -35,11 +35,12 @@ def get_merged_enrollment_terms(uid, sid, term_ids, canvas_courses_feed, canvas_
     for key, group in groupby(enrollment_results, key=operator.itemgetter('sis_term_id')):
         enrollments_by_term[str(key)] = list(group)
     term_feeds = {}
+    dropped_sections = get_dropped_sections_by_term(sid)
     for term_id in term_ids:
         enrollments = enrollments_by_term.get(term_id, [])
         term_name = berkeley.term_name_for_sis_id(term_id)
         term_feed = merge_enrollment(enrollments, term_id, term_name)
-        term_feed['droppedSections'] = get_dropped_sections(sid, term_id)
+        term_feed['droppedSections'] = dropped_sections.get(term_id)
         for site in canvas_courses_feed:
             merge_canvas_course_site(term_feed, site, canvas_site_map)
         sort_canvas_course_sites(term_feed)
@@ -74,16 +75,20 @@ def merge_canvas_site_map(canvas_site_map, canvas_courses_feed):
         canvas_site_map[str(key)]['sis_sections'] = list(group)
 
 
-def get_dropped_sections(sid, term_id):
-    drops = []
-    for row in queries.get_enrollment_drops(sid, term_id):
-        drops.append({
-            'displayName': row['sis_course_name'],
-            'component': row['sis_instruction_format'],
-            'sectionNumber': row['sis_section_num'],
-            'withdrawAfterDeadline': (row['grade'] == 'W'),
-        })
-    return drops
+def get_dropped_sections_by_term(sid):
+    dropped_by_term = {}
+    all_drops = queries.get_enrollment_drops(sid)
+    for key, group in groupby(all_drops, key=operator.itemgetter('sis_term_id')):
+        drops = []
+        for row in list(group):
+            drops.append({
+                'displayName': row['sis_course_name'],
+                'component': row['sis_instruction_format'],
+                'sectionNumber': row['sis_section_num'],
+                'withdrawAfterDeadline': (row['grade'] == 'W'),
+            })
+        dropped_by_term[str(key)] = drops
+    return dropped_by_term
 
 
 def merge_enrollment(enrollments, term_id, term_name):
