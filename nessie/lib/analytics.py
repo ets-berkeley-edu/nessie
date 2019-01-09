@@ -72,7 +72,6 @@ def _get_canvas_sites_dict(student):
 
 def assignments_submitted(canvas_user_id, canvas_course_id, relative_submission_counts):
     course_rows = relative_submission_counts.get(canvas_course_id, [])
-    app.logger.debug(f'Assignments query complete, will calculate statistics (canvas_user_id={canvas_user_id}, canvas_course_id={canvas_course_id})')
     df = pandas.DataFrame(course_rows, columns=['canvas_user_id', 'submissions_turned_in'])
     student_row = df.loc[df['canvas_user_id'].values == int(canvas_user_id)]
     if course_rows and student_row.empty:
@@ -89,9 +88,6 @@ def student_analytics(canvas_user_id, canvas_course_id, canvas_site_map):
     if enrollments is None:
         _error = {'error': 'Redshift query returned no results'}
         return {'currentScore': _error, 'lastActivity': _error}
-    app.logger.debug(
-        'Score/activity query complete, will calculate statistics'
-        f' (canvas_user_id={canvas_user_id}, canvas_course_id={canvas_course_id})')
     df = pandas.DataFrame(enrollments, columns=['canvas_user_id', 'current_score', 'last_activity_at'])
     student_row = df.loc[df['canvas_user_id'].values == int(canvas_user_id)]
     if enrollments and student_row.empty:
@@ -182,7 +178,6 @@ def analytics_for_column(df, student_row, column_name):
         matrixy_comparative_percentile_of_mean = None
         intuitive_percentile_of_mean = None
 
-    app.logger.debug(f'Returning calculated analytics (column_name={column_name})')
     return {
         'boxPlottable': box_plottable,
         'student': {
