@@ -37,7 +37,7 @@ from nessie.lib.analytics import get_relative_submission_counts, mean_course_ana
 from nessie.lib.metadata import update_merged_feed_status
 from nessie.lib.queries import get_all_student_ids, get_successfully_backfilled_students
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
-from nessie.merged.sis_profile import get_holds, get_merged_sis_profile
+from nessie.merged.sis_profile import get_merged_sis_profile
 from nessie.merged.student_terms import get_canvas_courses_feed, get_merged_enrollment_terms, merge_canvas_site_map
 import psycopg2.sql
 
@@ -263,8 +263,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
             for plan in sis_profile.get('plans', []):
                 self.rows['student_majors'].append(encoded_tsv_row([sid, plan['description']]))
-
-            self.parse_holds(sid)
+            for hold in sis_profile.get('holds', []):
+                self.rows['student_holds'].append(encoded_tsv_row([sid, json.dumps(hold)]))
 
         app.logger.debug(f'Merged profile generation complete for SID {sid} in {datetime.now().timestamp() - ts} seconds.')
         return merged_profile
@@ -317,11 +317,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             app.logger.debug(
                 f'Enrollment term merge complete (uid={uid}, sid={sid}, term_id={term_id}, '
                 f'{datetime.now().timestamp() - ts} seconds)')
-
-    def parse_holds(self, sid):
-        holds = get_holds(sid) or []
-        for hold in holds:
-            self.rows['student_holds'].append(encoded_tsv_row([sid, json.dumps(hold)]))
 
     def refresh_from_staging(self, table, term_id, sids, transaction):
         # If our job is restricted to a particular term id or set of sids, then drop rows from the destination table

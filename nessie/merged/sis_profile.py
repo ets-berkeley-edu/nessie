@@ -47,6 +47,7 @@ def get_merged_sis_profile(csid):
         merge_sis_profile_emails,
         merge_sis_profile_names,
         merge_sis_profile_phones,
+        merge_holds,
     ]:
         try:
             merge_method(sis_student_api_feed, sis_profile)
@@ -63,16 +64,13 @@ def get_merged_sis_profile(csid):
     return sis_profile
 
 
-def get_holds(csid):
-    sis_student_api_feed = fetch_sis_student_api_feed(csid)
-    if not sis_student_api_feed:
-        return False
-    return sis_student_api_feed.get('holds', [])
-
-
 def fetch_sis_student_api_feed(csid):
     result = queries.get_sis_api_profile(csid)
     return result and result[0] and json.loads(result[0]['feed'])
+
+
+def merge_holds(sis_student_api_feed, sis_profile):
+    sis_profile['holds'] = sis_student_api_feed.get('holds', [])
 
 
 def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
