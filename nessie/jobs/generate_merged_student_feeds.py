@@ -315,9 +315,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 )
                 self.rows['student_enrollment_terms'].append(encoded_tsv_row([sid, term_id, json.dumps(term_feed)]))
             app.logger.debug(
-                f'Enrollment term merge complete (uid={uid}, sid={sid}, term_id={term_id}, ',
-                f'{datetime.now().timestamp() - ts} seconds)',
-            )
+                f'Enrollment term merge complete (uid={uid}, sid={sid}, term_id={term_id}, '
+                f'{datetime.now().timestamp() - ts} seconds)')
 
     def parse_holds(self, sid):
         holds = get_holds(sid) or []
@@ -351,9 +350,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 params=tuple(delete_params),
             )
             app.logger.info(
-                f'Deleted existing rows from destination table {self.destination_schema}.{table} ',
-                f"(term_id={term_id or 'all'}, {len(sids) if sids else 'all'} sids).",
-            )
+                f'Deleted existing rows from destination table {self.destination_schema}.{table} '
+                f"(term_id={term_id or 'all'}, {len(sids) if sids else 'all'} sids).")
 
         # Load new data from the staging tables into the destination table.
         result = transaction.execute(
