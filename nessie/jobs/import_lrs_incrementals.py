@@ -205,9 +205,8 @@ class ImportLrsIncrementals(BackgroundJob):
             return True
         else:
             app.logger.error(
-                f'Discrepancy between LRS ({self.lrs_statement_count} statements)',
-                f'and {incremental_url} ({redshift_statement_count} statements).',
-            )
+                f'Discrepancy between LRS ({self.lrs_statement_count} statements)'
+                f' and {incremental_url} ({redshift_statement_count} statements).')
             return False
 
     def verify_unloaded_count(self, url):
@@ -236,7 +235,6 @@ class ImportLrsIncrementals(BackgroundJob):
             return True
         else:
             app.logger.error(
-                f'Discrepancy between LRS ({self.lrs_statement_count} statements)',
-                f'and {url} ({unloaded_statement_count} statements).',
-            )
+                f'Discrepancy between LRS ({self.lrs_statement_count} statements)'
+                f' and {url} ({unloaded_statement_count} statements).')
             return False

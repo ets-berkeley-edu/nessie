@@ -129,7 +129,6 @@ class MigrateLrsIncrementals(BackgroundJob):
             return True
         else:
             app.logger.error(
-                f'Discrepancy between pre-transform statement count ({self.pre_transform_statement_count} statements)',
-                f'and transformed statements at {url} ({exploded_statement_count} statements).',
-            )
+                f'Discrepancy between pre-transform statement count ({self.pre_transform_statement_count} statements)'
+                f' and transformed statements at {url} ({exploded_statement_count} statements).')
             return False
