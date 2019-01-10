@@ -40,6 +40,10 @@ def boac_schema():
     return app.config['REDSHIFT_SCHEMA_BOAC']
 
 
+def calnet_schema():
+    return app.config['REDSHIFT_SCHEMA_CALNET']
+
+
 def coe_schema():
     return app.config['REDSHIFT_SCHEMA_COE']
 
@@ -59,6 +63,18 @@ def student_schema():
 def get_all_student_ids():
     sql = f"""SELECT sid FROM {asc_schema()}.students
         UNION SELECT sid FROM {coe_schema()}.students"""
+    return redshift.fetch(sql)
+
+
+def get_calnet_profiles(sids=None):
+    if sids:
+        where_clause = f"WHERE sid=ANY('{{{','.join(sids)}}}')"
+    else:
+        where_clause = ''
+    sql = f"""SELECT ldap_uid, sid, first_name, last_name
+              FROM {calnet_schema()}.persons
+              {where_clause}
+        """
     return redshift.fetch(sql)
 
 
@@ -193,6 +209,14 @@ def get_successfully_backfilled_students():
     sql = f"""SELECT sid
         FROM {metadata_schema()}.merged_feed_status
         WHERE term_id = 'all' AND status = 'success'"""
+    return redshift.fetch(sql)
+
+
+def get_term_gpas(sid):
+    sql = f"""SELECT term_id, gpa, units_taken_for_gpa
+              FROM {student_schema()}.student_term_gpas
+              WHERE sid = {sid}
+        """
     return redshift.fetch(sql)
 
 

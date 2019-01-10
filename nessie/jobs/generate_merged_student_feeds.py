@@ -115,7 +115,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
     def generate_feeds(self, term_id=None, sids=None):
         """Loop through all records stored in the Calnet external schema and write merged student data to the internal student schema."""
-        calnet_profiles = self.fetch_calnet_profiles(sids)
+        calnet_profiles = queries.get_calnet_profiles(sids)
 
         # Jobs targeted toward a specific sid set (such as backfills) may return no CalNet profiles. Warn, don't error.
         if not calnet_profiles:
@@ -193,27 +193,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
         return f'Merged profile generation complete: {len(successes)} successes, {len(failures)} failures.'
 
-    def fetch_calnet_profiles(self, sids=None):
-        if sids:
-            profiles = redshift.fetch(
-                'SELECT ldap_uid, sid, first_name, last_name FROM {calnet_schema}.persons WHERE sid = ANY(%s)',
-                calnet_schema=psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_CALNET']),
-                params=(sids,),
-            )
-        else:
-            profiles = redshift.fetch(
-                'SELECT ldap_uid, sid, first_name, last_name FROM {calnet_schema}.persons',
-                calnet_schema=psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_CALNET']),
-            )
-        return profiles
-
-    def fetch_term_gpas(self, sid):
-        return redshift.fetch(
-            'SELECT term_id, gpa, units_taken_for_gpa FROM {student_schema}.student_term_gpas WHERE sid = %s',
-            student_schema=psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_STUDENT']),
-            params=(sid,),
-        )
-
     def generate_or_fetch_merged_profile(self, force_refresh, sid, calnet_profile):
         merged_profile = None
         if force_refresh:
@@ -284,7 +263,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         canvas_courses_feed = get_canvas_courses_feed(uid)
         merge_canvas_site_map(self.canvas_site_map, canvas_courses_feed)
         terms_feed = get_merged_enrollment_terms(uid, sid, term_ids, canvas_courses_feed, self.canvas_site_map)
-        term_gpas = self.fetch_term_gpas(sid)
+        term_gpas = queries.get_term_gpas(sid)
 
         relative_submission_counts = get_relative_submission_counts(canvas_user_id)
 
