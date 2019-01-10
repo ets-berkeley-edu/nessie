@@ -40,6 +40,10 @@ def boac_schema():
     return app.config['REDSHIFT_SCHEMA_BOAC']
 
 
+def calnet_schema():
+    return app.config['REDSHIFT_SCHEMA_CALNET']
+
+
 def coe_schema():
     return app.config['REDSHIFT_SCHEMA_COE']
 
@@ -59,6 +63,18 @@ def student_schema():
 def get_all_student_ids():
     sql = f"""SELECT sid FROM {asc_schema()}.students
         UNION SELECT sid FROM {coe_schema()}.students"""
+    return redshift.fetch(sql)
+
+
+def get_calnet_profiles(sids=None):
+    if sids:
+        where_clause = f"WHERE sid=ANY('{{{','.join(sids)}}}')"
+    else:
+        where_clause = ''
+    sql = f"""SELECT ldap_uid, sid, first_name, last_name
+              FROM {calnet_schema()}.persons
+              {where_clause}
+        """
     return redshift.fetch(sql)
 
 
@@ -135,14 +151,11 @@ def get_sis_api_profile(csid):
 def get_sis_enrollments(uid):
     sql = f"""SELECT
                   enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id, enr.ldap_uid,
-                  crs.sis_course_title, crs.sis_course_name,
-                  crs.sis_section_id, crs.sis_primary, crs.sis_instruction_format, crs.sis_section_num
+                  enr.sis_course_title, enr.sis_course_name,
+                  enr.sis_section_id, enr.sis_primary, enr.sis_instruction_format, enr.sis_section_num
               FROM {intermediate_schema()}.sis_enrollments enr
-              JOIN {intermediate_schema()}.course_sections crs
-                  ON crs.sis_section_id = enr.sis_section_id
-                  AND crs.sis_term_id = enr.sis_term_id
               WHERE enr.ldap_uid = {uid}
-              ORDER BY enr.sis_term_id DESC, crs.sis_course_name, crs.sis_primary DESC, crs.sis_instruction_format, crs.sis_section_num
+              ORDER BY enr.sis_term_id DESC, enr.sis_course_name, enr.sis_primary DESC, enr.sis_instruction_format, enr.sis_section_num
         """
     return redshift.fetch(sql)
 
@@ -177,10 +190,8 @@ def get_sis_sections_for_canvas_courses(canvas_course_ids):
 
 @fixture('query_student_canvas_courses_{uid}.csv')
 def get_student_canvas_courses(uid):
-    sql = f"""SELECT DISTINCT enr.canvas_course_id, cs.canvas_course_name, cs.canvas_course_code, cs.canvas_course_term
+    sql = f"""SELECT DISTINCT enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code, enr.canvas_course_term
         FROM {intermediate_schema()}.active_student_enrollments enr
-        JOIN {intermediate_schema()}.course_sections cs
-            ON cs.canvas_course_id = enr.canvas_course_id
         WHERE enr.uid = {uid}
         """
     return redshift.fetch(sql)
@@ -198,6 +209,14 @@ def get_successfully_backfilled_students():
     sql = f"""SELECT sid
         FROM {metadata_schema()}.merged_feed_status
         WHERE term_id = 'all' AND status = 'success'"""
+    return redshift.fetch(sql)
+
+
+def get_term_gpas(sid):
+    sql = f"""SELECT term_id, gpa, units_taken_for_gpa
+              FROM {student_schema()}.student_term_gpas
+              WHERE sid = {sid}
+        """
     return redshift.fetch(sql)
 
 

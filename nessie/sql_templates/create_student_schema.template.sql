@@ -25,6 +25,8 @@
 
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_student};
 
+-- The following tables store the accumulated outputs of long-running API loops.
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.canvas_api_enrollments
 (
     course_id VARCHAR NOT NULL,
@@ -51,6 +53,18 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_profiles
 )
 DISTKEY(sid)
 SORTKEY(sid);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_term_gpas
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    gpa DECIMAL(4,3),
+    units_taken_for_gpa DECIMAL(4,1)
+)
+DISTKEY (sid)
+SORTKEY (sid, term_id);
+
+-- The following are derivative tables generated from previously stored data.
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles
 (
@@ -94,16 +108,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_enrollment_terms
     sid VARCHAR NOT NULL,
     term_id VARCHAR(4) NOT NULL,
     enrollment_term VARCHAR(max) NOT NULL
-)
-DISTKEY (sid)
-SORTKEY (sid, term_id);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_term_gpas
-(
-    sid VARCHAR NOT NULL,
-    term_id VARCHAR(4) NOT NULL,
-    gpa DECIMAL(4,3),
-    units_taken_for_gpa DECIMAL(4,1)
 )
 DISTKEY (sid)
 SORTKEY (sid, term_id);

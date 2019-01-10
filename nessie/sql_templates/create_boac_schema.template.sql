@@ -78,7 +78,7 @@ AS (
         FROM
             {redshift_schema_intermediate}.active_student_enrollments
             LEFT JOIN {redshift_schema_intermediate}.users
-                ON {redshift_schema_intermediate}.active_student_enrollments.canvas_user_id = {redshift_schema_intermediate}.users.canvas_id
+                ON {redshift_schema_intermediate}.active_student_enrollments.uid = {redshift_schema_intermediate}.users.uid
             LEFT JOIN {redshift_schema_canvas}.course_dim
                 ON {redshift_schema_intermediate}.active_student_enrollments.canvas_course_id = {redshift_schema_canvas}.course_dim.canvas_id
     )
@@ -269,7 +269,7 @@ AS (
     FROM
         {redshift_schema_intermediate}.active_student_enrollments ase
         JOIN {redshift_schema_intermediate}.users
-            ON ase.canvas_user_id = {redshift_schema_intermediate}.users.canvas_id
+            ON ase.uid = {redshift_schema_intermediate}.users.uid
         JOIN {redshift_schema_canvas}.course_dim cd
             ON ase.canvas_course_id = cd.canvas_id
         LEFT JOIN {redshift_schema_canvas}.course_score_fact csf

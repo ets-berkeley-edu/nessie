@@ -23,25 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from nessie.merged.sis_profile import get_holds, get_merged_sis_profile
-
-
-class TestSisHolds:
-    """Test SIS holds."""
-
-    def test_no_holds(self, app, student_tables):
-        holds = get_holds('11667051')
-        assert holds == []
-
-    def test_multiple_holds(self, app, student_tables):
-        holds = get_holds('2345678901')
-        assert len(holds) == 2
-        assert holds[0]['reason']['code'] == 'CSBAL'
-        assert holds[1]['reason']['code'] == 'ADVHD'
-
-    def test_sid_not_found(self, app):
-        holds = get_holds('99999')
-        assert holds is False
+from nessie.merged.sis_profile import get_merged_sis_profile
 
 
 class TestMergedSisProfile:
@@ -67,3 +49,14 @@ class TestMergedSisProfile:
         assert profile['degreeProgress']['reportDate'] == '2017-03-03'
         assert len(profile['degreeProgress']['requirements']) == 4
         assert profile['degreeProgress']['requirements'][0] == {'entryLevelWriting': {'status': 'Satisfied'}}
+
+    def test_no_holds(self, app, student_tables):
+        profile = get_merged_sis_profile('11667051')
+        assert profile['holds'] == []
+
+    def test_multiple_holds(self, app, student_tables):
+        profile = get_merged_sis_profile('2345678901')
+        holds = profile['holds']
+        assert len(holds) == 2
+        assert holds[0]['reason']['code'] == 'CSBAL'
+        assert holds[1]['reason']['code'] == 'ADVHD'
