@@ -37,7 +37,18 @@ class CreateCalNetSchema(BackgroundJob):
         app.logger.info(f'Starting CalNet schema creation job...')
         external_schema = app.config['REDSHIFT_SCHEMA_CALNET']
         redshift.drop_external_schema(external_schema)
-        resolved_ddl = resolve_sql_template('create_calnet_schema.template.sql')
+        sid_snapshot_path = '/'.join([
+            f"s3://{app.config['LOCH_S3_BUCKET']}",
+            app.config['LOCH_S3_CALNET_DATA_PATH'],
+            'sids',
+        ])
+        resolved_ddl = resolve_sql_template(
+            'create_calnet_schema.template.sql',
+            aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
+            aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY'],
+            sid_snapshot_path=sid_snapshot_path,
+        )
+
         if redshift.execute_ddl_script(resolved_ddl):
             app.logger.info(f'CalNet schema creation job completed.')
             return verify_external_schema(external_schema, resolved_ddl)
