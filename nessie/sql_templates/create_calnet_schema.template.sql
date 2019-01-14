@@ -50,3 +50,16 @@ CREATE EXTERNAL TABLE {redshift_schema_calnet}.persons(
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
 WITH SERDEPROPERTIES ('paths'='sid, ldap_uid, first_name, last_name, campus_email, email, affiliations')
 LOCATION '{loch_s3_calnet_data_path}';
+
+-- Output our full SID list to S3 for use by clients with S3-only access such as Junction.
+UNLOAD (
+    'SELECT sid
+    FROM {redshift_schema_calnet}.persons'
+)
+TO '{sid_snapshot_path}/snapshot'
+ACCESS_KEY_ID '{aws_access_key_id}'
+SECRET_ACCESS_KEY '{aws_secret_access_key}'
+NULL AS ''
+DELIMITER AS '\t'
+PARALLEL OFF
+ALLOWOVERWRITE;
