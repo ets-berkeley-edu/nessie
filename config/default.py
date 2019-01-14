@@ -103,7 +103,7 @@ JOB_GENERATE_ALL_TABLES = {}
 JOB_GENERATE_CURRENT_TERM_FEEDS = {}
 JOB_LOAD_LRS_INCREMENTALS = {}
 
-LDAP_HOST = 'nds-test.berkeley.edu'
+LDAP_HOST = 'ldap-test.berkeley.edu'
 LDAP_BIND = 'mybind'
 LDAP_PASSWORD = 'secret'
 
