@@ -116,7 +116,7 @@ def merge_enrollment(enrollments, term_id, term_name):
         if class_name not in enrollments_by_class:
             # If there is no primary section, then the student probably withdrew from the class, leaving the non-primary
             # enrollments as noise.
-            if not is_enrolled_primary_section(section_feed):
+            if not section_feed['primary']:
                 continue
             enrollments_by_class[class_name] = sis_enrollment_class_feed(enrollment)
 
