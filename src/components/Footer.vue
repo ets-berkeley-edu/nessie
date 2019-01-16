@@ -4,7 +4,7 @@
       <img src="@/assets/uc-berkeley-logo.svg"/>
     </div>
     <div class="copyright">
-      &copy; 2018 The Regents of the University of California
+      &copy; 2019 The Regents of the University of California
     </div>
   </div>
 </template>
