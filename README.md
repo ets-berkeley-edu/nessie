@@ -61,17 +61,16 @@ We use [Tox](https://tox.readthedocs.io) for continuous integration. Under the h
 # Run all tests and linters
 tox
 
-# Test
+# Pytest
 tox -e test
-tox -e test-vue
-
-# Linters, à la carte
-tox -e lint-py
-tox -e lint-vue
 
 # Run specific test(s)
 tox -e test -- tests/test_models/test_authorized_user.py
 tox -e test -- tests/test_externals/
+
+# Lint
+tox -e lint-py
+tox -e lint-vue
 
 # Lint specific file(s)
 tox -e lint-py -- scripts/cohort_fixtures.py

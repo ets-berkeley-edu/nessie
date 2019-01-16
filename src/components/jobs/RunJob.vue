@@ -37,8 +37,9 @@
 </template>
 
 <script>
-import { runJob } from '@/api/job';
+import _ from 'lodash';
 import store from '@/store';
+import { runJob } from '@/api/job';
 
 export default {
   name: 'RunJob',
