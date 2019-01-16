@@ -122,6 +122,7 @@ def student_tables(app):
     for key in [
         'sis_degree_progress_11667051',
         'sis_student_api_11667051',
+        'sis_student_api_1234567890',
         'sis_student_api_2345678901',
     ]:
         with open(f'{fixture_path}/{key}.json', 'r') as f:

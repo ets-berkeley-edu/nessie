@@ -30,9 +30,14 @@ class TestMergedSisProfile:
     """Test merged SIS profile."""
 
     def test_skips_concurrent_academic_status(self, app, student_tables):
-        """Skips concurrent academic status."""
+        """Skips concurrent academic status if another academic status exists."""
         profile = get_merged_sis_profile('11667051')
         assert profile['academicCareer'] == 'UGRD'
+
+    def test_falls_back_on_concurrent_academic_status(self, app, student_tables):
+        """Selects concurrent academic status if no other academic status exists."""
+        profile = get_merged_sis_profile('1234567890')
+        assert profile['academicCareer'] == 'UCBX'
 
     def test_withdrawal_cancel_ignored_if_empty(self, app, student_tables):
         profile = get_merged_sis_profile('11667051')
