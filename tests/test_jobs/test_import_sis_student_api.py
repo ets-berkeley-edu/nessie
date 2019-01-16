@@ -38,8 +38,9 @@ class TestImportSisStudentApi:
         assert result == 'SIS student API import job completed: 2 succeeded, 6 failed.'
         rows = redshift.fetch('SELECT * FROM student_test.sis_api_profiles ORDER BY sid')
         print(rows)
-        assert len(rows) == 2
+        assert len(rows) == 3
         assert rows[0]['sid'] == '11667051'
-        assert rows[1]['sid'] == '2345678901'
+        assert rows[1]['sid'] == '1234567890'
+        assert rows[2]['sid'] == '2345678901'
         feed = json.loads(rows[0]['feed'], strict=False)
         assert feed['names'][0]['familyName'] == 'Bear'

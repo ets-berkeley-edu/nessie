@@ -221,4 +221,5 @@ INSERT INTO {redshift_schema_student}.sis_api_profiles
 (sid, feed)
 VALUES
 ('11667051', %(sis_student_api_11667051)s),
+('1234567890', %(sis_student_api_1234567890)s),
 ('2345678901', %(sis_student_api_2345678901)s);

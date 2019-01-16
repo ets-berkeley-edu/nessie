@@ -82,6 +82,9 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
         if career_code and career_code != 'UCBX':
             academic_status = status
             break
+        elif career_code == 'UCBX':
+            academic_status = status
+            next
     if not academic_status:
         return
 
