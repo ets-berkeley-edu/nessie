@@ -12,18 +12,18 @@
 </template>
 
 <script>
-import Container from './components/Container.vue';
-import DisplayError from './components/DisplayError.vue';
-import Footer from './components/Footer.vue';
-import Header from './components/Header.vue';
+import Container from './components/Container';
+import DisplayError from './components/DisplayError';
+import Footer from './components/Footer';
+import Header from './components/Header';
 
 export default {
   name: 'App',
   components: {
-    DisplayError,
-    Header,
     Container,
-    Footer
+    DisplayError,
+    Footer,
+    Header
   }
 };
 </script>

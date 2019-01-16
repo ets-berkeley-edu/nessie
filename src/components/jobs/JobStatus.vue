@@ -22,9 +22,10 @@
 </template>
 
 <script>
-import { getBackgroundJobStatus } from '@/api/job';
-import LargeSpinner from '@/components/widgets/LargeSpinner.vue';
+import _ from 'lodash';
 import Datepicker from 'vuejs-datepicker';
+import LargeSpinner from '@/components/widgets/LargeSpinner';
+import { getBackgroundJobStatus } from '@/api/job';
 
 export default {
   name: 'JobStatus',
