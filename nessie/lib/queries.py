@@ -121,7 +121,7 @@ def get_enrolled_primary_sections_for_term(term_id):
                 AND sec.is_primary = TRUE
                 AND enr.sis_section_id = sec.sis_section_id
                 AND enr.ldap_uid IN (SELECT uid FROM {student_schema()}.student_academic_status)
-              GROUP BY sec.sis_section_id, sis_course_name, sis_course_title, sis_instruction_format, sis_section_num
+              GROUP BY sec.sis_section_id, sec.sis_course_name, sec.sis_course_title, sec.sis_instruction_format, sec.sis_section_num
               ORDER BY sec.sis_section_id
         """
     return redshift.fetch(sql)
