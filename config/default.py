@@ -107,6 +107,7 @@ LDAP_HOST = 'ldap-test.berkeley.edu'
 LDAP_BIND = 'mybind'
 LDAP_PASSWORD = 'secret'
 
+# Loch LRS configs
 LRS_DATABASE_URI = 'postgres://lrs:lrs@localhost:5432/lrs'
 
 LRS_CANVAS_INCREMENTAL_REPLICATION_TASK_ID = 'task-id'
@@ -127,6 +128,13 @@ LRS_CANVAS_GLUE_JOB_SCRIPT_PATH = 's3://<bucket>/path/to/glue/script'
 LRS_GLUE_TEMP_DIR = 'glue/temp/dir'
 LRS_GLUE_SERVICE_ROLE = 'glue-service-role-name'
 
+# Loch EDX configs
+LOCH_EDX_NESSIE_ENV = 'deployment env'
+LOCH_EDX_S3_BUCKET = 'edx-bucket-name'
+LOCH_EDX_S3_WEEKLY_DATA_PATH = 'path/to/edx/weekly/data'
+LOCH_EDX_S3_TRANSACTION_LOG_PATH = 'path/to/edx/transaction/log'
+
+# Loch Nessie configs
 LOCH_S3_BUCKET = 'bucket_name'
 LOCH_S3_REGION = 'us-west-2'
 
