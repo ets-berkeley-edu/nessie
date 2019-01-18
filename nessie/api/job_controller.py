@@ -29,6 +29,7 @@ from flask import current_app as app, request
 from nessie.api.auth_helper import auth_required
 from nessie.api.errors import BadRequestError
 from nessie.jobs.background_job import ChainedBackgroundJob
+from nessie.jobs.create_berkeleyx_schema import CreateBerkeleyxSchema
 from nessie.jobs.create_calnet_schema import CreateCalNetSchema
 from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.create_coe_schema import CreateCoeSchema
@@ -56,6 +57,13 @@ from nessie.jobs.sync_file_to_s3 import SyncFileToS3
 from nessie.jobs.transform_lrs_incrementals import TransformLrsIncrementals
 from nessie.lib.http import tolerant_jsonify
 from nessie.lib.metadata import update_canvas_sync_status
+
+
+@app.route('/api/job/create_berkeleyx_schema', methods=['POST'])
+@auth_required
+def create_berkeleyx_schema():
+    job_started = CreateBerkeleyxSchema().run_async()
+    return respond_with_status(job_started)
 
 
 @app.route('/api/job/create_canvas_schema', methods=['POST'])
