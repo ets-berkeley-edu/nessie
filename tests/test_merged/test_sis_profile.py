@@ -65,3 +65,8 @@ class TestMergedSisProfile:
         assert len(holds) == 2
         assert holds[0]['reason']['code'] == 'CSBAL'
         assert holds[1]['reason']['code'] == 'ADVHD'
+
+    def test_current_term(self, app, student_tables):
+        profile = get_merged_sis_profile('11667051')
+        assert profile['currentTerm']['unitsMaxOverride'] == 24
+        assert profile['currentTerm']['unitsMinOverride'] == 15

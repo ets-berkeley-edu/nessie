@@ -39,6 +39,8 @@ class TestSisStudentApi:
         assert student['academicStatuses'][1]['cumulativeGPA']['average'] == pytest.approx(3.8, 0.01)
         assert student['academicStatuses'][1]['currentRegistration']['academicLevel']['level']['description'] == 'Junior'
         assert student['academicStatuses'][1]['currentRegistration']['athlete'] is True
+        assert student['academicStatuses'][1]['currentRegistration']['termUnits'][0]['unitsMax'] == 24
+        assert student['academicStatuses'][1]['currentRegistration']['termUnits'][0]['unitsMin'] == 15
         assert student['academicStatuses'][1]['studentPlans'][0]['academicPlan']['plan']['description'] == 'English BA'
         assert student['academicStatuses'][1]['termsInAttendance'] == 5
         assert student['emails'][0]['emailAddress'] == 'oski@berkeley.edu'
