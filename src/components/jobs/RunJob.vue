@@ -59,11 +59,11 @@ export default {
     /* eslint no-undef: "warn" */
     runSelectedJob() {
       let apiPath = this.selected.path;
-      _.each(this.arguments.required, key => {
+      _.each(this.selected.required, key => {
         apiPath = _.replace(
           apiPath,
           '<' + key + '>',
-          this.arguments.required[key]
+          this.selected.required[key]
         );
       });
       runJob(apiPath).then(data => {
