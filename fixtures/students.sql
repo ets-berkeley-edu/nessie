@@ -47,6 +47,13 @@ CREATE TABLE {redshift_schema_coe}.student_profiles
     profile TEXT NOT NULL
 );
 
+CREATE SCHEMA IF NOT EXISTS {redshift_schema_physics};
+
+CREATE TABLE {redshift_schema_physics}.students
+(
+    sid VARCHAR NOT NULL
+);
+
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_student};
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.canvas_api_enrollments
@@ -211,6 +218,9 @@ VALUES
 ('7890123456', '1133399', 'f', 'B', TRUE, FALSE, TRUE, FALSE, FALSE, 510, 520, 620, FALSE, 'sp', '2020', FALSE, 'C'),
 ('9000000000', '1133399', 'f', 'B', TRUE, FALSE, TRUE, FALSE, FALSE, NULL, NULL, 720, FALSE, NULL, NULL, FALSE, 'Z'),
 ('9100000000', '90412', 'm', 'X', FALSE, FALSE, FALSE, FALSE, TRUE, 720, 760, 770, TRUE, 'fa', '2018', TRUE, 'N');
+
+INSERT INTO {redshift_schema_physics}.students (sid)
+VALUES ('2345678901');
 
 INSERT INTO {redshift_schema_student}.sis_api_degree_progress
 (sid, feed)

@@ -47,6 +47,13 @@ CREATE INDEX IF NOT EXISTS students_coe_advisor_ldap_uid_idx ON {redshift_schema
 CREATE INDEX IF NOT EXISTS students_coe_probation_idx ON {redshift_schema_coe}.students (probation);
 CREATE INDEX IF NOT EXISTS students_coe_status_idx ON {redshift_schema_coe}.students (status);
 
+CREATE SCHEMA IF NOT EXISTS {redshift_schema_physics};
+CREATE TABLE IF NOT EXISTS {redshift_schema_physics}.students
+(
+    sid VARCHAR NOT NULL,
+    PRIMARY KEY (sid)
+);
+
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_student};
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_status
