@@ -14,8 +14,14 @@
                     v-bind:key="job.id">{{ job.name }}</option>
           </b-form-select>
         </div>
+        <div v-if="selected">
+          <div v-for="key in selected.required" :key="key" class="job-params">
+            {{ key }}:
+            <input v-model="params[key]"/>
+          </div>
+        </div>
         <div>
-          <b-button @click="runSelectedJob" variant="success">Run</b-button>
+          <b-button @click="runSelectedJob" variant="success" :disabled="!selectedJobRunnable">Run</b-button>
         </div>
       </div>
       <div v-if="errored.length">
@@ -46,11 +52,18 @@ export default {
   computed: {
     runnableJobs() {
       return store.getters.runnableJobs;
+    },
+    selectedJobRunnable() {
+      if (!this.selected) {
+        return false;
+      }
+      return !_.find(this.selected.required, key => !this.params[key]);
     }
   },
   data() {
     return {
       errored: [],
+      params: {},
       started: [],
       selected: null
     };
@@ -60,11 +73,7 @@ export default {
     runSelectedJob() {
       let apiPath = this.selected.path;
       _.each(this.selected.required, key => {
-        apiPath = _.replace(
-          apiPath,
-          '<' + key + '>',
-          this.selected.required[key]
-        );
+        apiPath = _.replace(apiPath, '<' + key + '>', this.params[key]);
       });
       runJob(apiPath).then(data => {
         let job = _.remove(this.runnableJobs, this.selected)[0];
@@ -78,3 +87,9 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.job-params {
+  margin: 0 10px;
+}
+</style>
