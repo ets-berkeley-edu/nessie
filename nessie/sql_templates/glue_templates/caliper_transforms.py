@@ -50,9 +50,9 @@ args = getResolvedOptions(
 )
 
 sc = SparkContext()
-glueContext = GlueContext(sc)
-spark = glueContext.spark_session
-job = Job(glueContext)
+glue_context = GlueContext(sc)
+spark = glue_context.spark_session
+job = Job(glue_context)
 job.init(args['JOB_NAME'], args)
 
 lrs_transient_bucket = args['LRS_INCREMENTAL_TRANSIENT_BUCKET']
@@ -74,7 +74,7 @@ def import_caliper_schema(bucket, key):
 # Relationalizes spark dataframe and exports to s3
 def relationalize_and_export(statements_df):
     # convert spark dataframe to glue dynamic frame
-    statement_dynamic_frame = DynamicFrame.fromDF(statements_df, glueContext, 'statement_dynamic_frame')
+    statement_dynamic_frame = DynamicFrame.fromDF(statements_df, glue_context, 'statement_dynamic_frame')
     glue_temp_dir = 's3://{}/{}'.format(lrs_transient_bucket, lrs_glue_temp_dir)
     # transform the dataframe using glue relationalize
     statement_explode_df = statement_dynamic_frame.relationalize('root', glue_temp_dir)
@@ -82,7 +82,7 @@ def relationalize_and_export(statements_df):
 
     lrs_explode_output_path = 's3://{}/{}'.format(lrs_transient_bucket, lrs_canvas_caliper_explode_path)
     # write glue dynamic frame contents to s3 location as compressed json gzip files
-    glueContext.write_dynamic_frame.from_options(
+    glue_context.write_dynamic_frame.from_options(
         frame=statement_explode_df,
         connection_type='s3',
         connection_options={'path': lrs_explode_output_path, 'compression': 'gzip'},

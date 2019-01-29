@@ -209,7 +209,7 @@ AS (
 );
 
 /*
- * Combine Canvas Data user_dim and pseudonym_dim tabeles to map Canvas and SIS user ids to global Canvas Data ids.
+ * Combine Canvas Data user_dim and pseudonym_dim tables to map Canvas and SIS user ids to global Canvas Data ids.
  * Since multiple mappings frequently exist for a given Canvas id, track only the user_ids which have an active
  * workflow_state. A handful (about 100) canvas_user_ids have multiple active sis_login_ids, represented in this
  * table by multiple rows.
