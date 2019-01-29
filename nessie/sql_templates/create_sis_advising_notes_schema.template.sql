@@ -61,7 +61,8 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_notes';
+LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_notes'
+TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_details (PS_SCI_NOTE_TRNDTL)
 CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_details
@@ -72,19 +73,17 @@ CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_details
     note_seq_nr INT,
     note_priority VARCHAR,
     created_by VARCHAR,
-    created_at TIMESTAMP,
+    created_at VARCHAR,
     updated_by VARCHAR,
-    updated_at TIMESTAMP,
-    note_body VARCHAR
+    updated_at VARCHAR,
+    note_body VARCHAR(max)
 )
-ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
-WITH SERDEPROPERTIES (
-  'separatorChar' = ',',
-  'quoteChar' = '\"',
-  'escapeChar' = '\\'
-)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+LINES TERMINATED BY '\r'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_details';
+LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_details'
+TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_topics (PS_SCI_NOTE_TOPIC)
 CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_topics
@@ -100,7 +99,8 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_topics';
+LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_topics'
+TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_priorities (PS_SCI_NOTE_PRITBL)
 CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_priorities
@@ -123,7 +123,8 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_priorities';
+LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_priorities'
+TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_attachments (PS_SCI_NOTE_ATTACH)
 CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_attachments
@@ -148,7 +149,8 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_attachments';
+LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_attachments'
+TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_attachment_data (PS_SCI_FILE_ATT)
 CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_attachment_data
@@ -168,7 +170,8 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_attachment_data';
+LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_attachment_data'
+TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_topic_config (PS_SCI_NOTETPC_TBL)
 CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_topic_config
@@ -191,7 +194,8 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_topic_config';
+LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_topic_config'
+TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_templates (PS_SCI_FREENOTETBL)
 CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_templates
@@ -206,14 +210,12 @@ CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_templat
     updated_at TIMESTAMP,
     note_body VARCHAR
 )
-ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
-WITH SERDEPROPERTIES (
-  'separatorChar' = ',',
-  'quoteChar' = '\"',
-  'escapeChar' = '\\'
-)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+LINES TERMINATED BY '\r'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_templates';
+LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_templates'
+TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_categories (PS_SAA_NOTE_TYPE)
 CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_categories
@@ -236,7 +238,8 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_categories';
+LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_categories'
+TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_subcategories (PS_SAA_NOTE_STYPE)
 CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_subcategories
@@ -260,4 +263,5 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_subcategories';
+LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_subcategories'
+TABLE PROPERTIES ('skip.header.line.count'='1');
