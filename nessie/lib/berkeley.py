@@ -156,11 +156,6 @@ ACADEMIC_PLAN_TO_DEGREE_PROGRAM_PAGE = {
 }
 
 
-def canvas_terms():
-    sis_term_ids = reverse_term_ids()
-    return [term_name_for_sis_id(sid_id) for sid_id in sis_term_ids]
-
-
 def reverse_term_ids():
     term_ids = []
     stop_term_id = sis_term_id_for_name(app.config['EARLIEST_TERM'])

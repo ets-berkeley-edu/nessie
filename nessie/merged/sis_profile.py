@@ -27,12 +27,13 @@ import json
 import re
 
 from flask import current_app as app
+from nessie.lib import queries
 from nessie.lib.berkeley import degree_program_url_for_major, term_name_for_sis_id
 from nessie.lib.util import vacuum_whitespace
 
 
-def parse_merged_sis_profile(sis_student_api_feed, degree_progress_api_feed):
-    sis_student_api_feed = sis_student_api_feed and json.loads(sis_student_api_feed)
+def get_merged_sis_profile(csid):
+    sis_student_api_feed = fetch_sis_student_api_feed(csid)
     if not sis_student_api_feed:
         return False
 
@@ -51,13 +52,21 @@ def parse_merged_sis_profile(sis_student_api_feed, degree_progress_api_feed):
         try:
             merge_method(sis_student_api_feed, sis_profile)
         except AttributeError as e:
-            app.logger.error(f'Hub Student API returned malformed response in {sis_student_api_feed}')
+            app.logger.error(f'Hub Student API returned malformed response for SID {csid}')
             app.logger.error(e)
 
     if sis_profile.get('academicCareer') == 'UGRD':
-        sis_profile['degreeProgress'] = degree_progress_api_feed and json.loads(degree_progress_api_feed)
+        dp_result = queries.get_sis_api_degree_progress(csid)
+        degree_progress_api_feed = dp_result and dp_result[0] and json.loads(dp_result[0]['feed'])
+        if degree_progress_api_feed:
+            sis_profile['degreeProgress'] = degree_progress_api_feed
 
     return sis_profile
+
+
+def fetch_sis_student_api_feed(csid):
+    result = queries.get_sis_api_profile(csid)
+    return result and result[0] and json.loads(result[0]['feed'])
 
 
 def merge_holds(sis_student_api_feed, sis_profile):

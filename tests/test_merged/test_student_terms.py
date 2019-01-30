@@ -23,25 +23,30 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from nessie.merged.student_terms import generate_enrollment_terms_map
+from nessie.merged.student_terms import get_canvas_courses_feed, get_merged_enrollment_terms, merge_canvas_site_map
 
 
 class TestMergedSisEnrollments:
-    oski_sid = '11667051'
-    advisees_map = {oski_sid: {'canvas_user_id': 9000100}}
+
+    def get_canvas_site_map(self, canvas_courses_feed):
+        canvas_site_map = {}
+        merge_canvas_site_map(canvas_site_map, canvas_courses_feed)
+        return canvas_site_map
 
     def test_merges_drops(self, app, student_tables):
-        terms_feed = generate_enrollment_terms_map(self.advisees_map)
-        drops = terms_feed[self.oski_sid]['2178']['droppedSections']
+        canvas_courses_feed = get_canvas_courses_feed('61889')
+        terms_feed = get_merged_enrollment_terms('61889', '11667051', ['2178'], canvas_courses_feed, self.get_canvas_site_map(canvas_courses_feed))
+        drops = terms_feed['2178']['droppedSections']
         assert 2 == len(drops)
-        assert drops[0] == {'displayName': 'ENV,RES C9', 'component': 'STD', 'sectionNumber': '001', 'withdrawAfterDeadline': True}
-        assert drops[1] == {'displayName': 'HISTORY 10CH', 'component': 'LEC', 'sectionNumber': '003', 'withdrawAfterDeadline': False}
-        enrollments = terms_feed[self.oski_sid]['2178']['enrollments']
+        assert drops[0] == {'displayName': 'HISTORY 10CH', 'component': 'LEC', 'sectionNumber': '003', 'withdrawAfterDeadline': False}
+        assert drops[1] == {'displayName': 'ENV,RES C9', 'component': 'STD', 'sectionNumber': '001', 'withdrawAfterDeadline': True}
+        enrollments = terms_feed['2178']['enrollments']
         assert any(enr['displayName'] == 'ENV,RES C9' for enr in enrollments) is False
 
     def test_includes_midterm_grades(self, app, student_tables):
-        terms_feed = generate_enrollment_terms_map(self.advisees_map)
-        term_feed = terms_feed[self.oski_sid]['2178']
+        canvas_courses_feed = get_canvas_courses_feed('61889')
+        terms_feed = get_merged_enrollment_terms('61889', '11667051', ['2178'], canvas_courses_feed, self.get_canvas_site_map(canvas_courses_feed))
+        term_feed = terms_feed['2178']
         assert '2178' == term_feed['termId']
         enrollments = term_feed['enrollments']
         assert 4 == len(enrollments)
@@ -51,8 +56,9 @@ class TestMergedSisEnrollments:
 
     def test_includes_course_site_section_mappings(self, app):
         """Maps Canvas sites to SIS courses and sections."""
-        terms_feed = generate_enrollment_terms_map(self.advisees_map)
-        term_feed = terms_feed[self.oski_sid]['2178']
+        canvas_courses_feed = get_canvas_courses_feed('61889')
+        terms_feed = get_merged_enrollment_terms('61889', '11667051', ['2178'], canvas_courses_feed, self.get_canvas_site_map(canvas_courses_feed))
+        term_feed = terms_feed['2178']
         enrollments = term_feed['enrollments']
         assert len(enrollments[0]['canvasSites']) == 1
         assert enrollments[0]['canvasSites'][0]['canvasCourseId'] == 7654320

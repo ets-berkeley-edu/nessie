@@ -23,10 +23,13 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from itertools import groupby
 import math
+import operator
 from statistics import mean
 
 from flask import current_app as app
+from nessie.lib import queries
 from numpy import nan
 import pandas
 from scipy.stats import percentileofscore
@@ -81,7 +84,7 @@ def assignments_submitted(canvas_user_id, canvas_course_id, relative_submission_
 
 
 def student_analytics(canvas_user_id, canvas_course_id, canvas_site_map):
-    enrollments = canvas_site_map.get(canvas_course_id, {}).get('enrollments')
+    enrollments = canvas_site_map.get(str(canvas_course_id), {}).get('enrollments')
     if enrollments is None:
         _error = {'error': 'Redshift query returned no results'}
         return {'currentScore': _error, 'lastActivity': _error}
@@ -102,6 +105,14 @@ def student_analytics(canvas_user_id, canvas_course_id, canvas_site_map):
         'lastActivity': analytics_for_column(df, student_row, 'last_activity_at'),
         'courseEnrollmentCount': len(enrollments),
     }
+
+
+def get_relative_submission_counts(canvas_user_id):
+    results = queries.get_submissions_turned_in_relative_to_user(canvas_user_id)
+    submissions_by_course = {}
+    for key, group in groupby(results, key=operator.itemgetter('course_id')):
+        submissions_by_course[key] = list(group)
+    return submissions_by_course
 
 
 def analytics_for_column(df, student_row, column_name):
