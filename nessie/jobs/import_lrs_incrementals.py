@@ -129,18 +129,18 @@ class ImportLrsIncrementals(BackgroundJob):
         return True
 
     def migrate_transient_to_destination(self, keys, destination_bucket, destination_path):
-            destination_url = 's3://' + destination_bucket + '/' + destination_path
-            destination_schema = app.config['REDSHIFT_SCHEMA_LRS']
+        destination_url = 's3://' + destination_bucket + '/' + destination_path
+        destination_schema = app.config['REDSHIFT_SCHEMA_LRS']
 
-            for transient_key in keys:
-                destination_key = transient_key.replace(self.transient_path, destination_path)
-                if not s3.copy(self.transient_bucket, transient_key, destination_bucket, destination_key):
-                    app.logger.error(f'Copy from transient bucket to destination bucket {destination_bucket} failed.')
-                    return False
-            if not self.verify_migration(destination_url, destination_schema):
+        for transient_key in keys:
+            destination_key = transient_key.replace(self.transient_path, destination_path)
+            if not s3.copy(self.transient_bucket, transient_key, destination_bucket, destination_key):
+                app.logger.error(f'Copy from transient bucket to destination bucket {destination_bucket} failed.')
                 return False
-            redshift.drop_external_schema(destination_schema)
-            return True
+        if not self.verify_migration(destination_url, destination_schema):
+            return False
+        redshift.drop_external_schema(destination_schema)
+        return True
 
     def unload_to_etl(self, schema, bucket, timestamped=True):
         s3_url = 's3://' + bucket + '/' + app.config['LRS_CANVAS_INCREMENTAL_ETL_PATH_REDSHIFT']

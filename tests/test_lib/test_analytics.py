@@ -168,7 +168,7 @@ class TestStudentAnalytics:
         assert score['courseDeciles'] is None
         assert score['courseMean'] is None
         last_activity = digested['lastActivity']
-        assert last_activity['student']['raw'] is 0
+        assert last_activity['student']['raw'] == 0
 
     def test_mean_with_zero_dates(self, app):
         site_map = self.get_canvas_site_map()
