@@ -23,17 +23,22 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from datetime import datetime
+from itertools import groupby
 import json
+import operator
 
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob
 from nessie.jobs.import_term_gpas import ImportTermGpas
+from nessie.lib import berkeley, queries
+from nessie.lib.analytics import get_relative_submission_counts, mean_course_analytics_for_user
 from nessie.lib.metadata import update_merged_feed_status
-from nessie.lib.queries import get_advisee_student_profile_feeds, get_all_student_ids, get_successfully_backfilled_students
+from nessie.lib.queries import get_all_student_ids, get_successfully_backfilled_students
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
-from nessie.merged.sis_profile import parse_merged_sis_profile
-from nessie.merged.student_terms import generate_enrollment_terms_map
+from nessie.merged.sis_profile import get_merged_sis_profile
+from nessie.merged.student_terms import get_canvas_courses_feed, get_merged_enrollment_terms, merge_canvas_site_map
 import psycopg2.sql
 
 """Logic for merged student profile and term generation."""
@@ -47,20 +52,20 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     staging_schema_identifier = psycopg2.sql.Identifier(staging_schema)
 
     def run(self, term_id=None, backfill_new_students=True):
-        app.logger.info(f'Starting merged profile generation job (backfill={backfill_new_students}).')
+        if not term_id:
+            term_id = berkeley.current_term_id()
+        elif term_id == 'all':
+            term_id = None
 
-        # This version of the code will always generate feeds for all-terms and all-advisees, but we
-        # expect support for term-specific or backfill-specific feed generation will return soon.
-        if term_id != 'all':
-            app.logger.warn(f'Term-specific generation was requested for {term_id}, but all terms will be generated.')
+        app.logger.info(f'Starting merged profile generation job (term_id={term_id}, backfill={backfill_new_students}).')
 
         app.logger.info('Cleaning up old data...')
         redshift.execute('VACUUM; ANALYZE;')
 
         if backfill_new_students:
-            status = self.generate_with_backfills()
+            status = self.generate_with_backfills(term_id)
         else:
-            status = self.generate_feeds()
+            status = self.generate_feeds(term_id)
 
         # Clean up the workbench.
         redshift.execute('VACUUM; ANALYZE;')
@@ -68,73 +73,160 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
         return status
 
-    def generate_with_backfills(self):
-        """For students without a previous backfill, collect or generate any missing data."""
+    def generate_with_backfills(self, term_id):
+        """For students without a previous backfill, generate feeds for all terms."""
         previous_backfills = {row['sid'] for row in get_successfully_backfilled_students()}
         sids = {row['sid'] for row in get_all_student_ids()}
         new_sids = list(sids.difference(previous_backfills))
-        if new_sids:
-            app.logger.info(f'Found {len(new_sids)} new students, will backfill all terms.')
-            ImportTermGpas().run(csids=new_sids)
-        else:
+        if not new_sids:
             app.logger.info(f'No new students to backfill.')
-        return self.generate_feeds()
+            return self.generate_feeds(term_id)
+        app.logger.info(f'Found {len(new_sids)} new students, will backfill all terms.')
+        ImportTermGpas().run(csids=new_sids)
+        summary = ''
+        if not term_id:
+            # Equivalent to generating feeds for all terms for all students.
+            status = self.generate_feeds(term_id)
+        elif term_id == berkeley.current_term_id():
+            # The generate_feeds code will not fully refresh non-term-specific student profile data
+            # if called with a specific list of SIDs. Therefore we need the job to, at some point,
+            # run generate_feeds without such a list. But we also want to avoid repeating
+            # any refresh of term-specific data. (A refactoring is perhaps in order.)
+            status = self.generate_feeds(term_id)
+            other_terms = [t for t in berkeley.reverse_term_ids() if t != term_id]
+            for other_term_id in other_terms:
+                backfill_status = self.generate_feeds(sids=new_sids, term_id=other_term_id)
+                summary += f'Backfill for {other_term_id}: {backfill_status}. '
+                if not backfill_status:
+                    app.logger.warn('Backfill job aborted.')
+                    break
+        else:
+            old_sids = sids.intersection(previous_backfills)
+            backfill_status = self.generate_feeds(sids=new_sids)
+            if not backfill_status:
+                app.logger.warn('Backfill job aborted, will continue with non-backfill job.')
+            else:
+                app.logger.info(f'Backfill complete.')
+            summary += f'Backfill: {backfill_status}. '
+            app.logger.info(f'Will continue merged feed job for {len(old_sids)} previously backfilled students: ')
+            status = self.generate_feeds(sids=list(old_sids), term_id=term_id)
+        summary += f'Feed generation: {status}'
+        return summary
 
-    def generate_feeds(self):
-        # SID-to-Canvas-user-ID translation is needed to merge Canvas analytics data and SIS enrollment-based data.
-        advisee_sids_map = {}
-        self.successes = []
-        self.failures = []
-        profile_tables = self.generate_student_profile_tables(advisee_sids_map)
-        terms_tables = self.generate_enrollment_terms_table(advisee_sids_map)
-        self.refresh_all_from_staging(profile_tables + terms_tables)
-        return f'Merged profile generation complete: {len(self.successes)} successes, {len(self.failures)} failures.'
+    def generate_feeds(self, term_id=None, sids=None):
+        """Loop through all records stored in the Calnet external schema and write merged student data to the internal student schema."""
+        calnet_profiles = queries.get_calnet_profiles(sids)
 
-    def generate_student_profile_tables(self, advisee_sids_map):
+        # Jobs targeted toward a specific sid set (such as backfills) may return no CalNet profiles. Warn, don't error.
+        if not calnet_profiles:
+            app.logger.warn(f'No CalNet profiles returned, aborting job. (sids={sids})')
+            return False
+
+        # Jobs for non-current terms generate enrollment feeds only.
+        refresh_student_attributes = term_id is None or term_id == berkeley.current_term_id()
+        if refresh_student_attributes:
+            tables = ['student_profiles', 'student_academic_status', 'student_majors', 'student_enrollment_terms', 'student_holds']
+        else:
+            tables = ['student_enrollment_terms']
+
         # In-memory storage for generated feeds prior to TSV output.
         self.rows = {
             'student_profiles': [],
             'student_academic_status': [],
             'student_majors': [],
+            'student_enrollment_terms': [],
             'student_holds': [],
         }
-        tables = ['student_profiles', 'student_academic_status', 'student_majors', 'student_holds']
 
-        self.truncate_staging_tables(tables)
+        # Track the results of course-level queries to avoid requerying.
+        self.canvas_site_map = {}
 
-        all_student_feeds = get_advisee_student_profile_feeds()
-        if not all_student_feeds:
-            app.logger.warn(f'No profile feeds returned, aborting job.')
-            return False
-        count = len(all_student_feeds)
-        app.logger.info(f'Will generate feeds for {count} students.')
-        for index, student_feeds in enumerate(all_student_feeds):
-            sid = student_feeds['sid']
-            app.logger.info(f'Generating feeds for sid {sid} ({index} of {count})')
-            merged_profile = self.generate_student_profile_from_feeds(student_feeds)
+        # Remove any old data from staging tables.
+        for table in tables:
+            redshift.execute(
+                'TRUNCATE {schema}.{table}',
+                schema=self.staging_schema_identifier,
+                table=psycopg2.sql.Identifier(table),
+            )
+
+        app.logger.info(f'Will generate feeds for {len(calnet_profiles)} students (term_id={term_id}).')
+        successes = []
+        failures = []
+        index = 1
+        for sid, profile_group in groupby(calnet_profiles, operator.itemgetter('sid')):
+            app.logger.info(f'Generating feeds for sid {sid} ({index} of {len(calnet_profiles)})')
+            index += 1
+            merged_profile = self.generate_or_fetch_merged_profile(refresh_student_attributes, sid, list(profile_group)[0])
             if merged_profile:
-                advisee_sids_map[sid] = {'canvas_user_id': student_feeds.get('canvas_user_id')}
-                self.successes.append(sid)
+                self.generate_merged_enrollment_terms(merged_profile, term_id)
+                successes.append(sid)
             else:
-                self.failures.append(sid)
-        self.write_all_to_staging(tables)
-        return tables
+                failures.append(sid)
 
-    def generate_student_profile_from_feeds(self, feeds):
-        sid = feeds['sid']
-        uid = feeds['ldap_uid']
+        for table in tables:
+            if not self.rows[table]:
+                continue
+            self.upload_to_staging(table)
+            if not self.verify_table(table):
+                return False
+
+        with redshift.transaction() as transaction:
+            for table in tables:
+                if not self.refresh_from_staging(table, term_id, sids, transaction):
+                    app.logger.error(f'Failed to refresh {self.destination_schema}.{table} from staging.')
+                    return False
+            if not transaction.commit():
+                app.logger.error(f'Final transaction commit failed for {self.destination_schema}.')
+                return False
+
+        with rds.transaction() as transaction:
+            if self.refresh_rds_indexes(sids, transaction):
+                transaction.commit()
+                app.logger.info('Refreshed RDS indexes.')
+            else:
+                transaction.rollback()
+                app.logger.error('Failed to refresh RDS indexes.')
+                return False
+
+        update_merged_feed_status(term_id, successes, failures)
+        app.logger.info(f'Updated merged feed status.')
+
+        return f'Merged profile generation complete: {len(successes)} successes, {len(failures)} failures.'
+
+    def generate_or_fetch_merged_profile(self, force_refresh, sid, calnet_profile):
+        merged_profile = None
+        if force_refresh:
+            merged_profile = self.generate_merged_profile(sid, calnet_profile)
+        else:
+            profile_result = redshift.fetch(
+                'SELECT profile FROM {schema}.student_profiles WHERE sid = %s',
+                params=(sid,),
+                schema=self.destination_schema_identifier,
+            )
+            merged_profile = profile_result and profile_result[0] and json.loads(profile_result[0].get('profile', '{}'))
+            if not merged_profile:
+                merged_profile = self.generate_merged_profile(sid, calnet_profile)
+        if not merged_profile:
+            app.logger.error(f'Failed to generate merged profile for sid {sid}.')
+        return merged_profile
+
+    def generate_merged_profile(self, sid, calnet_profile):
         app.logger.debug(f'Generating merged profile for SID {sid}')
+        ts = datetime.now().timestamp()
+        uid = calnet_profile.get('ldap_uid')
         if not uid:
             return
-        sis_profile = parse_merged_sis_profile(feeds.get('sis_profile_feed'), feeds.get('degree_progress_feed'))
+        canvas_user_result = queries.get_user_for_uid(uid)
+        canvas_profile = canvas_user_result[0] if canvas_user_result else {}
+        sis_profile = get_merged_sis_profile(sid)
         merged_profile = {
             'sid': sid,
             'uid': uid,
-            'firstName': feeds.get('first_name'),
-            'lastName': feeds.get('last_name'),
-            'name': ' '.join([feeds.get('first_name'), feeds.get('last_name')]),
-            'canvasUserId': feeds.get('canvas_user_id'),
-            'canvasUserName': feeds.get('canvas_user_name'),
+            'firstName': calnet_profile.get('first_name'),
+            'lastName': calnet_profile.get('last_name'),
+            'name': ' '.join([calnet_profile.get('first_name'), calnet_profile.get('last_name')]),
+            'canvasUserId': canvas_profile.get('canvas_id'),
+            'canvasUserName': canvas_profile.get('name'),
             'sisProfile': sis_profile,
         }
         self.rows['student_profiles'].append(encoded_tsv_row([sid, json.dumps(merged_profile)]))
@@ -153,61 +245,57 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             for hold in sis_profile.get('holds', []):
                 self.rows['student_holds'].append(encoded_tsv_row([sid, json.dumps(hold)]))
 
+        app.logger.debug(f'Merged profile generation complete for SID {sid} in {datetime.now().timestamp() - ts} seconds.')
         return merged_profile
 
-    def generate_enrollment_terms_table(self, advisee_sids_map):
-        self.rows['student_enrollment_terms'] = []
-        tables = ['student_enrollment_terms']
-        self.truncate_staging_tables(tables)
+    def generate_merged_enrollment_terms(self, merged_profile, term_id=None):
+        if term_id and term_id not in berkeley.reverse_term_ids():
+            return
+        elif term_id:
+            term_ids = [term_id]
+        else:
+            term_ids = berkeley.reverse_term_ids()
 
-        enrollment_terms_map = generate_enrollment_terms_map(advisee_sids_map)
+        uid = merged_profile.get('uid')
+        sid = merged_profile.get('sid')
+        canvas_user_id = merged_profile.get('canvasUserId')
 
-        for (sid, term_feeds) in enrollment_terms_map.items():
-            for (term_id, term_feed) in term_feeds.items():
+        canvas_courses_feed = get_canvas_courses_feed(uid)
+        merge_canvas_site_map(self.canvas_site_map, canvas_courses_feed)
+        terms_feed = get_merged_enrollment_terms(uid, sid, term_ids, canvas_courses_feed, self.canvas_site_map)
+        term_gpas = queries.get_term_gpas(sid)
+
+        relative_submission_counts = get_relative_submission_counts(canvas_user_id)
+
+        for term_id in term_ids:
+            app.logger.debug(f'Generating merged enrollment term (uid={uid}, sid={sid}, term_id={term_id})')
+            ts = datetime.now().timestamp()
+            term_feed = terms_feed.get(term_id)
+            if term_feed and (len(term_feed['enrollments']) or len(term_feed['unmatchedCanvasSites'])):
+                term_gpa = next((t for t in term_gpas if t['term_id'] == term_id), None)
+                if term_gpa:
+                    term_feed['termGpa'] = {
+                        'gpa': float(term_gpa['gpa']),
+                        'unitsTakenForGpa': float(term_gpa['units_taken_for_gpa']),
+                    }
+                # Rebuild our Canvas courses list to remove any courses that were screened out during association (for instance,
+                # dropped or athletic enrollments).
+                canvas_courses = []
+                for enrollment in term_feed.get('enrollments', []):
+                    canvas_courses += enrollment['canvasSites']
+                canvas_courses += term_feed.get('unmatchedCanvasSites', [])
+                # Decorate the Canvas courses list with per-course statistics and return summary statistics.
+                app.logger.debug(f'Generating enrollment term analytics (uid={uid}, sid={sid}, term_id={term_id})')
+                term_feed['analytics'] = mean_course_analytics_for_user(
+                    canvas_courses,
+                    canvas_user_id,
+                    relative_submission_counts,
+                    self.canvas_site_map,
+                )
                 self.rows['student_enrollment_terms'].append(encoded_tsv_row([sid, term_id, json.dumps(term_feed)]))
-
-        self.write_all_to_staging(tables)
-        self.rows['student_enrollment_terms'] = None
-        return tables
-
-    def truncate_staging_tables(self, tables):
-        # Remove any old data from staging tables.
-        for table in tables:
-            redshift.execute(
-                'TRUNCATE {schema}.{table}',
-                schema=self.staging_schema_identifier,
-                table=psycopg2.sql.Identifier(table),
-            )
-
-    def write_all_to_staging(self, tables):
-        for table in tables:
-            if not self.rows[table]:
-                continue
-            self.upload_to_staging(table)
-            if not self.verify_table(table):
-                return False
-        return True
-
-    def refresh_all_from_staging(self, tables):
-        with redshift.transaction() as transaction:
-            for table in tables:
-                if not self.refresh_from_staging(table, None, None, transaction):
-                    app.logger.error(f'Failed to refresh {self.destination_schema}.{table} from staging.')
-                    return False
-            if not transaction.commit():
-                app.logger.error(f'Final transaction commit failed for {self.destination_schema}.')
-                return False
-        with rds.transaction() as transaction:
-            if self.refresh_rds_indexes(None, transaction):
-                transaction.commit()
-                app.logger.info('Refreshed RDS indexes.')
-            else:
-                transaction.rollback()
-                app.logger.error('Failed to refresh RDS indexes.')
-                return False
-
-        update_merged_feed_status(None, self.successes, self.failures)
-        app.logger.info(f'Updated merged feed status.')
+            app.logger.debug(
+                f'Enrollment term merge complete (uid={uid}, sid={sid}, term_id={term_id}, '
+                f'{datetime.now().timestamp() - ts} seconds)')
 
     def refresh_from_staging(self, table, term_id, sids, transaction):
         # If our job is restricted to a particular term id or set of sids, then drop rows from the destination table
@@ -271,7 +359,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 params = None
             return transaction.execute(sql, params)
 
-        # TODO LOAD THE RDS INDEXES FROM REDSHIFT TABLES RATHER THAN IN-MEMORY STORAGE.
         if len(self.rows['student_academic_status']):
             if not delete_existing_rows('student_academic_status'):
                 return False

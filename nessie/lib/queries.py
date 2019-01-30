@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import redshift
-from nessie.lib.berkeley import canvas_terms, reverse_term_ids, term_name_for_sis_id
+from nessie.lib.berkeley import term_name_for_sis_id
 from nessie.lib.mockingdata import fixture
 
 # Lazy init to support testing.
@@ -71,116 +71,29 @@ def get_all_student_ids():
     return redshift.fetch(sql)
 
 
-@fixture('query_advisee_student_profile_feeds.csv')
-def get_advisee_student_profile_feeds():
-    sql = f"""SELECT DISTINCT ldap.ldap_uid, ldap.sid, ldap.first_name, ldap.last_name,
-                us.canvas_id AS canvas_user_id, us.name AS canvas_user_name,
-                sis.feed AS sis_profile_feed,
-                deg.feed AS degree_progress_feed
-              FROM {calnet_schema()}.persons ldap
-              LEFT JOIN {intermediate_schema()}.users us
-                ON us.uid = ldap.ldap_uid
-              LEFT JOIN {student_schema()}.sis_api_profiles sis
-                ON sis.sid = ldap.sid
-              LEFT JOIN {student_schema()}.sis_api_degree_progress deg
-                ON deg.sid = ldap.sid
-              ORDER BY ldap.sid
+def get_calnet_profiles(sids=None):
+    if sids:
+        where_clause = f"WHERE sid=ANY('{{{','.join(sids)}}}')"
+    else:
+        where_clause = ''
+    sql = f"""SELECT ldap_uid, sid, first_name, last_name
+              FROM {calnet_schema()}.persons
+              {where_clause}
         """
     return redshift.fetch(sql)
 
 
-@fixture('query_advisee_enrolled_canvas_sites.csv')
-def get_advisee_enrolled_canvas_sites():
-    sql = f"""SELECT enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code, enr.canvas_course_term,
-          LISTAGG(DISTINCT ldap.sid, ',') AS advisee_sids,
-          LISTAGG(DISTINCT cs.sis_section_id, ',') AS sis_section_ids
-        FROM {intermediate_schema()}.active_student_enrollments enr
-        JOIN {calnet_schema()}.persons ldap
-          ON enr.uid = ldap.ldap_uid
-        JOIN {intermediate_schema()}.course_sections cs
-          ON cs.canvas_course_id = enr.canvas_course_id
-        WHERE enr.canvas_course_term=ANY('{{{','.join(canvas_terms())}}}')
-        GROUP BY enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code, enr.canvas_course_term
-        ORDER BY enr.canvas_course_id
-        """
-    return redshift.fetch(sql)
-
-
-@fixture('query_advisee_submissions_comparisons.csv')
-def get_advisee_submissions_comparisons():
-    sql = f"""SELECT sub.reference_user_id, ldap.sid,
-                sub.course_id as canvas_course_id, sub.canvas_user_id, sub.submissions_turned_in
-              FROM {boac_schema()}.assignment_submissions_relative sub
-              JOIN {intermediate_schema()}.users us
-                ON sub.reference_user_id = us.canvas_id
-              JOIN {calnet_schema()}.persons ldap
-                ON us.uid = ldap.ldap_uid
-              ORDER BY sub.reference_user_id, sub.course_id
-       """
-    return redshift.fetch(sql)
-
-
-@fixture('query_enrollments_in_advisee_canvas_sites.csv')
-def get_all_enrollments_in_advisee_canvas_sites():
+@fixture('query_canvas_course_scores.csv')
+def get_canvas_course_scores(course_ids):
     sql = f"""SELECT
-                mem.course_id as canvas_course_id,
-                mem.uid,
-                mem.canvas_user_id,
-                mem.current_score,
-                EXTRACT(EPOCH FROM mem.last_activity_at) AS last_activity_at,
-                mem.sis_enrollment_status
-              FROM {boac_schema()}.course_enrollments mem
-              WHERE EXISTS (
-                SELECT 1 FROM {boac_schema()}.course_enrollments memsub
-                  JOIN {calnet_schema()}.persons ldap
-                    ON memsub.uid = ldap.ldap_uid
-                  WHERE memsub.course_id = mem.course_id
-              )
-              AND EXISTS (
-                SELECT 1 FROM {intermediate_schema()}.course_sections cs
-                WHERE cs.canvas_course_id = mem.course_id
-                  AND cs.canvas_course_term=ANY('{{{','.join(canvas_terms())}}}')
-              )
-              ORDER BY mem.course_id, mem.canvas_user_id
-        """
-    return redshift.fetch(sql)
-
-
-@fixture('query_advisee_sis_enrollments.csv')
-def get_all_advisee_sis_enrollments():
-    sql = f"""SELECT
-                  enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id,
-                  enr.ldap_uid, ldap.sid,
-                  enr.sis_course_title, enr.sis_course_name,
-                  enr.sis_section_id, enr.sis_primary, enr.sis_instruction_format, enr.sis_section_num
-              FROM {intermediate_schema()}.sis_enrollments enr
-              JOIN {calnet_schema()}.persons ldap
-                ON enr.ldap_uid = ldap.ldap_uid
-              WHERE enr.sis_term_id=ANY('{{{','.join(reverse_term_ids())}}}')
-              ORDER BY ldap.sid, enr.sis_term_id DESC, enr.sis_course_name, enr.sis_primary DESC, enr.sis_instruction_format, enr.sis_section_num
-        """
-    return redshift.fetch(sql)
-
-
-@fixture('query_advisee_enrollment_drops.csv')
-def get_all_advisee_enrollment_drops():
-    sql = f"""SELECT dr.*
-              FROM {intermediate_schema()}.sis_dropped_classes AS dr
-              JOIN {calnet_schema()}.persons ldap
-                ON dr.sid = ldap.sid
-              WHERE dr.sis_term_id=ANY('{{{','.join(reverse_term_ids())}}}')
-              ORDER BY dr.sid, dr.sis_term_id DESC, dr.sis_course_name
-            """
-    return redshift.fetch(sql)
-
-
-def get_all_advisee_term_gpas():
-    sql = f"""SELECT gp.sid, gp.term_id, gp.gpa, gp.units_taken_for_gpa
-              FROM {student_schema()}.student_term_gpas gp
-              JOIN {calnet_schema()}.persons ldap
-                ON gp.sid = ldap.sid
-              WHERE gp.term_id=ANY('{{{','.join(reverse_term_ids())}}}')
-              ORDER BY gp.sid, gp.term_id DESC
+                course_id,
+                canvas_user_id,
+                current_score,
+                EXTRACT(EPOCH FROM last_activity_at) AS last_activity_at,
+                sis_enrollment_status
+              FROM {boac_schema()}.course_enrollments
+              WHERE course_id=ANY('{{{','.join(course_ids)}}}')
+              ORDER BY course_id, canvas_user_id
         """
     return redshift.fetch(sql)
 
@@ -219,8 +132,103 @@ def get_enrolled_primary_sections_for_term(term_id):
     return redshift.fetch(sql)
 
 
+@fixture('query_enrollment_drops_{csid}.csv')
+def get_enrollment_drops(csid):
+    sql = f"""SELECT dr.*
+              FROM {intermediate_schema()}.sis_dropped_classes AS dr
+              WHERE dr.sid = '{csid}'
+              ORDER BY dr.sis_term_id DESC, dr.sis_course_name
+            """
+    return redshift.fetch(sql)
+
+
+def get_sis_api_degree_progress(csid):
+    sql = f"""SELECT feed from {student_schema()}.sis_api_degree_progress WHERE sid='{csid}'"""
+    return redshift.fetch(sql)
+
+
+def get_sis_api_profile(csid):
+    sql = f"""SELECT feed from {student_schema()}.sis_api_profiles WHERE sid='{csid}'"""
+    return redshift.fetch(sql)
+
+
+@fixture('query_sis_enrollments_{uid}.csv')
+def get_sis_enrollments(uid):
+    sql = f"""SELECT
+                  enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id, enr.ldap_uid,
+                  enr.sis_course_title, enr.sis_course_name,
+                  enr.sis_section_id, enr.sis_primary, enr.sis_instruction_format, enr.sis_section_num
+              FROM {intermediate_schema()}.sis_enrollments enr
+              WHERE enr.ldap_uid = {uid}
+              ORDER BY enr.sis_term_id DESC, enr.sis_course_name, enr.sis_primary DESC, enr.sis_instruction_format, enr.sis_section_num
+        """
+    return redshift.fetch(sql)
+
+
+@fixture('query_sis_section_{term_id}_{sis_section_id}.csv')
+def get_sis_section(term_id, sis_section_id):
+    sql = f"""SELECT
+                  sc.sis_term_id, sc.sis_section_id, sc.sis_course_title, sc.sis_course_name,
+                  sc.is_primary, sc.sis_instruction_format, sc.sis_section_num, sc.allowed_units,
+                  sc.instructor_uid, sc.instructor_name, sc.instructor_role_code,
+                  sc.meeting_location, sc.meeting_days,
+                  sc.meeting_start_time, sc.meeting_end_time, sc.meeting_start_date, sc.meeting_end_date
+              FROM {intermediate_schema()}.sis_sections sc
+              WHERE sc.sis_section_id = {sis_section_id}
+                  AND sc.sis_term_id = {term_id}
+              ORDER BY sc.meeting_days, sc.meeting_start_time, sc.meeting_end_time, sc.instructor_name
+        """
+    return redshift.fetch(sql)
+
+
+@fixture('query_sis_sections_for_canvas_courses.csv')
+def get_sis_sections_for_canvas_courses(canvas_course_ids):
+    # The GROUP BY clause eliminates duplicates when multiple site sections include the same SIS class section.
+    sql = f"""SELECT canvas_course_id, sis_section_id
+        FROM {intermediate_schema()}.course_sections
+        WHERE canvas_course_id = ANY('{{{','.join(canvas_course_ids)}}}')
+        GROUP BY canvas_course_id, sis_section_id
+        ORDER BY canvas_course_id
+        """
+    return redshift.fetch(sql)
+
+
+@fixture('query_student_canvas_courses_{uid}.csv')
+def get_student_canvas_courses(uid):
+    sql = f"""SELECT DISTINCT enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code, enr.canvas_course_term
+        FROM {intermediate_schema()}.active_student_enrollments enr
+        WHERE enr.uid = {uid}
+        """
+    return redshift.fetch(sql)
+
+
+@fixture('query_submissions_turned_in_relative_to_user_{user_id}.csv')
+def get_submissions_turned_in_relative_to_user(user_id):
+    sql = f"""SELECT course_id, canvas_user_id, submissions_turned_in
+              FROM {boac_schema()}.assignment_submissions_relative
+              WHERE reference_user_id = {user_id}"""
+    return redshift.fetch(sql)
+
+
 def get_successfully_backfilled_students():
     sql = f"""SELECT sid
         FROM {metadata_schema()}.merged_feed_status
         WHERE term_id = 'all' AND status = 'success'"""
+    return redshift.fetch(sql)
+
+
+def get_term_gpas(sid):
+    sql = f"""SELECT term_id, gpa, units_taken_for_gpa
+              FROM {student_schema()}.student_term_gpas
+              WHERE sid = {sid}
+        """
+    return redshift.fetch(sql)
+
+
+@fixture('query_user_for_uid_{uid}.csv')
+def get_user_for_uid(uid):
+    sql = f"""SELECT canvas_id, name, uid
+        FROM {intermediate_schema()}.users
+        WHERE uid = {uid}
+        """
     return redshift.fetch(sql)
