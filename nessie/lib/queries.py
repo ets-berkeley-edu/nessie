@@ -24,7 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
-from nessie.externals import redshift
+from nessie.externals import redshift, s3
 from nessie.lib.berkeley import canvas_terms, reverse_term_ids, term_name_for_sis_id
 from nessie.lib.mockingdata import fixture
 
@@ -107,17 +107,12 @@ def get_advisee_enrolled_canvas_sites():
 
 
 @fixture('query_advisee_submissions_comparisons.csv')
-def get_advisee_submissions_comparisons():
-    sql = f"""SELECT sub.reference_user_id, ldap.sid,
-                sub.course_id as canvas_course_id, sub.canvas_user_id, sub.submissions_turned_in
-              FROM {boac_schema()}.assignment_submissions_relative sub
-              JOIN {intermediate_schema()}.users us
-                ON sub.reference_user_id = us.canvas_id
-              JOIN {calnet_schema()}.persons ldap
-                ON us.uid = ldap.ldap_uid
-              ORDER BY sub.reference_user_id, sub.course_id
-       """
-    return redshift.fetch(sql)
+def get_advisee_submissions_sorted():
+    columns = ['reference_user_id', 'canvas_course_id', 'canvas_user_id', 'submissions_turned_in']
+    key = f"{app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH']}/assignment_submissions_relative/sub_000.gz"
+    data = s3.get_unzipped_text_reader(key)
+    fcsv = (dict(zip(columns, [(int(f) if f.isdigit() else None) for f in l.strip().split(',')])) for l in data)
+    return fcsv
 
 
 @fixture('query_enrollments_in_advisee_canvas_sites.csv')

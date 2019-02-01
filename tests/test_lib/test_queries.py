@@ -122,7 +122,7 @@ class TestQueries:
         assert courses[4]['canvas_course_term'] == 'Fall 2017'
 
     def test_submissions_turned_in_relative_to_user_fixture(self, app):
-        data = queries.get_advisee_submissions_comparisons()
+        data = queries.get_advisee_submissions_sorted()
         assert len(data) > 0
         assert {
             'reference_user_id': 9000100,

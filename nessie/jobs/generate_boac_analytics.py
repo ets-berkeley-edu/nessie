@@ -45,10 +45,16 @@ class GenerateBoacAnalytics(BackgroundJob):
             'daily',
             hashed_datestamp(),
         ])
+        boac_assignments_path = '/'.join([
+            f"s3://{app.config['LOCH_S3_BUCKET']}",
+            app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH'],
+            'assignment_submissions_relative',
+        ])
         resolved_ddl = resolve_sql_template(
             'create_boac_schema.template.sql',
             aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
             aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY'],
+            boac_assignments_path=boac_assignments_path,
             boac_snapshot_daily_path=boac_snapshot_daily_path,
             current_term_id=term_id_series[0],
             last_term_id=term_id_series[1],

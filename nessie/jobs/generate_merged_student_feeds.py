@@ -76,21 +76,23 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         if new_sids:
             app.logger.info(f'Found {len(new_sids)} new students, will backfill all terms.')
             ImportTermGpas().run(csids=new_sids)
+            update_merged_feed_status(None, new_sids, [])
+            app.logger.info(f'Updated merged feed status for {len(new_sids)} students.')
         else:
             app.logger.info(f'No new students to backfill.')
         return self.generate_feeds()
 
     def generate_feeds(self):
-        # SID-to-Canvas-user-ID translation is needed to merge Canvas analytics data and SIS enrollment-based data.
-        advisee_sids_map = {}
+        # Canvas_user_id to UID/SID translation is needed to merge Canvas analytics data and SIS enrollment-based data.
+        advisee_ids_map = {}
         self.successes = []
         self.failures = []
-        profile_tables = self.generate_student_profile_tables(advisee_sids_map)
-        terms_tables = self.generate_enrollment_terms_table(advisee_sids_map)
+        profile_tables = self.generate_student_profile_tables(advisee_ids_map)
+        terms_tables = self.generate_enrollment_terms_table(advisee_ids_map)
         self.refresh_all_from_staging(profile_tables + terms_tables)
         return f'Merged profile generation complete: {len(self.successes)} successes, {len(self.failures)} failures.'
 
-    def generate_student_profile_tables(self, advisee_sids_map):
+    def generate_student_profile_tables(self, advisee_ids_map):
         # In-memory storage for generated feeds prior to TSV output.
         self.rows = {
             'student_profiles': [],
@@ -110,10 +112,11 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         app.logger.info(f'Will generate feeds for {count} students.')
         for index, student_feeds in enumerate(all_student_feeds):
             sid = student_feeds['sid']
-            app.logger.info(f'Generating feeds for sid {sid} ({index} of {count})')
             merged_profile = self.generate_student_profile_from_feeds(student_feeds)
             if merged_profile:
-                advisee_sids_map[sid] = {'canvas_user_id': student_feeds.get('canvas_user_id')}
+                canvas_user_id = student_feeds['canvas_user_id']
+                if canvas_user_id:
+                    advisee_ids_map[canvas_user_id] = {'sid': sid, 'uid': student_feeds['ldap_uid']}
                 self.successes.append(sid)
             else:
                 self.failures.append(sid)
@@ -123,7 +126,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     def generate_student_profile_from_feeds(self, feeds):
         sid = feeds['sid']
         uid = feeds['ldap_uid']
-        app.logger.debug(f'Generating merged profile for SID {sid}')
         if not uid:
             return
         sis_profile = parse_merged_sis_profile(feeds.get('sis_profile_feed'), feeds.get('degree_progress_feed'))
@@ -155,12 +157,12 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
         return merged_profile
 
-    def generate_enrollment_terms_table(self, advisee_sids_map):
+    def generate_enrollment_terms_table(self, advisee_ids_map):
         self.rows['student_enrollment_terms'] = []
         tables = ['student_enrollment_terms']
         self.truncate_staging_tables(tables)
 
-        enrollment_terms_map = generate_enrollment_terms_map(advisee_sids_map)
+        enrollment_terms_map = generate_enrollment_terms_map(advisee_ids_map)
 
         for (sid, term_feeds) in enrollment_terms_map.items():
             for (term_id, term_feed) in term_feeds.items():
@@ -205,9 +207,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 transaction.rollback()
                 app.logger.error('Failed to refresh RDS indexes.')
                 return False
-
-        update_merged_feed_status(None, self.successes, self.failures)
-        app.logger.info(f'Updated merged feed status.')
 
     def refresh_from_staging(self, table, term_id, sids, transaction):
         # If our job is restricted to a particular term id or set of sids, then drop rows from the destination table

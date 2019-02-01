@@ -223,31 +223,6 @@ AS (
 );
 
 
-CREATE TABLE {redshift_schema_boac}.assignment_submissions_relative
-SORTKEY (reference_user_id, course_id)
-DISTKEY (reference_user_id)
-AS (
-    SELECT
-        ac1.canvas_user_id AS reference_user_id,
-        ac1.course_id AS course_id,
-        ac2.canvas_user_id AS canvas_user_id,
-        COUNT(
-            CASE WHEN ac2.assignment_status IN ('graded', 'late', 'on_time', 'submitted')
-            THEN 1 ELSE NULL END
-        ) AS submissions_turned_in
-    FROM {redshift_schema_boac}.assignment_submissions_scores ac1
-    JOIN {redshift_schema_boac}.assignment_submissions_scores ac2
-    ON
-        ac1.uid IN (SELECT ldap_uid FROM {redshift_schema_calnet}.persons)
-        AND ac1.assignment_id = ac2.assignment_id
-    GROUP BY reference_user_id, ac1.course_id, ac2.canvas_user_id
-    HAVING count(*) = (
-        SELECT count(*) FROM {redshift_schema_boac}.assignment_submissions_scores
-        WHERE canvas_user_id = reference_user_id AND course_id = ac1.course_id
-    )
-);
-
-
 CREATE TABLE {redshift_schema_boac}.course_enrollments
 SORTKEY (course_id)
 AS (
@@ -313,13 +288,47 @@ AS (
 );
 
 /*
+ * Store a properly sorted list of millions of assignment submissions in one (we hope) S3 CSV.
+ */
+
+UNLOAD (
+    'SELECT
+        ac1.canvas_user_id AS reference_user_id,
+        ac1.course_id AS canvas_course_id,
+        ac2.canvas_user_id AS canvas_user_id,
+        COUNT(
+            CASE WHEN ac2.assignment_status IN (\'graded\', \'late\', \'on_time\', \'submitted\')
+            THEN 1 ELSE NULL END
+        ) AS submissions_turned_in
+    FROM {redshift_schema_boac}.assignment_submissions_scores ac1
+    JOIN {redshift_schema_boac}.assignment_submissions_scores ac2
+        ON ac1.uid IN (SELECT ldap_uid FROM {redshift_schema_calnet}.persons)
+        AND ac1.assignment_id = ac2.assignment_id
+        AND ac1.course_id = ac2.course_id
+    GROUP BY reference_user_id, ac1.course_id, ac2.canvas_user_id
+    HAVING count(*) = (
+        SELECT count(*) FROM {redshift_schema_boac}.assignment_submissions_scores
+        WHERE canvas_user_id = reference_user_id AND course_id = ac1.course_id
+    )
+    ORDER BY reference_user_id, ac1.course_id, ac2.canvas_user_id'
+)
+TO '{boac_assignments_path}/sub_'
+ACCESS_KEY_ID '{aws_access_key_id}'
+SECRET_ACCESS_KEY '{aws_secret_access_key}'
+DELIMITER AS ','
+NULL AS ''
+ALLOWOVERWRITE
+PARALLEL OFF
+GZIP;
+
+/*
  * After boiled-down derived tables are generated, pull out data for the current term and store snapshots in S3.
  */
 
 UNLOAD (
     'SELECT ce.uid, ce.canvas_user_id, ce.course_id, ce.sis_enrollment_status, ce.last_activity_at, ce.current_score, ce.final_score
-    FROM boac_analytics.course_enrollments ce
-    JOIN intermediate.course_sections cs
+    FROM {redshift_schema_boac}.course_enrollments ce
+    JOIN {redshift_schema_intermediate}.course_sections cs
     ON ce.course_id = cs.canvas_course_id
     AND cs.sis_term_id = \'{current_term_id}\'
     GROUP BY ce.uid, ce.canvas_user_id, ce.course_id, ce.sis_enrollment_status, ce.last_activity_at, ce.current_score, ce.final_score'
@@ -336,8 +345,8 @@ GZIP;
 UNLOAD (
     'SELECT ass.uid, ass.canvas_user_id, ass.course_id, ass.assignment_id, ass.assignment_status, ass.sis_enrollment_status,
         ass.due_at, ass.submitted_at, ass.score, ass.points_possible
-    FROM boac_analytics.assignment_submissions_scores ass
-    JOIN intermediate.course_sections cs
+    FROM {redshift_schema_boac}.assignment_submissions_scores ass
+    JOIN {redshift_schema_intermediate}.course_sections cs
     ON ass.course_id = cs.canvas_course_id
     AND cs.sis_term_id = \'{current_term_id}\'
     GROUP BY ass.uid, ass.canvas_user_id, ass.course_id, ass.assignment_id, ass.assignment_status, ass.sis_enrollment_status,

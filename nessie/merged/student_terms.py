@@ -30,7 +30,7 @@ from nessie.lib import berkeley, queries
 from nessie.lib.analytics import mean_course_analytics_for_user
 
 
-def generate_enrollment_terms_map(advisee_sids_map):
+def generate_enrollment_terms_map(advisee_ids_map):
     # Our mission is to produce student_enrollment_terms rows indexed by sid and term_id, and so that should be our
     # final sort order.
     enrollment_terms_map = get_sis_enrollments()
@@ -40,7 +40,7 @@ def generate_enrollment_terms_map(advisee_sids_map):
     (canvas_site_map, advisee_site_map) = get_canvas_site_map()
     merge_memberships_into_site_map(canvas_site_map)
     merge_canvas_data(canvas_site_map, advisee_site_map, enrollment_terms_map)
-    merge_all_analytics_data(advisee_sids_map, canvas_site_map, enrollment_terms_map)
+    merge_all_analytics_data(advisee_ids_map, canvas_site_map, enrollment_terms_map)
     return enrollment_terms_map
 
 
@@ -181,14 +181,19 @@ def merge_canvas_data(canvas_site_map, advisee_site_map, all_advisees_terms_map)
     return all_advisees_terms_map
 
 
-def merge_all_analytics_data(advisee_sids_map, canvas_site_map, all_advisees_terms_map):
-    sids_without_merged_analytics = {sid for (sid, val) in advisee_sids_map.items() if val.get('canvas_user_id')}
+def merge_all_analytics_data(advisee_ids_map, canvas_site_map, all_advisees_terms_map):
+    ids_without_merged_analytics = set(advisee_ids_map.keys())
 
     # First, handle those advisees who are graced with billions and billions of assignment submission stats.
-    all_counts = queries.get_advisee_submissions_comparisons()
-    for (canvas_user_id, sid), sites_grp in groupby(all_counts, key=operator.itemgetter('reference_user_id', 'sid')):
-        app.logger.debug(f'Merging analytics for SID {sid}')
-        sids_without_merged_analytics.discard(sid)
+    app.logger.info(f'Getting relative submission data')
+    all_counts = queries.get_advisee_submissions_sorted()
+    app.logger.info(f'Starting analytics merge for advisees with asssignment stats')
+    for canvas_user_id, sites_grp in groupby(all_counts, key=operator.itemgetter('reference_user_id')):
+        ids_without_merged_analytics.discard(canvas_user_id)
+        sid = advisee_ids_map.get(canvas_user_id, {}).get('sid')
+        if not sid:
+            app.logger.warn(f'Advisee submissions query returned canvas_user_id {canvas_user_id}, but no match in advisees map')
+            continue
         advisee_terms_map = all_advisees_terms_map.get(sid)
         if not advisee_terms_map:
             # Nothing to merge.
@@ -199,9 +204,9 @@ def merge_all_analytics_data(advisee_sids_map, canvas_site_map, all_advisees_ter
         merge_advisee_analytics(advisee_terms_map, canvas_user_id, relative_submission_counts, canvas_site_map)
 
     # Then take care of the few students who have never seen a Canvas assignment.
-    for sid in sids_without_merged_analytics:
-        app.logger.debug(f'Merging analytics for SID {sid}')
-        canvas_user_id = advisee_sids_map[sid].get('canvas_user_id')
+    app.logger.info(f'Starting analytics merge for {len(ids_without_merged_analytics)} advisees without asssignment stats')
+    for canvas_user_id in ids_without_merged_analytics:
+        sid = advisee_ids_map[canvas_user_id].get('sid')
         advisee_terms_map = all_advisees_terms_map.get(sid)
         if not advisee_terms_map:
             # Nothing to merge.

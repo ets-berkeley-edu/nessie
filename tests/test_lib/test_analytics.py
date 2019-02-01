@@ -48,7 +48,7 @@ class TestAnalytics:
 
 
 def get_relative_submission_counts():
-    all_counts = queries.get_advisee_submissions_comparisons()
+    all_counts = queries.get_advisee_submissions_sorted()
     for canvas_user_id, sites_grp in groupby(all_counts, key=operator.itemgetter('reference_user_id')):
         if canvas_user_id == 9000100:
             relative_submission_counts = {}
@@ -87,7 +87,7 @@ class TestAnalyticsFromAssignmentsSubmitted:
         for i in range(101, 301):
             rows.append(','.join(['9000100', str(i), str(self.canvas_course_id), str(i), '2']))
         mr = MockRows(io.StringIO('\n'.join(rows)))
-        with register_mock(queries.get_advisee_submissions_comparisons, mr):
+        with register_mock(queries.get_advisee_submissions_sorted, mr):
             worst = analytics.assignments_submitted(
                 '9000000',
                 self.canvas_course_id,
@@ -117,7 +117,7 @@ class TestAnalyticsFromAssignmentsSubmitted:
 
     def test_when_no_data(self, app):
         mr = MockRows(io.StringIO('reference_user_id,sid,canvas_course_id,canvas_user_id,submissions_turned_in'))
-        with register_mock(queries.get_advisee_submissions_comparisons, mr):
+        with register_mock(queries.get_advisee_submissions_sorted, mr):
             digested = analytics.assignments_submitted(
                 self.canvas_user_id,
                 self.canvas_course_id,
