@@ -32,35 +32,36 @@ from nessie.lib.mockingdata import MockRows, register_mock
 class TestQueries:
 
     def test_canvas_course_scores_fixture(self, app):
-        results = queries.get_canvas_course_scores(['7654321'])
+        results = queries.get_all_enrollments_in_advisee_canvas_sites()
         assert len(results) > 0
-        assert {'course_id': 7654321, 'canvas_user_id': 9000100, 'current_score': 84, 'last_activity_at': 1535275620} in results
+        assert {
+            'canvas_course_id': 7654321, 'uid': '9000100', 'canvas_user_id': 9000100,
+            'current_score': 84, 'last_activity_at': 1535275620, 'sis_enrollment_status': 'E',
+        } in results
 
     def test_sis_sections_in_canvas_course(self, app):
-        sections = queries.get_sis_sections_for_canvas_courses([7654320, 7654321, 7654323, 9999991])
+        sections = queries.get_advisee_enrolled_canvas_sites()
 
-        burmese_sections = [s for s in sections if s['canvas_course_id'] == 7654320]
-        assert len(burmese_sections) == 2
-        assert burmese_sections[0]['sis_section_id'] == 90100
-        assert burmese_sections[1]['sis_section_id'] == 90101
+        burmese_sections = next(s['sis_section_ids'] for s in sections if s['canvas_course_id'] == 7654320)
+        assert burmese_sections == '90100,90101'
 
-        medieval_sections = [s for s in sections if s['canvas_course_id'] == 7654321]
-        assert len(medieval_sections) == 1
-        assert medieval_sections[0]['sis_section_id'] == 90200
+        medieval_sections = next(s['sis_section_ids'] for s in sections if s['canvas_course_id'] == 7654321)
+        assert medieval_sections == '90200'
 
-        nuclear_sections = [s for s in sections if s['canvas_course_id'] == 7654323]
-        assert len(nuclear_sections) == 2
-        assert nuclear_sections[0]['sis_section_id'] == 90299
-        assert nuclear_sections[1]['sis_section_id'] == 90300
+        nuclear_sections = next(s['sis_section_ids'] for s in sections if s['canvas_course_id'] == 7654323)
+        assert nuclear_sections == '90299,90300'
 
         # No SIS-linked site sections
-        project_site_sections = [s for s in sections if s['canvas_course_id'] == 9999991]
-        assert len(project_site_sections) == 1
-        assert project_site_sections[0]['sis_section_id'] is None
+        project_site_sections = next(s['sis_section_ids'] for s in sections if s['canvas_course_id'] == 9999991)
+        assert project_site_sections is None
 
     def test_sis_enrollments(self, app):
-        enrollments = queries.get_sis_enrollments(61889)
+        enrollments = queries.get_all_advisee_sis_enrollments()
         assert len(enrollments) == 10
+
+        for enr in enrollments:
+            assert enr['ldap_uid'] == '61889'
+            assert enr['sid'] == '11667051'
 
         assert enrollments[4]['sis_course_name'] == 'BURMESE 1A'
         assert enrollments[4]['sis_section_num'] == '001'
@@ -96,8 +97,9 @@ class TestQueries:
         assert enrollments[8]['grade'] == 'P'
 
     def test_student_canvas_courses(self, app):
-        courses = queries.get_student_canvas_courses(61889)
+        courses = queries.get_advisee_enrolled_canvas_sites()
         assert len(courses) == 6
+        # Canvas sites should be sorted by Course ID number
         assert courses[0]['canvas_course_id'] == 7654320
         assert courses[0]['canvas_course_name'] == 'Introductory Burmese'
         assert courses[0]['canvas_course_code'] == 'BURMESE 1A'
@@ -106,35 +108,45 @@ class TestQueries:
         assert courses[1]['canvas_course_name'] == 'Medieval Manuscripts as Primary Sources'
         assert courses[1]['canvas_course_code'] == 'MED ST 205'
         assert courses[1]['canvas_course_term'] == 'Fall 2017'
-        assert courses[2]['canvas_course_id'] == 7654330
-        assert courses[2]['canvas_course_name'] == 'Optional Friday Night Radioactivity Group'
+        assert courses[2]['canvas_course_id'] == 7654323
+        assert courses[2]['canvas_course_name'] == 'Radioactive Waste Management'
         assert courses[2]['canvas_course_code'] == 'NUC ENG 124'
         assert courses[2]['canvas_course_term'] == 'Fall 2017'
-        assert courses[3]['canvas_course_id'] == 7654323
-        assert courses[3]['canvas_course_name'] == 'Radioactive Waste Management'
-        assert courses[3]['canvas_course_code'] == 'NUC ENG 124'
-        assert courses[3]['canvas_course_term'] == 'Fall 2017'
-        assert courses[4]['canvas_course_id'] == 7654325
-        assert courses[4]['canvas_course_name'] == 'Modern Statistical Prediction and Machine Learning'
-        assert courses[4]['canvas_course_code'] == 'STAT 154'
-        assert courses[4]['canvas_course_term'] == 'Spring 2017'
+        assert courses[3]['canvas_course_id'] == 7654325
+        assert courses[3]['canvas_course_name'] == 'Modern Statistical Prediction and Machine Learning'
+        assert courses[3]['canvas_course_code'] == 'STAT 154'
+        assert courses[3]['canvas_course_term'] == 'Spring 2017'
+        assert courses[4]['canvas_course_id'] == 7654330
+        assert courses[4]['canvas_course_name'] == 'Optional Friday Night Radioactivity Group'
+        assert courses[4]['canvas_course_code'] == 'NUC ENG 124'
+        assert courses[4]['canvas_course_term'] == 'Fall 2017'
 
     def test_submissions_turned_in_relative_to_user_fixture(self, app):
-        data = queries.get_submissions_turned_in_relative_to_user(9000100)
+        data = queries.get_advisee_submissions_sorted()
         assert len(data) > 0
-        assert {'course_id': 7654321, 'canvas_user_id': 9000100, 'submissions_turned_in': 8} in data
+        assert {
+            'reference_user_id': 9000100,
+            'sid': '9000100',
+            'canvas_course_id': 7654321,
+            'canvas_user_id': 9000100,
+            'submissions_turned_in': 8,
+        } in data
 
     def test_override_fixture(self, app):
-        mr = MockRows(io.StringIO('canvas_course_id,sis_section_id\n7654320,13131'))
-        with register_mock(queries.get_sis_sections_for_canvas_courses, mr):
-            data = queries.get_sis_sections_for_canvas_courses([7654320])
+        mr = MockRows(io.StringIO('course_id,uid,canvas_user_id,current_score,last_activity_at,sis_enrollment_status\n1,2,3,4,5,F'))
+        with register_mock(queries.get_all_enrollments_in_advisee_canvas_sites, mr):
+            data = queries.get_all_enrollments_in_advisee_canvas_sites()
         assert len(data) == 1
-        assert {'canvas_course_id': 7654320, 'sis_section_id': 13131} == data[0]
+        assert {
+            'course_id': 1, 'uid': '2', 'canvas_user_id': 3, 'current_score': 4, 'last_activity_at': 5,
+            'sis_enrollment_status': 'F',
+        } == data[0]
 
     def test_user_for_uid(self, app):
-        data = queries.get_user_for_uid(2040)
-        assert len(data) == 1
-        assert {'canvas_id': 10001, 'name': 'Oliver Heyer', 'uid': '2040'} in data
-        data = queries.get_user_for_uid(242881)
-        assert len(data) == 1
-        assert {'canvas_id': 10002, 'name': 'Paul Kerschen', 'uid': '242881'} in data
+        data = queries.get_advisee_student_profile_feeds()
+        oliver = next(r for r in data if r['ldap_uid'] == '2040')
+        assert oliver['canvas_user_id'] == 10001
+        assert oliver['canvas_user_name'] == 'Oliver Heyer'
+        paulk = next(r for r in data if r['ldap_uid'] == '242881')
+        assert paulk['canvas_user_id'] == 10002
+        assert paulk['canvas_user_name'] == 'Paul Kerschen'

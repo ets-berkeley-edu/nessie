@@ -23,6 +23,9 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from gzip import GzipFile
+import io
+
 import boto3
 from botocore.exceptions import ClientError, ConnectionError
 from flask import current_app as app
@@ -112,6 +115,19 @@ def get_object_text(key):
             app.logger.error(f'Failed to get S3 object contents: bucket={bucket}, key={key})')
             return None
         return contents.read().decode('utf-8')
+    except (ClientError, ConnectionError, ValueError) as e:
+        app.logger.error(f'Error retrieving S3 object text: bucket={bucket}, key={key}, error={e}')
+        return None
+
+
+def get_unzipped_text_reader(key):
+    """Iterate over millions of rows with minimal memory consumption."""
+    client = get_client()
+    bucket = app.config['LOCH_S3_BUCKET']
+    try:
+        _object = client.get_object(Bucket=bucket, Key=key)
+        gzipped = GzipFile(None, 'rb', fileobj=_object['Body'])
+        return io.TextIOWrapper(gzipped)
     except (ClientError, ConnectionError, ValueError) as e:
         app.logger.error(f'Error retrieving S3 object text: bucket={bucket}, key={key}, error={e}')
         return None
