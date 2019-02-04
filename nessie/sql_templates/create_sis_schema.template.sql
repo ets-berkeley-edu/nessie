@@ -128,3 +128,21 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_sis_internal}.sis_terms
     session_ends DATE NOT NULL
 )
 SORTKEY(term_id, academic_career);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_sis_internal}.add_dates (
+  sis_term_id INT,
+  sis_section_id INT,
+  ldap_uid VARCHAR,
+  date DATE
+)
+DISTKEY (sis_term_id)
+SORTKEY (sis_term_id, sis_section_id, ldap_uid);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_sis_internal}.drop_dates (
+  sis_term_id INT,
+  sis_section_id INT,
+  ldap_uid VARCHAR,
+  date DATE
+)
+DISTKEY (sis_term_id)
+SORTKEY (sis_term_id, sis_section_id, ldap_uid);
