@@ -118,6 +118,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_schema_physics_external': app.config['REDSHIFT_SCHEMA_PHYSICS_EXTERNAL'],
         'redshift_schema_sis': app.config['REDSHIFT_SCHEMA_SIS'],
         'redshift_schema_sis_advising_notes': app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES'],
+        'redshift_schema_sis_advising_notes_internal': app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL'],
         'redshift_schema_sis_internal': app.config['REDSHIFT_SCHEMA_SIS_INTERNAL'],
         'redshift_schema_student': app.config['REDSHIFT_SCHEMA_STUDENT'],
         'redshift_iam_role': app.config['REDSHIFT_IAM_ROLE'],
