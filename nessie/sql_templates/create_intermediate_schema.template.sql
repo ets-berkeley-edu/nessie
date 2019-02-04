@@ -290,6 +290,47 @@ AS (
 );
 
 /*
+ * Once the intermediate schema has been updated with the latest active and dropped enrollments, any new
+ * primary-section adds and drops for the current term can be stored with a datestamp in the persistent
+ * internal SIS data schema.
+ */
+
+CREATE TEMP TABLE staging_drop_dates AS (
+    SELECT sis_term_id, sis_section_id, ldap_uid, CURRENT_DATE AS date
+    FROM {redshift_schema_intermediate}.sis_dropped_classes
+    WHERE sis_term_id = '{current_term_id}'
+);
+
+DELETE FROM staging_drop_dates
+    USING {redshift_schema_sis_internal}.drop_dates dd
+WHERE staging_drop_dates.sis_term_id = dd.sis_term_id
+    AND staging_drop_dates.sis_section_id = dd.sis_section_id
+    AND staging_drop_dates.ldap_uid = dd.ldap_uid;
+
+INSERT INTO {redshift_schema_sis_internal}.drop_dates
+    SELECT * FROM staging_drop_dates;
+
+DROP TABLE staging_drop_dates;
+
+CREATE TEMP TABLE staging_add_dates AS (
+    SELECT sis_term_id, sis_section_id, ldap_uid, CURRENT_DATE AS date
+    FROM {redshift_schema_intermediate}.sis_enrollments
+    WHERE sis_term_id = '{current_term_id}'
+    AND sis_primary = 'true'
+);
+
+DELETE FROM staging_add_dates
+    USING {redshift_schema_sis_internal}.add_dates ad
+WHERE staging_add_dates.sis_term_id = ad.sis_term_id
+    AND staging_add_dates.sis_section_id = ad.sis_section_id
+    AND staging_add_dates.ldap_uid = ad.ldap_uid;
+
+INSERT INTO {redshift_schema_sis_internal}.add_dates
+    SELECT * FROM staging_add_dates;
+
+DROP TABLE staging_add_dates;
+
+/*
  * Approximate the Canvas API's Page Views metric using the Canvas Data loads.
  * NOTE: This table is not currently referred to by other code, but it is used to support ongoing
  * data research and monitoring.

@@ -60,12 +60,16 @@ def execute_ddl_script(sql):
     statements = sql.split(';')
     # Remove any trailing debris after the last SQL statement.
     del statements[-1]
-    for index, statement in enumerate(statements):
-        app.logger.info(f'Executing DDL script {index + 1} of {len(statements)}')
-        result = execute(statement)
-        if not result:
-            app.logger.error('Error executing statement from DDL script; aborting remainder of script.')
+    with _get_cursor() as cursor:
+        if not cursor:
+            app.logger.error('Failed to get cursor to execute DDL script; aborting.')
             return False
+        for index, statement in enumerate(statements):
+            app.logger.info(f'Executing DDL script {index + 1} of {len(statements)}')
+            result = _execute(statement, operation='write', cursor=cursor)
+            if not result:
+                app.logger.error('Error executing statement from DDL script; aborting remainder of script.')
+                return False
     return True
 
 
