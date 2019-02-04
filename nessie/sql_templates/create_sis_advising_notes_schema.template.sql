@@ -50,9 +50,9 @@ CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_notes
     advisor_sid VARCHAR,
     operid VARCHAR,
     created_by VARCHAR,
-    created_at TIMESTAMP,
+    created_at VARCHAR,
     updated_by VARCHAR,
-    updated_at TIMESTAMP
+    updated_at VARCHAR
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
 WITH SERDEPROPERTIES (
@@ -107,14 +107,14 @@ CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_priorit
 (
     institution VARCHAR,
     note_priority VARCHAR,
-    effective_date DATE,
+    effective_date VARCHAR,
     effective_status VARCHAR,
     descr VARCHAR,
     descr_short VARCHAR,
     created_by VARCHAR,
-    created_at TIMESTAMP,
+    created_at VARCHAR,
     updated_by VARCHAR,
-    updated_at TIMESTAMP
+    updated_at VARCHAR
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
 WITH SERDEPROPERTIES (
@@ -134,11 +134,11 @@ CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_attachm
     note_id VARCHAR,
     attachment_seq_nr INT,
     descr VARCHAR,
-    attachment_date DATE,
+    attachment_date VARCHAR,
     created_by VARCHAR,
-    created_at TIMESTAMP,
+    created_at VARCHAR,
     updated_by VARCHAR,
-    updated_at TIMESTAMP,
+    updated_at VARCHAR,
     system_file_name VARCHAR,
     user_file_name VARCHAR
 )
@@ -159,7 +159,7 @@ CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_attachm
     file_part_seq_nr INT,
     version INT,
     file_part_size INT,
-    updated_at TIMESTAMP,
+    updated_at VARCHAR,
     updated_by VARCHAR,
     file_part_data VARCHAR
 )
@@ -178,14 +178,14 @@ CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_topic_c
 (
     institution VARCHAR,
     note_topic VARCHAR,
-    effective_date DATE,
+    effective_date VARCHAR,
     effective_status VARCHAR,
     descr VARCHAR,
     descr_short VARCHAR,
     created_by VARCHAR,
-    created_at TIMESTAMP,
+    created_at VARCHAR,
     updated_by VARCHAR,
-    updated_at TIMESTAMP
+    updated_at VARCHAR
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
 WITH SERDEPROPERTIES (
@@ -205,9 +205,9 @@ CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_templat
     note_id VARCHAR,
     template_title VARCHAR,
     created_by VARCHAR,
-    created_at TIMESTAMP,
+    created_at VARCHAR,
     updated_by VARCHAR,
-    updated_at TIMESTAMP,
+    updated_at VARCHAR,
     note_body VARCHAR
 )
 ROW FORMAT DELIMITED
@@ -222,14 +222,14 @@ CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_categor
 (
     institution VARCHAR,
     note_category VARCHAR,
-    effective_date DATE,
+    effective_date VARCHAR,
     effective_status VARCHAR,
     descr VARCHAR,
     descr_short VARCHAR,
     created_by VARCHAR,
-    created_at TIMESTAMP,
+    created_at VARCHAR,
     updated_by VARCHAR,
-    updated_at TIMESTAMP
+    updated_at VARCHAR
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
 WITH SERDEPROPERTIES (
@@ -247,14 +247,14 @@ CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_subcate
     institution VARCHAR,
     note_category VARCHAR,
     note_subcategory VARCHAR,
-    effective_date DATE,
+    effective_date VARCHAR,
     effective_status VARCHAR,
     descr VARCHAR,
     descr_short VARCHAR,
     created_by VARCHAR,
-    created_at TIMESTAMP,
+    created_at VARCHAR,
     updated_by VARCHAR,
-    updated_at TIMESTAMP
+    updated_at VARCHAR
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
 WITH SERDEPROPERTIES (
@@ -265,3 +265,35 @@ WITH SERDEPROPERTIES (
 STORED AS TEXTFILE
 LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_subcategories'
 TABLE PROPERTIES ('skip.header.line.count'='1');
+
+--------------------------------------------------------------------
+-- Internal schema
+--------------------------------------------------------------------
+
+DROP SCHEMA IF EXISTS {redshift_schema_sis_advising_notes_internal} CASCADE;
+CREATE SCHEMA {redshift_schema_sis_advising_notes_internal};
+
+--------------------------------------------------------------------
+-- Internal tables
+--------------------------------------------------------------------
+
+CREATE TABLE {redshift_schema_sis_advising_notes_internal}.advising_note_attachments
+INTERLEAVED SORTKEY (sid, note_id, attachment_seq_nr)
+AS (
+    SELECT
+        sid,
+        institution,
+        note_id,
+        attachment_seq_nr,
+        descr,
+        attachment_date,
+        created_by,
+        created_at,
+        updated_by,
+        updated_at,
+        system_file_name,
+        user_file_name,
+        (sid || '_' || note_id || '_' || attachment_seq_nr || REGEXP_SUBSTR(system_file_name, '\\.[^.]*$')) AS sis_file_name
+    FROM
+        {redshift_schema_sis_advising_notes}.advising_note_attachments
+);
