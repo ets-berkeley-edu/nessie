@@ -109,7 +109,7 @@ class MigrateLrsIncrementals(BackgroundJob):
             'create_lrs_canvas_explode_table.template.sql',
             redshift_schema_lrs_external=schema,
             canvas_caliper_explode_table='caliper_statements_explode_transient',
-            loch_s3_caliper_explode_path=url,
+            loch_s3_caliper_explode_url=url,
         )
         if redshift.execute_ddl_script(resolved_ddl_transient):
             app.logger.info(f"caliper_statements_explode_transient table created in schema '{schema}'.")

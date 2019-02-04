@@ -23,23 +23,8 @@
  * ENHANCEMENTS, OR MODIFICATIONS.
  */
 
---------------------------------------------------------------------
--- CREATE EXTERNAL SCHEMA
---------------------------------------------------------------------
 
-DROP SCHEMA IF EXISTS {redshift_schema_caliper_analytics} CASCADE;
-CREATE SCHEMA {redshift_schema_caliper_analytics};
-
-
---------------------------------------------------------------------
--- Canvas Caliper Analytics Internal Tables
---------------------------------------------------------------------
-
-DROP TABLE IF EXISTS {redshift_schema_caliper_analytics}.canvas_caliper_user_requests ;
-VACUUM;
-ANALYZE;
-CREATE TABLE {redshift_schema_caliper_analytics}.canvas_caliper_user_requests
-AS (
+INSERT INTO {redshift_schema_caliper_analytics}.canvas_caliper_user_requests (
     SELECT
         split_part("id", ':', 3) AS uuid,
         "action",

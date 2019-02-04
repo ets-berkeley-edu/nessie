@@ -158,4 +158,4 @@ CREATE EXTERNAL TABLE {redshift_schema_lrs_external}.{canvas_caliper_explode_tab
     type VARCHAR
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
-LOCATION '{loch_s3_caliper_explode_path}';
+LOCATION '{loch_s3_caliper_explode_url}';
