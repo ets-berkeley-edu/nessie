@@ -51,7 +51,7 @@ export default {
   name: 'RunJob',
   computed: {
     runnableJobs() {
-      return store.getters.runnableJobs;
+      return store.getters['schedule/runnableJobs'];
     },
     selectedJobRunnable() {
       if (!this.selected) {

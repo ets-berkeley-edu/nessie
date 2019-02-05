@@ -1,23 +1,23 @@
 import axios from 'axios';
 import store from '@/store';
 
-export function getCasLoginURL() {
+export function getConfig() {
   const apiBaseUrl = store.getters['context/apiBaseUrl'];
   return axios
-    .get(`${apiBaseUrl}/api/user/cas_login_url`)
+    .get(`${apiBaseUrl}/api/config`)
     .then(response => response.data, err => err.response);
 }
 
-export function getMyProfile() {
+export function getPing() {
   const apiBaseUrl = store.getters['context/apiBaseUrl'];
   return axios
-    .get(`${apiBaseUrl}/api/user/profile`)
+    .get(`${apiBaseUrl}/api/ping`)
     .then(response => response.data, err => err.response);
 }
 
-export function getCasLogoutURL() {
+export function getVersion() {
   const apiBaseUrl = store.getters['context/apiBaseUrl'];
   return axios
-    .get(`${apiBaseUrl}/api/user/cas_logout_url`)
+    .get(`${apiBaseUrl}/api/version`)
     .then(response => response.data, err => err.response);
 }

@@ -15,17 +15,14 @@
 
 <script>
 import store from '@/store';
+import Context from '@/mixins/Context';
 
 export default {
   name: 'DisplayError',
-  data() {
-    return {
-      errors: store.getters.errors
-    };
-  },
+  mixins: [Context],
   methods: {
     dismissError(id) {
-      store.commit('dismissError', id);
+      store.commit('context/dismissError', id);
     }
   }
 };
