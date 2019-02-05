@@ -29,7 +29,7 @@ import json
 from nessie.externals import s3
 from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.lib.util import get_s3_sis_daily_path
-from tests.util import mock_s3
+from tests.util import capture_app_logs, mock_s3
 
 
 class TestCreateSisSchema:
@@ -39,27 +39,9 @@ class TestCreateSisSchema:
         with mock_s3(app):
             daily_path = get_s3_sis_daily_path()
             historical_path = app.config['LOCH_S3_SIS_DATA_PATH'] + '/historical'
-            manifest_path = app.config['LOCH_S3_SIS_DATA_PATH'] + '/manifests'
-
-            s3.upload_data('some new course data', f'{daily_path}/courses/courses-aaa.gz')
-            s3.upload_data('some more new course data', f'{daily_path}/courses/courses-bbb.gz')
-            s3.upload_data('some new enrollment data', f'{daily_path}/enrollments/enrollments-ccc.gz')
-            s3.upload_data('some old course data', f'{historical_path}/courses/courses-ddd.gz')
-            s3.upload_data('some old enrollment data', f'{historical_path}/enrollments/enrollments-eee.gz')
-            s3.upload_data('some perfectly antique enrollment data', f'{historical_path}/enrollments/enrollments-fff.gz')
-
+            self._upload_data_to_s3(daily_path, historical_path)
             assert CreateSisSchema().update_manifests()
-
-            courses_manifest = json.loads(s3.get_object_text(manifest_path + '/courses.json'))
-            assert len(courses_manifest['entries']) == 3
-            assert courses_manifest['entries'][0]['url'] == f's3://{app.config["LOCH_S3_BUCKET"]}/{daily_path}/courses/courses-aaa.gz'
-            assert courses_manifest['entries'][0]['meta']['content_length'] == 20
-
-            enrollments_manifest = json.loads(s3.get_object_text(manifest_path + '/enrollments.json'))
-            assert len(enrollments_manifest['entries']) == 3
-            assert (enrollments_manifest['entries'][2]['url']
-                    == f's3://{app.config["LOCH_S3_BUCKET"]}/{historical_path}/enrollments/enrollments-fff.gz')
-            assert enrollments_manifest['entries'][2]['meta']['content_length'] == 38
+            self._assert_complete_manifest(app, daily_path, historical_path)
 
     def test_fallback_update_manifests(self, app):
         """Uses yesterday's news if today's is unavailable."""
@@ -67,24 +49,40 @@ class TestCreateSisSchema:
             yesterday = datetime.now() - timedelta(days=1)
             daily_path = get_s3_sis_daily_path(yesterday)
             historical_path = app.config['LOCH_S3_SIS_DATA_PATH'] + '/historical'
-            manifest_path = app.config['LOCH_S3_SIS_DATA_PATH'] + '/manifests'
-
-            s3.upload_data('some new course data', f'{daily_path}/courses/courses-aaa.gz')
-            s3.upload_data('some more new course data', f'{daily_path}/courses/courses-bbb.gz')
-            s3.upload_data('some new enrollment data', f'{daily_path}/enrollments/enrollments-ccc.gz')
-            s3.upload_data('some old course data', f'{historical_path}/courses/courses-ddd.gz')
-            s3.upload_data('some old enrollment data', f'{historical_path}/enrollments/enrollments-eee.gz')
-            s3.upload_data('some perfectly antique enrollment data', f'{historical_path}/enrollments/enrollments-fff.gz')
-
+            self._upload_data_to_s3(daily_path, historical_path)
             assert CreateSisSchema().update_manifests()
+            self._assert_complete_manifest(app, daily_path, historical_path)
 
-            courses_manifest = json.loads(s3.get_object_text(manifest_path + '/courses.json'))
-            assert len(courses_manifest['entries']) == 3
-            assert courses_manifest['entries'][0]['url'] == f's3://{app.config["LOCH_S3_BUCKET"]}/{daily_path}/courses/courses-aaa.gz'
-            assert courses_manifest['entries'][0]['meta']['content_length'] == 20
+    def test_aborts_on_missing_term(self, app, caplog):
+        with mock_s3(app):
+            daily_path = get_s3_sis_daily_path()
+            historical_path = app.config['LOCH_S3_SIS_DATA_PATH'] + '/historical'
+            self._upload_data_to_s3(daily_path, historical_path)
+            s3.delete_objects([f'{daily_path}/enrollments/enrollments-2178.gz'])
+            with capture_app_logs(app):
+                assert CreateSisSchema().update_manifests() is False
+                assert 'Expected filename enrollments-2178.gz not found in S3, aborting' in caplog.text
 
-            enrollments_manifest = json.loads(s3.get_object_text(manifest_path + '/enrollments.json'))
-            assert len(enrollments_manifest['entries']) == 3
-            assert (enrollments_manifest['entries'][2]['url']
-                    == f's3://{app.config["LOCH_S3_BUCKET"]}/{historical_path}/enrollments/enrollments-fff.gz')
-            assert enrollments_manifest['entries'][2]['meta']['content_length'] == 38
+    def _upload_data_to_s3(self, daily_path, historical_path):
+        s3.upload_data('some new course data', f'{daily_path}/courses/courses-2178.gz')
+        s3.upload_data('some more new course data', f'{daily_path}/courses/courses-2175.gz')
+        s3.upload_data('some new enrollment data', f'{daily_path}/enrollments/enrollments-2178.gz')
+        s3.upload_data('some more new enrollment data', f'{daily_path}/enrollments/enrollments-2175.gz')
+        s3.upload_data('some old course data', f'{historical_path}/courses/courses-2172.gz')
+        s3.upload_data('some old enrollment data', f'{historical_path}/enrollments/enrollments-2172.gz')
+        s3.upload_data('some perfectly antique course data', f'{historical_path}/courses/courses-2168.gz')
+        s3.upload_data('some perfectly antique enrollment data', f'{historical_path}/enrollments/enrollments-2168.gz')
+
+    def _assert_complete_manifest(self, app, daily_path, historical_path):
+        bucket = app.config['LOCH_S3_BUCKET']
+        manifest_path = app.config['LOCH_S3_SIS_DATA_PATH'] + '/manifests'
+
+        courses_manifest = json.loads(s3.get_object_text(manifest_path + '/courses.json'))
+        assert len(courses_manifest['entries']) == 4
+        assert courses_manifest['entries'][0]['url'] == f's3://{bucket}/{daily_path}/courses/courses-2175.gz'
+        assert courses_manifest['entries'][0]['meta']['content_length'] == 25
+
+        enrollments_manifest = json.loads(s3.get_object_text(manifest_path + '/enrollments.json'))
+        assert len(enrollments_manifest['entries']) == 4
+        assert (enrollments_manifest['entries'][3]['url'] == f's3://{bucket}/{historical_path}/enrollments/enrollments-2172.gz')
+        assert enrollments_manifest['entries'][3]['meta']['content_length'] == 24
