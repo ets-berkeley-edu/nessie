@@ -10,7 +10,7 @@ import Vue from 'vue';
 // Allow cookies in Access-Control requests
 axios.defaults.withCredentials = true;
 axios.interceptors.response.use(response => response, function(error) {
-  store.commit('reportError', {
+  store.commit('context/reportError', {
     message: error.message,
     text: error.response.text,
     status: error.response.status,

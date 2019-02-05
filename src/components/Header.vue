@@ -7,6 +7,8 @@
       <span><router-link to="/">Home</router-link></span>
       <span>|</span>
       <span><router-link to="schedule">Schedule</router-link></span>
+      <span>|</span>
+      <span><router-link to="status">Status</router-link></span>
     </div>
     <div class="flex-row greeting" v-if="user">
       <div>Hello {{ user.uid }}</div>
@@ -25,7 +27,7 @@ export default {
   name: 'Header',
   computed: {
     user() {
-      return store.getters.user;
+      return store.getters['user/user'];
     }
   },
   methods: {

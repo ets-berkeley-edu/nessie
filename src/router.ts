@@ -1,11 +1,12 @@
+import Home from '@/views/Home.vue';
+import Login from '@/views/Login.vue';
+import Schedule from '@/views/Schedule.vue';
+import Status from '@/views/Status.vue';
+import store from '@/store';
 import Vue from 'vue';
 import VueRouter, { Route } from 'vue-router';
-import store from '@/store';
-import { getRunnableJobs } from '@/api/job';
 import { getMyProfile } from '@/api/user';
-import Login from '@/views/Login.vue';
-import Home from '@/views/Home.vue';
-import Schedule from '@/views/Schedule.vue';
+import { getRunnableJobs } from '@/api/job';
 
 Vue.use(VueRouter);
 
@@ -13,9 +14,9 @@ let registerMe = () => {
   return Promise.resolve(
     getMyProfile().then(me => {
       if (me) {
-        store.commit('registerMe', me);
+        store.commit('user/registerMe', me);
         getRunnableJobs().then(data => {
-          store.commit('cacheRunnableJobs', data);
+          store.commit('schedule/cacheRunnableJobs', data);
           return me;
         });
       } else {
@@ -26,22 +27,26 @@ let registerMe = () => {
 };
 
 let beforeEach = (to: Route, from: Route, next: Function) => {
-  let safeNext = (to: Route, next: Function) => {
-    if (to.matched.length) {
-      next();
-    } else {
-      next('/home');
-    }
-  };
-  if (store.getters.user) {
-    safeNext(to, next);
-  } else {
-    registerMe().then(() => safeNext(to, next));
-  }
+  store.dispatch('context/loadConfig').then(() => {
+    store.dispatch('context/clearErrors').then(() => {
+      let safeNext = (to: Route, next: Function) => {
+        if (to.matched.length) {
+          next();
+        } else {
+          next('/home');
+        }
+      };
+      if (store.getters['user/user']) {
+        safeNext(to, next);
+      } else {
+        registerMe().then(() => safeNext(to, next));
+      }
+    });
+  });
 };
 
 let requiresAuth = (to: Route, from: Route, next: Function) => {
-  if (store.getters.user) {
+  if (store.getters['user/user']) {
     next();
   } else {
     next('/login');
@@ -56,7 +61,7 @@ const router = new VueRouter({
       name: 'login',
       component: Login,
       beforeEnter: (to: Route, from: Route, next: Function) => {
-        if (store.getters.user) {
+        if (store.getters['user/user']) {
           next('/home');
         } else {
           next();
@@ -72,6 +77,11 @@ const router = new VueRouter({
     {
       path: '/schedule',
       component: Schedule,
+      beforeEnter: requiresAuth
+    },
+    {
+      path: '/status',
+      component: Status,
       beforeEnter: requiresAuth
     }
   ]
