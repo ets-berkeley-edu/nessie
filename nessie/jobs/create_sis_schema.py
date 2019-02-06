@@ -30,6 +30,7 @@ import re
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, verify_external_schema
+from nessie.lib.berkeley import reverse_term_ids
 from nessie.lib.util import get_s3_sis_daily_path, resolve_sql_template
 
 """Logic for SIS schema creation job."""
@@ -72,13 +73,23 @@ class CreateSisSchema(BackgroundJob):
         enrollments_daily = s3.get_keys_with_prefix(s3_sis_daily + '/enrollments', full_objects=True)
         enrollments_historical = s3.get_keys_with_prefix(app.config['LOCH_S3_SIS_DATA_PATH'] + '/historical/enrollments', full_objects=True)
 
-        def deduplicate(s3list):
+        def deduplicate(prefix, s3list):
             filename_map = {}
             for s3obj in s3list:
                 m = re.match(r'.+/(.+\.gz)', s3obj['Key'])
                 if m:
                     filename_map[m[1]] = s3obj
+            for term_id in reverse_term_ids():
+                filename = f'{prefix}-{term_id}.gz'
+                if filename not in filename_map:
+                    app.logger.error(f'Expected filename {filename} not found in S3, aborting')
+                    return False
             return list(filename_map.values())
+
+        all_courses = deduplicate('courses', courses_daily + courses_historical)
+        all_enrollments = deduplicate('enrollments', enrollments_daily + enrollments_historical)
+        if not all_courses or not all_enrollments:
+            return False
 
         def to_manifest_entry(_object):
             return {
@@ -91,9 +102,8 @@ class CreateSisSchema(BackgroundJob):
                 'entries': [to_manifest_entry(o) for o in objects],
             }
 
-        courses_manifest = json.dumps(to_manifest(deduplicate(courses_daily + courses_historical)))
-        enrollments_manifest = json.dumps(to_manifest(deduplicate(enrollments_daily + enrollments_historical)))
-
+        courses_manifest = json.dumps(to_manifest(all_courses))
+        enrollments_manifest = json.dumps(to_manifest(all_enrollments))
         courses_result = s3.upload_data(courses_manifest, app.config['LOCH_S3_SIS_DATA_PATH'] + '/manifests/courses.json')
         enrollments_result = s3.upload_data(enrollments_manifest, app.config['LOCH_S3_SIS_DATA_PATH'] + '/manifests/enrollments.json')
         return courses_result and enrollments_result
