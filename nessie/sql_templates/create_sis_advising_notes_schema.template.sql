@@ -277,23 +277,66 @@ CREATE SCHEMA {redshift_schema_sis_advising_notes_internal};
 -- Internal tables
 --------------------------------------------------------------------
 
+CREATE TABLE {redshift_schema_sis_advising_notes_internal}.advising_notes
+INTERLEAVED SORTKEY (sid, note_id, note_seq_nr)
+AS (
+    SELECT
+        N.sid,
+        N.note_id,
+        D.note_seq_nr,
+        N.advisor_sid,
+        N.appointment_id,
+        C.descr AS note_category,
+        S.descr AS note_subcategory,
+        N.location,
+        D.note_priority,
+        D.note_body,
+        N.operid,
+        N.created_by,
+        TO_TIMESTAMP(N.created_at, 'DD-MON-YY HH.MI.SS.US000 AM') AS created_at,
+        N.updated_by,
+        TO_TIMESTAMP(N.updated_at, 'DD-MON-YY HH.MI.SS.US000 AM') AS updated_at
+    FROM
+        {redshift_schema_sis_advising_notes}.advising_notes N
+    JOIN
+        {redshift_schema_sis_advising_notes}.advising_note_details D
+    ON N.sid = D.sid
+    AND N.institution = D.institution
+    AND N.note_id = D.note_id
+    JOIN
+        {redshift_schema_sis_advising_notes}.advising_note_categories C
+    ON N.note_category = C.note_category
+    JOIN
+        {redshift_schema_sis_advising_notes}.advising_note_subcategories S
+    ON N.note_subcategory = S.note_subcategory
+);
+
 CREATE TABLE {redshift_schema_sis_advising_notes_internal}.advising_note_attachments
 INTERLEAVED SORTKEY (sid, note_id, attachment_seq_nr)
 AS (
     SELECT
         sid,
-        institution,
         note_id,
         attachment_seq_nr,
         descr,
-        attachment_date,
+        TO_DATE(attachment_date, 'DD-MON-YY') AS attachment_date,
         created_by,
-        created_at,
+        TO_TIMESTAMP(created_at, 'DD-MON-YY HH.MI.SS.US000 AM') AS created_at,
         updated_by,
-        updated_at,
+        TO_TIMESTAMP(updated_at, 'DD-MON-YY HH.MI.SS.US000 AM') AS updated_at,
         system_file_name,
         user_file_name,
         (sid || '_' || note_id || '_' || attachment_seq_nr || REGEXP_SUBSTR(system_file_name, '\\.[^.]*$')) AS sis_file_name
     FROM
         {redshift_schema_sis_advising_notes}.advising_note_attachments
+);
+
+CREATE TABLE {redshift_schema_sis_advising_notes_internal}.advising_note_topics
+AS (
+    SELECT
+        sid,
+        note_id,
+        note_topic
+    FROM
+        {redshift_schema_sis_advising_notes}.advising_note_topics
 );
