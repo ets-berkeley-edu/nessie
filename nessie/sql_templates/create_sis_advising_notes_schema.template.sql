@@ -283,7 +283,6 @@ AS (
     SELECT
         N.sid,
         N.note_id,
-        D.note_seq_nr,
         N.advisor_sid,
         N.appointment_id,
         C.descr AS note_category,
@@ -310,6 +309,13 @@ AS (
         {redshift_schema_sis_advising_notes}.advising_note_subcategories S
     ON N.note_category = S.note_category
     AND N.note_subcategory = S.note_subcategory
+    WHERE D.note_seq_nr = (
+			SELECT MAX(M.note_seq_nr)
+			FROM sis_advising_notes_ext_dev.advising_note_details M
+			WHERE M.sid = D.sid
+			AND M.institution = D.institution
+			AND M.note_id = D.note_id
+    )
 );
 
 CREATE TABLE {redshift_schema_sis_advising_notes_internal}.advising_note_attachments
