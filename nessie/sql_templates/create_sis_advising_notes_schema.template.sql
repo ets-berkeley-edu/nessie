@@ -303,12 +303,13 @@ AS (
     ON N.sid = D.sid
     AND N.institution = D.institution
     AND N.note_id = D.note_id
-    JOIN
+    LEFT OUTER JOIN
         {redshift_schema_sis_advising_notes}.advising_note_categories C
     ON N.note_category = C.note_category
-    JOIN
+    LEFT OUTER JOIN
         {redshift_schema_sis_advising_notes}.advising_note_subcategories S
-    ON N.note_subcategory = S.note_subcategory
+    ON N.note_category = S.note_category
+    AND N.note_subcategory = S.note_subcategory
 );
 
 CREATE TABLE {redshift_schema_sis_advising_notes_internal}.advising_note_attachments
