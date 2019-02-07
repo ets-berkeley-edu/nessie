@@ -41,9 +41,10 @@ import psycopg2.sql
 
 class GenerateMergedStudentFeeds(BackgroundJob):
 
-    destination_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
-    destination_schema_identifier = psycopg2.sql.Identifier(destination_schema)
-    staging_schema = destination_schema + '_staging'
+    rds_schema = app.config['RDS_SCHEMA_STUDENT']
+    redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
+    redshift_schema_identifier = psycopg2.sql.Identifier(redshift_schema)
+    staging_schema = redshift_schema + '_staging'
     staging_schema_identifier = psycopg2.sql.Identifier(staging_schema)
 
     def run(self, term_id=None, backfill_new_students=True):
@@ -194,10 +195,10 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         with redshift.transaction() as transaction:
             for table in tables:
                 if not self.refresh_from_staging(table, None, None, transaction):
-                    app.logger.error(f'Failed to refresh {self.destination_schema}.{table} from staging.')
+                    app.logger.error(f'Failed to refresh {self.redshift_schema}.{table} from staging.')
                     return False
             if not transaction.commit():
-                app.logger.error(f'Final transaction commit failed for {self.destination_schema}.')
+                app.logger.error(f'Final transaction commit failed for {self.redshift_schema}.')
                 return False
         with rds.transaction() as transaction:
             if self.refresh_rds_indexes(None, transaction):
@@ -222,34 +223,34 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         if not delete_conditions:
             transaction.execute(
                 'TRUNCATE {schema}.{table}',
-                schema=self.destination_schema_identifier,
+                schema=self.redshift_schema_identifier,
                 table=psycopg2.sql.Identifier(table),
             )
-            app.logger.info(f'Truncated destination table {self.destination_schema}.{table}.')
+            app.logger.info(f'Truncated destination table {self.redshift_schema}.{table}.')
         else:
             delete_sql = 'DELETE FROM {schema}.{table} WHERE ' + ' AND '.join(delete_conditions)
             transaction.execute(
                 delete_sql,
-                schema=self.destination_schema_identifier,
+                schema=self.redshift_schema_identifier,
                 table=psycopg2.sql.Identifier(table),
                 params=tuple(delete_params),
             )
             app.logger.info(
-                f'Deleted existing rows from destination table {self.destination_schema}.{table} '
+                f'Deleted existing rows from destination table {self.redshift_schema}.{table} '
                 f"(term_id={term_id or 'all'}, {len(sids) if sids else 'all'} sids).")
 
         # Load new data from the staging tables into the destination table.
         result = transaction.execute(
             'INSERT INTO {schema}.{table} (SELECT * FROM {staging_schema}.{table})',
-            schema=self.destination_schema_identifier,
+            schema=self.redshift_schema_identifier,
             staging_schema=self.staging_schema_identifier,
             table=psycopg2.sql.Identifier(table),
         )
         if not result:
-            app.logger.error(f'Failed to populate table {self.destination_schema}.{table} from staging schema.')
+            app.logger.error(f'Failed to populate table {self.redshift_schema}.{table} from staging schema.')
             transaction.rollback()
             return False
-        app.logger.info(f'Populated {self.destination_schema}.{table} from staging schema.')
+        app.logger.info(f'Populated {self.redshift_schema}.{table} from staging schema.')
 
         # Truncate staging table.
         transaction.execute(
@@ -263,10 +264,10 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     def refresh_rds_indexes(self, sids, transaction):
         def delete_existing_rows(table):
             if sids:
-                sql = f'DELETE FROM {self.destination_schema}.{table} WHERE sid = ANY(%s)'
+                sql = f'DELETE FROM {self.rds_schema}.{table} WHERE sid = ANY(%s)'
                 params = (sids,)
             else:
-                sql = f'TRUNCATE {self.destination_schema}.{table}'
+                sql = f'TRUNCATE {self.redshift_schema}.{table}'
                 params = None
             return transaction.execute(sql, params)
 
@@ -275,7 +276,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             if not delete_existing_rows('student_academic_status'):
                 return False
             result = transaction.insert_bulk(
-                f"""INSERT INTO {self.destination_schema}.student_academic_status
+                f"""INSERT INTO {self.rds_schema}.student_academic_status
                     (sid, uid, first_name, last_name, level, gpa, units) VALUES %s""",
                 [split_tsv_row(r) for r in self.rows['student_academic_status']],
             )
@@ -285,7 +286,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             if not delete_existing_rows('student_majors'):
                 return False
             result = transaction.insert_bulk(
-                f'INSERT INTO {self.destination_schema}.student_majors (sid, major) VALUES %s',
+                f'INSERT INTO {self.rds_schema}.student_majors (sid, major) VALUES %s',
                 [split_tsv_row(r) for r in self.rows['student_majors']],
             )
             if not result:

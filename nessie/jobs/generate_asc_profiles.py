@@ -39,6 +39,7 @@ import psycopg2
 
 asc_schema = app.config['REDSHIFT_SCHEMA_ASC']
 asc_schema_identifier = psycopg2.sql.Identifier(asc_schema)
+rds_schema = app.config['RDS_SCHEMA_ASC']
 
 
 class GenerateAscProfiles(BackgroundJob):
@@ -124,12 +125,12 @@ class GenerateAscProfiles(BackgroundJob):
 
     def refresh_rds_indexes(self, asc_rows, transaction):
         if len(asc_rows):
-            result = transaction.execute(f'TRUNCATE {asc_schema}.students')
+            result = transaction.execute(f'TRUNCATE {rds_schema}.students')
             if not result:
                 return False
             columns = ['sid', 'active', 'intensive', 'status_asc', 'group_code', 'group_name', 'team_code', 'team_name']
             result = transaction.insert_bulk(
-                f'INSERT INTO {asc_schema}.students ({", ".join(columns)}) VALUES %s',
+                f'INSERT INTO {rds_schema}.students ({", ".join(columns)}) VALUES %s',
                 [tuple([r[c] for c in columns]) for r in asc_rows],
             )
             if not result:

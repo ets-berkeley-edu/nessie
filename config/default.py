@@ -158,6 +158,13 @@ LOGGING_FORMAT = '[%(asctime)s] - %(levelname)s: %(message)s [in %(pathname)s:%(
 LOGGING_LOCATION = 'nessie.log'
 LOGGING_LEVEL = logging.DEBUG
 
+# These RDS schemas are copied from the Redshift schemas below and contain a subset of index tables.
+RDS_SCHEMA_ASC = 'boac_advising_asc'
+RDS_SCHEMA_COE = 'boac_advising_coe'
+RDS_SCHEMA_PHYSICS = 'boac_advising_physics'
+RDS_SCHEMA_SIS_INTERNAL = 'sis_data'
+RDS_SCHEMA_STUDENT = 'student'
+
 REDSHIFT_DATABASE = 'database'
 REDSHIFT_HOST = 'redshift cluster'
 REDSHIFT_PASSWORD = 'password'
