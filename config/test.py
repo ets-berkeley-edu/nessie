@@ -47,7 +47,7 @@ REDSHIFT_SCHEMA_PHYSICS = 'physics_test'
 REDSHIFT_SCHEMA_PHYSICS_EXTERNAL = 'physics_external_test'
 REDSHIFT_SCHEMA_SIS = 'sis_test'
 REDSHIFT_SCHEMA_SIS_ADVISING_NOTES = 'sis_advising_notes_external_test'
-REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL = 'sis_advising_notes_test'
+REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL = 'boac_advising_notes_test'
 REDSHIFT_SCHEMA_SIS_INTERNAL = 'sis_internal_test'
 REDSHIFT_SCHEMA_STUDENT = 'student_test'
 

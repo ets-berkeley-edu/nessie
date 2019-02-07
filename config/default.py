@@ -176,7 +176,7 @@ REDSHIFT_SCHEMA_METADATA = 'metadata'
 REDSHIFT_SCHEMA_PHYSICS = 'boac_advising_physics'
 REDSHIFT_SCHEMA_SIS_INTERNAL = 'sis_data'
 REDSHIFT_SCHEMA_STUDENT = 'student'
-REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL = 'sis_advising_notes'
+REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL = 'boac_advising_notes'
 
 # The following external schemas vary between environments and do need to be overridden locally.
 REDSHIFT_SCHEMA_CALNET = 'External CalNet schema name'
