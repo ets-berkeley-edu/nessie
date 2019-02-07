@@ -93,7 +93,7 @@ class GenerateCanvasCaliperAnalytics(BackgroundJob):
         if not earliest_untransformed or not latest_transformed:
             return False
         timestamp_diff = (earliest_untransformed - latest_transformed).total_seconds()
-        if timestamp_diff < 0 or timestamp_diff > 300:
+        if timestamp_diff < -60 or timestamp_diff > 300:
             app.logger.error(
                 f'Unexpected difference between Caliper timestamps: latest transformed {latest_transformed}, '
                 f'earliest untransformed {earliest_untransformed}',
