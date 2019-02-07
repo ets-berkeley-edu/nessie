@@ -27,7 +27,7 @@ from datetime import datetime, timedelta
 
 from flask import current_app as app
 from nessie.externals import redshift, s3
-from nessie.jobs.background_job import BackgroundJob, verify_external_schema
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.util import get_s3_canvas_daily_path, resolve_sql_template
 
 """Logic for Canvas schema creation job."""
@@ -42,8 +42,7 @@ class CreateCanvasSchema(BackgroundJob):
         if not s3.get_keys_with_prefix(canvas_path):
             canvas_path = get_s3_canvas_daily_path(datetime.now() - timedelta(days=1))
             if not s3.get_keys_with_prefix(canvas_path):
-                app.logger.error('No timely Canvas data found, aborting')
-                return False
+                raise BackgroundJobError('No timely Canvas data found, aborting')
             else:
                 app.logger.info(f'Falling back to yesterday\'s Canvas data')
 
@@ -53,8 +52,7 @@ class CreateCanvasSchema(BackgroundJob):
         redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template('create_canvas_schema.template.sql', loch_s3_canvas_data_path_today=s3_canvas_data_url)
         if redshift.execute_ddl_script(resolved_ddl):
-            app.logger.info(f'Canvas schema creation job completed.')
-            return verify_external_schema(external_schema, resolved_ddl)
+            verify_external_schema(external_schema, resolved_ddl)
+            return 'Canvas schema creation job completed.'
         else:
-            app.logger.error(f'Canvas schema creation job failed.')
-            return False
+            raise BackgroundJobError(f'Canvas schema creation job failed.')

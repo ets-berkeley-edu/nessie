@@ -27,7 +27,7 @@ import json
 
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.jobs.import_term_gpas import ImportTermGpas
 from nessie.lib.metadata import update_merged_feed_status
 from nessie.lib.queries import get_advisee_student_profile_feeds, get_all_student_ids, get_successfully_backfilled_students
@@ -187,27 +187,22 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             if not self.rows[table]:
                 continue
             self.upload_to_staging(table)
-            if not self.verify_table(table):
-                return False
+            self.verify_table(table)
         return True
 
     def refresh_all_from_staging(self, tables):
         with redshift.transaction() as transaction:
             for table in tables:
-                if not self.refresh_from_staging(table, None, None, transaction):
-                    app.logger.error(f'Failed to refresh {self.redshift_schema}.{table} from staging.')
-                    return False
+                self.refresh_from_staging(table, None, None, transaction)
             if not transaction.commit():
-                app.logger.error(f'Final transaction commit failed for {self.redshift_schema}.')
-                return False
+                raise BackgroundJobError(f'Final transaction commit failed for {self.redshift_schema}.')
         with rds.transaction() as transaction:
             if self.refresh_rds_indexes(None, transaction):
                 transaction.commit()
                 app.logger.info('Refreshed RDS indexes.')
             else:
                 transaction.rollback()
-                app.logger.error('Failed to refresh RDS indexes.')
-                return False
+                raise BackgroundJobError('Failed to refresh RDS indexes.')
 
     def refresh_from_staging(self, table, term_id, sids, transaction):
         # If our job is restricted to a particular term id or set of sids, then drop rows from the destination table
@@ -247,9 +242,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             table=psycopg2.sql.Identifier(table),
         )
         if not result:
-            app.logger.error(f'Failed to populate table {self.redshift_schema}.{table} from staging schema.')
             transaction.rollback()
-            return False
+            raise BackgroundJobError(f'Failed to populate table {self.redshift_schema}.{table} from staging schema.')
         app.logger.info(f'Populated {self.redshift_schema}.{table} from staging schema.')
 
         # Truncate staging table.
@@ -259,7 +253,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             table=psycopg2.sql.Identifier(table),
         )
         app.logger.info(f'Truncated staging table {self.staging_schema}.{table}.')
-        return True
 
     def refresh_rds_indexes(self, sids, transaction):
         def delete_existing_rows(table):
@@ -298,8 +291,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         s3_key = f'{get_s3_sis_api_daily_path()}/staging_{table}.tsv'
         app.logger.info(f'Will stash {len(rows)} feeds in S3: {s3_key}')
         if not s3.upload_tsv_rows(rows, s3_key):
-            app.logger.error('Error on S3 upload: aborting job.')
-            return False
+            raise BackgroundJobError('Error on S3 upload: aborting job.')
 
         app.logger.info('Will copy S3 feeds into Redshift...')
         query = resolve_sql_template_string(
@@ -313,8 +305,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             table=table,
         )
         if not redshift.execute(query):
-            app.logger.error('Error on Redshift copy: aborting job.')
-            return False
+            raise BackgroundJobError('Error on Redshift copy: aborting job.')
 
     def verify_table(self, table):
         result = redshift.fetch(
@@ -325,7 +316,5 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         if result and result[0] and result[0]['count']:
             count = result[0]['count']
             app.logger.info(f'Verified population of staging table {table} ({count} rows).')
-            return True
         else:
-            app.logger.error(f'Failed to verify population of staging table {table}: aborting job.')
-            return False
+            raise BackgroundJobError(f'Failed to verify population of staging table {table}: aborting job.')

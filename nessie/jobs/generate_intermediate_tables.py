@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import redshift
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import current_term_id
 from nessie.lib.util import resolve_sql_template
 
@@ -43,5 +43,4 @@ class GenerateIntermediateTables(BackgroundJob):
         if redshift.execute_ddl_script(resolved_ddl):
             return 'Intermediate table creation job completed.'
         else:
-            app.logger.error(f'Intermediate table creation job failed.')
-            return False
+            raise BackgroundJobError(f'Intermediate table creation job failed.')

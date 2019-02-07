@@ -29,7 +29,7 @@ import operator
 
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3
-from nessie.jobs.background_job import BackgroundJob, verify_external_schema
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.util import encoded_tsv_row, get_s3_coe_daily_path, resolve_sql_template, resolve_sql_template_string
 import psycopg2
 
@@ -54,11 +54,9 @@ class CreateCoeSchema(BackgroundJob):
         # external schema isn't needed.
         if redshift.execute_ddl_script(resolved_ddl):
             app.logger.info(f'COE external schema created.')
-            if not verify_external_schema(external_schema, resolved_ddl):
-                return False
+            verify_external_schema(external_schema, resolved_ddl)
         else:
-            app.logger.error(f'COE external schema creation failed.')
-            return False
+            raise BackgroundJobError(f'COE external schema creation failed.')
         coe_rows = redshift.fetch(
             'SELECT * FROM {schema}.students ORDER by sid',
             schema=internal_schema_identifier,
@@ -93,8 +91,7 @@ class CreateCoeSchema(BackgroundJob):
         s3_key = f'{get_s3_coe_daily_path()}/coe_profiles.tsv'
         app.logger.info(f'Will stash {len(profile_rows)} feeds in S3: {s3_key}')
         if not s3.upload_tsv_rows(profile_rows, s3_key):
-            app.logger.error('Error on S3 upload: aborting job.')
-            return False
+            raise BackgroundJobError('Error on S3 upload: aborting job.')
 
         app.logger.info('Will copy S3 feeds into Redshift...')
         query = resolve_sql_template_string(
@@ -108,8 +105,7 @@ class CreateCoeSchema(BackgroundJob):
             """,
         )
         if not redshift.execute(query):
-            app.logger.error('Error on Redshift copy: aborting job.')
-            return False
+            raise BackgroundJobError('Error on Redshift copy: aborting job.')
 
         with rds.transaction() as transaction:
             if self.refresh_rds_indexes(coe_rows, transaction):
@@ -117,8 +113,7 @@ class CreateCoeSchema(BackgroundJob):
                 app.logger.info('Refreshed RDS indexes.')
             else:
                 transaction.rollback()
-                app.logger.error('Error refreshing RDS indexes.')
-                return False
+                raise BackgroundJobError('Error refreshing RDS indexes.')
 
         return 'COE internal schema created.'
 

@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3, sis_student_api
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.queries import get_all_student_ids
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
 
@@ -64,22 +64,18 @@ class ImportTermGpas(BackgroundJob):
             index += 1
 
         if success_count == 0:
-            app.logger.error('Failed to import term GPAs: aborting job.')
-            return False
+            raise BackgroundJobError('Failed to import term GPAs: aborting job.')
 
         s3_key = f'{get_s3_sis_api_daily_path()}/term_gpas.tsv'
         app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
         if not s3.upload_tsv_rows(rows, s3_key):
-            app.logger.error('Error on S3 upload: aborting job.')
-            return False
+            raise BackgroundJobError('Error on S3 upload: aborting job.')
 
         app.logger.info('Will copy S3 feeds into Redshift...')
         if not redshift.execute(f'TRUNCATE {self.redshift_schema}_staging.student_term_gpas'):
-            app.logger.error('Error truncating old staging rows: aborting job.')
-            return False
+            raise BackgroundJobError('Error truncating old staging rows: aborting job.')
         if not redshift.copy_tsv_from_s3(f'{self.redshift_schema}_staging.student_term_gpas', s3_key):
-            app.logger.error('Error on Redshift copy: aborting job.')
-            return False
+            raise BackgroundJobError('Error on Redshift copy: aborting job.')
         staging_to_destination_query = resolve_sql_template_string("""
             DELETE FROM {redshift_schema_student}.student_term_gpas
                 WHERE sid IN
@@ -89,8 +85,7 @@ class ImportTermGpas(BackgroundJob):
             TRUNCATE TABLE {redshift_schema_student}_staging.student_term_gpas;
             """)
         if not redshift.execute(staging_to_destination_query):
-            app.logger.error('Error inserting staging entries into destination: aborting job.')
-            return False
+            raise BackgroundJobError('Error inserting staging entries into destination: aborting job.')
 
         with rds.transaction() as transaction:
             if self.refresh_rds_indexes(csids, rows, transaction):
@@ -98,8 +93,7 @@ class ImportTermGpas(BackgroundJob):
                 app.logger.info('Refreshed RDS indexes.')
             else:
                 transaction.rollback()
-                app.logger.error('Failed to refresh RDS indexes.')
-                return False
+                raise BackgroundJobError('Failed to refresh RDS indexes.')
 
         return (
             f'Term GPA import completed: {success_count} succeeded, '

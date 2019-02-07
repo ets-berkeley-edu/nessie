@@ -27,7 +27,7 @@ import json
 
 from flask import current_app as app
 from nessie.externals import redshift, s3, sis_degree_progress_api
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.queries import get_all_student_ids
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string
 
@@ -71,16 +71,13 @@ class ImportDegreeProgress(BackgroundJob):
         s3_key = f'{get_s3_sis_api_daily_path()}/degree_progress.tsv'
         app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
         if not s3.upload_tsv_rows(rows, s3_key):
-            app.logger.error('Error on S3 upload: aborting job.')
-            return False
+            raise BackgroundJobError('Error on S3 upload: aborting job.')
 
         app.logger.info('Will copy S3 feeds into Redshift...')
         if not redshift.execute(f'TRUNCATE {self.redshift_schema}_staging.sis_api_degree_progress'):
-            app.logger.error('Error truncating old staging rows: aborting job.')
-            return False
+            raise BackgroundJobError('Error truncating old staging rows: aborting job.')
         if not redshift.copy_tsv_from_s3(f'{self.redshift_schema}_staging.sis_api_degree_progress', s3_key):
-            app.logger.error('Error on Redshift copy: aborting job.')
-            return False
+            raise BackgroundJobError('Error on Redshift copy: aborting job.')
         staging_to_destination_query = resolve_sql_template_string(
             """
             DELETE FROM {redshift_schema_student}.sis_api_degree_progress
@@ -91,8 +88,7 @@ class ImportDegreeProgress(BackgroundJob):
             """,
         )
         if not redshift.execute(staging_to_destination_query):
-            app.logger.error('Error on Redshift copy: aborting job.')
-            return False
+            raise BackgroundJobError('Error on Redshift copy: aborting job.')
 
         return (
             f'SIS degree progress API import job completed: {success_count} succeeded, '

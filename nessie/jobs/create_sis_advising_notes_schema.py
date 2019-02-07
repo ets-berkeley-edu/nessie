@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import redshift
-from nessie.jobs.background_job import BackgroundJob, verify_external_schema
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.util import resolve_sql_template
 
 """Logic for SIS Advising Notes schema creation job."""
@@ -40,8 +40,7 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
         redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template('create_sis_advising_notes_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
-            app.logger.info(f'SIS Advising Notes schema creation job completed.')
-            return verify_external_schema(external_schema, resolved_ddl)
+            verify_external_schema(external_schema, resolved_ddl)
+            return 'SIS Advising Notes schema creation job completed.'
         else:
-            app.logger.error(f'SIS Advising Notes schema creation job failed.')
-            return False
+            raise BackgroundJobError(f'SIS Advising Notes schema creation job failed.')

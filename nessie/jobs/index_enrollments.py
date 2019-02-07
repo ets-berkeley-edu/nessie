@@ -26,7 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import rds
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import current_term_id
 from nessie.lib.queries import get_enrolled_primary_sections_for_term
 
@@ -49,8 +49,7 @@ class IndexEnrollments(BackgroundJob):
                 app.logger.info('Refreshed RDS indexes.')
             else:
                 transaction.rollback()
-                app.logger.error('Failed to refresh RDS indexes.')
-                return False
+                raise BackgroundJobError('Failed to refresh RDS indexes.')
 
         return f'Enrollments index job completed for term {term_id}.'
 

@@ -27,7 +27,7 @@ from datetime import datetime
 
 from flask import current_app as app
 from nessie.externals import redshift, s3
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import localize_datetime, resolve_sql_template
 
 """Logic for migrating LRS incrementals after transformation."""
@@ -41,32 +41,26 @@ class MigrateLrsIncrementals(BackgroundJob):
         self.transient_bucket = app.config['LRS_CANVAS_INCREMENTAL_TRANSIENT_BUCKET']
         self.get_pre_transform_statement_count()
         if not self.pre_transform_statement_count:
-            app.logger.error(f'Failed to retrieve pre-transform statement count.')
-            return False
+            raise BackgroundJobError(f'Failed to retrieve pre-transform statement count.')
 
         self.source_output_path = app.config['LRS_CANVAS_CALIPER_EXPLODE_OUTPUT_PATH']
         if self.source_output_path.endswith('/'):
             self.source_output_path = self.source_output_path[:-1]
 
         output_url = 's3://' + self.transient_bucket + '/' + self.source_output_path
-        if not self.verify_post_transform_statement_count(output_url):
-            app.logger.error(f'Failed to verify transformed statements at {output_url}.')
-            return False
+        self.verify_post_transform_statement_count(output_url)
 
         etl_output_keys = s3.get_keys_with_prefix(self.source_output_path, bucket=self.transient_bucket)
         if not etl_output_keys:
-            app.logger.error('Could not retrieve S3 keys from transient bucket.')
-            return False
+            raise BackgroundJobError('Could not retrieve S3 keys from transient bucket.')
 
         timestamped_destination_path = self.source_output_path + '/' + localize_datetime(datetime.now()).strftime('%Y/%m/%d/%H%M%S')
         for destination_bucket in app.config['LRS_CANVAS_INCREMENTAL_DESTINATION_BUCKETS']:
-            if not self.migrate_transient_to_destination(
+            self.migrate_transient_to_destination(
                 etl_output_keys,
                 destination_bucket,
                 timestamped_destination_path,
-            ):
-                return False
-
+            )
         return (
             f'Migrated {self.pre_transform_statement_count} statements to S3'
             f"(buckets={app.config['LRS_CANVAS_INCREMENTAL_DESTINATION_BUCKETS']}, path={timestamped_destination_path})"
@@ -77,11 +71,8 @@ class MigrateLrsIncrementals(BackgroundJob):
         for source_key in keys:
             destination_key = source_key.replace(self.source_output_path, destination_path)
             if not s3.copy(self.transient_bucket, source_key, destination_bucket, destination_key):
-                app.logger.error(f'Copy from transient bucket to destination bucket {destination_bucket} failed.')
-                return False
-        if not self.verify_post_transform_statement_count(destination_url):
-            return False
-        return True
+                raise BackgroundJobError(f'Copy from transient bucket to destination bucket {destination_bucket} failed.')
+        self.verify_post_transform_statement_count(destination_url)
 
     def get_pre_transform_statement_count(self):
         schema = app.config['REDSHIFT_SCHEMA_LRS']
@@ -94,14 +85,12 @@ class MigrateLrsIncrementals(BackgroundJob):
         if redshift.execute_ddl_script(resolved_ddl_transient_unloaded):
             app.logger.info(f"statements_unloaded table created in schema '{schema}'.")
         else:
-            app.logger.error(f"Failed to create statements_unloaded table in schema '{schema}'.")
-            return False
+            raise BackgroundJobError(f"Failed to create statements_unloaded table in schema '{schema}'.")
         redshift_response = redshift.fetch(f'select count(*) from {schema}.statements_unloaded')
         if redshift_response:
             self.pre_transform_statement_count = redshift_response[0].get('count')
         else:
-            app.logger.error('Failed to get pre-transform statement count.')
-            return False
+            raise BackgroundJobError('Failed to get pre-transform statement count.')
 
     def verify_post_transform_statement_count(self, url):
         schema = app.config['REDSHIFT_SCHEMA_LRS']
@@ -114,21 +103,17 @@ class MigrateLrsIncrementals(BackgroundJob):
         if redshift.execute_ddl_script(resolved_ddl_transient):
             app.logger.info(f"caliper_statements_explode_transient table created in schema '{schema}'.")
         else:
-            app.logger.error(f"Failed to create caliper_statements_explode_transient table in schema '{schema}'.")
-            return False
+            raise BackgroundJobError(f"Failed to create caliper_statements_explode_transient table in schema '{schema}'.")
 
         exploded_statement_response = redshift.fetch(f'select count(*) from {schema}.caliper_statements_explode_transient')
         if exploded_statement_response:
             exploded_statement_count = exploded_statement_response[0].get('count')
         else:
-            app.logger.error(f"Failed to verify caliper_statements_explode_transient table in schema '{schema}'.")
-            return False
+            raise BackgroundJobError(f"Failed to verify caliper_statements_explode_transient table in schema '{schema}'.")
 
         if exploded_statement_count == self.pre_transform_statement_count:
             app.logger.info(f'Verified {exploded_statement_count} transformed statements migrated to {url}.')
-            return True
         else:
-            app.logger.error(
+            raise BackgroundJobError(
                 f'Discrepancy between pre-transform statement count ({self.pre_transform_statement_count} statements)'
                 f' and transformed statements at {url} ({exploded_statement_count} statements).')
-            return False

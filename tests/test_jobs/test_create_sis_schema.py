@@ -27,8 +27,10 @@ from datetime import datetime, timedelta
 import json
 
 from nessie.externals import s3
+from nessie.jobs.background_job import BackgroundJobError
 from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.lib.util import get_s3_sis_daily_path
+import pytest
 from tests.util import capture_app_logs, mock_s3
 
 
@@ -60,8 +62,9 @@ class TestCreateSisSchema:
             self._upload_data_to_s3(daily_path, historical_path)
             s3.delete_objects([f'{daily_path}/enrollments/enrollments-2178.gz'])
             with capture_app_logs(app):
-                assert CreateSisSchema().update_manifests() is False
-                assert 'Expected filename enrollments-2178.gz not found in S3, aborting' in caplog.text
+                with pytest.raises(BackgroundJobError) as e:
+                    CreateSisSchema().update_manifests()
+                assert 'Expected filename enrollments-2178.gz not found in S3, aborting' in str(e)
 
     def _upload_data_to_s3(self, daily_path, historical_path):
         s3.upload_data('some new course data', f'{daily_path}/courses/courses-2178.gz')

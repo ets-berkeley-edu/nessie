@@ -28,7 +28,7 @@ import time
 
 from flask import current_app as app
 from nessie.externals import canvas_data, s3
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib import metadata
 from nessie.lib.dispatcher import dispatch
 from nessie.lib.util import get_s3_canvas_daily_path
@@ -70,8 +70,7 @@ class SyncCanvasSnapshots(BackgroundJob):
 
         snapshot_response = canvas_data.get_snapshots()
         if not snapshot_response:
-            app.logger.error('Error retrieving Canvas data snapshots, aborting job.')
-            return
+            raise BackgroundJobError('Error retrieving Canvas data snapshots, aborting job.')
         snapshots = snapshot_response.get('files', [])
 
         def should_sync(snapshot):

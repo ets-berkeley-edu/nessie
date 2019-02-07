@@ -26,7 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import rds, redshift
-from nessie.jobs.background_job import BackgroundJob, verify_external_schema
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.util import resolve_sql_template
 import psycopg2
 
@@ -48,11 +48,9 @@ class CreatePhysicsSchema(BackgroundJob):
         resolved_ddl = resolve_sql_template('create_physics_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
             app.logger.info(f'Physics external schema created.')
-            if not verify_external_schema(external_schema, resolved_ddl):
-                return False
+            verify_external_schema(external_schema, resolved_ddl)
         else:
-            app.logger.error(f'Physics external schema creation failed.')
-            return False
+            raise BackgroundJobError(f'Physics external schema creation failed.')
         physics_rows = redshift.fetch(
             'SELECT * FROM {schema}.students ORDER by sid',
             schema=internal_schema_identifier,
@@ -64,8 +62,7 @@ class CreatePhysicsSchema(BackgroundJob):
                 app.logger.info('Refreshed RDS indexes.')
             else:
                 transaction.rollback()
-                app.logger.error('Error refreshing RDS indexes.')
-                return False
+                raise BackgroundJobError('Error refreshing RDS indexes.')
 
         return 'Physics internal schema created.'
 

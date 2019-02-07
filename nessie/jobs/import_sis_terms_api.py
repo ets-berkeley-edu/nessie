@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3, sis_terms_api
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import reverse_term_ids
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
 
@@ -74,8 +74,7 @@ class ImportSisTermsApi(BackgroundJob):
         s3_key = f'{get_s3_sis_api_daily_path()}/terms.tsv'
         app.logger.info(f'Will stash {len(rows)} rows from {success_count} feeds in S3: {s3_key}')
         if not s3.upload_tsv_rows(rows, s3_key):
-            app.logger.error('Error on S3 upload: aborting job.')
-            return False
+            raise BackgroundJobError('Error on S3 upload: aborting job.')
 
         app.logger.info('Will copy S3 feeds into Redshift...')
         with redshift.transaction() as transaction:
@@ -84,8 +83,7 @@ class ImportSisTermsApi(BackgroundJob):
                 app.logger.info('Updated Redshift.')
             else:
                 transaction.rollback()
-                app.logger.error('Failed to update Redshift.')
-                return False
+                raise BackgroundJobError('Failed to update Redshift.')
 
         with rds.transaction() as transaction:
             if self.update_rds(rows, term_ids, transaction):
@@ -93,8 +91,7 @@ class ImportSisTermsApi(BackgroundJob):
                 app.logger.info('Updated RDS.')
             else:
                 transaction.rollback()
-                app.logger.error('Failed to update RDS.')
-                return False
+                raise BackgroundJobError('Failed to update RDS.')
 
         return f'SIS terms API import job completed: {success_count} succeeded, {failure_count} failed.'
 

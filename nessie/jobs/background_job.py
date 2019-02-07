@@ -50,9 +50,7 @@ def verify_external_schema(schema, resolved_ddl):
             count = result[0]['count']
             app.logger.info(f'Verified external table {table} ({count} rows).')
         else:
-            app.logger.error(f'Failed to verify external table {table}: aborting job.')
-            return False
-    return True
+            raise BackgroundJobError(f'Failed to verify external table {table}: aborting job.')
 
 
 class BackgroundJob(object):
@@ -103,6 +101,10 @@ class BackgroundJob(object):
             try:
                 error = None
                 result = self.run(**kwargs)
+            except BackgroundJobError as e:
+                app.logger.error(e)
+                result = None
+                error = str(e)
             except Exception as e:
                 app.logger.exception(e)
                 result = None
@@ -130,3 +132,7 @@ class ChainedBackgroundJob(BackgroundJob):
                 app.logger.error('Component job returned an error; aborting remainder of chain.')
                 return False
         return True
+
+
+class BackgroundJobError(Exception):
+    pass
