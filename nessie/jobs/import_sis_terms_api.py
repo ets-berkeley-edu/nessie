@@ -34,7 +34,8 @@ from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_
 
 class ImportSisTermsApi(BackgroundJob):
 
-    destination_schema = app.config['REDSHIFT_SCHEMA_SIS_INTERNAL']
+    rds_schema = app.config['RDS_SCHEMA_SIS_INTERNAL']
+    redshift_schema = app.config['REDSHIFT_SCHEMA_SIS_INTERNAL']
 
     def run(self, term_ids=None):
         if not term_ids:
@@ -99,7 +100,7 @@ class ImportSisTermsApi(BackgroundJob):
 
     def update_redshift(self, term_ids, transaction):
         if not transaction.execute(
-            f'DELETE FROM {self.destination_schema}.sis_terms WHERE term_id = ANY(%s)',
+            f'DELETE FROM {self.redshift_schema}.sis_terms WHERE term_id = ANY(%s)',
             params=(term_ids,),
         ):
             return False
@@ -113,12 +114,12 @@ class ImportSisTermsApi(BackgroundJob):
 
     def update_rds(self, rows, term_ids, transaction):
         if not transaction.execute(
-            f'DELETE FROM {self.destination_schema}.sis_terms WHERE term_id = ANY(%s)',
+            f'DELETE FROM {self.rds_schema}.sis_terms WHERE term_id = ANY(%s)',
             params=(term_ids,),
         ):
             return False
         if not transaction.insert_bulk(
-            f"""INSERT INTO {self.destination_schema}.sis_terms
+            f"""INSERT INTO {self.rds_schema}.sis_terms
                 (term_id ,term_name , academic_career, term_begins, term_ends, session_id, session_name, session_begins, session_ends)
                 VALUES %s""",
             [split_tsv_row(r) for r in rows],

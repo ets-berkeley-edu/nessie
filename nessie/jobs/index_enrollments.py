@@ -36,7 +36,7 @@ from nessie.lib.queries import get_enrolled_primary_sections_for_term
 
 class IndexEnrollments(BackgroundJob):
 
-    destination_schema = app.config['REDSHIFT_SCHEMA_SIS_INTERNAL']
+    rds_schema = app.config['RDS_SCHEMA_SIS_INTERNAL']
 
     def run(self, term_id=None):
         if not term_id:
@@ -58,7 +58,7 @@ class IndexEnrollments(BackgroundJob):
         section_results = get_enrolled_primary_sections_for_term(term_id)
         if not section_results:
             return False
-        if not transaction.execute(f"DELETE FROM {self.destination_schema}.enrolled_primary_sections WHERE term_id = '{term_id}'"):
+        if not transaction.execute(f"DELETE FROM {self.rds_schema}.enrolled_primary_sections WHERE term_id = '{term_id}'"):
             return False
 
         def insertable_tuple(row):
@@ -73,7 +73,7 @@ class IndexEnrollments(BackgroundJob):
                 row['instructors'],
             ])
         insert_result = transaction.insert_bulk(
-            f"""INSERT INTO {self.destination_schema}.enrolled_primary_sections
+            f"""INSERT INTO {self.rds_schema}.enrolled_primary_sections
                 (term_id, sis_section_id, sis_course_name, sis_course_name_compressed, sis_course_title,
                 sis_instruction_format, sis_section_num, instructors)
                 VALUES %s""",

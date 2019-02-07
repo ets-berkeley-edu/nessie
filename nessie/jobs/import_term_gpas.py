@@ -34,7 +34,8 @@ from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_
 
 class ImportTermGpas(BackgroundJob):
 
-    destination_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
+    rds_schema = app.config['RDS_SCHEMA_STUDENT']
+    redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
 
     def run(self, csids=None):
         if not csids:
@@ -73,10 +74,10 @@ class ImportTermGpas(BackgroundJob):
             return False
 
         app.logger.info('Will copy S3 feeds into Redshift...')
-        if not redshift.execute(f'TRUNCATE {self.destination_schema}_staging.student_term_gpas'):
+        if not redshift.execute(f'TRUNCATE {self.redshift_schema}_staging.student_term_gpas'):
             app.logger.error('Error truncating old staging rows: aborting job.')
             return False
-        if not redshift.copy_tsv_from_s3(f'{self.destination_schema}_staging.student_term_gpas', s3_key):
+        if not redshift.copy_tsv_from_s3(f'{self.redshift_schema}_staging.student_term_gpas', s3_key):
             app.logger.error('Error on Redshift copy: aborting job.')
             return False
         staging_to_destination_query = resolve_sql_template_string("""
@@ -106,12 +107,12 @@ class ImportTermGpas(BackgroundJob):
         )
 
     def refresh_rds_indexes(self, csids, rows, transaction):
-        sql = f'DELETE FROM {self.destination_schema}.student_term_gpas WHERE sid = ANY(%s)'
+        sql = f'DELETE FROM {self.rds_schema}.student_term_gpas WHERE sid = ANY(%s)'
         params = (csids,)
         if not transaction.execute(sql, params):
             return False
         if not transaction.insert_bulk(
-            f"""INSERT INTO {self.destination_schema}.student_term_gpas
+            f"""INSERT INTO {self.rds_schema}.student_term_gpas
                 (sid, term_id, gpa, units_taken_for_gpa) VALUES %s""",
             [split_tsv_row(r) for r in rows],
         ):

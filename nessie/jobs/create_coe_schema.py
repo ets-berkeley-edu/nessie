@@ -40,6 +40,7 @@ import psycopg2
 external_schema = app.config['REDSHIFT_SCHEMA_COE_EXTERNAL']
 internal_schema = app.config['REDSHIFT_SCHEMA_COE']
 internal_schema_identifier = psycopg2.sql.Identifier(internal_schema)
+rds_schema = app.config['RDS_SCHEMA_COE']
 
 
 class CreateCoeSchema(BackgroundJob):
@@ -123,7 +124,7 @@ class CreateCoeSchema(BackgroundJob):
 
     def refresh_rds_indexes(self, coe_rows, transaction):
         if len(coe_rows):
-            result = transaction.execute(f'TRUNCATE {internal_schema}.students')
+            result = transaction.execute(f'TRUNCATE {rds_schema}.students')
             if not result:
                 return False
             columns = [
@@ -133,7 +134,7 @@ class CreateCoeSchema(BackgroundJob):
                 'probation', 'status',
             ]
             result = transaction.insert_bulk(
-                f'INSERT INTO {internal_schema}.students ({", ".join(columns)}) VALUES %s',
+                f'INSERT INTO {rds_schema}.students ({", ".join(columns)}) VALUES %s',
                 [tuple([r[c] for c in columns]) for r in coe_rows],
             )
             if not result:

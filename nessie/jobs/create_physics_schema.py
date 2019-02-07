@@ -37,6 +37,7 @@ import psycopg2
 external_schema = app.config['REDSHIFT_SCHEMA_PHYSICS_EXTERNAL']
 internal_schema = app.config['REDSHIFT_SCHEMA_PHYSICS']
 internal_schema_identifier = psycopg2.sql.Identifier(internal_schema)
+rds_schema = app.config['RDS_SCHEMA_PHYSICS']
 
 
 class CreatePhysicsSchema(BackgroundJob):
@@ -70,12 +71,12 @@ class CreatePhysicsSchema(BackgroundJob):
 
     def refresh_rds_indexes(self, physics_rows, transaction):
         if len(physics_rows):
-            result = transaction.execute(f'TRUNCATE {internal_schema}.students')
+            result = transaction.execute(f'TRUNCATE {rds_schema}.students')
             if not result:
                 return False
             columns = ['sid']
             result = transaction.insert_bulk(
-                f'INSERT INTO {internal_schema}.students ({", ".join(columns)}) VALUES %s',
+                f'INSERT INTO {rds_schema}.students ({", ".join(columns)}) VALUES %s',
                 [tuple([r[c] for c in columns]) for r in physics_rows],
             )
             if not result:

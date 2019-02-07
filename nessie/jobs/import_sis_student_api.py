@@ -35,7 +35,7 @@ from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_
 
 class ImportSisStudentApi(BackgroundJob):
 
-    destination_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
+    redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
 
     def run(self, csids=None):
         if not csids:
@@ -64,10 +64,10 @@ class ImportSisStudentApi(BackgroundJob):
             return False
 
         app.logger.info('Will copy S3 feeds into Redshift...')
-        if not redshift.execute(f'TRUNCATE {self.destination_schema}_staging.sis_api_profiles'):
+        if not redshift.execute(f'TRUNCATE {self.redshift_schema}_staging.sis_api_profiles'):
             app.logger.error('Error truncating old staging rows: aborting job.')
             return False
-        if not redshift.copy_tsv_from_s3(f'{self.destination_schema}_staging.sis_api_profiles', s3_key):
+        if not redshift.copy_tsv_from_s3(f'{self.redshift_schema}_staging.sis_api_profiles', s3_key):
             app.logger.error('Error on Redshift copy: aborting job.')
             return False
         staging_to_destination_query = resolve_sql_template_string(
