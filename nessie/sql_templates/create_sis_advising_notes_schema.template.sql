@@ -278,11 +278,12 @@ CREATE SCHEMA {redshift_schema_sis_advising_notes_internal};
 --------------------------------------------------------------------
 
 CREATE TABLE {redshift_schema_sis_advising_notes_internal}.advising_notes
-INTERLEAVED SORTKEY (sid, note_id, note_seq_nr)
+SORTKEY (id)
 AS (
     SELECT
+        N.sid || '-' || N.note_id AS id,
         N.sid,
-        N.note_id,
+        N.note_id AS student_note_nr,
         N.advisor_sid,
         N.appointment_id,
         C.descr AS note_category,
@@ -319,11 +320,12 @@ AS (
 );
 
 CREATE TABLE {redshift_schema_sis_advising_notes_internal}.advising_note_attachments
-INTERLEAVED SORTKEY (sid, note_id, attachment_seq_nr)
+INTERLEAVED SORTKEY (advising_note_id, attachment_seq_nr)
 AS (
     SELECT
+        sid || '-' || note_id AS advising_note_id,
         sid,
-        note_id,
+        note_id AS student_note_nr,
         attachment_seq_nr,
         descr,
         TO_DATE(attachment_date, 'DD-MON-YY') AS attachment_date,
@@ -339,10 +341,12 @@ AS (
 );
 
 CREATE TABLE {redshift_schema_sis_advising_notes_internal}.advising_note_topics
+SORTKEY (advising_note_id)
 AS (
     SELECT
+        sid || '-' || note_id AS advising_note_id,
         sid,
-        note_id,
+        note_id AS student_note_nr,
         note_topic
     FROM
         {redshift_schema_sis_advising_notes}.advising_note_topics
