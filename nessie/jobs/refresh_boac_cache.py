@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import boac
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 
 """Logic for BOAC cache refresh kickoff."""
 
@@ -38,5 +38,4 @@ class RefreshBoacCache(BackgroundJob):
             app.logger.info(f'BOAC refresh kickoffs completed.')
             return True
         else:
-            app.logger.error(f'BOAC refresh kickoffs returned an error.')
-            return False
+            raise BackgroundJobError(f'BOAC refresh kickoffs returned an error.')

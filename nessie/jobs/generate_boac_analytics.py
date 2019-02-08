@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import redshift
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import reverse_term_ids
 from nessie.lib.util import hashed_datestamp, resolve_sql_template
 
@@ -63,5 +63,4 @@ class GenerateBoacAnalytics(BackgroundJob):
         if redshift.execute_ddl_script(resolved_ddl):
             return 'BOAC analytics creation job completed.'
         else:
-            app.logger.error(f'BOAC analytics creation job failed.')
-            return False
+            raise BackgroundJobError(f'BOAC analytics creation job failed.')

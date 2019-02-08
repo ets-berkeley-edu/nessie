@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import redshift
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import resolve_sql_template
 
 """Logic for metadata schema creation job."""
@@ -40,6 +40,6 @@ class CreateMetadataSchema(BackgroundJob):
         if redshift.execute_ddl_script(resolved_ddl):
             app.logger.info(f"Schema '{app.config['REDSHIFT_SCHEMA_METADATA']}' found or created.")
         else:
-            app.logger.error(f'Metadata schema creation failed.')
+            raise BackgroundJobError(f'Metadata schema creation failed.')
             return False
         return True

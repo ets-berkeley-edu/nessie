@@ -27,7 +27,7 @@ from time import sleep
 
 from flask import current_app as app
 from nessie.externals import glue, s3
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 
 """Logic for transforming LRS Caliper statements."""
 
@@ -46,12 +46,10 @@ class TransformLrsIncrementals(BackgroundJob):
         self.job_run_response = None
 
         # Check Glue export location and clear any files from prior runs
-        if not self.delete_old_incrementals():
-            return False
+        self.delete_old_incrementals()
 
         # Run glue tranformation jobs to explode canvas caliper data into flat files
-        if not self.start_caliper_transform_job():
-            return False
+        self.start_caliper_transform_job()
 
         # Add logic to write glue job details to redshift metadata table.
         return f'Successfully transformed and flattened the LRS canvas caliper incrmental feeds. JobRun={self.job_run_response}'
@@ -60,16 +58,13 @@ class TransformLrsIncrementals(BackgroundJob):
         app.logger.debug(f' Bucket: {self.transient_bucket}')
         old_incrementals = s3.get_keys_with_prefix(self.transient_path, bucket=self.transient_bucket)
         if old_incrementals is None:
-            app.logger.error('Error listing old incrementals, aborting job.')
-            return False
+            raise BackgroundJobError('Error listing old incrementals, aborting job.')
         if len(old_incrementals) > 0:
             delete_response = s3.delete_objects(old_incrementals, bucket=self.transient_bucket)
             if delete_response is None:
-                app.logger.error(f'Error deleting old incremental files from {self.transient_bucket}, aborting job.')
-                return False
+                raise BackgroundJobError(f'Error deleting old incremental files from {self.transient_bucket}, aborting job.')
             else:
                 app.logger.info(f'Deleted {len(old_incrementals)} old incremental files from {self.transient_bucket}.')
-        return True
 
     def start_caliper_transform_job(self):
         job_arguments = {
@@ -87,8 +82,7 @@ class TransformLrsIncrementals(BackgroundJob):
             app.config['LRS_CANVAS_GLUE_JOB_TIMEOUT'],
         )
         if not response:
-            app.logger.error('Failed to create Glue job')
-            return False
+            raise BackgroundJobError('Failed to create Glue job')
         elif 'JobRunId' in response:
             self.job_run_id = response['JobRunId']
             app.logger.debug(f'Response : {response}')
@@ -98,15 +92,12 @@ class TransformLrsIncrementals(BackgroundJob):
             while True:
                 response = glue.check_job_run_status(self.job_name, self.job_run_id)
                 if not response:
-                    app.logger.error('Failed to check Glue job status')
-                    return False
+                    raise BackgroundJobError('Failed to check Glue job status')
                 elif response['JobRun']['JobRunState'] == 'SUCCEEDED':
                     app.logger.info(f'Caliper glue transformation job completed successfully: {response}')
                     break
                 elif response['JobRun']['JobRunState'] == 'FAILED' or response['JobRun']['JobRunState'] == 'TIMEOUT':
-                    app.logger.error(f'Caliper glue transformation job failed or timed out: {response}')
-                    return False
+                    raise BackgroundJobError(f'Caliper glue transformation job failed or timed out: {response}')
 
                 sleep(30)
             self.job_run_response = response
-            return True

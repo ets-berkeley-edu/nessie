@@ -29,7 +29,7 @@ import re
 
 from flask import current_app as app
 from nessie.externals import redshift, s3
-from nessie.jobs.background_job import BackgroundJob, verify_external_schema
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.berkeley import reverse_term_ids
 from nessie.lib.util import get_s3_sis_daily_path, resolve_sql_template
 
@@ -48,11 +48,10 @@ class CreateSisSchema(BackgroundJob):
         redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template('create_sis_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
-            app.logger.info(f'SIS schema creation job completed.')
-            return verify_external_schema(external_schema, resolved_ddl)
+            verify_external_schema(external_schema, resolved_ddl)
+            return 'SIS schema creation job completed.'
         else:
-            app.logger.error(f'SIS schema creation job failed.')
-            return False
+            raise BackgroundJobError(f'SIS schema creation job failed.')
 
     def update_manifests(self):
         app.logger.info(f'Updating manifests...')
@@ -63,8 +62,7 @@ class CreateSisSchema(BackgroundJob):
         if not s3.get_keys_with_prefix(s3_sis_daily):
             s3_sis_daily = get_s3_sis_daily_path(datetime.now() - timedelta(days=1))
             if not s3.get_keys_with_prefix(s3_sis_daily):
-                app.logger.error(f'No timely SIS S3 data found')
-                return False
+                raise BackgroundJobError(f'No timely SIS S3 data found')
             else:
                 app.logger.info(f'Falling back to SIS S3 daily data for yesterday')
 
@@ -82,14 +80,11 @@ class CreateSisSchema(BackgroundJob):
             for term_id in reverse_term_ids():
                 filename = f'{prefix}-{term_id}.gz'
                 if filename not in filename_map:
-                    app.logger.error(f'Expected filename {filename} not found in S3, aborting')
-                    return False
+                    raise BackgroundJobError(f'Expected filename {filename} not found in S3, aborting')
             return list(filename_map.values())
 
         all_courses = deduplicate('courses', courses_daily + courses_historical)
         all_enrollments = deduplicate('enrollments', enrollments_daily + enrollments_historical)
-        if not all_courses or not all_enrollments:
-            return False
 
         def to_manifest_entry(_object):
             return {

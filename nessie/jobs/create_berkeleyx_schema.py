@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import redshift
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import resolve_sql_template
 
 """Logic for Canvas schema creation job."""
@@ -76,8 +76,7 @@ class CreateBerkeleyxSchema(BackgroundJob):
                 failure += 1
 
         if failure > 0:
-            app.logger.error(f'Berkeleyx Schema creation jobs failed')
-            return False
+            raise BackgroundJobError(f'Berkeleyx Schema creation jobs failed')
         else:
             app.logger.info(f'Bekreleyx schema creation jobs completed successfully')
             return True

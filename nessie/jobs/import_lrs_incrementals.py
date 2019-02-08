@@ -29,7 +29,7 @@ from time import sleep
 
 from flask import current_app as app
 from nessie.externals import dms, lrs, redshift, s3
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import localize_datetime, resolve_sql_template
 
 """Logic for LRS incremental import job."""
@@ -44,13 +44,11 @@ class ImportLrsIncrementals(BackgroundJob):
         self.transient_bucket = app.config['LRS_CANVAS_INCREMENTAL_TRANSIENT_BUCKET']
         self.transient_path = app.config['LRS_CANVAS_INCREMENTAL_TRANSIENT_PATH']
 
-        if not self.delete_old_incrementals():
-            return False
+        self.delete_old_incrementals()
 
         response = dms.start_replication_task(task_id)
         if not response:
-            app.logger.error('Failed to start DMS replication task (response={response}).')
-            return False
+            raise BackgroundJobError('Failed to start DMS replication task (response={response}).')
 
         while True:
             response = dms.get_replication_task(task_id)
@@ -59,41 +57,34 @@ class ImportLrsIncrementals(BackgroundJob):
                     app.logger.info('DMS replication task completed')
                     break
                 else:
-                    app.logger.error(f'Replication task stopped for unexpected reason: {response}')
-                    return False
+                    raise BackgroundJobError(f'Replication task stopped for unexpected reason: {response}')
             sleep(10)
 
         lrs_response = lrs.fetch('select count(*) from statements')
         if lrs_response:
             self.lrs_statement_count = lrs_response[0][0]
         else:
-            app.logger.error(f'Failed to retrieve LRS statements for comparison.')
-            return False
+            raise BackgroundJobError(f'Failed to retrieve LRS statements for comparison.')
 
         transient_keys = s3.get_keys_with_prefix(self.transient_path, bucket=self.transient_bucket)
         if not transient_keys:
-            app.logger.error('Could not retrieve S3 keys from transient bucket.')
-            return False
-
-        if not self.verify_and_unload_transient():
-            return False
+            raise BackgroundJobError('Could not retrieve S3 keys from transient bucket.')
+        self.verify_and_unload_transient()
 
         timestamp_path = localize_datetime(datetime.now()).strftime('%Y/%m/%d/%H%M%S')
         destination_path = app.config['LRS_CANVAS_INCREMENTAL_DESTINATION_PATH'] + '/' + timestamp_path
         for destination_bucket in app.config['LRS_CANVAS_INCREMENTAL_DESTINATION_BUCKETS']:
-            if not self.migrate_transient_to_destination(
+            self.migrate_transient_to_destination(
                 transient_keys,
                 destination_bucket,
                 destination_path,
-            ):
-                return False
+            )
 
         if truncate_lrs:
             if lrs.execute('TRUNCATE statements'):
                 app.logger.info('Truncated incremental LRS table.')
             else:
-                app.logger.error('Failed to truncate incremental LRS table.')
-                return False
+                raise BackgroundJobError('Failed to truncate incremental LRS table.')
 
         return (
             f'Migrated {self.lrs_statement_count} statements to S3'
@@ -103,30 +94,24 @@ class ImportLrsIncrementals(BackgroundJob):
     def delete_old_incrementals(self):
         old_incrementals = s3.get_keys_with_prefix(self.transient_path, bucket=self.transient_bucket)
         if old_incrementals is None:
-            app.logger.error('Error listing old incrementals, aborting job.')
-            return False
+            raise BackgroundJobError('Error listing old incrementals, aborting job.')
         if len(old_incrementals) > 0:
             delete_response = s3.delete_objects(old_incrementals, bucket=self.transient_bucket)
             if not delete_response:
-                app.logger.error(f'Error deleting old incremental files from {self.transient_bucket}, aborting job.')
-                return False
+                raise BackgroundJobError(f'Error deleting old incremental files from {self.transient_bucket}, aborting job.')
             else:
                 app.logger.info(f'Deleted {len(old_incrementals)} old incremental files from {self.transient_bucket}.')
-        return True
 
     def delete_old_unloads(self):
         old_unloads = s3.get_keys_with_prefix(app.config['LRS_CANVAS_INCREMENTAL_ETL_PATH_REDSHIFT'], bucket=self.transient_bucket)
         if old_unloads is None:
-            app.logger.error('Error listing old unloads, aborting job.')
-            return False
+            raise BackgroundJobError('Error listing old unloads, aborting job.')
         if len(old_unloads) > 0:
             delete_response = s3.delete_objects(old_unloads, bucket=self.transient_bucket)
             if not delete_response:
-                app.logger.error(f'Error deleting old unloads from {self.transient_bucket}, aborting job.')
-                return False
+                raise BackgroundJobError(f'Error deleting old unloads from {self.transient_bucket}, aborting job.')
             else:
                 app.logger.info(f'Deleted {len(old_unloads)} old unloads from {self.transient_bucket}.')
-        return True
 
     def migrate_transient_to_destination(self, keys, destination_bucket, destination_path):
         destination_url = 's3://' + destination_bucket + '/' + destination_path
@@ -135,12 +120,9 @@ class ImportLrsIncrementals(BackgroundJob):
         for transient_key in keys:
             destination_key = transient_key.replace(self.transient_path, destination_path)
             if not s3.copy(self.transient_bucket, transient_key, destination_bucket, destination_key):
-                app.logger.error(f'Copy from transient bucket to destination bucket {destination_bucket} failed.')
-                return False
-        if not self.verify_migration(destination_url, redshift_schema):
-            return False
+                raise BackgroundJobError(f'Copy from transient bucket to destination bucket {destination_bucket} failed.')
+        self.verify_migration(destination_url, redshift_schema)
         redshift.drop_external_schema(redshift_schema)
-        return True
 
     def unload_to_etl(self, schema, bucket, timestamped=True):
         s3_url = 's3://' + bucket + '/' + app.config['LRS_CANVAS_INCREMENTAL_ETL_PATH_REDSHIFT']
@@ -164,21 +146,16 @@ class ImportLrsIncrementals(BackgroundJob):
                 MAXFILESIZE 1 gb
             """,
         ):
-            app.logger.error(f'Error executing Redshift unload to {s3_url}.')
-        return self.verify_unloaded_count(s3_url)
+            raise BackgroundJobError(f'Error executing Redshift unload to {s3_url}.')
+        self.verify_unloaded_count(s3_url)
 
     def verify_and_unload_transient(self):
         transient_url = f's3://{self.transient_bucket}/{self.transient_path}'
         transient_schema = app.config['REDSHIFT_SCHEMA_LRS'] + '_transient'
-        if not self.verify_migration(transient_url, transient_schema):
-            return False
-        if not self.delete_old_unloads():
-            return False
-        if not self.unload_to_etl(transient_schema, self.transient_bucket, timestamped=False):
-            app.logger.error(f'Redshift statements unload from {transient_schema} to {self.transient_bucket} failed.')
-            return False
+        self.verify_migration(transient_url, transient_schema)
+        self.delete_old_unloads()
+        self.unload_to_etl(transient_schema, self.transient_bucket, timestamped=False)
         redshift.drop_external_schema(transient_schema)
-        return True
 
     def verify_migration(self, incremental_url, incremental_schema):
         redshift.drop_external_schema(incremental_schema)
@@ -190,24 +167,20 @@ class ImportLrsIncrementals(BackgroundJob):
         if redshift.execute_ddl_script(resolved_ddl_transient):
             app.logger.info(f"LRS incremental schema '{incremental_schema}' created.")
         else:
-            app.logger.error(f"LRS incremental schema '{incremental_schema}' creation failed.")
-            return False
+            raise BackgroundJobError(f"LRS incremental schema '{incremental_schema}' creation failed.")
 
         redshift_response = redshift.fetch(f'select count(*) from {incremental_schema}.statements')
         if redshift_response:
             redshift_statement_count = redshift_response[0].get('count')
         else:
-            app.logger.error(f"Failed to verify LRS incremental schema '{incremental_schema}'.")
-            return False
+            raise BackgroundJobError(f"Failed to verify LRS incremental schema '{incremental_schema}'.")
 
         if redshift_statement_count == self.lrs_statement_count:
             app.logger.info(f'Verified {redshift_statement_count} rows migrated from LRS to {incremental_url}.')
-            return True
         else:
-            app.logger.error(
+            raise BackgroundJobError(
                 f'Discrepancy between LRS ({self.lrs_statement_count} statements)'
                 f' and {incremental_url} ({redshift_statement_count} statements).')
-            return False
 
     def verify_unloaded_count(self, url):
         url = path.split(url)[0]
@@ -220,21 +193,17 @@ class ImportLrsIncrementals(BackgroundJob):
         if redshift.execute_ddl_script(resolved_ddl_transient_unloaded):
             app.logger.info(f"statements_unloaded table created in schema '{schema}'.")
         else:
-            app.logger.error(f"Failed to create statements_unloaded table in schema '{schema}'.")
-            return False
+            raise BackgroundJobError(f"Failed to create statements_unloaded table in schema '{schema}'.")
 
         redshift_response = redshift.fetch(f'select count(*) from {schema}.statements_unloaded')
         if redshift_response:
             unloaded_statement_count = redshift_response[0].get('count')
         else:
-            app.logger.error('Failed to get unloaded statement count.')
-            return False
+            raise BackgroundJobError('Failed to get unloaded statement count.')
 
         if unloaded_statement_count == self.lrs_statement_count:
             app.logger.info(f'Verified {unloaded_statement_count} unloaded from LRS to {url}.')
-            return True
         else:
-            app.logger.error(
+            raise BackgroundJobError(
                 f'Discrepancy between LRS ({self.lrs_statement_count} statements)'
                 f' and {url} ({unloaded_statement_count} statements).')
-            return False

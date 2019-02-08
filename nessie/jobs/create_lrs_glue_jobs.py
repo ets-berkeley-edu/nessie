@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import glue
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 
 """Logic for Creating LRS Caliper glue job to transform canvas caliper statements."""
 
@@ -60,8 +60,7 @@ class CreateLrsGlueJobs(BackgroundJob):
 
         response = glue.create_glue_job(job_name, glue_role, job_command, default_arguments)
         if not response:
-            app.logger.error('Failed to create Glue job')
-            return False
+            raise BackgroundJobError('Failed to create Glue job.')
         elif response['Name']:
             app.logger.info(f'Response : {response}')
             app.logger.info(f'Glue Job created successfully with Job Name : {response}')

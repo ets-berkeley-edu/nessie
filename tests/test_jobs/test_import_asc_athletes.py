@@ -26,8 +26,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import json
 
 from nessie.externals import asc_athletes_api
+from nessie.jobs.background_job import BackgroundJobError
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.lib.mockingbird import MockResponse, register_mock
+import pytest
 
 
 class TestImportAscAthletes:
@@ -51,8 +53,8 @@ class TestImportAscAthletes:
         }
         modified_response = MockResponse(200, {}, json.dumps(skinny_import))
         with register_mock(asc_athletes_api._get_asc_feed_response, modified_response):
-            status = ImportAscAthletes().run()
-            assert status is False
+            with pytest.raises(BackgroundJobError):
+                ImportAscAthletes().run()
 
 
 class TestAscAthletesApiUpdates:
@@ -63,4 +65,5 @@ class TestAscAthletesApiUpdates:
             modified_response_body = file.read().replace('"2018-01-31"', bad_date, 1)
             modified_response = MockResponse(200, {}, modified_response_body)
             with register_mock(asc_athletes_api._get_asc_feed_response, modified_response):
-                assert ImportAscAthletes().run() is False
+                with pytest.raises(BackgroundJobError):
+                    ImportAscAthletes().run()

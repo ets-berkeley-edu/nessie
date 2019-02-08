@@ -26,7 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.externals.asc_athletes_api import get_asc_feed
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import encoded_tsv_row, get_s3_asc_daily_path, resolve_sql_template_string
 
 SPORT_TRANSLATIONS = {
@@ -79,65 +79,59 @@ class ImportAscAthletes(BackgroundJob):
         app.logger.info(f'ASC import: Fetch team and student athlete data from ASC API')
         api_results = get_asc_feed()
         if 'error' in api_results:
-            app.logger.error('ASC import: Error from external API: {}'.format(api_results['error']))
-            status = False
+            raise BackgroundJobError('ASC import: Error from external API: {}'.format(api_results['error']))
         elif not api_results:
-            app.logger.error('ASC import: API returned zero students')
-            status = False
-        else:
-            sync_date = api_results[0]['SyncDate']
-            if sync_date != api_results[-1]['SyncDate']:
-                app.logger.error(f'ASC import: SyncDate conflict in ASC API: {api_results[0]} vs. {api_results[-1]}')
-                status = False
-            else:
-                rows = []
-                for r in api_results:
-                    if r['AcadYr'] == app.config['ASC_THIS_ACAD_YR'] and r['SportCode']:
-                        asc_code = r['SportCodeCore']
-                        if asc_code in SPORT_TRANSLATIONS:
-                            group_code = r['SportCode']
-                            data = [
-                                r['SID'],
-                                str(r.get('ActiveYN', 'No') == 'Yes'),
-                                str(r.get('IntensiveYN', 'No') == 'Yes'),
-                                r.get('SportStatus', ''),
-                                group_code,
-                                _unambiguous_group_name(r['Sport'], group_code),
-                                SPORT_TRANSLATIONS[asc_code],
-                                r['SportCore'],
-                            ]
-                            rows.append(encoded_tsv_row(data))
-                        else:
-                            sid = r['SID']
-                            app.logger.error(f'ASC import: Unmapped asc_code {asc_code} has ActiveYN for sid={sid}')
+            raise BackgroundJobError('ASC import: API returned zero students')
+        sync_date = api_results[0]['SyncDate']
+        if sync_date != api_results[-1]['SyncDate']:
+            raise BackgroundJobError(f'ASC import: SyncDate conflict in ASC API: {api_results[0]} vs. {api_results[-1]}')
+        rows = []
+        for r in api_results:
+            if r['AcadYr'] == app.config['ASC_THIS_ACAD_YR'] and r['SportCode']:
+                asc_code = r['SportCodeCore']
+                if asc_code in SPORT_TRANSLATIONS:
+                    group_code = r['SportCode']
+                    data = [
+                        r['SID'],
+                        str(r.get('ActiveYN', 'No') == 'Yes'),
+                        str(r.get('IntensiveYN', 'No') == 'Yes'),
+                        r.get('SportStatus', ''),
+                        group_code,
+                        _unambiguous_group_name(r['Sport'], group_code),
+                        SPORT_TRANSLATIONS[asc_code],
+                        r['SportCore'],
+                    ]
+                    rows.append(encoded_tsv_row(data))
+                else:
+                    sid = r['SID']
+                    app.logger.error(f'ASC import: Unmapped asc_code {asc_code} has ActiveYN for sid={sid}')
 
-                s3_key = f'{get_s3_asc_daily_path()}/asc_api_raw_response_{sync_date}.tsv'
-                if not s3.upload_tsv_rows(rows, s3_key):
-                    app.logger.error('Error on S3 upload: aborting job.')
-                    return False
+        s3_key = f'{get_s3_asc_daily_path()}/asc_api_raw_response_{sync_date}.tsv'
+        if not s3.upload_tsv_rows(rows, s3_key):
+            raise BackgroundJobError('Error on S3 upload: aborting job.')
 
-                status = {
-                    'this_sync_date': sync_date,
-                    'api_results_count': len(api_results),
-                }
-                app.logger.info('Copy data in S3 file to Redshift...')
-                query = resolve_sql_template_string(
-                    """
-                    TRUNCATE {redshift_schema_asc}.students;
-                    COPY {redshift_schema_asc}.students
-                        FROM 's3://{s3_bucket}/{s3_key}'
-                        IAM_ROLE '{redshift_iam_role}'
-                        DELIMITER '\\t';
-                    VACUUM;
-                    ANALYZE;
-                    """,
-                    s3_bucket=app.config['LOCH_S3_BUCKET'],
-                    s3_key=s3_key,
-                )
-                if not redshift.execute(query):
-                    app.logger.error('Error on Redshift copy: aborting job.')
-                    return False
-                app.logger.info(f'ASC import: Successfully completed import job: {str(status)}')
+        app.logger.info('Copy data in S3 file to Redshift...')
+        query = resolve_sql_template_string(
+            """
+            TRUNCATE {redshift_schema_asc}.students;
+            COPY {redshift_schema_asc}.students
+                FROM 's3://{s3_bucket}/{s3_key}'
+                IAM_ROLE '{redshift_iam_role}'
+                DELIMITER '\\t';
+            VACUUM;
+            ANALYZE;
+            """,
+            s3_bucket=app.config['LOCH_S3_BUCKET'],
+            s3_key=s3_key,
+        )
+        if not redshift.execute(query):
+            raise BackgroundJobError('Error on Redshift copy: aborting job.')
+
+        status = {
+            'this_sync_date': sync_date,
+            'api_results_count': len(api_results),
+        }
+        app.logger.info(f'ASC import: Successfully completed import job: {str(status)}')
         return status
 
 

@@ -28,7 +28,7 @@ import os
 
 from flask import current_app as app
 from nessie.externals import redshift, s3
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import resolve_sql_template
 
 """Generate analytics from exploded canvas caliper statements."""
@@ -55,8 +55,7 @@ class GenerateCanvasCaliperAnalytics(BackgroundJob):
         if not s3.get_keys_with_prefix(s3_caliper_daily_path):
             s3_caliper_daily_path = get_s3_daily_canvas_caliper_explode_path(datetime.now() - timedelta(days=1))
             if not s3.get_keys_with_prefix(s3_caliper_daily_path):
-                app.logger.error(f'No timely S3 Caliper extracts found')
-                return False
+                raise BackgroundJobError(f'No timely S3 Caliper extracts found')
             else:
                 app.logger.info(f'Falling back S3 Caliper extracts for yesterday')
         s3_caliper_daily_url = s3.build_s3_url(s3_caliper_daily_path, credentials=False)
@@ -70,16 +69,14 @@ class GenerateCanvasCaliperAnalytics(BackgroundJob):
         if redshift.execute_ddl_script(resolved_ddl_caliper_explode):
             app.logger.info('Caliper explode schema and table successfully created.')
         else:
-            app.logger.error('Caliper explode schema and table creation failed.')
-            return False
+            raise BackgroundJobError('Caliper explode schema and table creation failed.')
 
         # Sanity-check event times from the latest Caliper batch against previously transformed event times.
         def datetime_from_query(query):
             response = redshift.fetch(query)
             timestamp = response and response[0] and response[0].get('timestamp')
             if not timestamp:
-                app.logger.error(f'Timestamp query failed to return data for comparison; aborting job: {query}')
-                return None
+                raise BackgroundJobError(f'Timestamp query failed to return data for comparison; aborting job: {query}')
             if isinstance(timestamp, str):
                 timestamp = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
             return timestamp
@@ -94,15 +91,13 @@ class GenerateCanvasCaliperAnalytics(BackgroundJob):
             return False
         timestamp_diff = (earliest_untransformed - latest_transformed).total_seconds()
         if timestamp_diff < -60 or timestamp_diff > 300:
-            app.logger.error(
+            raise BackgroundJobError(
                 f'Unexpected difference between Caliper timestamps: latest transformed {latest_transformed}, '
                 f'earliest untransformed {earliest_untransformed}',
             )
-            return False
 
         resolved_ddl_caliper_analytics = resolve_sql_template('generate_caliper_analytics.template.sql')
         if redshift.execute_ddl_script(resolved_ddl_caliper_analytics):
             return 'Caliper analytics tables successfully created.'
         else:
-            app.logger.error('Caliper analytics tables creation failed.')
-            return False
+            raise BackgroundJobError('Caliper analytics tables creation failed.')

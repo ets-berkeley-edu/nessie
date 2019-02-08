@@ -27,7 +27,7 @@ import json
 
 from flask import current_app as app
 from nessie.externals import canvas_api, redshift, s3
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import current_term_id
 from nessie.lib.queries import get_enrolled_canvas_sites_for_term
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string
@@ -65,8 +65,7 @@ class ImportCanvasEnrollmentsApi(BackgroundJob):
         s3_key = f'{get_s3_sis_api_daily_path()}/canvas_api_enrollments_{term_id}.tsv'
         app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
         if not s3.upload_tsv_rows(rows, s3_key):
-            app.logger.error('Error on S3 upload: aborting job.')
-            return False
+            raise BackgroundJobError('Error on S3 upload: aborting job.')
 
         app.logger.info('Will copy S3 feeds into Redshift...')
         query = resolve_sql_template_string(
@@ -89,8 +88,7 @@ class ImportCanvasEnrollmentsApi(BackgroundJob):
             term_id=term_id,
         )
         if not redshift.execute(query):
-            app.logger.error('Error on Redshift copy: aborting job.')
-            return False
+            raise BackgroundJobError('Error on Redshift copy: aborting job.')
 
         return (
             f'Canvas enrollments API import completed for term {term_id}: {success_count} succeeded, '

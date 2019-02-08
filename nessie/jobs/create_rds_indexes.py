@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import rds
-from nessie.jobs.background_job import BackgroundJob
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import resolve_sql_template
 
 """Logic for RDS index creation job."""
@@ -41,5 +41,4 @@ class CreateRdsIndexes(BackgroundJob):
             app.logger.info('RDS indexes found or created.')
             return True
         else:
-            app.logger.error('RDS index creation failed.')
-            return False
+            raise BackgroundJobError('RDS index creation failed.')
