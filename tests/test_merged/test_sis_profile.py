@@ -23,6 +23,8 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import json
+
 from nessie.merged.sis_profile import parse_merged_sis_profile
 import pytest
 
@@ -91,3 +93,24 @@ class TestMergedSisProfile:
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress)
         assert profile['currentTerm']['unitsMaxOverride'] == 24
         assert profile['currentTerm']['unitsMinOverride'] == 15
+
+    def test_zero_gpa_when_gpa_units(self, app, sis_api_profiles, sis_api_degree_progress):
+        for row in sis_api_profiles:
+            if row['sid'] == '11667051':
+                feed = json.loads(row['feed'])
+                feed['academicStatuses'][1]['cumulativeGPA']['average'] = 0
+                row['feed'] = json.dumps(feed)
+                break
+        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress)
+        assert profile['cumulativeGPA'] == 0
+
+    def test_null_gpa_when_no_gpa_units(self, app, sis_api_profiles, sis_api_degree_progress):
+        for row in sis_api_profiles:
+            if row['sid'] == '11667051':
+                feed = json.loads(row['feed'])
+                feed['academicStatuses'][1]['cumulativeGPA']['average'] = 0
+                feed['academicStatuses'][1]['cumulativeUnits'][1]['unitsTaken'] = 0
+                row['feed'] = json.dumps(feed)
+                break
+        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress)
+        assert profile['cumulativeGPA'] is None

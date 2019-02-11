@@ -79,7 +79,24 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
     if not academic_status:
         return
 
-    sis_profile['cumulativeGPA'] = academic_status.get('cumulativeGPA', {}).get('average')
+    cumulative_units = None
+    cumulative_units_taken_for_gpa = None
+
+    for units in academic_status.get('cumulativeUnits', []):
+        code = units.get('type', {}).get('code')
+        if code == 'Total':
+            cumulative_units = units.get('unitsCumulative')
+        elif code == 'For GPA':
+            cumulative_units_taken_for_gpa = units.get('unitsTaken')
+
+    sis_profile['cumulativeUnits'] = cumulative_units
+
+    cumulative_gpa = academic_status.get('cumulativeGPA', {}).get('average')
+    if cumulative_gpa == 0 and not cumulative_units_taken_for_gpa:
+        sis_profile['cumulativeGPA'] = None
+    else:
+        sis_profile['cumulativeGPA'] = cumulative_gpa
+
     sis_profile['level'] = academic_status.get('currentRegistration', {}).get('academicLevel', {}).get('level')
     sis_profile['termsInAttendance'] = academic_status.get('termsInAttendance')
     sis_profile['academicCareer'] = academic_status.get('currentRegistration', {}).get('academicCareer', {}).get('code')
@@ -88,11 +105,6 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
     if matriculation_term_name and re.match('\A2\d{3} (?:Spring|Summer|Fall)\Z', matriculation_term_name):
         # "2015 Fall" to "Fall 2015"
         sis_profile['matriculation'] = ' '.join(reversed(matriculation_term_name.split()))
-
-    for units in academic_status.get('cumulativeUnits', []):
-        if units.get('type', {}).get('code') == 'Total':
-            sis_profile['cumulativeUnits'] = units.get('unitsCumulative')
-            break
 
     for units in academic_status.get('currentRegistration', {}).get('termUnits', []):
         if units.get('type', {}).get('description') == 'Total':
