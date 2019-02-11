@@ -10,6 +10,10 @@ Networked engines supply statistics in education.
 * Create your virtual environment (venv)
 * Install dependencies
 ```
+pip3 install virtualenv
+virtualenv venv
+source venv/bin/activate
+
 pip3 install -r requirements.txt [--upgrade]
 pip3 install pandas==0.23.3
 ```
