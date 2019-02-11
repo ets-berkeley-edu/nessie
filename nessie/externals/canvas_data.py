@@ -38,7 +38,16 @@ from nessie.lib.mockingbird import fixture
 
 @fixture('canvas_data_file_sync')
 def get_snapshots(mock=None):
-    url = build_url('file/sync')
+    url = build_url('account/self/file/sync')
+    with mock(url):
+        response = request(url)
+        if response:
+            return response.json()
+
+
+@fixture('canvas_data_schema_latest')
+def get_canvas_data_schema(mock=None):
+    url = build_url('schema/latest')
     with mock(url):
         response = request(url)
         if response:
@@ -57,7 +66,7 @@ def request(url):
 
 
 def build_url(path):
-    return urlunparse(['https', app.config['CANVAS_DATA_HOST'], f'/api/account/self/{path}', '', '', ''])
+    return urlunparse(['https', app.config['CANVAS_DATA_HOST'], f'/api/{path}', '', '', ''])
 
 
 def generate_hmac_signature(url, timestamp, method='GET', content_type='', content_md5=''):

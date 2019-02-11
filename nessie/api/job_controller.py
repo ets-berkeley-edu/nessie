@@ -53,6 +53,7 @@ from nessie.jobs.import_sis_terms_api import ImportSisTermsApi
 from nessie.jobs.import_term_gpas import ImportTermGpas
 from nessie.jobs.index_enrollments import IndexEnrollments
 from nessie.jobs.migrate_lrs_incrementals import MigrateLrsIncrementals
+from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
@@ -290,6 +291,13 @@ def import_student_population():
 @auth_required
 def import_term_gpas():
     job_started = ImportTermGpas().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/refresh_canvas_data_catalog', methods=['POST'])
+@auth_required
+def refresh_canvas_data_catalog():
+    job_started = RefreshCanvasDataCatalog().run_async()
     return respond_with_status(job_started)
 
 

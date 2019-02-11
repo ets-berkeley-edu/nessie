@@ -94,6 +94,22 @@ def copy_tsv_from_s3(table, s3_key):
         return execute(f"COPY {table} FROM '{s3_prefix}{s3_key}' IAM_ROLE '{iam_role}' DELIMITER '\\t';")
 
 
+def create_external_schema(external_schema, role):
+    query = """
+        CREATE EXTERNAL SCHEMA {external_schema}
+        FROM data catalog
+        DATABASE '{external_schema}'
+        IAM_ROLE '{redshift_iam_role}'
+        CREATE EXTERNAL DATABASE IF NOT EXISTS;
+        """.format(external_schema, role)
+
+    if not execute(query):
+        app.logger.error('Error on Redshift create schema')
+        return False
+    else:
+        return True
+
+
 def drop_external_schema(schema_name):
     app.logger.info(f'Dropping external schema {schema_name}')
 
