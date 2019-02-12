@@ -105,24 +105,6 @@ FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
 LOCATION '{loch_s3_sis_data_path}/historical/gpa';
 
--- SIS-derived advisee demographics
-CREATE EXTERNAL TABLE {redshift_schema_sis}.demographics
-(
-    sid VARCHAR,
-    gender_of_record VARCHAR,
-    gender_identity VARCHAR,
-    ethnicities VARCHAR
-)
-ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
-WITH SERDEPROPERTIES (
-  'separatorChar' = ',',
-  'quoteChar' = '\"',
-  'escapeChar' = '\\'
-)
-STORED AS TEXTFILE
-LOCATION '{demographics_path}';
-
-
 --------------------------------------------------------------------
 -- Internal schema
 --------------------------------------------------------------------

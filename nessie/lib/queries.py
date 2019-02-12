@@ -89,28 +89,6 @@ def get_advisee_student_profile_feeds():
     return redshift.fetch(sql)
 
 
-# Not yet used by the application, but implemented for documentation.
-@fixture('query_advisee_sis_demographics.csv')
-def _get_advisee_sis_demographics():
-    sql = f"""SELECT sid, gender_of_record, gender_identity, ethnicities
-              FROM {app.config['REDSHIFT_SCHEMA_SIS']}.demographics
-              ORDER BY sid
-    """
-    return redshift.fetch(sql)
-
-
-def get_advisee_sis_demographics():
-    rows = _get_advisee_sis_demographics()
-    for row in rows:
-        raw = row.get('ethnicities')
-        if raw:
-            ethnicities = [dict(zip(['group', 'detail'], p.split(' : '))) for p in raw.split(' ; ')]
-        else:
-            ethnicities = []
-        row['ethnicities'] = ethnicities
-    return rows
-
-
 @fixture('query_advisee_enrolled_canvas_sites.csv')
 def get_advisee_enrolled_canvas_sites():
     sql = f"""SELECT enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code, enr.canvas_course_term,
