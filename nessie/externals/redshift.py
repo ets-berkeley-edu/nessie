@@ -95,13 +95,13 @@ def copy_tsv_from_s3(table, s3_key):
 
 
 def create_external_schema(external_schema, role):
-    query = """
+    query = f"""
         CREATE EXTERNAL SCHEMA {external_schema}
         FROM data catalog
         DATABASE '{external_schema}'
-        IAM_ROLE '{redshift_iam_role}'
+        IAM_ROLE '{role}'
         CREATE EXTERNAL DATABASE IF NOT EXISTS;
-        """.format(external_schema, role)
+        """
 
     if not execute(query):
         app.logger.error('Error on Redshift create schema')
