@@ -150,12 +150,3 @@ class TestQueries:
         paulk = next(r for r in data if r['ldap_uid'] == '242881')
         assert paulk['canvas_user_id'] == 10002
         assert paulk['canvas_user_name'] == 'Paul Kerschen'
-
-    def test_advisee_sis_demographics(self, app):
-        data = queries.get_advisee_sis_demographics()
-        assert data[0]['gender_of_record'] == 'Female'
-        assert data[0]['gender_identity'] == 'Trans Female/Trans Woman'
-        assert len(data[0]['ethnicities']) == 6
-        assert {'group': 'White', 'detail': 'Turkish'} in data[0]['ethnicities']
-        assert data[1]['gender_identity'] is None
-        assert data[3]['ethnicities'] == []

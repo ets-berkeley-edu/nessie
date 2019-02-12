@@ -43,47 +43,29 @@ class CreateSisSchema(BackgroundJob):
         if not self.update_manifests():
             app.logger.info('Error updating manifests, will not execute schema creation SQL')
             return False
-        demographics_path = self.get_demographics_path()
-        if not demographics_path:
-            app.logger.error('No timely SIS S3 demographics data found')
-            return False
         app.logger.info(f'Executing SQL...')
         external_schema = app.config['REDSHIFT_SCHEMA_SIS']
         redshift.drop_external_schema(external_schema)
-        resolved_ddl = resolve_sql_template(
-            'create_sis_schema.template.sql',
-            demographics_path=demographics_path,
-        )
+        resolved_ddl = resolve_sql_template('create_sis_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(external_schema, resolved_ddl)
             return 'SIS schema creation job completed.'
         else:
             raise BackgroundJobError(f'SIS schema creation job failed.')
 
-    def get_demographics_path(self):
-        demographics_path = self.get_s3_sis_daily_latest() + '/demographics'
-        if not s3.object_exists(demographics_path + '/demographics.gz'):
-            return False
-        return s3.build_s3_url(demographics_path, credentials=False)
-
-    def get_s3_sis_daily_latest(self):
-        s3_sis_daily = get_s3_sis_daily_path()
+    def update_manifests(self):
+        app.logger.info(f'Updating manifests...')
 
         # Because the SIS S3 copy is managed by a different application running on a different schedule,
         # it may have been made before midnight by Nessie-time.
+        s3_sis_daily = get_s3_sis_daily_path()
         if not s3.get_keys_with_prefix(s3_sis_daily):
             s3_sis_daily = get_s3_sis_daily_path(datetime.now() - timedelta(days=1))
             if not s3.get_keys_with_prefix(s3_sis_daily):
                 raise BackgroundJobError(f'No timely SIS S3 data found')
             else:
                 app.logger.info(f'Falling back to SIS S3 daily data for yesterday')
-        return s3_sis_daily
 
-    def update_manifests(self):
-        app.logger.info(f'Updating manifests...')
-        s3_sis_daily = self.get_s3_sis_daily_latest()
-        if not s3_sis_daily:
-            return False
         courses_daily = s3.get_keys_with_prefix(s3_sis_daily + '/courses', full_objects=True)
         courses_historical = s3.get_keys_with_prefix(app.config['LOCH_S3_SIS_DATA_PATH'] + '/historical/courses', full_objects=True)
         enrollments_daily = s3.get_keys_with_prefix(s3_sis_daily + '/enrollments', full_objects=True)
