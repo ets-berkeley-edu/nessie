@@ -27,8 +27,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from datetime import datetime, timedelta
 
 from flask import current_app as app
-from nessie.externals import canvas_data, redshift
-from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
+from nessie.externals import canvas_data, redshift, s3
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import get_s3_canvas_daily_path
 import pandas as pd
 
@@ -44,6 +44,7 @@ class RefreshCanvasDataCatalog(BackgroundJob):
         external_schema = app.config['REDSHIFT_SCHEMA_CANVAS']
         redshift_iam_role = app.config['REDSHIFT_IAM_ROLE']
         canvas_schema = []
+
         # Parse and isolate table and column details
         for key, value in response['schema'].items():
             for column in value['columns']:
@@ -96,7 +97,7 @@ class RefreshCanvasDataCatalog(BackgroundJob):
 
         if redshift.execute_ddl_script(canvas_external_catalog_ddl):
             app.logger.info(f'Canvas schema creation job completed.')
-            return verify_external_schema(external_schema, canvas_external_catalog_ddl)
+            return self.verify_external_data_catalog()
         else:
             app.logger.error(f'Canvas schema creation job failed.')
             raise BackgroundJobError(f'Canvas schema creation job failed.')
@@ -139,3 +140,27 @@ class RefreshCanvasDataCatalog(BackgroundJob):
 
         # For debugging process, export to external_table_ddl to file to get a well formed SQL template for canvas-data
         return external_table_ddl
+
+    # Gets an inventory of all the tables by tracking the S3 canvas-data daily location and run count verification to ensure migration was successful
+    def verify_external_data_catalog(self):
+        s3_client = s3.get_client()
+        bucket = app.config['LOCH_S3_BUCKET']
+        external_schema = app.config['REDSHIFT_SCHEMA_CANVAS']
+        prefix = get_s3_canvas_daily_path(datetime.now() - timedelta(days=1))
+        app.logger.info(f'Daily path = {prefix}')
+        directory_names = []
+        s3_objects = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix)
+        for object_summary in s3_objects['Contents']:
+            # parse table names from the S3 object URLs
+            directory_names.append(object_summary['Key'].split('/')[3])
+
+        # get unique table names from s3 object list
+        tables = list(set(directory_names))
+
+        for table in tables:
+            result = redshift.fetch(f'SELECT COUNT(*) FROM {external_schema}.{table}')
+            if result and result[0] and result[0]['count']:
+                count = result[0]['count']
+                app.logger.info(f'Verified external table {table} ({count} rows).')
+            else:
+                raise BackgroundJobError(f'Failed to verify external table {table}: aborting job.')
