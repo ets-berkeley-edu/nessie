@@ -25,6 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from gzip import GzipFile
 import io
+import socket
 
 import boto3
 from botocore.exceptions import ClientError, ConnectionError
@@ -131,6 +132,22 @@ def get_unzipped_text_reader(key):
     except (ClientError, ConnectionError, ValueError) as e:
         app.logger.error(f'Error retrieving S3 object text: bucket={bucket}, key={key}, error={e}')
         return None
+
+
+def get_retriable_csv_stream(columns, key, retries=1):
+    for attempt in range(retries):
+        try:
+            data = get_unzipped_text_reader(key)
+            for line in data:
+                yield dict(zip(columns, [(int(f) if f.isdigit() else None) for f in line.strip().split(',')]))
+        except (ClientError, ConnectionError, socket.error) as e:
+            if attempt + 1 < retries:
+                app.logger.error(f'CSV stream attempt {attempt + 1} of {retries} failed, will retry: {e}')
+            else:
+                app.logger.error(f'CSV stream attempt {retries} of {retries} failed, aborting')
+                raise e
+        else:
+            break
 
 
 def object_exists(key):
