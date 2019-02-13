@@ -22,6 +22,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES,
 ENHANCEMENTS, OR MODIFICATIONS.
 """
+
 from itertools import groupby
 import operator
 
@@ -186,22 +187,30 @@ def merge_all_analytics_data(advisee_ids_map, canvas_site_map, all_advisees_term
 
     # First, handle those advisees who are graced with billions and billions of assignment submission stats.
     app.logger.info(f'Getting relative submission data')
-    all_counts = queries.get_advisee_submissions_sorted()
-    app.logger.info(f'Starting analytics merge for advisees with asssignment stats')
-    for canvas_user_id, sites_grp in groupby(all_counts, key=operator.itemgetter('reference_user_id')):
+    # Track analytics already merged in the event a retry is needed on the submission stats query.
+    merged_analytics = {}
+    all_counts_query = queries.get_advisee_submissions_sorted()
+    app.logger.info(f'Starting analytics merge for advisees with assignment stats')
+    for canvas_user_id, sites_grp in groupby(all_counts_query, key=operator.itemgetter('reference_user_id')):
+        if merged_analytics.get(canvas_user_id):
+            # We must have already handled calculations for this user on a download that subsequently errored out.
+            continue
         ids_without_merged_analytics.discard(canvas_user_id)
         sid = advisee_ids_map.get(canvas_user_id, {}).get('sid')
         if not sid:
-            app.logger.warn(f'Advisee submissions query returned canvas_user_id {canvas_user_id}, but no match in advisees map')
+            app.logger.warning(f'Advisee submissions query returned canvas_user_id {canvas_user_id}, but no match in advisees map')
+            merged_analytics[canvas_user_id] = 'skipped'
             continue
         advisee_terms_map = all_advisees_terms_map.get(sid)
         if not advisee_terms_map:
             # Nothing to merge.
+            merged_analytics[canvas_user_id] = 'skipped'
             continue
         relative_submission_counts = {}
         for canvas_course_id, subs_grp in groupby(sites_grp, key=operator.itemgetter('canvas_course_id')):
             relative_submission_counts[canvas_course_id] = list(subs_grp)
         merge_advisee_analytics(advisee_terms_map, canvas_user_id, relative_submission_counts, canvas_site_map)
+        merged_analytics[canvas_user_id] = 'merged'
 
     # Then take care of the few students who have never seen a Canvas assignment.
     app.logger.info(f'Starting analytics merge for {len(ids_without_merged_analytics)} advisees without asssignment stats')

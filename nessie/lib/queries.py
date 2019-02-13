@@ -110,9 +110,7 @@ def get_advisee_enrolled_canvas_sites():
 def get_advisee_submissions_sorted():
     columns = ['reference_user_id', 'canvas_course_id', 'canvas_user_id', 'submissions_turned_in']
     key = f"{app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH']}/assignment_submissions_relative/sub_000.gz"
-    data = s3.get_unzipped_text_reader(key)
-    fcsv = (dict(zip(columns, [(int(f) if f.isdigit() else None) for f in l.strip().split(',')])) for l in data)
-    return fcsv
+    return s3.get_retriable_csv_stream(columns, key, retries=3)
 
 
 @fixture('query_enrollments_in_advisee_canvas_sites.csv')
