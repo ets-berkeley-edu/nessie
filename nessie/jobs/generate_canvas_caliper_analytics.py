@@ -90,7 +90,8 @@ class GenerateCanvasCaliperAnalytics(BackgroundJob):
         if not earliest_untransformed or not latest_transformed:
             return False
         timestamp_diff = (earliest_untransformed - latest_transformed).total_seconds()
-        if timestamp_diff < -60 or timestamp_diff > 300:
+        lower_bound_tolerance, upper_bound_tolerance = app.config['LOCH_CANVAS_CALIPER_TIMESTAMP_DISCREPANCY_TOLERANCE']
+        if timestamp_diff < lower_bound_tolerance or timestamp_diff > upper_bound_tolerance:
             raise BackgroundJobError(
                 f'Unexpected difference between Caliper timestamps: latest transformed {latest_transformed}, '
                 f'earliest untransformed {earliest_untransformed}',
