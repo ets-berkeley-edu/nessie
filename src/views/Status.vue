@@ -22,9 +22,10 @@
     <div>
       <ul>
         <li>Version: {{ version.version }}</li>
-        <li>Build
+        <li>
+          Build
           <ul>
-            <li>Artifact: {{ version.build.artifact || '--'  }}</li>
+            <li>Artifact: {{ version.build.artifact || '--' }}</li>
             <li>Git commit: {{ version.build.gitCommit || '--' }}</li>
           </ul>
         </li>

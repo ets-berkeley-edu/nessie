@@ -2,16 +2,21 @@
   <div>
     <h2>Job Status</h2>
     <div>
-      <datepicker placeholder="Select Date"
-                  v-model="jobsDate"
-                  @disabled="loading"
-                  @closed="getBackgroundJobStatus"></datepicker>
+      <datepicker
+        v-model="jobsDate"
+        placeholder="Select Date"
+        @disabled="loading"
+        @closed="getBackgroundJobStatus"></datepicker>
     </div>
     <div class="results-container">
-      <LargeSpinner v-if="loading"/>
+      <LargeSpinner v-if="loading" />
       <div v-if="!loading">
         <div v-if="jobStatuses.rows.length">
-          <b-table striped hover :items="jobStatuses.rows" :fields="jobStatuses.fields"></b-table>
+          <b-table
+            striped
+            hover
+            :items="jobStatuses.rows"
+            :fields="jobStatuses.fields"></b-table>
         </div>
         <div v-if="!jobStatuses.rows.length">
           No jobs
@@ -33,9 +38,6 @@ export default {
     Datepicker,
     LargeSpinner
   },
-  created() {
-    this.getBackgroundJobStatus();
-  },
   data() {
     return {
       jobsDate: new Date(),
@@ -51,6 +53,9 @@ export default {
       },
       loading: true
     };
+  },
+  created() {
+    this.getBackgroundJobStatus();
   },
   methods: {
     /* eslint no-undef: "warn" */

@@ -1,7 +1,7 @@
 <template>
   <div>
-    <RunJob/>
-    <JobStatus/>
+    <RunJob />
+    <JobStatus />
   </div>
 </template>
 
