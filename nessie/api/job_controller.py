@@ -116,7 +116,7 @@ def create_sis_advising_notes_schema():
 def generate_all_tables():
     chained_job = ChainedBackgroundJob(
         steps=[
-            CreateCanvasSchema(),
+            RefreshCanvasDataCatalog(),
             CreateSisSchema(),
             GenerateIntermediateTables(),
             IndexEnrollments(),
