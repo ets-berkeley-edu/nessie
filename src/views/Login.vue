@@ -1,6 +1,6 @@
 <template>
   <div>
-    <form v-on:submit.prevent="casLogin">
+    <form @submit.prevent="casLogin">
       <button id="cas-log-in" class="btn btn-default btn-primary splash-btn-sign-in">Sign In</button>
     </form>
   </div>

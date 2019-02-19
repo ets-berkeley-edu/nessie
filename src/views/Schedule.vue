@@ -1,17 +1,31 @@
 <template>
   <div>
     <h2>Schedule</h2>
-    <b-card no-body class="mb-1" v-for="job in jobs" :key="job.id">
+    <b-card
+      v-for="job in jobs"
+      :key="job.id"
+      no-body
+      class="mb-1">
       <b-card-header header-tag="header" class="p-1" role="tab">
-        <b-btn block href="#" v-b-toggle=job.id variant="info">{{ job.id }}</b-btn>
+        <b-btn
+          v-b-toggle="job.id"
+          block
+          href="#"
+          variant="info">
+          {{ job.id }}
+        </b-btn>
       </b-card-header>
-      <b-collapse :id="job.id" visible accordion="job-panel" role="tabpanel">
+      <b-collapse
+        :id="job.id"
+        visible
+        accordion="job-panel"
+        role="tabpanel">
         <b-card-body>
           <div>
             <b>Trigger:</b> {{ job.trigger }}
           </div>
           <div>
-            <b>Next run:</b> {{job.nextRun | moment('calendar') }}
+            <b>Next run:</b> {{ job.nextRun | moment('calendar') }}
           </div>
           <div>
             <b>Locked:</b> {{ job.locked }}
@@ -43,14 +57,14 @@ import { getSchedule } from '@/api/schedule';
 
 export default {
   name: 'Schedule',
-  created() {
-    this.getSchedule();
-  },
   data() {
     return {
       jobs: [],
       loading: true
     };
+  },
+  created() {
+    this.getSchedule();
   },
   methods: {
     getSchedule() {

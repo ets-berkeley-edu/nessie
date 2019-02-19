@@ -1,7 +1,7 @@
 <template>
   <div class="flex-row footer-container">
     <div>
-      <img src="@/assets/uc-berkeley-logo.svg"/>
+      <img src="@/assets/uc-berkeley-logo.svg" />
     </div>
     <div class="copyright">
       &copy; 2019 The Regents of the University of California

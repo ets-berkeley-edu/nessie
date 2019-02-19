@@ -4,7 +4,7 @@ import Schedule from '@/views/Schedule.vue';
 import Status from '@/views/Status.vue';
 import store from '@/store';
 import Vue from 'vue';
-import VueRouter, { Route } from 'vue-router';
+import VueRouter from 'vue-router';
 import { getMyProfile } from '@/api/user';
 import { getRunnableJobs } from '@/api/job';
 
@@ -26,10 +26,10 @@ let registerMe = () => {
   );
 };
 
-let beforeEach = (to: Route, from: Route, next: Function) => {
+let beforeEach = (to: any, from: any, next: Function) => {
   store.dispatch('context/loadConfig').then(() => {
     store.dispatch('context/clearErrors').then(() => {
-      let safeNext = (to: Route, next: Function) => {
+      let safeNext = (to: any, next: Function) => {
         if (to.matched.length) {
           next();
         } else {
@@ -45,7 +45,7 @@ let beforeEach = (to: Route, from: Route, next: Function) => {
   });
 };
 
-let requiresAuth = (to: Route, from: Route, next: Function) => {
+let requiresAuth = (to: any, from: any, next: Function) => {
   if (store.getters['user/user']) {
     next();
   } else {
@@ -60,7 +60,7 @@ const router = new VueRouter({
       path: '/login',
       name: 'login',
       component: Login,
-      beforeEnter: (to: Route, from: Route, next: Function) => {
+      beforeEnter: (to: any, from: any, next: Function) => {
         if (store.getters['user/user']) {
           next('/home');
         } else {

@@ -3,17 +3,17 @@
     <div class="logo">
       <router-link :to="{name: 'home'}"><img src="@/assets/logo.png"></router-link>
     </div>
-    <div class="breadcrumb" v-if="user">
+    <div v-if="user" class="breadcrumb">
       <span><router-link to="/">Home</router-link></span>
       <span>|</span>
       <span><router-link to="schedule">Schedule</router-link></span>
       <span>|</span>
       <span><router-link to="status">Status</router-link></span>
     </div>
-    <div class="flex-row greeting" v-if="user">
+    <div v-if="user" class="flex-row greeting">
       <div>Hello {{ user.uid }}</div>
       <div>
-        [<b-link v-on:click="logOut()">Logout</b-link>]
+        [<b-link @click="logOut()">Logout</b-link>]
       </div>
     </div>
   </div>

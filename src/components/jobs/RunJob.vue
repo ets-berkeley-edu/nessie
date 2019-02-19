@@ -7,35 +7,44 @@
     <div v-if="runnableJobs">
       <div class="flex-row">
         <div>
-          <b-form-select class="mb-3" v-model="selected">
+          <b-form-select v-model="selected" class="mb-3">
             <option :value="null">Select...</option>
-            <option :value="job"
-                    v-for="job in runnableJobs"
-                    v-bind:key="job.id">{{ job.name }}</option>
+            <option
+              v-for="job in runnableJobs"
+              :key="job.id"
+              :value="job">
+              {{ job.name }}
+            </option>
           </b-form-select>
         </div>
         <div v-if="selected">
           <div v-for="key in selected.required" :key="key" class="job-params">
             {{ key }}:
-            <input v-model="params[key]"/>
+            <input v-model="params[key]" />
           </div>
         </div>
         <div>
-          <b-button @click="runSelectedJob" variant="success" :disabled="!selectedJobRunnable">Run</b-button>
+          <b-button variant="success" :disabled="!selectedJobRunnable" @click="runSelectedJob">Run</b-button>
         </div>
       </div>
       <div v-if="errored.length">
         <h3>Jobs Errored</h3>
         <ul>
-          <li v-for="job in errored"
-              v-bind:key="job.id">{{ job.name }}</li>
+          <li
+            v-for="job in errored"
+            :key="job.id">
+            {{ job.name }}
+          </li>
         </ul>
       </div>
       <div v-if="started.length">
         <h3>Jobs Started</h3>
         <ul>
-          <li v-for="job in started"
-              v-bind:key="job.id">{{ job.name }}</li>
+          <li
+            v-for="job in started"
+            :key="job.id">
+            {{ job.name }}
+          </li>
         </ul>
       </div>
     </div>
@@ -49,6 +58,14 @@ import { runJob } from '@/api/job';
 
 export default {
   name: 'RunJob',
+  data() {
+    return {
+      errored: [],
+      params: {},
+      started: [],
+      selected: null
+    };
+  },
   computed: {
     runnableJobs() {
       return store.getters['schedule/runnableJobs'];
@@ -59,14 +76,6 @@ export default {
       }
       return !_.find(this.selected.required, key => !this.params[key]);
     }
-  },
-  data() {
-    return {
-      errored: [],
-      params: {},
-      started: [],
-      selected: null
-    };
   },
   methods: {
     /* eslint no-undef: "warn" */

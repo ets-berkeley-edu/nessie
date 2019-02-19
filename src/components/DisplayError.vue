@@ -1,14 +1,15 @@
 <template>
   <div>
-    <div class="has-error" v-for="error in errors" v-bind:key="error.id">
-      <b-link v-b-popover.hover="error.stack"
-              active-class="rightbottom"
-              title="Error"
-              v-if="error.stack">
+    <div v-for="error in errors" :key="error.id" class="has-error">
+      <b-link
+        v-if="error.stack"
+        v-b-popover.hover="error.stack"
+        active-class="rightbottom"
+        title="Error">
         <i class="has-error fas fa-exclamation-triangle"></i>
       </b-link>
-      {{error.message}}
-      [<b-link id="dismiss-error" v-on:click="dismissError(error.id)">dismiss</b-link>]
+      {{ error.message }}
+      [<b-link id="dismiss-error" @click="dismissError(error.id)">dismiss</b-link>]
     </div>
   </div>
 </template>
