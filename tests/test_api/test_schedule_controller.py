@@ -49,7 +49,7 @@ class TestGetSchedule:
         assert next(job for job in jobs if job['id'] == 'job_resync_canvas_snapshots')
         generate_tables_job = next(job for job in jobs if job['id'] == 'job_generate_all_tables')
         assert generate_tables_job['components'] == [
-            'CreateCanvasSchema',
+            'RefreshCanvasDataCatalog',
             'CreateSisSchema',
             'GenerateIntermediateTables',
             'IndexEnrollments',
