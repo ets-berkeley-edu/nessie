@@ -97,13 +97,14 @@ class RefreshCanvasDataCatalog(BackgroundJob):
 
         if redshift.execute_ddl_script(canvas_external_catalog_ddl):
             app.logger.info(f'Canvas schema creation job completed.')
-            return self.verify_external_data_catalog()
+            if self.verify_external_data_catalog():
+                return 'Canvas schema verfication job completed.'
         else:
             app.logger.error(f'Canvas schema creation job failed.')
             raise BackgroundJobError(f'Canvas schema creation job failed.')
 
     def generate_external_catalog(self, external_schema, schema_df):
-        canvas_path = get_s3_canvas_daily_path(datetime.now() - timedelta(days=1))
+        canvas_path = self.generate_canvas_path()
         canvas_tables = schema_df.table_name.unique()
         s3_canvas_data_url = 's3://' + app.config['LOCH_S3_BUCKET'] + '/' + canvas_path
         s3_requests_url = 's3://{}/{}'.format(app.config['LOCH_S3_BUCKET'], app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'])
@@ -146,7 +147,7 @@ class RefreshCanvasDataCatalog(BackgroundJob):
         s3_client = s3.get_client()
         bucket = app.config['LOCH_S3_BUCKET']
         external_schema = app.config['REDSHIFT_SCHEMA_CANVAS']
-        prefix = get_s3_canvas_daily_path(datetime.now() - timedelta(days=1))
+        prefix = self.generate_canvas_path()
         app.logger.info(f'Daily path = {prefix}')
         directory_names = []
         s3_objects = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix)
@@ -155,7 +156,8 @@ class RefreshCanvasDataCatalog(BackgroundJob):
             directory_names.append(object_summary['Key'].split('/')[3])
 
         # get unique table names from s3 object list
-        tables = list(set(directory_names))
+        tables = sorted(list(set(directory_names)))
+        app.logger.info(f'Tables to be verfied : {tables}')
 
         for table in tables:
             result = redshift.fetch(f'SELECT COUNT(*) FROM {external_schema}.{table}')
@@ -163,4 +165,17 @@ class RefreshCanvasDataCatalog(BackgroundJob):
                 count = result[0]['count']
                 app.logger.info(f'Verified external table {table} ({count} rows).')
             else:
+                app.logger.error(f'Failed to verify external table {table}: aborting job.')
                 raise BackgroundJobError(f'Failed to verify external table {table}: aborting job.')
+        app.logger.info(f'Canvas verification job completed successfully for {len(tables)} tables')
+        return True
+
+    def generate_canvas_path(self):
+        canvas_path = get_s3_canvas_daily_path()
+        if not s3.get_keys_with_prefix(canvas_path):
+            canvas_path = get_s3_canvas_daily_path(datetime.now() - timedelta(days=1))
+            if not s3.get_keys_with_prefix(canvas_path):
+                raise BackgroundJobError('No timely Canvas data found, aborting')
+            else:
+                app.logger.info(f'Falling back to yesterday\'s Canvas data')
+        return canvas_path
