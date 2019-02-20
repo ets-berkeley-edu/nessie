@@ -67,7 +67,6 @@ def initialize_job_schedules(_app, force=False):
 
 def schedule_all_jobs(force=False):
     from nessie.jobs.create_calnet_schema import CreateCalNetSchema
-    from nessie.jobs.create_canvas_schema import CreateCanvasSchema
     from nessie.jobs.create_coe_schema import CreateCoeSchema
     from nessie.jobs.create_sis_schema import CreateSisSchema
     from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
@@ -84,6 +83,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.index_enrollments import IndexEnrollments
     from nessie.jobs.migrate_lrs_incrementals import MigrateLrsIncrementals
     from nessie.jobs.refresh_boac_cache import RefreshBoacCache
+    from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
     from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
     from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
     from nessie.jobs.transform_lrs_incrementals import TransformLrsIncrementals
@@ -119,7 +119,7 @@ def schedule_all_jobs(force=False):
         sched,
         'JOB_GENERATE_ALL_TABLES',
         [
-            CreateCanvasSchema,
+            RefreshCanvasDataCatalog,
             CreateSisSchema,
             GenerateIntermediateTables,
             IndexEnrollments,
