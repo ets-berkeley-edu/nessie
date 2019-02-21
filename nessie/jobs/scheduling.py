@@ -43,6 +43,7 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_IMPORT_DEGREE_PROGRESS': 2500,
     'JOB_IMPORT_SIS_STUDENTS': 2700,
     'JOB_IMPORT_CANVAS_ENROLLMENTS': 2900,
+    'JOB_GENERATE_CANVAS_CALIPER_ANALYTICS': 2950,
     'JOB_GENERATE_ALL_TABLES': 3000,
     'JOB_GENERATE_CURRENT_TERM_FEEDS': 3500,
     'JOB_LOAD_LRS_INCREMENTALS': 3800,
@@ -115,6 +116,7 @@ def schedule_all_jobs(force=False):
         ],
         force,
     )
+    schedule_job(sched, 'JOB_GENERATE_CANVAS_CALIPER_ANALYTICS', GenerateCanvasCaliperAnalytics, force)
     schedule_chained_job(
         sched,
         'JOB_GENERATE_ALL_TABLES',
@@ -123,7 +125,6 @@ def schedule_all_jobs(force=False):
             CreateSisSchema,
             GenerateIntermediateTables,
             IndexEnrollments,
-            GenerateCanvasCaliperAnalytics,
             GenerateBoacAnalytics,
         ],
         force,

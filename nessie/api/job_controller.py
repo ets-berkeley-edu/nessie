@@ -120,7 +120,6 @@ def generate_all_tables():
             CreateSisSchema(),
             GenerateIntermediateTables(),
             IndexEnrollments(),
-            GenerateCanvasCaliperAnalytics(),
             GenerateBoacAnalytics(),
         ],
     )
