@@ -24,7 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
-from nessie.externals import redshift
+from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.util import resolve_sql_template
 
@@ -41,6 +41,13 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
         resolved_ddl = resolve_sql_template('create_sis_advising_notes_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(external_schema, resolved_ddl)
+        else:
+            raise BackgroundJobError(f'SIS Advising Notes schema creation job failed.')
+
+        app.logger.info(f'Redshift schema created. Creating RDS indexes...')
+
+        rds_index_ddl = resolve_sql_template('index_sis_advising_notes.template.sql')
+        if rds.execute(rds_index_ddl):
             return 'SIS Advising Notes schema creation job completed.'
         else:
             raise BackgroundJobError(f'SIS Advising Notes schema creation job failed.')
