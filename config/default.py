@@ -165,6 +165,7 @@ LOGGING_LEVEL = logging.DEBUG
 RDS_SCHEMA_ASC = 'boac_advising_asc'
 RDS_SCHEMA_COE = 'boac_advising_coe'
 RDS_SCHEMA_PHYSICS = 'boac_advising_physics'
+RDS_SCHEMA_SIS_ADVISING_NOTES = 'boac_advising_notes'
 RDS_SCHEMA_SIS_INTERNAL = 'sis_data'
 RDS_SCHEMA_STUDENT = 'student'
 
