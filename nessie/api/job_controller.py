@@ -33,6 +33,7 @@ from nessie.jobs.create_berkeleyx_schema import CreateBerkeleyxSchema
 from nessie.jobs.create_calnet_schema import CreateCalNetSchema
 from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.create_coe_schema import CreateCoeSchema
+from nessie.jobs.create_edw_schema import CreateEdwSchema
 from nessie.jobs.create_lrs_glue_jobs import CreateLrsGlueJobs
 from nessie.jobs.create_physics_schema import CreatePhysicsSchema
 from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
@@ -87,6 +88,13 @@ def create_coe_schema():
 @auth_required
 def create_calnet_schema():
     job_started = CreateCalNetSchema().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/create_edw_schema', methods=['POST'])
+@auth_required
+def create_edw_schema():
+    job_started = CreateEdwSchema().run_async()
     return respond_with_status(job_started)
 
 
