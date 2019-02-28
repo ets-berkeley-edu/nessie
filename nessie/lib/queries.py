@@ -149,7 +149,7 @@ def get_all_advisee_sis_enrollments():
               FROM {intermediate_schema()}.sis_enrollments enr
               JOIN {calnet_schema()}.persons ldap
                 ON enr.ldap_uid = ldap.ldap_uid
-              WHERE enr.sis_term_id=ANY('{{{','.join(reverse_term_ids())}}}')
+              WHERE enr.sis_term_id=ANY('{{{','.join(reverse_term_ids(include_future_terms=True))}}}')
               ORDER BY ldap.sid, enr.sis_term_id DESC, enr.sis_course_name, enr.sis_primary DESC, enr.sis_instruction_format, enr.sis_section_num
         """
     return redshift.fetch(sql)

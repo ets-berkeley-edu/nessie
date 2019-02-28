@@ -161,10 +161,10 @@ def canvas_terms():
     return [term_name_for_sis_id(sid_id) for sid_id in sis_term_ids]
 
 
-def reverse_term_ids():
+def reverse_term_ids(include_future_terms=False):
     term_ids = []
     stop_term_id = sis_term_id_for_name(app.config['EARLIEST_TERM'])
-    term_id = current_term_id()
+    term_id = future_term_id() if include_future_terms else current_term_id()
     while True:
         term_ids.append(term_id)
         if term_id == stop_term_id:
@@ -213,6 +213,11 @@ def degree_program_url_for_major(plan_description):
 
 def current_term_id():
     term_name = app.config['CURRENT_TERM']
+    return sis_term_id_for_name(term_name)
+
+
+def future_term_id():
+    term_name = app.config['FUTURE_TERM']
     return sis_term_id_for_name(term_name)
 
 

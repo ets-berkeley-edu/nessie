@@ -77,7 +77,7 @@ class CreateSisSchema(BackgroundJob):
                 m = re.match(r'.+/(.+\.gz)', s3obj['Key'])
                 if m:
                     filename_map[m[1]] = s3obj
-            for term_id in reverse_term_ids():
+            for term_id in reverse_term_ids(include_future_terms=True):
                 filename = f'{prefix}-{term_id}.gz'
                 if filename not in filename_map:
                     raise BackgroundJobError(f'Expected filename {filename} not found in S3, aborting')
