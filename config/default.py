@@ -87,6 +87,8 @@ ENROLLMENTS_API_ID = 'secretid'
 ENROLLMENTS_API_KEY = 'secretkey'
 ENROLLMENTS_API_URL = 'https://secreturl.berkeley.edu/enrollments'
 
+FUTURE_TERM = 'Spring 2018'
+
 # True on master node, false on worker nodes.
 # Override by embedding "master" or "worker" in the EB_ENVIRONMENT environment variable.
 JOB_SCHEDULING_ENABLED = True
