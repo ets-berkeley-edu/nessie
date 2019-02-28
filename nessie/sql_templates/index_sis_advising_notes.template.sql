@@ -35,6 +35,7 @@ CREATE TABLE {rds_schema_sis_advising_notes}.advising_notes (
   note_category VARCHAR,
   note_subcategory VARCHAR,
   note_body TEXT,
+  created_by VARCHAR,
   created_at TIMESTAMP NOT NULL,
   updated_at TIMESTAMP NOT NULL,
   PRIMARY KEY (id)
@@ -43,7 +44,7 @@ CREATE TABLE {rds_schema_sis_advising_notes}.advising_notes (
 INSERT INTO {rds_schema_sis_advising_notes}.advising_notes (
   SELECT *
   FROM dblink('nessie_redshift',$REDSHIFT$
-    SELECT id, sid, student_note_nr, advisor_sid, note_category, note_subcategory, note_body,
+    SELECT id, sid, student_note_nr, advisor_sid, note_category, note_subcategory, note_body, created_by,
       created_at, updated_at
     FROM {redshift_schema_sis_advising_notes_internal}.advising_notes
   $REDSHIFT$)
@@ -55,6 +56,7 @@ INSERT INTO {rds_schema_sis_advising_notes}.advising_notes (
     note_category VARCHAR,
     note_subcategory VARCHAR,
     note_body TEXT,
+    created_by VARCHAR,
     created_at TIMESTAMP,
     updated_at TIMESTAMP
   )
