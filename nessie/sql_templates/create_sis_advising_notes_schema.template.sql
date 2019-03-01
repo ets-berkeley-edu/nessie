@@ -295,7 +295,7 @@ AS (
         N.created_by,
         TO_TIMESTAMP(N.created_at, 'DD-MON-YY HH.MI.SS.US000 AM') AS created_at,
         N.updated_by,
-        TO_TIMESTAMP(N.updated_at, 'DD-MON-YY HH.MI.SS.US000 AM') AS updated_at
+        TO_TIMESTAMP(D.updated_at, 'DD-MON-YY HH.MI.SS.US000 AM') AS updated_at
     FROM
         {redshift_schema_sis_advising_notes}.advising_notes N
     JOIN
