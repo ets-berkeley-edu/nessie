@@ -43,7 +43,7 @@ CREATE TABLE {rds_schema_sis_advising_notes}.advising_notes (
 
 INSERT INTO {rds_schema_sis_advising_notes}.advising_notes (
   SELECT *
-  FROM dblink('nessie_redshift',$REDSHIFT$
+  FROM dblink({rds_dblink_to_redshift},$REDSHIFT$
     SELECT id, sid, student_note_nr, advisor_sid, note_category, note_subcategory, note_body, created_by,
       created_at, updated_at
     FROM {redshift_schema_sis_advising_notes_internal}.advising_notes
