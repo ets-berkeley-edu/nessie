@@ -141,6 +141,7 @@ LOCH_EDX_S3_TRANSACTION_LOG_PATH = 'path/to/edx/transaction/log'
 
 # Loch Nessie configs
 LOCH_S3_BUCKET = 'bucket_name'
+LOCH_S3_SIS_ADVISING_NOTES_BUCKET = 'advising notes bucket name'
 LOCH_S3_REGION = 'us-west-2'
 
 LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM = 'canvas/path/to/current/term'
