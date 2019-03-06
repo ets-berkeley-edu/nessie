@@ -105,6 +105,7 @@ def resolve_sql_template_string(template_string, **kwargs):
     s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
     s3_advising_notes_prefix = 's3://' + app.config['LOCH_S3_SIS_ADVISING_NOTES_BUCKET'] + '/'
     template_data = {
+        'rds_dblink_to_redshift': app.config['REDSHIFT_DATABASE'] + '_redshift',
         'rds_schema_asc': app.config['RDS_SCHEMA_ASC'],
         'rds_schema_coe': app.config['RDS_SCHEMA_COE'],
         'rds_schema_physics': app.config['RDS_SCHEMA_PHYSICS'],
