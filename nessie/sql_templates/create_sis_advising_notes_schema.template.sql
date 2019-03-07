@@ -312,7 +312,7 @@ AS (
     AND N.note_subcategory = S.note_subcategory
     WHERE D.note_seq_nr = (
 			SELECT MAX(M.note_seq_nr)
-			FROM sis_advising_notes_ext_dev.advising_note_details M
+			FROM {redshift_schema_sis_advising_notes}.advising_note_details M
 			WHERE M.sid = D.sid
 			AND M.institution = D.institution
 			AND M.note_id = D.note_id
