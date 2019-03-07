@@ -28,10 +28,12 @@ from nessie.merged.student_terms import generate_enrollment_terms_map
 
 class TestMergedSisEnrollments:
     oski_sid = '11667051'
-    advisees_map = {oski_sid: {'canvas_user_id': 9000100}}
+    oski_canvas_id = '9000100'
+    advisees_by_canvas_id = {oski_canvas_id: {'sid': oski_sid}}
+    advisees_by_sid = {oski_sid: {'canvas_user_id': oski_canvas_id}}
 
     def test_merges_drops(self, app, student_tables):
-        terms_feed = generate_enrollment_terms_map(self.advisees_map)
+        terms_feed = generate_enrollment_terms_map(self.advisees_by_canvas_id, self.advisees_by_sid)
         drops = terms_feed[self.oski_sid]['2178']['droppedSections']
         assert 2 == len(drops)
         assert drops[0] == {'displayName': 'ENV,RES C9', 'component': 'STD', 'sectionNumber': '001', 'withdrawAfterDeadline': True}
@@ -40,7 +42,7 @@ class TestMergedSisEnrollments:
         assert any(enr['displayName'] == 'ENV,RES C9' for enr in enrollments) is False
 
     def test_includes_midterm_grades(self, app, student_tables):
-        terms_feed = generate_enrollment_terms_map(self.advisees_map)
+        terms_feed = generate_enrollment_terms_map(self.advisees_by_canvas_id, self.advisees_by_sid)
         term_feed = terms_feed[self.oski_sid]['2178']
         assert '2178' == term_feed['termId']
         enrollments = term_feed['enrollments']
@@ -51,7 +53,7 @@ class TestMergedSisEnrollments:
 
     def test_includes_course_site_section_mappings(self, app):
         """Maps Canvas sites to SIS courses and sections."""
-        terms_feed = generate_enrollment_terms_map(self.advisees_map)
+        terms_feed = generate_enrollment_terms_map(self.advisees_by_canvas_id, self.advisees_by_sid)
         term_feed = terms_feed[self.oski_sid]['2178']
         enrollments = term_feed['enrollments']
         assert len(enrollments[0]['canvasSites']) == 1

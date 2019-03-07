@@ -62,12 +62,17 @@ class TestAnalyticsFromAssignmentsSubmitted:
     canvas_user_id = 9000100
     canvas_course_id = 7654321
 
-    def test_from_fixture(self, app):
-        digested = analytics.assignments_submitted(
-            self.canvas_user_id,
-            self.canvas_course_id,
+    def _digest_for_user(self, user_id):
+        course = {'canvasCourseId': self.canvas_course_id}
+        analytics.merge_assignment_submissions_for_user(
+            [course],
+            user_id,
             get_relative_submission_counts(),
         )
+        return course['analytics']['assignmentsSubmitted']
+
+    def test_from_fixture(self, app):
+        digested = self._digest_for_user(self.canvas_user_id)
         assert digested['student']['raw'] == 8
         assert digested['student']['percentile'] == 64
         assert digested['student']['roundedUpPercentile'] == 81
@@ -88,21 +93,9 @@ class TestAnalyticsFromAssignmentsSubmitted:
             rows.append(','.join(['9000100', str(i), str(self.canvas_course_id), str(i), '2']))
         mr = MockRows(io.StringIO('\n'.join(rows)))
         with register_mock(queries.get_advisee_submissions_sorted, mr):
-            worst = analytics.assignments_submitted(
-                '9000000',
-                self.canvas_course_id,
-                get_relative_submission_counts(),
-            )
-            best = analytics.assignments_submitted(
-                self.canvas_user_id,
-                self.canvas_course_id,
-                get_relative_submission_counts(),
-            )
-            median = analytics.assignments_submitted(
-                '101',
-                self.canvas_course_id,
-                get_relative_submission_counts(),
-            )
+            worst = self._digest_for_user('9000000')
+            best = self._digest_for_user(self.canvas_user_id)
+            median = self._digest_for_user('101')
             for digested in [worst, best, median]:
                 assert digested['boxPlottable'] is False
                 assert digested['student']['percentile'] is not None
@@ -118,11 +111,7 @@ class TestAnalyticsFromAssignmentsSubmitted:
     def test_when_no_data(self, app):
         mr = MockRows(io.StringIO('reference_user_id,sid,canvas_course_id,canvas_user_id,submissions_turned_in'))
         with register_mock(queries.get_advisee_submissions_sorted, mr):
-            digested = analytics.assignments_submitted(
-                self.canvas_user_id,
-                self.canvas_course_id,
-                get_relative_submission_counts(),
-            )
+            digested = self._digest_for_user(self.canvas_user_id)
         assert digested['student']['raw'] is None
         assert digested['student']['percentile'] is None
         assert digested['boxPlottable'] is False
@@ -134,13 +123,19 @@ class TestStudentAnalytics:
     canvas_user_id = 9000100
     canvas_course_id = 7654321
 
+    def digest_for_user(self, user_id, canvas_site_map):
+        course = canvas_site_map[self.canvas_course_id]
+        course['adviseeEnrollments'] = {user_id: {}}
+        analytics.merge_analytics_for_course(course)
+        return course['adviseeEnrollments'][user_id]['analytics']
+
     def canvas_site_map(self, app):
         (canvas_site_map, advisee_site_map) = get_canvas_site_map()
         merge_memberships_into_site_map(canvas_site_map)
         return canvas_site_map
 
     def test_from_fixture(self, app):
-        digested = analytics.student_analytics(self.canvas_user_id, self.canvas_course_id, self.canvas_site_map(app))
+        digested = self.digest_for_user(self.canvas_user_id, self.canvas_site_map(app))
         score = digested['currentScore']
         assert score['student']['raw'] == 84
         assert score['student']['percentile'] == 73
@@ -159,19 +154,14 @@ class TestStudentAnalytics:
         assert last_activity['courseDeciles'][10] == 1535533860
         assert round(last_activity['courseMean']['raw']) == 1534450050
         assert last_activity['courseMean']['percentile'] == 50
-
-    def test_with_empty_redshift(self, app):
-        bad_course_id = 'NoSuchSite'
-        digested = analytics.student_analytics(self.canvas_user_id, bad_course_id, self.canvas_site_map(app))
-        _error = {'error': 'Redshift query returned no results'}
-        assert digested == {'currentScore': _error, 'lastActivity': _error}
+        assert digested['courseEnrollmentCount'] == 331
 
     def test_when_no_data(self, app):
         exclusive_rows = 'canvas_course_id,canvas_user_id,course_scores,last_activity_at,sis_enrollment_status\n' \
             '7654321,1,1,1,E'
         mr = MockRows(io.StringIO(exclusive_rows))
         with register_mock(queries.get_all_enrollments_in_advisee_canvas_sites, mr):
-            digested = analytics.student_analytics(self.canvas_user_id, self.canvas_course_id, self.canvas_site_map(app))
+            digested = self.digest_for_user(self.canvas_user_id, self.canvas_site_map(app))
         score = digested['currentScore']
         assert score['student']['raw'] is None
         assert score['student']['percentile'] is None
@@ -192,7 +182,7 @@ class TestStudentAnalytics:
         enrollments[2]['last_activity_at'] = 1535340481
         enrollments[3]['last_activity_at'] = 1535340482
         site_map[7654321]['enrollments'] = enrollments
-        digested = analytics.student_analytics(9000071, self.canvas_course_id, site_map)
+        digested = self.digest_for_user(9000071, site_map)
         low_student_score = digested['lastActivity']['student']
         assert(low_student_score['raw']) == 0
         assert(low_student_score['matrixyPercentile']) == 0
@@ -201,7 +191,7 @@ class TestStudentAnalytics:
         assert mean['raw'] == 1535340481
         assert mean['percentile'] == 50
         assert mean['roundedUpPercentile'] > 50
-        middling_student = analytics.student_analytics(9000073, self.canvas_course_id, site_map)
+        middling_student = self.digest_for_user(9000073, site_map)
         middling_student_score = middling_student['lastActivity']['student']
         assert(middling_student_score['raw']) == mean['raw']
         assert(middling_student_score['matrixyPercentile']) == mean['matrixyPercentile']
@@ -219,7 +209,7 @@ class TestStudentAnalytics:
         enrollments[2]['last_activity_at'] = 1535340481
         enrollments[3]['last_activity_at'] = 1535340482
         site_map[7654321]['enrollments'] = enrollments
-        digested = analytics.student_analytics(9000071, self.canvas_course_id, site_map)
+        digested = self.digest_for_user(9000071, site_map)
         mean = digested['lastActivity']['courseMean']
         assert mean['raw'] < 1535340481
         assert mean['percentile'] == 50

@@ -84,16 +84,17 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         return self.generate_feeds()
 
     def generate_feeds(self):
-        # Canvas_user_id to UID/SID translation is needed to merge Canvas analytics data and SIS enrollment-based data.
-        advisee_ids_map = {}
+        # Translation between canvas_user_id and UID/SID is needed to merge Canvas analytics data and SIS enrollment-based data.
+        advisees_by_canvas_id = {}
+        advisees_by_sid = {}
         self.successes = []
         self.failures = []
-        profile_tables = self.generate_student_profile_tables(advisee_ids_map)
-        terms_tables = self.generate_enrollment_terms_table(advisee_ids_map)
+        profile_tables = self.generate_student_profile_tables(advisees_by_canvas_id, advisees_by_sid)
+        terms_tables = self.generate_enrollment_terms_table(advisees_by_canvas_id, advisees_by_sid)
         self.refresh_all_from_staging(profile_tables + terms_tables)
         return f'Merged profile generation complete: {len(self.successes)} successes, {len(self.failures)} failures.'
 
-    def generate_student_profile_tables(self, advisee_ids_map):
+    def generate_student_profile_tables(self, advisees_by_canvas_id, advisees_by_sid):
         # In-memory storage for generated feeds prior to TSV output.
         self.rows = {
             'student_profiles': [],
@@ -117,7 +118,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             if merged_profile:
                 canvas_user_id = student_feeds['canvas_user_id']
                 if canvas_user_id:
-                    advisee_ids_map[canvas_user_id] = {'sid': sid, 'uid': student_feeds['ldap_uid']}
+                    advisees_by_canvas_id[canvas_user_id] = {'sid': sid, 'uid': student_feeds['ldap_uid']}
+                    advisees_by_sid[sid] = {'canvas_user_id': canvas_user_id}
                 self.successes.append(sid)
             else:
                 self.failures.append(sid)
@@ -158,12 +160,12 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
         return merged_profile
 
-    def generate_enrollment_terms_table(self, advisee_ids_map):
+    def generate_enrollment_terms_table(self, advisees_by_canvas_id, advisees_by_sid):
         self.rows['student_enrollment_terms'] = []
         tables = ['student_enrollment_terms']
         self.truncate_staging_tables(tables)
 
-        enrollment_terms_map = generate_enrollment_terms_map(advisee_ids_map)
+        enrollment_terms_map = generate_enrollment_terms_map(advisees_by_canvas_id, advisees_by_sid)
 
         for (sid, term_feeds) in enrollment_terms_map.items():
             for (term_id, term_feed) in term_feeds.items():
