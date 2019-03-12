@@ -28,9 +28,9 @@ import json
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.jobs.generate_merged_enrollment_term import GenerateMergedEnrollmentTerm
 from nessie.jobs.import_term_gpas import ImportTermGpas
 from nessie.lib.berkeley import reverse_term_ids
+from nessie.lib.dispatcher import dispatch
 from nessie.lib.metadata import update_merged_feed_status
 from nessie.lib.queries import get_advisee_student_profile_feeds, get_all_student_ids, get_successfully_backfilled_students
 from nessie.lib.util import encoded_tsv_row, split_tsv_row
@@ -93,12 +93,26 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
         feed_path = app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH'] + '/feeds/'
         s3.upload_json(advisees_by_canvas_id, feed_path + 'advisees_by_canvas_id.json')
-        for term_id in reverse_term_ids():
+
+        term_ids = reverse_term_ids()
+        for term_id in term_ids:
             s3.upload_json(canvas_site_map.get(term_id, {}), feed_path + f'canvas_site_map_{term_id}.json')
             s3.upload_json(enrollment_terms_map.get(term_id, {}), feed_path + f'enrollment_term_map_{term_id}.json')
 
-        for term_id in reverse_term_ids():
-            GenerateMergedEnrollmentTerm().run(term_id)
+        app.logger.info(f'Will dispatch analytics generation for {len(term_ids)} terms to worker nodes.')
+        success = 0
+        failure = 0
+        for term_id in term_ids:
+            # TODO create metadata entry
+            response = dispatch('generate_merged_enrollment_term', data={'term_id': term_id})
+            if not response:
+                app.logger.error(f'Failed to dispatch analytics generation for term {term_id}')
+                # TODO update metadata entry
+                failure += 1
+            else:
+                app.logger.info('Dispatched analytics generation for term {term_id}')
+                success += 1
+        app.logger.info(f'Analytics generation dispatched to workers ({success} successful dispatches, {failure} failures).')
 
         student_schema.refresh_all_from_staging(profile_tables)
         with rds.transaction() as transaction:
