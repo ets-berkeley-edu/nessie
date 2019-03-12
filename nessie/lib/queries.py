@@ -101,15 +101,15 @@ def get_advisee_enrolled_canvas_sites():
           ON cs.canvas_course_id = enr.canvas_course_id
         WHERE enr.canvas_course_term=ANY('{{{','.join(canvas_terms())}}}')
         GROUP BY enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code, enr.canvas_course_term
-        ORDER BY enr.canvas_course_id
+        ORDER BY enr.canvas_course_term, enr.canvas_course_id
         """
     return redshift.fetch(sql)
 
 
-@fixture('query_advisee_submissions_comparisons.csv')
-def get_advisee_submissions_sorted():
+@fixture('query_advisee_submissions_comparisons_{term_id}.csv')
+def get_advisee_submissions_sorted(term_id):
     columns = ['reference_user_id', 'canvas_course_id', 'canvas_user_id', 'submissions_turned_in']
-    key = f"{app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH']}/assignment_submissions_relative/sub_000.gz"
+    key = f"{app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH']}/assignment_submissions_relative/{term_id}/sub_000.gz"
     return s3.get_retriable_csv_stream(columns, key, retries=3)
 
 
@@ -117,6 +117,7 @@ def get_advisee_submissions_sorted():
 def get_all_enrollments_in_advisee_canvas_sites():
     sql = f"""SELECT
                 mem.course_id as canvas_course_id,
+                mem.course_term as canvas_course_term,
                 mem.uid,
                 mem.canvas_user_id,
                 mem.current_score,
@@ -150,7 +151,7 @@ def get_all_advisee_sis_enrollments():
               JOIN {calnet_schema()}.persons ldap
                 ON enr.ldap_uid = ldap.ldap_uid
               WHERE enr.sis_term_id=ANY('{{{','.join(reverse_term_ids(include_future_terms=True))}}}')
-              ORDER BY ldap.sid, enr.sis_term_id DESC, enr.sis_course_name, enr.sis_primary DESC, enr.sis_instruction_format, enr.sis_section_num
+              ORDER BY enr.sis_term_id DESC, ldap.sid, enr.sis_course_name, enr.sis_primary DESC, enr.sis_instruction_format, enr.sis_section_num
         """
     return redshift.fetch(sql)
 
@@ -162,7 +163,7 @@ def get_all_advisee_enrollment_drops():
               JOIN {calnet_schema()}.persons ldap
                 ON dr.sid = ldap.sid
               WHERE dr.sis_term_id=ANY('{{{','.join(reverse_term_ids())}}}')
-              ORDER BY dr.sid, dr.sis_term_id DESC, dr.sis_course_name
+              ORDER BY dr.sis_term_id DESC, dr.sid, dr.sis_course_name
             """
     return redshift.fetch(sql)
 
@@ -173,7 +174,7 @@ def get_all_advisee_term_gpas():
               JOIN {calnet_schema()}.persons ldap
                 ON gp.sid = ldap.sid
               WHERE gp.term_id=ANY('{{{','.join(reverse_term_ids())}}}')
-              ORDER BY gp.sid, gp.term_id DESC
+              ORDER BY gp.term_id, gp.sid DESC
         """
     return redshift.fetch(sql)
 

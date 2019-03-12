@@ -1,7 +1,7 @@
 canvas_course_id,canvas_course_name,canvas_course_code,canvas_course_term,advisee_sids,sis_section_ids
+9999991,Project X,,Projects,11667051,
 7654320,Introductory Burmese,BURMESE 1A,Fall 2017,11667051,"90100,90101"
 7654321,Medieval Manuscripts as Primary Sources,MED ST 205,Fall 2017,11667051,"90200"
 7654323,Radioactive Waste Management,NUC ENG 124,Fall 2017,11667051,"90299,90300"
-7654325,Modern Statistical Prediction and Machine Learning,STAT 154,Spring 2017,11667051,"50299,50300"
 7654330,Optional Friday Night Radioactivity Group,NUC ENG 124,Fall 2017,11667051,"90200,90300,90301"
-9999991,Project X,,Projects,11667051,
+7654325,Modern Statistical Prediction and Machine Learning,STAT 154,Spring 2017,11667051,"50299,50300"

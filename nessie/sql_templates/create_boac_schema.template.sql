@@ -74,6 +74,7 @@ AS (
             {redshift_schema_intermediate}.users.global_id AS canvas_global_user_id,
             {redshift_schema_canvas}.course_dim.canvas_id AS course_id,
             {redshift_schema_canvas}.course_dim.id AS canvas_global_course_id,
+            {redshift_schema_intermediate}.active_student_enrollments.canvas_course_term AS term_name,
             {redshift_schema_intermediate}.active_student_enrollments.sis_enrollment_status AS sis_enrollment_status
         FROM
             {redshift_schema_intermediate}.active_student_enrollments
@@ -86,6 +87,7 @@ AS (
         distinct_user_enrollments.uid AS uid,
         distinct_user_enrollments.canvas_user_id,
         distinct_user_enrollments.course_id,
+        distinct_user_enrollments.term_name,
         {redshift_schema_canvas}.assignment_dim.canvas_id AS assignment_id,
         CASE
             /*
@@ -230,6 +232,7 @@ AS (
         ase.uid,
         ase.canvas_user_id,
         ase.canvas_course_id AS course_id,
+        ase.canvas_course_term AS course_term,
         /*
          * There must be only one summary row for each course site membership.
          *
@@ -258,7 +261,8 @@ AS (
     GROUP BY
         ase.uid,
         ase.canvas_user_id,
-        ase.canvas_course_id
+        ase.canvas_course_id,
+        ase.canvas_course_term
 );
 
 
@@ -286,40 +290,6 @@ AS (
         AND tg.term_id = ANY('{{{last_term_id},{previous_term_id}}}')
     GROUP BY enr.sis_term_id, enr.sis_section_id, gpa_term_id
 );
-
-/*
- * Store a properly sorted list of millions of assignment submissions in one (we hope) S3 CSV.
- */
-
-UNLOAD (
-    'SELECT
-        ac1.canvas_user_id AS reference_user_id,
-        ac1.course_id AS canvas_course_id,
-        ac2.canvas_user_id AS canvas_user_id,
-        COUNT(
-            CASE WHEN ac2.assignment_status IN (\'graded\', \'late\', \'on_time\', \'submitted\')
-            THEN 1 ELSE NULL END
-        ) AS submissions_turned_in
-    FROM {redshift_schema_boac}.assignment_submissions_scores ac1
-    JOIN {redshift_schema_boac}.assignment_submissions_scores ac2
-        ON ac1.uid IN (SELECT ldap_uid FROM {redshift_schema_calnet}.persons)
-        AND ac1.assignment_id = ac2.assignment_id
-        AND ac1.course_id = ac2.course_id
-    GROUP BY reference_user_id, ac1.course_id, ac2.canvas_user_id
-    HAVING count(*) = (
-        SELECT count(*) FROM {redshift_schema_boac}.assignment_submissions_scores
-        WHERE canvas_user_id = reference_user_id AND course_id = ac1.course_id
-    )
-    ORDER BY reference_user_id, ac1.course_id, ac2.canvas_user_id'
-)
-TO '{boac_assignments_path}/sub_'
-ACCESS_KEY_ID '{aws_access_key_id}'
-SECRET_ACCESS_KEY '{aws_secret_access_key}'
-DELIMITER AS ','
-NULL AS ''
-ALLOWOVERWRITE
-PARALLEL OFF
-GZIP;
 
 /*
  * After boiled-down derived tables are generated, pull out data for the current term and store snapshots in S3.

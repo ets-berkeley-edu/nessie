@@ -29,7 +29,7 @@ import operator
 
 from nessie.lib import analytics, queries
 from nessie.lib.mockingdata import MockRows, register_mock
-from nessie.merged.student_terms import get_canvas_site_map, merge_memberships_into_site_map
+from nessie.merged.student_terms import get_canvas_site_maps, merge_memberships_into_site_map
 
 
 class TestAnalytics:
@@ -48,7 +48,7 @@ class TestAnalytics:
 
 
 def get_relative_submission_counts():
-    all_counts = queries.get_advisee_submissions_sorted()
+    all_counts = queries.get_advisee_submissions_sorted('2178')
     for canvas_user_id, sites_grp in groupby(all_counts, key=operator.itemgetter('reference_user_id')):
         if canvas_user_id == 9000100:
             relative_submission_counts = {}
@@ -58,21 +58,34 @@ def get_relative_submission_counts():
     return {}
 
 
+def mock_enrollment_term_map(sid, canvas_course_id):
+    return {
+        sid: {'enrollments': [{'canvasSites': [{'canvasCourseId': canvas_course_id}]}]},
+    }
+
+
+def mock_advisee_id_map(canvas_id, sid):
+    return {
+        str(canvas_id): {'sid': sid},
+    }
+
+
 class TestAnalyticsFromAssignmentsSubmitted:
+    user_sid = '11667051'
     canvas_user_id = 9000100
     canvas_course_id = 7654321
 
-    def _digest_for_user(self, user_id):
-        course = {'canvasCourseId': self.canvas_course_id}
+    def digest_for_user(self, user_id):
+        enrollment_term_map = mock_enrollment_term_map(self.user_sid, self.canvas_course_id)
         analytics.merge_assignment_submissions_for_user(
-            [course],
+            enrollment_term_map[self.user_sid],
             user_id,
             get_relative_submission_counts(),
         )
-        return course['analytics']['assignmentsSubmitted']
+        return enrollment_term_map[self.user_sid]['enrollments'][0]['canvasSites'][0]['analytics']['assignmentsSubmitted']
 
     def test_from_fixture(self, app):
-        digested = self._digest_for_user(self.canvas_user_id)
+        digested = self.digest_for_user(self.canvas_user_id)
         assert digested['student']['raw'] == 8
         assert digested['student']['percentile'] == 64
         assert digested['student']['roundedUpPercentile'] == 81
@@ -93,9 +106,9 @@ class TestAnalyticsFromAssignmentsSubmitted:
             rows.append(','.join(['9000100', str(i), str(self.canvas_course_id), str(i), '2']))
         mr = MockRows(io.StringIO('\n'.join(rows)))
         with register_mock(queries.get_advisee_submissions_sorted, mr):
-            worst = self._digest_for_user('9000000')
-            best = self._digest_for_user(self.canvas_user_id)
-            median = self._digest_for_user('101')
+            worst = self.digest_for_user('9000000')
+            best = self.digest_for_user(self.canvas_user_id)
+            median = self.digest_for_user('101')
             for digested in [worst, best, median]:
                 assert digested['boxPlottable'] is False
                 assert digested['student']['percentile'] is not None
@@ -111,7 +124,7 @@ class TestAnalyticsFromAssignmentsSubmitted:
     def test_when_no_data(self, app):
         mr = MockRows(io.StringIO('reference_user_id,sid,canvas_course_id,canvas_user_id,submissions_turned_in'))
         with register_mock(queries.get_advisee_submissions_sorted, mr):
-            digested = self._digest_for_user(self.canvas_user_id)
+            digested = self.digest_for_user(self.canvas_user_id)
         assert digested['student']['raw'] is None
         assert digested['student']['percentile'] is None
         assert digested['boxPlottable'] is False
@@ -120,17 +133,21 @@ class TestAnalyticsFromAssignmentsSubmitted:
 
 
 class TestStudentAnalytics:
+    user_sid = '11667051'
     canvas_user_id = 9000100
     canvas_course_id = 7654321
+    sis_term_id = '2178'
 
-    def digest_for_user(self, user_id, canvas_site_map):
-        course = canvas_site_map[self.canvas_course_id]
-        course['adviseeEnrollments'] = {user_id: {}}
-        analytics.merge_analytics_for_course(course)
-        return course['adviseeEnrollments'][user_id]['analytics']
+    def digest_for_user(self, canvas_user_id, canvas_site_map):
+        course = canvas_site_map[self.sis_term_id][self.canvas_course_id]
+        course['adviseeEnrollments'] = [canvas_user_id]
+        enrollment_term_map = mock_enrollment_term_map(self.user_sid, self.canvas_course_id)
+        advisees_by_canvas_id = mock_advisee_id_map(canvas_user_id, self.user_sid)
+        analytics.merge_analytics_for_course(self.sis_term_id, course, enrollment_term_map, advisees_by_canvas_id)
+        return enrollment_term_map[self.user_sid]['enrollments'][0]['canvasSites'][0]['analytics']
 
     def canvas_site_map(self, app):
-        (canvas_site_map, advisee_site_map) = get_canvas_site_map()
+        (canvas_site_map, advisee_site_map) = get_canvas_site_maps()
         merge_memberships_into_site_map(canvas_site_map)
         return canvas_site_map
 
@@ -157,8 +174,8 @@ class TestStudentAnalytics:
         assert digested['courseEnrollmentCount'] == 331
 
     def test_when_no_data(self, app):
-        exclusive_rows = 'canvas_course_id,canvas_user_id,course_scores,last_activity_at,sis_enrollment_status\n' \
-            '7654321,1,1,1,E'
+        exclusive_rows = 'canvas_course_id,canvas_course_term,canvas_user_id,course_scores,last_activity_at,sis_enrollment_status\n' \
+            '7654321,Fall 2017,1,1,1,E'
         mr = MockRows(io.StringIO(exclusive_rows))
         with register_mock(queries.get_all_enrollments_in_advisee_canvas_sites, mr):
             digested = self.digest_for_user(self.canvas_user_id, self.canvas_site_map(app))
@@ -181,7 +198,7 @@ class TestStudentAnalytics:
         enrollments[1]['last_activity_at'] = 1535340480
         enrollments[2]['last_activity_at'] = 1535340481
         enrollments[3]['last_activity_at'] = 1535340482
-        site_map[7654321]['enrollments'] = enrollments
+        site_map['2178'][7654321]['enrollments'] = enrollments
         digested = self.digest_for_user(9000071, site_map)
         low_student_score = digested['lastActivity']['student']
         assert(low_student_score['raw']) == 0
@@ -208,7 +225,7 @@ class TestStudentAnalytics:
         enrollments[1]['last_activity_at'] = 1535340480
         enrollments[2]['last_activity_at'] = 1535340481
         enrollments[3]['last_activity_at'] = 1535340482
-        site_map[7654321]['enrollments'] = enrollments
+        site_map['2178'][7654321]['enrollments'] = enrollments
         digested = self.digest_for_user(9000071, site_map)
         mean = digested['lastActivity']['courseMean']
         assert mean['raw'] < 1535340481

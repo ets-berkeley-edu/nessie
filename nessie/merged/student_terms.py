@@ -28,42 +28,40 @@ import operator
 
 from flask import current_app as app
 from nessie.lib import berkeley, queries
-from nessie.lib.analytics import merge_analytics_for_course, merge_assignment_submissions_for_user
 
 
-def generate_enrollment_terms_map(advisees_by_canvas_id, advisees_by_sid):
-    # Our mission is to produce student_enrollment_terms rows indexed by sid and term_id, and so that should be our
-    # final sort order.
+def generate_student_term_maps(advisees_by_canvas_id, advisees_by_sid):
+    # Our mission is to produce 1) a dictionary of enrollment terms indexed by term_id and sid; 2) a dictionary
+    # of Canvas sites indexed by Canvas course id.
     enrollment_terms_map = get_sis_enrollments()
     merge_dropped_classes(enrollment_terms_map)
     merge_term_gpas(enrollment_terms_map)
     # Track the results of course-site-level queries to avoid requerying.
-    (canvas_site_map, advisee_site_map) = get_canvas_site_map()
+    (canvas_site_map, advisee_site_map) = get_canvas_site_maps()
     merge_memberships_into_site_map(canvas_site_map)
     merge_canvas_data(canvas_site_map, advisee_site_map, enrollment_terms_map, advisees_by_sid)
-    merge_all_analytics_data(advisees_by_canvas_id, canvas_site_map, enrollment_terms_map)
-    return enrollment_terms_map
+    return enrollment_terms_map, canvas_site_map
 
 
 def get_sis_enrollments():
     student_enrollments_map = {}
     sis_enrollments = queries.get_all_advisee_sis_enrollments()
-    for sid, all_terms_grp in groupby(sis_enrollments, operator.itemgetter('sid')):
-        student_enrollments_map[sid] = {}
-        for key, all_enrs_grp in groupby(all_terms_grp, operator.itemgetter('sis_term_id')):
-            term_id = str(key)
-            term_name = berkeley.term_name_for_sis_id(term_id)
+    for key, all_sids_grp in groupby(sis_enrollments, operator.itemgetter('sis_term_id')):
+        term_id = str(key)
+        term_name = berkeley.term_name_for_sis_id(term_id)
+        student_enrollments_map[term_id] = {}
+        for sid, all_enrs_grp in groupby(all_sids_grp, operator.itemgetter('sid')):
             term_enrollments = merge_enrollment(all_enrs_grp, term_id, term_name)
-            student_enrollments_map[sid][term_id] = term_enrollments
+            student_enrollments_map[term_id][sid] = term_enrollments
     return student_enrollments_map
 
 
 def merge_dropped_classes(all_advisees_terms_map):
     all_drops = queries.get_all_advisee_enrollment_drops()
-    for sid, all_terms_grp in groupby(all_drops, operator.itemgetter('sid')):
-        for key, enrs_grp in groupby(all_terms_grp, key=operator.itemgetter('sis_term_id')):
-            term_id = str(key)
-            student_term = all_advisees_terms_map.get(sid, {}).get(term_id)
+    for key, sids_grp in groupby(all_drops, key=operator.itemgetter('sis_term_id')):
+        term_id = str(key)
+        for sid, enrs_grp in groupby(sids_grp, operator.itemgetter('sid')):
+            student_term = all_advisees_terms_map.get(term_id, {}).get(sid)
             # When a student has begun enrolling for classes but then decides not to attend (or to withdraw),
             # the SIS DB will contain nothing but "dropped" sections. CalCentral does not show such terms
             # as part of the student's academic history.
@@ -82,50 +80,52 @@ def merge_dropped_classes(all_advisees_terms_map):
 
 def merge_term_gpas(all_advisees_terms_map):
     all_gpas = queries.get_all_advisee_term_gpas() or []
-    for sid, all_terms_grp in groupby(all_gpas, operator.itemgetter('sid')):
-        for term_gpa in all_terms_grp:
-            term_id = term_gpa['term_id']
-            student_term = all_advisees_terms_map.get(sid, {}).get(term_id)
+    for key, term_gpa_rows in groupby(all_gpas, operator.itemgetter('term_id')):
+        term_id = str(key)
+        for term_gpa_row in term_gpa_rows:
+            sid = term_gpa_row['sid']
+            student_term = all_advisees_terms_map.get(term_id, {}).get(sid)
             if student_term:
                 student_term['termGpa'] = {
-                    'gpa': float(term_gpa['gpa']),
-                    'unitsTakenForGpa': float(term_gpa['units_taken_for_gpa']),
+                    'gpa': float(term_gpa_row['gpa']),
+                    'unitsTakenForGpa': float(term_gpa_row['units_taken_for_gpa']),
                 }
     return all_advisees_terms_map
 
 
-def get_canvas_site_map():
+def get_canvas_site_maps():
     canvas_site_map = {}
     advisee_site_map = {}
     canvas_sites = queries.get_advisee_enrolled_canvas_sites()
-    for row in canvas_sites:
-        canvas_site_id = row['canvas_course_id']
-        canvas_course_term = row.get('canvas_course_term')
-        sis_sections = row.get('sis_section_ids', [])
-        if sis_sections:
-            # The SIS-derived feeds tend to deliver section IDs as integers rather than strings.
-            sis_sections = [int(s) for s in sis_sections.split(',')]
-        canvas_site_map[canvas_site_id] = {
-            'canvasCourseId': row['canvas_course_id'],
-            'courseName': row.get('canvas_course_name'),
-            'courseCode': row.get('canvas_course_code'),
-            'courseTerm': canvas_course_term,
-            'enrollments': [],
-            'sis_sections': sis_sections,
-            'adviseeEnrollments': {},
-        }
+    for canvas_course_term, canvas_sites_grp in groupby(canvas_sites, operator.itemgetter('canvas_course_term')):
         sis_term_id = berkeley.sis_term_id_for_name(canvas_course_term)
-        sids = row.get('advisee_sids', [])
-        if sids:
-            sids = sids.split(',')
-            for sid in sids:
-                if not advisee_site_map.get(sid):
-                    advisee_site_map[sid] = {}
-                if not advisee_site_map[sid].get(sis_term_id):
-                    advisee_site_map[sid][sis_term_id] = []
-                advisee_site_map[sid][sis_term_id].append({
-                    'canvas_course_id': canvas_site_id,
-                })
+        canvas_site_map[sis_term_id] = {}
+        for row in canvas_sites_grp:
+            canvas_site_id = row['canvas_course_id']
+            sis_sections = row.get('sis_section_ids', [])
+            if sis_sections:
+                # The SIS-derived feeds tend to deliver section IDs as integers rather than strings.
+                sis_sections = [int(s) for s in sis_sections.split(',')]
+            canvas_site_map[sis_term_id][canvas_site_id] = {
+                'canvasCourseId': row['canvas_course_id'],
+                'courseName': row.get('canvas_course_name'),
+                'courseCode': row.get('canvas_course_code'),
+                'courseTerm': canvas_course_term,
+                'enrollments': [],
+                'adviseeEnrollments': [],
+                'sis_sections': sis_sections,
+            }
+            if not advisee_site_map.get(sis_term_id):
+                advisee_site_map[sis_term_id] = {}
+            sids = row.get('advisee_sids', [])
+            if sids:
+                sids = sids.split(',')
+                for sid in sids:
+                    if not advisee_site_map[sis_term_id].get(sid):
+                        advisee_site_map[sis_term_id][sid] = []
+                    advisee_site_map[sis_term_id][sid].append({
+                        'canvas_course_id': canvas_site_id,
+                    })
     return canvas_site_map, advisee_site_map
 
 
@@ -134,32 +134,35 @@ def merge_memberships_into_site_map(site_map):
     canvas_enrollments = queries.get_all_enrollments_in_advisee_canvas_sites()
     for key, group in groupby(canvas_enrollments, key=operator.itemgetter('canvas_course_id')):
         canvas_site_id = key
-        site = site_map.get(canvas_site_id)
+        enrollments = list(group)
+        sis_term_id = berkeley.sis_term_id_for_name(enrollments[0].get('canvas_course_term'))
+        site = site_map.get(sis_term_id, {}).get(canvas_site_id)
         if site:
-            site['enrollments'] = list(group)
+            site['enrollments'] = enrollments
         else:
-            app.logger.warn(f'Did not find canvas_course_id {canvas_site_id} in site map')
+            app.logger.warn(f'Did not find canvas_course_id {canvas_site_id} in site map for term {sis_term_id}')
     return site_map
 
 
 def merge_canvas_data(canvas_site_map, advisee_site_map, all_advisees_terms_map, advisees_by_sid):
-    for (sid, all_terms) in advisee_site_map.items():
-        canvas_user_id = advisees_by_sid.get(sid, {}).get('canvas_user_id')
-        for (term_id, sites) in all_terms.items():
-            term_feed = all_advisees_terms_map.get(sid, {}).get(term_id)
+    for (term_id, all_sids) in advisee_site_map.items():
+        canvas_sites_for_term = canvas_site_map.get(term_id, {})
+        for (sid, sites) in all_sids.items():
+            canvas_user_id = advisees_by_sid.get(sid, {}).get('canvas_user_id')
+            term_feed = all_advisees_terms_map.get(term_id, {}).get(sid)
             if not term_feed:
                 continue
             for membership in sites:
-                merge_canvas_site_membership(membership, sid, canvas_user_id, term_feed, canvas_site_map)
+                merge_canvas_site_membership(membership, sid, canvas_user_id, term_feed, canvas_sites_for_term)
     return all_advisees_terms_map
 
 
-def merge_canvas_site_membership(membership, sid, canvas_user_id, term_feed, canvas_site_map):
+def merge_canvas_site_membership(membership, sid, canvas_user_id, term_feed, canvas_sites_for_term):
     enrollments_matched = set()
     canvas_course_id = membership['canvas_course_id']
-    canvas_site = canvas_site_map.get(canvas_course_id)
+    canvas_site = canvas_sites_for_term.get(canvas_course_id)
     if not canvas_site:
-        app.logger.warn(f'canvas_course_id {canvas_course_id} found in SID {sid} memberships but not in site map')
+        app.logger.warn(f'canvas_course_id {canvas_course_id} found in SID {sid} memberships but not in site map for term')
         return
     canvas_sections = canvas_site['sis_sections']
     if not canvas_sections:
@@ -172,7 +175,7 @@ def merge_canvas_site_membership(membership, sid, canvas_user_id, term_feed, can
         'analytics': {},
     }
     if canvas_user_id:
-        canvas_site['adviseeEnrollments'][canvas_user_id] = canvas_site_element
+        canvas_site['adviseeEnrollments'].append(canvas_user_id)
     for canvas_ccn in canvas_sections:
         # There is no particularly intuitive unique identifier for a 'class enrollment', and so we resort to
         # list position.
@@ -187,64 +190,6 @@ def merge_canvas_site_membership(membership, sid, canvas_user_id, term_feed, can
                         enrollment['canvasSites'].append(canvas_site_element)
     if not enrollments_matched:
         term_feed['unmatchedCanvasSites'].append(canvas_site_element)
-
-
-def merge_all_analytics_data(advisees_by_canvas_id, canvas_site_map, all_advisees_terms_map):
-    advisee_ids = list(advisees_by_canvas_id.keys())
-
-    app.logger.info(f'Starting non-assignment-submissions analytics merge for {len(canvas_site_map)} Canvas courses')
-    course_count = 0
-    for (canvas_course_id, canvas_map_entry) in canvas_site_map.items():
-        course_count += 1
-        if course_count % 25 == 0:
-            app.logger.debug(f'Merging Canvas course {course_count} of {len(canvas_site_map)}')
-        merge_analytics_for_course(canvas_map_entry)
-    app.logger.info(f'Course analytics merge complete: {course_count} courses merged.')
-
-    all_counts_query = queries.get_advisee_submissions_sorted()
-
-    app.logger.info(f'Starting assignment-submissions analytics merge for the overwhelming majority of {len(advisee_ids)} advisees')
-    user_count = 0
-    merged_analytics = {}
-    for canvas_user_id, sites_grp in groupby(all_counts_query, key=operator.itemgetter('reference_user_id')):
-        user_count += 1
-        if user_count % 25 == 0:
-            app.logger.debug(f'Merging Canvas user {user_count} of >{len(advisee_ids)}')
-        if merged_analytics.get(canvas_user_id):
-            # We must have already handled calculations for this user on a download that subsequently errored out.
-            continue
-        sid = advisees_by_canvas_id.get(canvas_user_id, {}).get('sid')
-        if not sid:
-            app.logger.info(f'Advisee submissions query returned canvas_user_id {canvas_user_id}, but no match in advisees map')
-            merged_analytics[canvas_user_id] = 'skipped'
-            continue
-        advisee_terms_map = all_advisees_terms_map.get(sid)
-        if not advisee_terms_map:
-            # Nothing to merge.
-            merged_analytics[canvas_user_id] = 'skipped'
-            continue
-        relative_submission_counts = {}
-        for canvas_course_id, subs_grp in groupby(sites_grp, key=operator.itemgetter('canvas_course_id')):
-            relative_submission_counts[canvas_course_id] = list(subs_grp)
-        merge_advisee_assignment_submissions(advisee_terms_map, canvas_user_id, relative_submission_counts)
-        merged_analytics[canvas_user_id] = 'merged'
-    app.logger.info(f'User analytics merge complete: {user_count} users merged.')
-
-    return all_advisees_terms_map
-
-
-def merge_advisee_assignment_submissions(terms_map, canvas_user_id, relative_submission_counts):
-    for (term_id, term_feed) in terms_map.items():
-        canvas_courses = []
-        for enrollment in term_feed.get('enrollments', []):
-            canvas_courses += enrollment['canvasSites']
-        canvas_courses += term_feed.get('unmatchedCanvasSites', [])
-        merge_assignment_submissions_for_user(
-            canvas_courses,
-            canvas_user_id,
-            relative_submission_counts,
-        )
-    return terms_map
 
 
 def check_for_multiple_primary_sections(enrollment, class_name, enrollments_by_class, section_feed):

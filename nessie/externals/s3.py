@@ -25,6 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from gzip import GzipFile
 import io
+import json
 import socket
 
 import boto3
@@ -106,6 +107,12 @@ def get_keys_with_prefix(prefix, full_objects=False, bucket=None):
     return objects
 
 
+def get_object_json(s3_key):
+    text = get_object_text(s3_key)
+    if text:
+        return json.loads(text)
+
+
 def get_object_text(key):
     client = get_client()
     bucket = app.config['LOCH_S3_BUCKET']
@@ -176,6 +183,11 @@ def upload_data(data, s3_key):
         return False
     app.logger.info(f'S3 upload complete: bucket={bucket}, key={s3_key}')
     return True
+
+
+def upload_json(obj, s3_key):
+    data = json.dumps(obj)
+    return upload_data(data, s3_key)
 
 
 def upload_from_url(url, s3_key, on_stream_opened=None):

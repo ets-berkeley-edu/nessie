@@ -35,8 +35,9 @@ class TestQueries:
         results = queries.get_all_enrollments_in_advisee_canvas_sites()
         assert len(results) > 0
         assert {
-            'canvas_course_id': 7654321, 'uid': '9000100', 'canvas_user_id': 9000100,
-            'current_score': 84, 'last_activity_at': 1535275620, 'sis_enrollment_status': 'E',
+            'canvas_course_id': 7654321, 'canvas_course_term': 'Fall 2017', 'uid': '9000100',
+            'canvas_user_id': 9000100, 'current_score': 84, 'last_activity_at': 1535275620,
+            'sis_enrollment_status': 'E',
         } in results
 
     def test_sis_sections_in_canvas_course(self, app):
@@ -99,30 +100,30 @@ class TestQueries:
     def test_student_canvas_courses(self, app):
         courses = queries.get_advisee_enrolled_canvas_sites()
         assert len(courses) == 6
-        # Canvas sites should be sorted by Course ID number
-        assert courses[0]['canvas_course_id'] == 7654320
-        assert courses[0]['canvas_course_name'] == 'Introductory Burmese'
-        assert courses[0]['canvas_course_code'] == 'BURMESE 1A'
-        assert courses[0]['canvas_course_term'] == 'Fall 2017'
-        assert courses[1]['canvas_course_id'] == 7654321
-        assert courses[1]['canvas_course_name'] == 'Medieval Manuscripts as Primary Sources'
-        assert courses[1]['canvas_course_code'] == 'MED ST 205'
+        # Canvas sites should be sorted by term, then by Course ID number
+        assert courses[1]['canvas_course_id'] == 7654320
+        assert courses[1]['canvas_course_name'] == 'Introductory Burmese'
+        assert courses[1]['canvas_course_code'] == 'BURMESE 1A'
         assert courses[1]['canvas_course_term'] == 'Fall 2017'
-        assert courses[2]['canvas_course_id'] == 7654323
-        assert courses[2]['canvas_course_name'] == 'Radioactive Waste Management'
-        assert courses[2]['canvas_course_code'] == 'NUC ENG 124'
+        assert courses[2]['canvas_course_id'] == 7654321
+        assert courses[2]['canvas_course_name'] == 'Medieval Manuscripts as Primary Sources'
+        assert courses[2]['canvas_course_code'] == 'MED ST 205'
         assert courses[2]['canvas_course_term'] == 'Fall 2017'
-        assert courses[3]['canvas_course_id'] == 7654325
-        assert courses[3]['canvas_course_name'] == 'Modern Statistical Prediction and Machine Learning'
-        assert courses[3]['canvas_course_code'] == 'STAT 154'
-        assert courses[3]['canvas_course_term'] == 'Spring 2017'
+        assert courses[3]['canvas_course_id'] == 7654323
+        assert courses[3]['canvas_course_name'] == 'Radioactive Waste Management'
+        assert courses[3]['canvas_course_code'] == 'NUC ENG 124'
+        assert courses[3]['canvas_course_term'] == 'Fall 2017'
         assert courses[4]['canvas_course_id'] == 7654330
         assert courses[4]['canvas_course_name'] == 'Optional Friday Night Radioactivity Group'
         assert courses[4]['canvas_course_code'] == 'NUC ENG 124'
         assert courses[4]['canvas_course_term'] == 'Fall 2017'
+        assert courses[5]['canvas_course_id'] == 7654325
+        assert courses[5]['canvas_course_name'] == 'Modern Statistical Prediction and Machine Learning'
+        assert courses[5]['canvas_course_code'] == 'STAT 154'
+        assert courses[5]['canvas_course_term'] == 'Spring 2017'
 
     def test_submissions_turned_in_relative_to_user_fixture(self, app):
-        data = queries.get_advisee_submissions_sorted()
+        data = queries.get_advisee_submissions_sorted('2178')
         assert len(data) > 0
         assert {
             'reference_user_id': 9000100,
