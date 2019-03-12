@@ -104,7 +104,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         failure = 0
         for term_id in term_ids:
             # TODO create metadata entry
-            response = dispatch('generate_merged_enrollment_term', data={'term_id': term_id})
+            response = dispatch(f'generate_merged_enrollment_term/{term_id}')
             if not response:
                 app.logger.error(f'Failed to dispatch analytics generation for term {term_id}')
                 # TODO update metadata entry
