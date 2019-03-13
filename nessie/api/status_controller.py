@@ -55,7 +55,7 @@ def app_status():
             app.logger.exception('Failed to connect to RDS database')
             return False
 
-    redshift_row = redshift.fetch('SELECT tablename FROM SVV_EXTERNAL_TABLES LIMIT 1')
+    redshift_row = redshift.fetch('SELECT 1')
     resp = {
         'app': True,
         'rds': db_status(),
