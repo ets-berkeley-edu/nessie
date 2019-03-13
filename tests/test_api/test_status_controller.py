@@ -39,7 +39,7 @@ class TestStatusController:
         assert response.status_code == 200
         assert response.json['app'] is True
         assert response.json['rds'] is True
-        assert response.json['redshift'] is False
+        assert response.json['redshift'] is True
 
     def test_version(self, client):
         """Reports a version."""
