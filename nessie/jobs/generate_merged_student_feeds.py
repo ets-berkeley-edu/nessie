@@ -24,14 +24,14 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import json
+from time import sleep
 
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.jobs.import_term_gpas import ImportTermGpas
 from nessie.lib.berkeley import reverse_term_ids
-from nessie.lib.dispatcher import dispatch
-from nessie.lib.metadata import update_merged_feed_status
+from nessie.lib.metadata import get_merged_enrollment_term_job_status, queue_merged_enrollment_term_jobs, update_merged_feed_status
 from nessie.lib.queries import get_advisee_student_profile_feeds, get_all_student_ids, get_successfully_backfilled_students
 from nessie.lib.util import encoded_tsv_row, split_tsv_row
 from nessie.merged.sis_profile import parse_merged_sis_profile
@@ -99,20 +99,10 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             s3.upload_json(canvas_site_map.get(term_id, {}), feed_path + f'canvas_site_map_{term_id}.json')
             s3.upload_json(enrollment_terms_map.get(term_id, {}), feed_path + f'enrollment_term_map_{term_id}.json')
 
-        app.logger.info(f'Will dispatch analytics generation for {len(term_ids)} terms to worker nodes.')
-        success = 0
-        failure = 0
-        for term_id in term_ids:
-            # TODO create metadata entry
-            response = dispatch(f'generate_merged_enrollment_term/{term_id}')
-            if not response:
-                app.logger.error(f'Failed to dispatch analytics generation for term {term_id}')
-                # TODO update metadata entry
-                failure += 1
-            else:
-                app.logger.info('Dispatched analytics generation for term {term_id}')
-                success += 1
-        app.logger.info(f'Analytics generation dispatched to workers ({success} successful dispatches, {failure} failures).')
+        app.logger.info(f'Will queue analytics generation for {len(term_ids)} terms on worker nodes.')
+        result = queue_merged_enrollment_term_jobs(self.job_id, term_ids)
+        if not result:
+            raise BackgroundJobError('Failed to queue enrollment term jobs.')
 
         student_schema.refresh_all_from_staging(profile_tables)
         with rds.transaction() as transaction:
@@ -123,7 +113,29 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 transaction.rollback()
                 raise BackgroundJobError('Failed to refresh RDS indexes.')
 
-        return f'Merged profile generation complete: {len(self.successes)} successes, {len(self.failures)} failures.'
+        app.logger.info('Profile generation complete; waiting for enrollment term generation to finish.')
+
+        while True:
+            sleep(1)
+            enrollment_results = get_merged_enrollment_term_job_status(self.job_id)
+            if not enrollment_results:
+                raise BackgroundJobError('Failed to refresh RDS indexes.')
+            any_pending_job = next((row for row in enrollment_results if row['status'] == 'created' or row['status'] == 'started'), None)
+            if not any_pending_job:
+                break
+
+        status_string = 'Generated merged profiles ({len(self.successes)} successes, {len(self.failures)} failures). '
+        errored = False
+        for row in enrollment_results:
+            status_string += f"Generated enrollment term {row['term_id']} ({row['details']}). "
+            if row['status'] == 'error':
+                errored = True
+
+        student_schema.truncate_staging_table('student_enrollment_terms')
+        if errored:
+            raise BackgroundJobError(status_string)
+        else:
+            return status_string
 
     def generate_student_profile_tables(self, advisees_by_canvas_id, advisees_by_sid):
         # In-memory storage for generated feeds prior to TSV output.

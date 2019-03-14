@@ -59,6 +59,7 @@ class BackgroundJob(object):
 
     def __init__(self, **kwargs):
         self.job_args = kwargs
+        self.job_id = self.generate_job_id()
 
     @classmethod
     def generate_job_id(cls):
@@ -95,9 +96,8 @@ class BackgroundJob(object):
     def run_wrapped(self, **kwargs):
         lock_id = kwargs.pop('lock_id', None)
         with advisory_lock(lock_id):
-            job_id = self.generate_job_id()
             if self.status_logging_enabled:
-                create_background_job_status(job_id)
+                create_background_job_status(self.job_id)
             try:
                 error = None
                 result = self.run(**kwargs)
@@ -120,7 +120,7 @@ class BackgroundJob(object):
                 else:
                     status = 'failed'
                     details = error
-                update_background_job_status(job_id, status, details=details)
+                update_background_job_status(self.job_id, status, details=details)
             return result
 
 

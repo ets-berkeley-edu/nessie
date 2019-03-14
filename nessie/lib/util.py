@@ -108,6 +108,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'rds_dblink_to_redshift': app.config['REDSHIFT_DATABASE'] + '_redshift',
         'rds_schema_asc': app.config['RDS_SCHEMA_ASC'],
         'rds_schema_coe': app.config['RDS_SCHEMA_COE'],
+        'rds_schema_metadata': app.config['RDS_SCHEMA_METADATA'],
         'rds_schema_physics': app.config['RDS_SCHEMA_PHYSICS'],
         'rds_schema_sis_advising_notes': app.config['RDS_SCHEMA_SIS_ADVISING_NOTES'],
         'rds_schema_sis_internal': app.config['RDS_SCHEMA_SIS_INTERNAL'],
