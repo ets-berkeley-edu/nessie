@@ -64,7 +64,7 @@ class RefreshCanvasDataCatalog(BackgroundJob):
                     description,
                     length,
                 ])
-        # create a dataframe to
+        # Create a dataframe
         schema_df = pd.DataFrame(canvas_schema)
         schema_df.columns = [
             'table_name',
@@ -75,7 +75,7 @@ class RefreshCanvasDataCatalog(BackgroundJob):
         ]
 
         # The schema definitions received from Canvas are Redshift compliant. We update
-        # cetain column types to match glue and spectrum data types
+        # cetain column types to match Glue and Spectrum data types.
         schema_df['glue_type'] = schema_df['column_type'].replace({
             'enum': 'varchar',
             'guid': 'varchar',
@@ -88,20 +88,21 @@ class RefreshCanvasDataCatalog(BackgroundJob):
                                                                                 'default': '"default"',
                                                                                 'percent': '"percent"',
                                                                                 })
-        # create hive compliant storage descriptors
+        # Create Hive compliant storage descriptors
         canvas_external_catalog_ddl = self.generate_external_catalog(external_schema, schema_df)
 
-        # clean up and recreate refreshed tables on Glue using Spectrum
+        # Clean up and recreate refreshed tables on Glue using Spectrum
         redshift.drop_external_schema(external_schema)
         redshift.create_external_schema(external_schema, redshift_iam_role)
 
         if redshift.execute_ddl_script(canvas_external_catalog_ddl):
             app.logger.info(f'Canvas schema creation job completed.')
-            if self.verify_external_data_catalog():
-                return 'Canvas schema verfication job completed.'
         else:
             app.logger.error(f'Canvas schema creation job failed.')
             raise BackgroundJobError(f'Canvas schema creation job failed.')
+
+        self.verify_external_data_catalog()
+        return 'Canvas external schema created and verified.'
 
     def generate_external_catalog(self, external_schema, schema_df):
         canvas_path = self.generate_canvas_path()
@@ -155,17 +156,35 @@ class RefreshCanvasDataCatalog(BackgroundJob):
             # parse table names from the S3 object URLs
             directory_names.append(object_summary['Key'].split('/')[3])
 
-        # get unique table names from s3 object list
+        # Get unique table names from S3 object list
         tables = sorted(list(set(directory_names)))
-        app.logger.info(f'Tables to be verfied : {tables}')
+        # Ensure that all tables required by downstream jobs have data present in S3.
+        required_tables = [
+            'assignment_dim',
+            'assignment_override_dim',
+            'assignment_override_user_rollup_fact',
+            'course_dim',
+            'course_score_fact',
+            'course_section_dim',
+            'enrollment_dim',
+            'enrollment_fact',
+            'enrollment_term_dim',
+            'pseudonym_dim',
+            'submission_dim',
+            'submission_fact',
+            'user_dim',
+        ]
+        for required_table in required_tables:
+            if required_table not in tables:
+                raise BackgroundJobError(f'No data in S3 for external table {required_table}: aborting job.')
 
+        app.logger.info(f'Tables to be verified : {tables}')
         for table in tables:
             result = redshift.fetch(f'SELECT COUNT(*) FROM {external_schema}.{table}')
             if result and result[0] and result[0]['count']:
                 count = result[0]['count']
                 app.logger.info(f'Verified external table {table} ({count} rows).')
             else:
-                app.logger.error(f'Failed to verify external table {table}: aborting job.')
                 raise BackgroundJobError(f'Failed to verify external table {table}: aborting job.')
         app.logger.info(f'Canvas verification job completed successfully for {len(tables)} tables')
         return True
