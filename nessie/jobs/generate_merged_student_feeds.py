@@ -124,10 +124,10 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             if not any_pending_job:
                 break
 
-        status_string = 'Generated merged profiles ({len(self.successes)} successes, {len(self.failures)} failures). '
+        status_string = f'Generated merged profiles ({len(self.successes)} successes, {len(self.failures)} failures).'
         errored = False
         for row in enrollment_results:
-            status_string += f"Generated enrollment term {row['term_id']} ({row['details']}). "
+            status_string += f" {row['details']}"
             if row['status'] == 'error':
                 errored = True
 

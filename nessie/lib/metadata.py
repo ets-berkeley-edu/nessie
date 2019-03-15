@@ -220,6 +220,7 @@ def get_merged_enrollment_term_job_status(master_job_id):
         f"""SELECT *
         FROM {_rds_schema()}.merged_enrollment_term_job_queue
         WHERE master_job_id=%s
+        ORDER BY term_id
         """,
         params=(master_job_id,),
         log_query=False,
