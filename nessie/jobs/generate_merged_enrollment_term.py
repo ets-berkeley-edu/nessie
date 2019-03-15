@@ -45,10 +45,10 @@ class GenerateMergedEnrollmentTerm(BackgroundJob):
         student_schema.drop_staged_enrollment_term(term_id)
         student_schema.write_to_staging('student_enrollment_terms', term_rows, term_id)
         with redshift.transaction() as transaction:
-            student_schema.refresh_from_staging('student_enrollment_terms', term_id, None, transaction)
+            student_schema.refresh_from_staging('student_enrollment_terms', term_id, None, transaction, truncate_staging=False)
             if not transaction.commit():
                 raise BackgroundJobError(f'Final transaction commit failed on enrollment term refresh (term_id={term_id}).')
-        return f'Generate merged enrollment term feeds (term_id={term_id}).'
+        return f'Generated merged feeds for term {term_id} ({self.course_count} courses, {self.user_count} users).'
 
     def merge_analytics_data_for_term(self, term_id):
         feed_path = app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH'] + '/feeds/'
@@ -69,6 +69,7 @@ class GenerateMergedEnrollmentTerm(BackgroundJob):
                 app.logger.debug(f'Merging Canvas course {course_count} of {len(canvas_site_map)}')
             merge_analytics_for_course(term_id, canvas_map_entry, enrollment_term_map, advisees_by_canvas_id)
         app.logger.info(f'Course analytics merge complete: {course_count} courses merged.')
+        self.course_count = course_count
 
     def merge_advisee_assignment_submissions_for_term(self, term_id, enrollment_term_map, advisees_by_canvas_id):
         advisee_ids = advisees_by_canvas_id.keys()
@@ -106,3 +107,4 @@ class GenerateMergedEnrollmentTerm(BackgroundJob):
             merged_analytics[canvas_user_id] = 'merged'
 
         app.logger.info(f'Assignment submissions merge for term {term_id} complete: {user_count} users merged.')
+        self.user_count = user_count

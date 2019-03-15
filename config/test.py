@@ -31,6 +31,7 @@ LOCH_S3_BUCKET = 'mock-bucket'
 
 RDS_SCHEMA_ASC = 'asc_test'
 RDS_SCHEMA_COE = 'coe_test'
+RDS_SCHEMA_METADATA = 'nessie_metadata_test'
 RDS_SCHEMA_PHYSICS = 'physics_test'
 RDS_SCHEMA_SIS_INTERNAL = 'sis_internal_test'
 RDS_SCHEMA_STUDENT = 'student_test'

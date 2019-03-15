@@ -61,7 +61,7 @@ def refresh_all_from_staging(tables):
             raise BackgroundJobError(f'Final transaction commit failed for {redshift_schema()}.')
 
 
-def refresh_from_staging(table, term_id, sids, transaction):
+def refresh_from_staging(table, term_id, sids, transaction, truncate_staging=True):
     # If our job is restricted to a particular term id or set of sids, then drop rows from the destination table
     # matching those restrictions. If there are no restrictions, the entire destination table can be truncated.
     delete_conditions = []
@@ -103,13 +103,14 @@ def refresh_from_staging(table, term_id, sids, transaction):
         raise BackgroundJobError(f'Failed to populate table {redshift_schema()}.{table} from staging schema.')
     app.logger.info(f'Populated {redshift_schema()}.{table} from staging schema.')
 
-    # Truncate staging table.
-    transaction.execute(
-        'TRUNCATE {schema}.{table}',
-        schema=psycopg2.sql.Identifier(staging_schema()),
-        table=psycopg2.sql.Identifier(table),
-    )
-    app.logger.info(f'Truncated staging table {staging_schema()}.{table}.')
+    # The staging table can now be truncated, unless we're running a job distributed between workers.
+    if truncate_staging:
+        transaction.execute(
+            'TRUNCATE {schema}.{table}',
+            schema=psycopg2.sql.Identifier(staging_schema()),
+            table=psycopg2.sql.Identifier(table),
+        )
+        app.logger.info(f'Truncated staging table {staging_schema()}.{table}.')
 
 
 def truncate_staging_table(table):

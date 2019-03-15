@@ -34,12 +34,20 @@ import psycopg2.extras
 """Client code to run queries against RDS."""
 
 
-def execute(sql, params=None):
+def execute(sql, params=None, log_query=True):
     with _get_cursor() as cursor:
         if not cursor:
             return None
         else:
-            return _execute(sql, cursor, params)
+            return _execute(sql, cursor, params, 'write', log_query)
+
+
+def fetch(sql, params=None, log_query=True):
+    with _get_cursor(operation='read') as cursor:
+        if not cursor:
+            return None
+        else:
+            return _execute(sql, cursor, params, 'read', log_query)
 
 
 class Transaction():
@@ -47,8 +55,8 @@ class Transaction():
         self.cursor = cursor
         self.execute('BEGIN TRANSACTION')
 
-    def execute(self, sql, params=None):
-        return _execute(sql, self.cursor, params)
+    def execute(self, sql, params=None, log_query=True):
+        return _execute(sql, self.cursor, params, 'write', log_query)
 
     def insert_bulk(self, sql, rows):
         return _insert_bulk(sql, self.cursor, rows)
@@ -67,26 +75,31 @@ def transaction():
 
 
 @contextmanager
-def _get_cursor(autocommit=True):
+def _get_cursor(autocommit=True, operation='write'):
     with get_psycopg_cursor(
-        operation='write',
+        operation=operation,
         autocommit=autocommit,
         uri=app.config.get('SQLALCHEMY_DATABASE_URI'),
     ) as cursor:
         yield cursor
 
 
-def _execute(sql, cursor, params=None):
+def _execute(sql, cursor, params=None, operation='write', log_query=True):
     result = None
     try:
         ts = datetime.now().timestamp()
         cursor.execute(sql, params)
         result = cursor.statusmessage
         query_time = datetime.now().timestamp() - ts
-        app.logger.debug(f'RDS query returned status {result} in {query_time} seconds:\n{sql}\n{params or ""}')
+        if log_query:
+            app.logger.debug(f'RDS query returned status {result} in {query_time} seconds: \n{sql}\n{params or ""}')
     except psycopg2.Error as e:
         _log_db_error(e, sql)
-    return result
+    if operation == 'read':
+        rows = cursor.fetchall()
+        return [dict(r) for r in rows]
+    else:
+        return result
 
 
 def _insert_bulk(sql, cursor, rows):
