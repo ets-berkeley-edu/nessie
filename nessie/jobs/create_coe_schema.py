@@ -100,8 +100,6 @@ class CreateCoeSchema(BackgroundJob):
                 FROM '{loch_s3_coe_data_path}/coe_profiles.tsv'
                 IAM_ROLE '{redshift_iam_role}'
                 DELIMITER '\\t';
-            VACUUM;
-            ANALYZE;
             """,
         )
         if not redshift.execute(query):

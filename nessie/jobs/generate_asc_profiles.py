@@ -93,8 +93,6 @@ class GenerateAscProfiles(BackgroundJob):
                 FROM '{loch_s3_asc_data_path}/athletics_profiles.tsv'
                 IAM_ROLE '{redshift_iam_role}'
                 DELIMITER '\\t';
-            VACUUM;
-            ANALYZE;
             """,
         )
         if not redshift.execute(query):
