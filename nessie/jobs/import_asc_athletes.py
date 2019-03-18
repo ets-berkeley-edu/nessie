@@ -118,8 +118,6 @@ class ImportAscAthletes(BackgroundJob):
                 FROM 's3://{s3_bucket}/{s3_key}'
                 IAM_ROLE '{redshift_iam_role}'
                 DELIMITER '\\t';
-            VACUUM;
-            ANALYZE;
             """,
             s3_bucket=app.config['LOCH_S3_BUCKET'],
             s3_key=s3_key,
