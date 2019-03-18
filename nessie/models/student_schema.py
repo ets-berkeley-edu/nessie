@@ -64,40 +64,50 @@ def refresh_all_from_staging(tables):
 def refresh_from_staging(table, term_id, sids, transaction, truncate_staging=True):
     # If our job is restricted to a particular term id or set of sids, then drop rows from the destination table
     # matching those restrictions. If there are no restrictions, the entire destination table can be truncated.
-    delete_conditions = []
-    delete_params = []
+    refresh_conditions = []
+    refresh_params = []
     if (term_id and table == 'student_enrollment_terms'):
-        delete_conditions.append('term_id = %s')
-        delete_params.append(term_id)
+        refresh_conditions.append('term_id = %s')
+        refresh_params.append(term_id)
     if sids:
-        delete_conditions.append('sid = ANY(%s)')
-        delete_params.append(sids)
-    if not delete_conditions:
+        refresh_conditions.append('sid = ANY(%s)')
+        refresh_params.append(sids)
+
+    result = None
+
+    if not refresh_conditions:
         transaction.execute(
             'TRUNCATE {schema}.{table}',
             schema=psycopg2.sql.Identifier(redshift_schema()),
             table=psycopg2.sql.Identifier(table),
         )
         app.logger.info(f'Truncated destination table {redshift_schema()}.{table}.')
+        result = transaction.execute(
+            'INSERT INTO {schema}.{table} (SELECT * FROM {staging_schema}.{table})',
+            schema=psycopg2.sql.Identifier(redshift_schema()),
+            staging_schema=psycopg2.sql.Identifier(staging_schema()),
+            table=psycopg2.sql.Identifier(table),
+        )
     else:
-        delete_sql = 'DELETE FROM {schema}.{table} WHERE ' + ' AND '.join(delete_conditions)
+        delete_sql = 'DELETE FROM {schema}.{table} WHERE ' + ' AND '.join(refresh_conditions)
         transaction.execute(
             delete_sql,
             schema=psycopg2.sql.Identifier(redshift_schema()),
             table=psycopg2.sql.Identifier(table),
-            params=tuple(delete_params),
+            params=tuple(refresh_params),
         )
         app.logger.info(
             f'Deleted existing rows from destination table {redshift_schema()}.{table} '
             f"(term_id={term_id or 'all'}, {len(sids) if sids else 'all'} sids).")
+        insert_sql = 'INSERT INTO {schema}.{table} (SELECT * FROM {staging_schema}.{table} WHERE ' + ' AND '.join(refresh_conditions) + ')'
+        result = transaction.execute(
+            insert_sql,
+            schema=psycopg2.sql.Identifier(redshift_schema()),
+            staging_schema=psycopg2.sql.Identifier(staging_schema()),
+            table=psycopg2.sql.Identifier(table),
+            params=tuple(refresh_params),
+        )
 
-    # Load new data from the staging tables into the destination table.
-    result = transaction.execute(
-        'INSERT INTO {schema}.{table} (SELECT * FROM {staging_schema}.{table})',
-        schema=psycopg2.sql.Identifier(redshift_schema()),
-        staging_schema=psycopg2.sql.Identifier(staging_schema()),
-        table=psycopg2.sql.Identifier(table),
-    )
     if not result:
         transaction.rollback()
         raise BackgroundJobError(f'Failed to populate table {redshift_schema()}.{table} from staging schema.')
