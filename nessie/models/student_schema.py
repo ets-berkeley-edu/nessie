@@ -43,14 +43,12 @@ def staging_schema():
 
 
 def drop_staged_enrollment_term(term_id):
-    with redshift.transaction() as transaction:
-        delete_sql = 'DELETE FROM {schema}.{table} WHERE term_id = %s'
-        transaction.execute(
-            delete_sql,
-            schema=psycopg2.sql.Identifier(staging_schema()),
-            table=psycopg2.sql.Identifier('student_enrollment_terms'),
-            params=(term_id,),
-        )
+    redshift.execute(
+        'DELETE FROM {schema}.{table} WHERE term_id = %s',
+        schema=psycopg2.sql.Identifier(staging_schema()),
+        table=psycopg2.sql.Identifier('student_enrollment_terms'),
+        params=(term_id,),
+    )
 
 
 def refresh_all_from_staging(tables):
