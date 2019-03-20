@@ -60,6 +60,8 @@ REDSHIFT_SCHEMA_STUDENT = 'student_test'
 
 SQLALCHEMY_DATABASE_URI = 'postgres://nessie:nessie@localhost:5432/nessie_test'
 
+STUDENT_API_MAX_THREADS = 1
+
 LOGGING_LOCATION = 'STDOUT'
 
 JOB_SYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 0}
