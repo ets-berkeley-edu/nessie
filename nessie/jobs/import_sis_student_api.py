@@ -22,7 +22,10 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES,
 ENHANCEMENTS, OR MODIFICATIONS.
 """
+from concurrent.futures import ThreadPoolExecutor
+from itertools import repeat
 import json
+from timeit import default_timer as timer
 
 from flask import current_app as app
 from nessie.externals import redshift, s3, sis_student_api
@@ -33,32 +36,30 @@ from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_
 """Logic for SIS student API import job."""
 
 
+def async_get_feed(app_obj, csid):
+    with app_obj.app_context():
+        feed = sis_student_api.get_student(csid)
+        result = {
+            'sid': csid,
+            'feed': feed,
+        }
+    return result
+
+
 class ImportSisStudentApi(BackgroundJob):
 
     redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
+    max_threads = app.config['STUDENT_API_MAX_THREADS']
 
     def run(self, csids=None):
         if not csids:
             csids = [row['sid'] for row in get_all_student_ids()]
         app.logger.info(f'Starting SIS student API import job for {len(csids)} students...')
 
-        rows = []
-        success_count = 0
-        failure_count = 0
-        index = 1
-        for csid in csids:
-            app.logger.info(f'Fetching SIS student API for SID {csid} ({index} of {len(csids)})')
-            feed = sis_student_api.get_student(csid)
-            if feed:
-                success_count += 1
-                rows.append(encoded_tsv_row([csid, json.dumps(feed)]))
-            else:
-                failure_count += 1
-                app.logger.error(f'SIS student API import failed for CSID {csid}.')
-            index += 1
+        rows, failure_count = self.load_concurrently(csids)
 
         s3_key = f'{get_s3_sis_api_daily_path()}/profiles.tsv'
-        app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
+        app.logger.info(f'Will stash {len(rows)} feeds in S3: {s3_key}')
         if not s3.upload_tsv_rows(rows, s3_key):
             raise BackgroundJobError('Error on S3 upload: aborting job.')
 
@@ -79,4 +80,21 @@ class ImportSisStudentApi(BackgroundJob):
         if not redshift.execute(staging_to_destination_query):
             raise BackgroundJobError('Error on Redshift copy: aborting job.')
 
-        return f'SIS student API import job completed: {success_count} succeeded, {failure_count} failed.'
+        return f'SIS student API import job completed: {len(rows)} succeeded, {failure_count} failed.'
+
+    def load_concurrently(self, csids):
+        rows = []
+        failure_count = 0
+        app_obj = app._get_current_object()
+        start_loop = timer()
+        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
+            for result in executor.map(async_get_feed, repeat(app_obj), csids):
+                csid = result['sid']
+                feed = result['feed']
+                if feed:
+                    rows.append(encoded_tsv_row([csid, json.dumps(feed)]))
+                else:
+                    failure_count += 1
+                    app.logger.error(f'SIS student API import failed for CSID {csid}.')
+        app.logger.info(f'Wanted {len(csids)} students; got {len(rows)} in {timer() - start_loop} secs')
+        return rows, failure_count

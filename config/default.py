@@ -206,6 +206,7 @@ REDSHIFT_SCHEMA_SIS_ADVISING_NOTES = 'External SIS Advising Notes schema name'
 STUDENT_API_ID = 'secretid'
 STUDENT_API_KEY = 'secretkey'
 STUDENT_API_URL = 'https://secreturl.berkeley.edu/students'
+STUDENT_API_MAX_THREADS = 5
 
 TERMS_API_ID = 'secretid'
 TERMS_API_KEY = 'secretkey'
