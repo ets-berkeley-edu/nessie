@@ -105,6 +105,7 @@ def resolve_sql_template_string(template_string, **kwargs):
     s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
     s3_advising_notes_prefix = 's3://' + app.config['LOCH_S3_SIS_ADVISING_NOTES_BUCKET'] + '/'
     template_data = {
+        'rds_app_boa_user': app.config['RDS_APP_BOA_USER'],
         'rds_dblink_to_redshift': app.config['REDSHIFT_DATABASE'] + '_redshift',
         'rds_schema_asc': app.config['RDS_SCHEMA_ASC'],
         'rds_schema_coe': app.config['RDS_SCHEMA_COE'],
@@ -113,6 +114,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'rds_schema_sis_advising_notes': app.config['RDS_SCHEMA_SIS_ADVISING_NOTES'],
         'rds_schema_sis_internal': app.config['RDS_SCHEMA_SIS_INTERNAL'],
         'rds_schema_student': app.config['RDS_SCHEMA_STUDENT'],
+        'redshift_app_boa_user': app.config['REDSHIFT_APP_BOA_USER'],
         'redshift_schema_asc': app.config['REDSHIFT_SCHEMA_ASC'],
         'redshift_schema_boac': app.config['REDSHIFT_SCHEMA_BOAC'],
         'redshift_schema_caliper_analytics': app.config['REDSHIFT_SCHEMA_CALIPER'],
