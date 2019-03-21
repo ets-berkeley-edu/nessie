@@ -73,11 +73,14 @@ class GenerateMergedEnrollmentTerm(BackgroundJob):
 
     def merge_advisee_assignment_submissions_for_term(self, term_id, enrollment_term_map, advisees_by_canvas_id):
         advisee_ids = advisees_by_canvas_id.keys()
-        submission_counts_for_term_query = queries.get_advisee_submissions_sorted(term_id)
         app.logger.info(f'Starting assignment-submissions analytics merge for term {term_id} (up to {len(advisee_ids)} advisees)')
         user_count = 0
-        merged_analytics = {}
 
+        # Track analytics already merged in the event a retry is needed on the submission stats query.
+        merged_analytics = {}
+        ids_without_merged_analytics = set(advisee_ids)
+
+        submission_counts_for_term_query = queries.get_advisee_submissions_sorted(term_id)
         for canvas_user_id, sites_grp in groupby(submission_counts_for_term_query, key=operator.itemgetter('reference_user_id')):
             user_count += 1
             if user_count % 100 == 0:
@@ -105,6 +108,15 @@ class GenerateMergedEnrollmentTerm(BackgroundJob):
                 relative_submission_counts,
             )
             merged_analytics[canvas_user_id] = 'merged'
+
+        # Add in empty data structures for the few students who have never seen a Canvas assignment.
+        for canvas_user_id in ids_without_merged_analytics:
+            sid = advisees_by_canvas_id.get(str(canvas_user_id), {}).get('sid')
+            advisee_term_feed = enrollment_term_map.get(sid)
+            if not advisee_term_feed:
+                # Nothing to merge.
+                continue
+            merge_assignment_submissions_for_user(advisee_term_feed, canvas_user_id, {})
 
         app.logger.info(f'Assignment submissions merge for term {term_id} complete: {user_count} users merged.')
         self.user_count = user_count
