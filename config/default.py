@@ -181,6 +181,10 @@ REDSHIFT_USER = 'username'
 
 REDSHIFT_IAM_ROLE = 'iam role'
 
+# BOA limited access credentials to nessie rds and redshift
+RDS_APP_BOA_USER = 'boa rds username'
+REDSHIFT_APP_BOA_USER = 'boa redshift username'
+
 # The following internal schemas are consistent across environments and do not need to be overridden locally.
 REDSHIFT_SCHEMA_ASC = 'boac_advising_asc'
 REDSHIFT_SCHEMA_BOAC = 'boac_analytics'
