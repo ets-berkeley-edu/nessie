@@ -26,7 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
-from nessie.lib.util import resolve_sql_template
+from nessie.lib.util import legacy_note_datetime_to_utc, resolve_sql_template
 
 """Logic for SIS Advising Notes schema creation job."""
 
@@ -48,6 +48,33 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
 
         rds_index_ddl = resolve_sql_template('index_sis_advising_notes.template.sql')
         if rds.execute(rds_index_ddl):
+            notes = rds.fetch(f'SELECT n.id, n.created_at, n.updated_at FROM {self._rds_schema_sis_advising_notes}.advising_notes n')
+            self._legacy_notes_to_utc(notes)
             return 'SIS Advising Notes schema creation job completed.'
         else:
             raise BackgroundJobError(f'SIS Advising Notes schema creation job failed.')
+
+    @classmethod
+    def _legacy_notes_to_utc(cls, notes):
+        if len(notes):
+            with rds.transaction() as transaction:
+                def _utc_str(dt):
+                    utc_date = legacy_note_datetime_to_utc(dt)
+                    return str(utc_date)
+
+                for note in notes:
+                    note_id = note.get('id')
+                    created_at = note.get('created_at')
+                    updated_at = note.get('updated_at')
+                    sql = f"""UPDATE {cls._rds_schema_sis_advising_notes}.advising_notes
+                              SET
+                                  created_at = '{_utc_str(created_at)}',
+                                  updated_at = '{_utc_str(updated_at)}'
+                              WHERE id = '{note_id}'
+                    """
+                    transaction.execute(sql)
+                    transaction.commit()
+
+    @classmethod
+    def _rds_schema_sis_advising_notes(cls):
+        return app.config['RDS_SCHEMA_SIS_ADVISING_NOTES']

@@ -32,3 +32,17 @@ class TestUtil:
     def test_vacuum_whitespace(self):
         """Cleans up leading, trailing, and repeated whitespace."""
         assert util.vacuum_whitespace('  Firstname    Lastname   ') == 'Firstname Lastname'
+
+    def test_legacy_note_datetime_to_utc(self, app):
+        for expect_none in (None, '  ', '+00', 'garbled date'):
+            assert util.legacy_note_datetime_to_utc(expect_none) is None, f'Failed on input: \'{expect_none}\''
+
+        utc = util.legacy_note_datetime_to_utc('2016-12-14 06:17:08.821896+00')
+        assert utc
+        assert utc.tzinfo.zone == 'UTC'
+        assert f'{utc.year}-{utc.month}-{utc.day} {utc.hour}:{utc.minute}:0{utc.second}' == '2016-12-14 14:17:08'
+
+        utc = util.legacy_note_datetime_to_utc('2016-12-16 23:59:30+00')
+        assert utc
+        assert utc.tzinfo.zone == 'UTC'
+        assert f'{utc.year}-{utc.month}-{utc.day} 0{utc.hour}:{utc.minute}:{utc.second}' == '2016-12-17 07:59:30'

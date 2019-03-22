@@ -154,3 +154,18 @@ def resolve_sql_template(sql_filename, **kwargs):
     with open(app.config['BASE_DIR'] + f'/nessie/sql_templates/{sql_filename}', encoding='utf-8') as file:
         template_string = file.read()
     return resolve_sql_template_string(template_string, **kwargs)
+
+
+def legacy_note_datetime_to_utc(dt):
+    try:
+        # The incoming datetime has wrong timezone info so we must re-parse, excluding tz info
+        ds = dt and str(dt).split('+')[0].strip()[:19]
+        if ds and len(ds) == 19:
+            d = datetime.strptime(ds, '%Y-%m-%d %H:%M:%S') if ds else None
+            d = d and pytz.timezone('America/Los_Angeles').localize(d)
+            return d and d.astimezone(pytz.utc)
+        else:
+            return None
+    except ValueError as e:
+        app.logger.warning(f'Failed to parse date \'{dt}\' in legacy advising note. Error: {e}')
+        return None
