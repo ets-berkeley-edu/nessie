@@ -108,6 +108,7 @@ class GenerateMergedEnrollmentTerm(BackgroundJob):
                 relative_submission_counts,
             )
             merged_analytics[canvas_user_id] = 'merged'
+            ids_without_merged_analytics.remove(str(canvas_user_id))
 
         # Add in empty data structures for the few students who have never seen a Canvas assignment.
         for canvas_user_id in ids_without_merged_analytics:
