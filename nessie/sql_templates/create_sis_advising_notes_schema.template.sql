@@ -277,6 +277,22 @@ CREATE SCHEMA {redshift_schema_sis_advising_notes_internal};
 -- Internal tables
 --------------------------------------------------------------------
 
+CREATE OR REPLACE FUNCTION {redshift_schema_sis_advising_notes_internal}.to_utc_iso_string(date_string VARCHAR)
+RETURNS VARCHAR
+STABLE
+AS $$
+  from datetime import datetime
+  import pytz
+
+  d = datetime.strptime(date_string, '%d-%b-%y %I.%M.%S.%f000 %p')
+  d = pytz.timezone('America/Los_Angeles').localize(d)
+  return d.astimezone(pytz.utc).isoformat()
+$$ language plpythonu;
+
+GRANT EXECUTE
+ON function {redshift_schema_sis_advising_notes_internal}.to_utc_iso_string(VARCHAR)
+TO GROUP {redshift_app_boa_user}_group;
+
 CREATE TABLE {redshift_schema_sis_advising_notes_internal}.advising_notes
 SORTKEY (id)
 AS (
@@ -293,9 +309,9 @@ AS (
         D.note_body,
         N.operid,
         N.created_by,
-        TO_TIMESTAMP(N.created_at, 'DD-MON-YY HH.MI.SS.US000 AM') AS created_at,
+        TO_TIMESTAMP({redshift_schema_sis_advising_notes_internal}.to_utc_iso_string(N.created_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
         N.updated_by,
-        TO_TIMESTAMP(D.updated_at, 'DD-MON-YY HH.MI.SS.US000 AM') AS updated_at
+        TO_TIMESTAMP({redshift_schema_sis_advising_notes_internal}.to_utc_iso_string(D.updated_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at
     FROM
         {redshift_schema_sis_advising_notes}.advising_notes N
     JOIN
@@ -330,9 +346,9 @@ AS (
         descr,
         TO_DATE(attachment_date, 'DD-MON-YY') AS attachment_date,
         created_by,
-        TO_TIMESTAMP(created_at, 'DD-MON-YY HH.MI.SS.US000 AM') AS created_at,
+        TO_TIMESTAMP({redshift_schema_sis_advising_notes_internal}.to_utc_iso_string(created_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
         updated_by,
-        TO_TIMESTAMP(updated_at, 'DD-MON-YY HH.MI.SS.US000 AM') AS updated_at,
+        TO_TIMESTAMP({redshift_schema_sis_advising_notes_internal}.to_utc_iso_string(updated_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at,
         system_file_name,
         user_file_name,
         (sid || '_' || note_id || '_' || attachment_seq_nr || REGEXP_SUBSTR(system_file_name, '\\.[^.]*$')) AS sis_file_name
@@ -351,3 +367,5 @@ AS (
     FROM
         {redshift_schema_sis_advising_notes}.advising_note_topics
 );
+
+DROP FUNCTION {redshift_schema_sis_advising_notes_internal}.to_utc_iso_string(VARCHAR);
