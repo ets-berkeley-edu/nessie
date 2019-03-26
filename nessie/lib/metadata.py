@@ -157,7 +157,7 @@ def update_merged_feed_status(term_id, successes, failures):
         return
     query = resolve_sql_template_string(
         """
-        COPY {redshift_redshift_schema_metadata}.merged_feed_status
+        COPY {redshift_schema_metadata}.merged_feed_status
             FROM '{loch_s3_sis_api_data_path}/merged_feed_status.tsv'
             IAM_ROLE '{redshift_iam_role}'
             DELIMITER '\\t'
