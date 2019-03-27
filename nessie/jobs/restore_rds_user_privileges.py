@@ -35,7 +35,7 @@ from nessie.lib.util import resolve_sql_template
 class RestoreRdsUserPrivileges(BackgroundJob):
 
     def run(self):
-        app.logger.info('Starting RDS index creation job...')
+        app.logger.info('Starting RDS user privileges job...')
         app.logger.info('Executing SQL...')
         resolved_ddl = resolve_sql_template('restore_rds_user_privileges.template.sql')
         if rds.execute(resolved_ddl):
