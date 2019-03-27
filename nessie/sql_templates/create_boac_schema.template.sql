@@ -29,6 +29,8 @@
 
 DROP SCHEMA IF EXISTS {redshift_schema_boac} CASCADE;
 CREATE SCHEMA {redshift_schema_boac};
+GRANT USAGE ON SCHEMA {redshift_schema_boac} TO GROUP {redshift_app_boa_user}_group;
+ALTER default PRIVILEGES IN SCHEMA {redshift_schema_boac} GRANT SELECT ON TABLES TO GROUP {redshift_app_boa_user}_group;
 
 CREATE TABLE {redshift_schema_boac}.assignment_submissions_scores
 SORTKEY (canvas_user_id, assignment_id)

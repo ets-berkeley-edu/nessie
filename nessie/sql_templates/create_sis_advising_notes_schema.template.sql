@@ -272,6 +272,8 @@ TABLE PROPERTIES ('skip.header.line.count'='1');
 
 DROP SCHEMA IF EXISTS {redshift_schema_sis_advising_notes_internal} CASCADE;
 CREATE SCHEMA {redshift_schema_sis_advising_notes_internal};
+GRANT USAGE ON SCHEMA {redshift_schema_sis_advising_notes_internal} TO GROUP {redshift_app_boa_user}_group;
+ALTER default PRIVILEGES IN SCHEMA {redshift_schema_sis_advising_notes_internal} GRANT SELECT ON TABLES TO GROUP {redshift_app_boa_user}_group;
 
 --------------------------------------------------------------------
 -- Internal tables

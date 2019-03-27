@@ -34,7 +34,7 @@ from nessie.lib.util import resolve_sql_template
 class RestoreRedshiftUserPrivileges(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting metadata schema creation job...')
+        app.logger.info(f'Starting Redshift user privileges job...')
         app.logger.info(f'Executing SQL...')
         resolved_ddl = resolve_sql_template('restore_redshift_user_privileges.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):

@@ -54,6 +54,8 @@ LOCATION '{loch_s3_physics_data_path}/students/';
 
 DROP SCHEMA IF EXISTS {redshift_schema_physics} CASCADE;
 CREATE SCHEMA {redshift_schema_physics};
+GRANT USAGE ON SCHEMA {rds_schema_physics} TO {rds_app_boa_user};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_physics} GRANT SELECT ON TABLES TO {rds_app_boa_user};
 
 --------------------------------------------------------------------
 -- Internal Tables
