@@ -320,7 +320,7 @@ def refresh_canvas_data_catalog():
 
 @app.route('/api/job/restore_rds_user_privileges', methods=['POST'])
 @auth_required
-def restore_redshift_rds_user_privileges():
+def restore_rds_user_privileges():
     job_started = RestoreRdsUserPrivileges().run_async()
     return respond_with_status(job_started)
 
