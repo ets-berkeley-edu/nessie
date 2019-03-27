@@ -89,8 +89,6 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.migrate_lrs_incrementals import MigrateLrsIncrementals
     from nessie.jobs.refresh_boac_cache import RefreshBoacCache
     from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
-    from nessie.jobs.restore_rds_user_privileges import RestoreRdsUserPrivileges
-    from nessie.jobs.restore_redshift_user_privileges import RestoreRedshiftUserPrivileges
     from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
     from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
     from nessie.jobs.transform_lrs_incrementals import TransformLrsIncrementals
@@ -140,8 +138,6 @@ def schedule_all_jobs(force=False):
         'JOB_GENERATE_CURRENT_TERM_FEEDS',
         [
             GenerateMergedStudentFeeds,
-            RestoreRedshiftUserPrivileges,
-            RestoreRdsUserPrivileges,
             RefreshBoacCache,
         ],
         force,

@@ -26,6 +26,8 @@
 DROP SCHEMA IF EXISTS {rds_schema_sis_advising_notes} CASCADE;
 
 CREATE SCHEMA {rds_schema_sis_advising_notes};
+GRANT USAGE ON SCHEMA {rds_schema_sis_advising_notes} TO {rds_app_boa_user};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_sis_advising_notes} GRANT SELECT ON TABLES TO {rds_app_boa_user};
 
 CREATE TABLE {rds_schema_sis_advising_notes}.advising_notes (
   id VARCHAR NOT NULL,
