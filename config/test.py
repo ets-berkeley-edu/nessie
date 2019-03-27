@@ -42,6 +42,9 @@ REDSHIFT_PASSWORD = 'nessie'
 REDSHIFT_PORT = 5432
 REDSHIFT_USER = 'nessie'
 
+RDS_APP_BOA_USER = 'nessie'
+REDSHIFT_APP_BOA_USER = 'nessie'
+
 REDSHIFT_SCHEMA_ASC = 'asc_test'
 REDSHIFT_SCHEMA_BOAC = 'boac_test'
 REDSHIFT_SCHEMA_CALNET = 'calnet_test'
