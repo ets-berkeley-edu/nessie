@@ -1,4 +1,6 @@
 CREATE SCHEMA IF NOT EXISTS {rds_schema_asc};
+GRANT USAGE ON SCHEMA {rds_schema_asc} TO {rds_app_boa_user};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_asc} GRANT SELECT ON TABLES TO {rds_app_boa_user};
 
 CREATE TABLE IF NOT EXISTS {rds_schema_asc}.students
 (
@@ -19,6 +21,8 @@ CREATE INDEX IF NOT EXISTS students_asc_intensive_idx ON {rds_schema_asc}.studen
 CREATE INDEX IF NOT EXISTS students_asc_group_code_idx ON {rds_schema_asc}.students (group_code);
 
 CREATE SCHEMA IF NOT EXISTS {rds_schema_coe};
+GRANT USAGE ON SCHEMA {rds_schema_coe} TO {rds_app_boa_user};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_coe} GRANT SELECT ON TABLES TO {rds_app_boa_user};
 
 CREATE TABLE IF NOT EXISTS {rds_schema_coe}.students
 (
@@ -48,6 +52,8 @@ CREATE INDEX IF NOT EXISTS students_coe_probation_idx ON {rds_schema_coe}.studen
 CREATE INDEX IF NOT EXISTS students_coe_status_idx ON {rds_schema_coe}.students (status);
 
 CREATE SCHEMA IF NOT EXISTS {rds_schema_physics};
+GRANT USAGE ON SCHEMA {rds_schema_physics} TO {rds_app_boa_user};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_physics} GRANT SELECT ON TABLES TO {rds_app_boa_user};
 CREATE TABLE IF NOT EXISTS {rds_schema_physics}.students
 (
     sid VARCHAR NOT NULL,
@@ -55,6 +61,8 @@ CREATE TABLE IF NOT EXISTS {rds_schema_physics}.students
 );
 
 CREATE SCHEMA IF NOT EXISTS {rds_schema_student};
+GRANT USAGE ON SCHEMA {rds_schema_student} TO {rds_app_boa_user};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_student} GRANT SELECT ON TABLES TO {rds_app_boa_user};
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_academic_status
 (
@@ -98,6 +106,8 @@ CREATE INDEX IF NOT EXISTS students_term_gpa_gpa_idx ON {rds_schema_student}.stu
 CREATE INDEX IF NOT EXISTS students_term_gpa_units_idx ON {rds_schema_student}.student_term_gpas (units_taken_for_gpa);
 
 CREATE SCHEMA IF NOT EXISTS {rds_schema_sis_internal};
+GRANT USAGE ON SCHEMA {rds_schema_sis_internal} TO {rds_app_boa_user};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_sis_internal} GRANT SELECT ON TABLES TO {rds_app_boa_user};
 
 CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.enrolled_primary_sections
 (
