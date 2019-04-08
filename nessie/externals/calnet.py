@@ -79,13 +79,13 @@ class Client:
             batch = ids[i:i + BATCH_QUERY_MAXIMUM]
             with self.connect() as conn:
                 matches = self._ldap_search(conn, batch, ldap_id_type)
-                all_out.append(matches)
+                all_out += matches
                 ids_of_persons_found = [p[id_key_in_ldap_result] for p in matches]
                 ids_not_found = [person_id for person_id in batch if person_id not in ids_of_persons_found]
                 if ids_not_found:
                     # Next, with no-match ids, search for 'expired users' in LDAP.
                     expired_users = self._ldap_search(conn, ids_not_found, ldap_id_type, search_expired=True)
-                    all_out.append(expired_users)
+                    all_out += expired_users
         return all_out
 
     @classmethod
