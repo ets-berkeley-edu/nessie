@@ -28,7 +28,7 @@ from nessie.externals import redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import resolve_sql_template
 
-"""Logic for metadata schema creation job."""
+"""Logic for ASC schema creation job."""
 
 
 class CreateAscSchema(BackgroundJob):

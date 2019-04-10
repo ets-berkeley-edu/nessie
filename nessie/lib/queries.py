@@ -24,7 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
-from nessie.externals import redshift, s3
+from nessie.externals import rds, redshift, s3
 from nessie.lib.berkeley import canvas_terms, reverse_term_ids, term_name_for_sis_id
 from nessie.lib.mockingdata import fixture
 
@@ -53,7 +53,7 @@ def intermediate_schema():
 
 
 def metadata_schema():
-    return app.config['REDSHIFT_SCHEMA_METADATA']
+    return app.config['RDS_SCHEMA_METADATA']
 
 
 def physics_schema():
@@ -216,5 +216,5 @@ def get_enrolled_primary_sections_for_term(term_id):
 def get_successfully_backfilled_students():
     sql = f"""SELECT sid
         FROM {metadata_schema()}.merged_feed_status
-        WHERE term_id = 'all' AND status = 'success'"""
-    return redshift.fetch(sql)
+        WHERE status = 'success'"""
+    return rds.fetch(sql)

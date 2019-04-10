@@ -24,7 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
-from nessie.externals import rds, redshift
+from nessie.externals import rds
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import resolve_sql_template
 
@@ -42,13 +42,6 @@ class CreateMetadataSchema(BackgroundJob):
             app.logger.info(f"Schema '{app.config['RDS_SCHEMA_METADATA']}' found or created.")
         else:
             raise BackgroundJobError(f'RDS metadata schema creation failed.')
-            return False
-
-        resolved_ddl_redshift = resolve_sql_template('create_metadata_schema_redshift.template.sql')
-        if redshift.execute_ddl_script(resolved_ddl_redshift):
-            app.logger.info(f"Schema '{app.config['REDSHIFT_SCHEMA_METADATA']}' found or created.")
-        else:
-            raise BackgroundJobError(f'Redshift metadata schema creation failed.')
             return False
 
         return True

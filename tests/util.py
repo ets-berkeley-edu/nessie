@@ -30,7 +30,7 @@ import logging
 
 import boto3
 import moto
-from nessie.externals import redshift
+from nessie.externals import rds
 
 
 @contextmanager
@@ -65,8 +65,8 @@ def override_config(app, key, value):
 
 def assert_background_job_status(prefix):
     from flask import current_app as app
-    schema = app.config['REDSHIFT_SCHEMA_METADATA']
-    background_job_status_results = redshift.fetch(f'SELECT * FROM {schema}.background_job_status')
+    schema = app.config['RDS_SCHEMA_METADATA']
+    background_job_status_results = rds.fetch(f'SELECT * FROM {schema}.background_job_status')
     assert len(background_job_status_results) == 1
     assert background_job_status_results[0]['job_id'].startswith(f'{prefix}_')
     assert background_job_status_results[0]['status'] == 'succeeded'

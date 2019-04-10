@@ -51,3 +51,65 @@ CREATE INDEX IF NOT EXISTS merged_enrollment_term_job_idx
 ON {rds_schema_metadata}.merged_enrollment_term_job_queue (master_job_id, term_id);
 CREATE INDEX IF NOT EXISTS merged_enrollment_term_job_status_idx
 ON {rds_schema_metadata}.merged_enrollment_term_job_queue (status);
+
+CREATE TABLE IF NOT EXISTS {rds_schema_metadata}.background_job_status
+(
+    job_id VARCHAR NOT NULL PRIMARY KEY,
+    -- Possible 'status' values: 'started', 'succeeded', 'failed'
+    status VARCHAR NOT NULL,
+    instance_id VARCHAR,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    details VARCHAR(4096)
+);
+
+CREATE TABLE IF NOT EXISTS {rds_schema_metadata}.canvas_sync_job_status
+(
+    job_id VARCHAR NOT NULL,
+    filename VARCHAR NOT NULL,
+    canvas_table VARCHAR NOT NULL,
+    source_url VARCHAR(4096) NOT NULL,
+    source_size BIGINT,
+    destination_url VARCHAR(1024),
+    destination_size BIGINT,
+    -- Possible 'status' values:
+    -- - 'created': the master node has identified a source file in Canvas and will dispatch a sync job
+    -- - 'received': the worker node has received the dispatch request
+    -- - 'started': the worker node has started a background thread for the sync job
+    -- - 'streaming': the worker node has started streaming the file to S3
+    -- - 'complete': the worker node has completed the file upload to S3
+    -- - 'duplicate': the worker node has found a duplicate file in S3 and will not upload
+    -- - 'error': an error occurred.
+    status VARCHAR NOT NULL,
+    -- Further details on job status. Currently used only for errors.
+    details VARCHAR(4096),
+    instance_id VARCHAR,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    PRIMARY KEY (job_id, filename)
+);
+
+CREATE INDEX IF NOT EXISTS canvas_sync_job_idx
+ON {rds_schema_metadata}.canvas_sync_job_status (job_id);
+
+CREATE TABLE IF NOT EXISTS {rds_schema_metadata}.canvas_synced_snapshots
+(
+    filename VARCHAR NOT NULL,
+    canvas_table VARCHAR NOT NULL,
+    url VARCHAR NOT NULL,
+    size BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    deleted_at TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS canvas_synced_snapshots_file_idx
+ON {rds_schema_metadata}.canvas_synced_snapshots (filename);
+
+CREATE TABLE IF NOT EXISTS {rds_schema_metadata}.merged_feed_status
+(
+    sid VARCHAR NOT NULL PRIMARY KEY ,
+    -- Possible 'status' values: 'succeeded', 'failed'
+    status VARCHAR NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+);
+

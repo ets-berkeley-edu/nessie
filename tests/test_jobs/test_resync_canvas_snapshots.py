@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import logging
 
-from nessie.externals import canvas_data, redshift
+from nessie.externals import canvas_data, rds
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.lib import metadata
 from nessie.lib.util import get_s3_canvas_daily_path
@@ -64,10 +64,10 @@ class TestResyncCanvasSnapshots:
         mock_metadata(latest_sync_job, errored, 'error', None)
         mock_metadata(latest_sync_job, size_discrepancy, 'complete', 65536)
 
-        schema = app.config['REDSHIFT_SCHEMA_METADATA']
+        schema = app.config['RDS_SCHEMA_METADATA']
 
         with capture_app_logs(app):
-            assert redshift.fetch(f'SELECT count(*) FROM {schema}.canvas_sync_job_status')[0]['count'] == 18
+            assert rds.fetch(f'SELECT count(*) FROM {schema}.canvas_sync_job_status')[0]['count'] == 18
             with mock_s3(app):
                 result = ResyncCanvasSnapshots().run_wrapped()
             assert 'Canvas snapshot resync job dispatched to workers' in result
@@ -77,8 +77,8 @@ class TestResyncCanvasSnapshots:
             assert f"Dispatched S3 resync of snapshot {size_discrepancy['filename']}" in caplog.text
             assert '3 successful dispatches, 0 failures' in caplog.text
 
-        assert redshift.fetch(f'SELECT count(*) FROM {schema}.canvas_sync_job_status')[0]['count'] == 21
-        resync_results = redshift.fetch(f"SELECT * FROM {schema}.canvas_sync_job_status WHERE job_id LIKE 'resync%'")
+        assert rds.fetch(f'SELECT count(*) FROM {schema}.canvas_sync_job_status')[0]['count'] == 21
+        resync_results = rds.fetch(f"SELECT * FROM {schema}.canvas_sync_job_status WHERE job_id LIKE 'resync%'")
         assert len(resync_results) == 3
 
         urls = []

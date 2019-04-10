@@ -125,7 +125,6 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_schema_edw': app.config['REDSHIFT_SCHEMA_EDW'],
         'redshift_schema_intermediate': app.config['REDSHIFT_SCHEMA_INTERMEDIATE'],
         'redshift_schema_lrs_external': app.config['REDSHIFT_SCHEMA_LRS'],
-        'redshift_schema_metadata': app.config['REDSHIFT_SCHEMA_METADATA'],
         'redshift_schema_physics': app.config['REDSHIFT_SCHEMA_PHYSICS'],
         'redshift_schema_physics_external': app.config['REDSHIFT_SCHEMA_PHYSICS_EXTERNAL'],
         'redshift_schema_sis': app.config['REDSHIFT_SCHEMA_SIS'],

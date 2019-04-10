@@ -75,7 +75,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         if new_sids:
             app.logger.info(f'Found {len(new_sids)} new students, will backfill all terms.')
             ImportTermGpas().run(csids=new_sids)
-            update_merged_feed_status(None, new_sids, [])
+            update_merged_feed_status(new_sids, [])
             app.logger.info(f'Updated merged feed status for {len(new_sids)} students.')
         else:
             app.logger.info(f'No new students to backfill.')
