@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import logging
 
-from nessie.externals import redshift, s3
+from nessie.externals import rds, s3
 from nessie.jobs.sync_canvas_snapshots import delete_objects_with_prefix, SyncCanvasSnapshots
 import pytest
 from tests.util import assert_background_job_status, capture_app_logs, mock_s3
@@ -46,16 +46,16 @@ class TestSyncCanvasSnapshots:
             assert 'Dispatched S3 sync of snapshot requests-00098-b14782f5.gz' in caplog.text
             assert '311 successful dispatches, 0 failures' in caplog.text
 
-            schema = app.config['REDSHIFT_SCHEMA_METADATA']
+            schema = app.config['RDS_SCHEMA_METADATA']
 
-            count_results = redshift.fetch(f'SELECT count(*) FROM {schema}.canvas_sync_job_status')
+            count_results = rds.fetch(f'SELECT count(*) FROM {schema}.canvas_sync_job_status')
             assert count_results[0]['count'] == 311
 
-            canvas_status_results = redshift.fetch(f'SELECT DISTINCT status FROM {schema}.canvas_sync_job_status')
+            canvas_status_results = rds.fetch(f'SELECT DISTINCT status FROM {schema}.canvas_sync_job_status')
             assert len(canvas_status_results) == 1
             assert canvas_status_results[0]['status'] == 'created'
 
-            sync_results = redshift.fetch(f'SELECT * FROM {schema}.canvas_sync_job_status LIMIT 1')
+            sync_results = rds.fetch(f'SELECT * FROM {schema}.canvas_sync_job_status LIMIT 1')
             assert sync_results[0]['job_id'].startswith('sync_')
             assert sync_results[0]['filename'] == 'account_dim-00000-5eb7ee9e.gz'
             assert sync_results[0]['canvas_table'] == 'account_dim'

@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import logging
 
-from nessie.externals import redshift
+from nessie.externals import rds
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
 from nessie.lib import metadata
 from nessie.lib.mockingbird import _get_fixtures_path
@@ -71,9 +71,9 @@ class TestSyncFileToS3:
             result = SyncFileToS3().run(url=url, key=key, canvas_sync_job_id='job_2')
             assert result is False
 
-            schema = app.config['REDSHIFT_SCHEMA_METADATA']
-            sync_metadata = redshift.fetch(f'SELECT * FROM {schema}.canvas_sync_job_status')
-            snapshot_metadata = redshift.fetch(f'SELECT * FROM {schema}.canvas_synced_snapshots')
+            schema = app.config['RDS_SCHEMA_METADATA']
+            sync_metadata = rds.fetch(f'SELECT * FROM {schema}.canvas_sync_job_status')
+            snapshot_metadata = rds.fetch(f'SELECT * FROM {schema}.canvas_synced_snapshots')
 
             assert len(sync_metadata) == 2
             assert sync_metadata[0]['job_id'] == 'job_1'

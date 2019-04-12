@@ -69,12 +69,13 @@ def app(request):
 
 @pytest.fixture()
 def metadata_db(app):
-    """Use Postgres to locally mock the metadata schema, which is temporarily split between Redshift and RDS (NS-445)."""
-    from nessie.externals import rds, redshift
-    redshift_schema = app.config['REDSHIFT_SCHEMA_METADATA']
-    redshift.execute(f'DROP SCHEMA IF EXISTS {redshift_schema} CASCADE')
-    redshift.execute(f'CREATE SCHEMA IF NOT EXISTS {redshift_schema}')
-    redshift.execute(f"""CREATE TABLE IF NOT EXISTS {redshift_schema}.background_job_status
+    """Use Postgres to locally mock the metadata schema."""
+    from nessie.externals import rds
+
+    rds_schema = app.config['RDS_SCHEMA_METADATA']
+    rds.execute(f'DROP SCHEMA IF EXISTS {rds_schema} CASCADE')
+    rds.execute(f'CREATE SCHEMA IF NOT EXISTS {rds_schema}')
+    rds.execute(f"""CREATE TABLE IF NOT EXISTS {rds_schema}.background_job_status
     (
         job_id VARCHAR NOT NULL,
         status VARCHAR NOT NULL,
@@ -83,7 +84,7 @@ def metadata_db(app):
         created_at TIMESTAMP NOT NULL,
         updated_at TIMESTAMP NOT NULL
     )""")
-    redshift.execute(f"""CREATE TABLE IF NOT EXISTS {redshift_schema}.canvas_sync_job_status
+    rds.execute(f"""CREATE TABLE IF NOT EXISTS {rds_schema}.canvas_sync_job_status
     (
        job_id VARCHAR NOT NULL,
        filename VARCHAR NOT NULL,
@@ -98,7 +99,7 @@ def metadata_db(app):
        created_at TIMESTAMP NOT NULL,
        updated_at TIMESTAMP NOT NULL
     )""")
-    redshift.execute(f"""CREATE TABLE IF NOT EXISTS {redshift_schema}.canvas_synced_snapshots
+    rds.execute(f"""CREATE TABLE IF NOT EXISTS {rds_schema}.canvas_synced_snapshots
     (
         filename VARCHAR NOT NULL,
         canvas_table VARCHAR NOT NULL,
@@ -107,9 +108,12 @@ def metadata_db(app):
         created_at TIMESTAMP NOT NULL,
         deleted_at TIMESTAMP
     )""")
-    rds_schema = app.config['RDS_SCHEMA_METADATA']
-    rds.execute(f'DROP SCHEMA IF EXISTS {rds_schema} CASCADE')
-    rds.execute(f'CREATE SCHEMA IF NOT EXISTS {rds_schema}')
+    rds.execute(f"""CREATE TABLE IF NOT EXISTS {rds_schema}.merged_feed_status
+    (
+        sid VARCHAR NOT NULL PRIMARY KEY,
+        status VARCHAR NOT NULL,
+        updated_at TIMESTAMP NOT NULL
+    );""")
     rds.execute(f"""CREATE TABLE IF NOT EXISTS {rds_schema}.merged_enrollment_term_job_queue
     (
        id SERIAL PRIMARY KEY,
