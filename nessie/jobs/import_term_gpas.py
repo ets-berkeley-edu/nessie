@@ -56,14 +56,14 @@ class ImportTermGpas(BackgroundJob):
                 for term_id, term_data in feed.items():
                     rows.append(encoded_tsv_row([csid, term_id, (term_data.get('gpa') or '0'), (term_data.get('unitsTakenForGpa') or '0')]))
             elif feed == {}:
-                app.logger.info(f'No registrations found for SID {csid}.')
+                app.logger.info(f'No past UGRD registrations found for SID {csid}.')
                 no_registrations_count += 1
             else:
                 failure_count += 1
                 app.logger.error(f'Term GPA import failed for SID {csid}.')
             index += 1
 
-        if success_count == 0:
+        if (success_count == 0) and (failure_count > 0):
             raise BackgroundJobError('Failed to import term GPAs: aborting job.')
 
         s3_key = f'{get_s3_sis_api_daily_path()}/term_gpas.tsv'
