@@ -150,6 +150,7 @@ LOCH_S3_CANVAS_DATA_PATH_HISTORICAL = 'canvas/path/to/historical'
 
 # The following paths are consistent across environments and do not need to be overridden locally.
 LOCH_S3_ASC_DATA_PATH = 'asc-data'
+LOCH_S3_ASC_DATA_SFTP_PATH = 'asc-data/asc-sftp'
 LOCH_S3_BOAC_ANALYTICS_DATA_PATH = 'boac-analytics'
 LOCH_S3_CALNET_DATA_PATH = 'calnet-data'
 LOCH_S3_COE_DATA_PATH = 'coe-data'
@@ -187,6 +188,7 @@ REDSHIFT_APP_BOA_USER = 'boa redshift username'
 
 # The following internal schemas are consistent across environments and do not need to be overridden locally.
 REDSHIFT_SCHEMA_ASC = 'boac_advising_asc'
+REDSHIFT_SCHEMA_ASC_ADVISING_NOTES_INTERNAL = 'asc_advising_notes'
 REDSHIFT_SCHEMA_BOAC = 'boac_analytics'
 REDSHIFT_SCHEMA_CALIPER = 'lrs_caliper_analytics'
 REDSHIFT_SCHEMA_COE = 'boac_advising_coe'
@@ -198,6 +200,7 @@ REDSHIFT_SCHEMA_STUDENT = 'student'
 REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL = 'boac_advising_notes'
 
 # The following external schemas vary between environments and do need to be overridden locally.
+REDSHIFT_SCHEMA_ASC_ADVISING_NOTES = 'External ASC Advising Notes schema name'
 REDSHIFT_SCHEMA_CALNET = 'External CalNet schema name'
 REDSHIFT_SCHEMA_CANVAS = 'External Canvas schema name'
 REDSHIFT_SCHEMA_COE_EXTERNAL = 'External COE schema name'

@@ -116,6 +116,8 @@ def resolve_sql_template_string(template_string, **kwargs):
         'rds_schema_student': app.config['RDS_SCHEMA_STUDENT'],
         'redshift_app_boa_user': app.config['REDSHIFT_APP_BOA_USER'],
         'redshift_schema_asc': app.config['REDSHIFT_SCHEMA_ASC'],
+        'redshift_schema_asc_advising_notes': app.config['REDSHIFT_SCHEMA_ASC_ADVISING_NOTES'],
+        'redshift_schema_asc_advising_notes_internal': app.config['REDSHIFT_SCHEMA_ASC_ADVISING_NOTES_INTERNAL'],
         'redshift_schema_boac': app.config['REDSHIFT_SCHEMA_BOAC'],
         'redshift_schema_caliper_analytics': app.config['REDSHIFT_SCHEMA_CALIPER'],
         'redshift_schema_calnet': app.config['REDSHIFT_SCHEMA_CALNET'],
