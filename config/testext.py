@@ -35,6 +35,8 @@ REDSHIFT_USER = 'username'
 # be repeatedly created and torn down without conflicts.
 
 REDSHIFT_SCHEMA_ASC = 'testext_mynamehere_asc'
+REDSHIFT_SCHEMA_ASC_ADVISING_NOTES = 'testext_mynamehere_asc_advising_notes_external'
+REDSHIFT_SCHEMA_ASC_ADVISING_NOTES_INTERNAL = 'testext_mynamehere_asc_advising_notes'
 REDSHIFT_SCHEMA_BOAC = 'testext_mynamehere_boac'
 REDSHIFT_SCHEMA_CALNET = 'testext_mynamehere_calnet'
 REDSHIFT_SCHEMA_CANVAS = 'testext_mynamehere_canvas'

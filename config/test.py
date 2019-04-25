@@ -46,6 +46,8 @@ RDS_APP_BOA_USER = 'nessie'
 REDSHIFT_APP_BOA_USER = 'nessie'
 
 REDSHIFT_SCHEMA_ASC = 'asc_test'
+REDSHIFT_SCHEMA_ASC_ADVISING_NOTES = 'asc_advising_notes_external_test'
+REDSHIFT_SCHEMA_ASC_ADVISING_NOTES_INTERNAL = 'asc_advising_notes_test'
 REDSHIFT_SCHEMA_BOAC = 'boac_test'
 REDSHIFT_SCHEMA_CALNET = 'calnet_test'
 REDSHIFT_SCHEMA_CANVAS = 'canvas_test'
