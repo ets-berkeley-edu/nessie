@@ -132,6 +132,7 @@ def student_tables(app):
     """Use Postgres to mock the Redshift student schemas on local test runs."""
     from nessie.externals import rds, redshift
     from nessie.lib.util import resolve_sql_template_string, resolve_sql_template
+    rds.execute(f'DROP SCHEMA sis_internal_test CASCADE')
     rds.execute(resolve_sql_template('create_rds_indexes.template.sql'))
     fixture_path = f"{app.config['BASE_DIR']}/fixtures"
     with open(f'{fixture_path}/students.sql', 'r') as sql_file:
