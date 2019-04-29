@@ -191,8 +191,10 @@ def get_enrolled_canvas_sites_for_term(term_id):
     return redshift.fetch(sql)
 
 
-def get_enrolled_primary_sections_for_term(term_id):
+def get_enrolled_primary_sections(term_id=None):
+    term_clause = f'AND sec.sis_term_id = {term_id}' if term_id else ''
     sql = f"""SELECT
+                sec.sis_term_id,
                 sec.sis_section_id,
                 sec.sis_course_name,
                 TRANSLATE(sec.sis_course_name, '&-, ', '') AS sis_course_name_compressed,
@@ -202,12 +204,14 @@ def get_enrolled_primary_sections_for_term(term_id):
                 LISTAGG(DISTINCT sec.instructor_name, ', ') WITHIN GROUP (ORDER BY sec.instructor_name) AS instructors
               FROM {intermediate_schema()}.sis_enrollments enr
               JOIN {intermediate_schema()}.sis_sections sec
-                ON enr.sis_term_id = {term_id}
-                AND sec.sis_term_id = {term_id}
+                ON enr.sis_term_id = sec.sis_term_id
+                {term_clause}
                 AND sec.is_primary = TRUE
                 AND enr.sis_section_id = sec.sis_section_id
                 AND enr.ldap_uid IN (SELECT uid FROM {student_schema()}.student_academic_status)
-              GROUP BY sec.sis_section_id, sec.sis_course_name, sec.sis_course_title, sec.sis_instruction_format, sec.sis_section_num
+              GROUP BY
+                sec.sis_term_id, sec.sis_section_id, sec.sis_course_name,
+                sec.sis_course_title, sec.sis_instruction_format, sec.sis_section_num
               ORDER BY sec.sis_section_id
         """
     return redshift.fetch(sql)

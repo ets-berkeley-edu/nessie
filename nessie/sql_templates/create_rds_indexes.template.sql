@@ -115,6 +115,8 @@ CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.enrolled_primary_sections
     sis_section_id VARCHAR(5) NOT NULL,
     sis_course_name VARCHAR NOT NULL,
     sis_course_name_compressed VARCHAR NOT NULL,
+    sis_subject_area_compressed VARCHAR NOT NULL,
+    sis_catalog_id VARCHAR NOT NULL,
     sis_course_title VARCHAR,
     sis_instruction_format VARCHAR NOT NULL,
     sis_section_num VARCHAR NOT NULL,
@@ -123,6 +125,10 @@ CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.enrolled_primary_sections
 
 CREATE INDEX IF NOT EXISTS enrolled_primary_sections_term_id_sis_course_name_compressed_idx
 ON {rds_schema_sis_internal}.enrolled_primary_sections (term_id, sis_course_name_compressed);
+CREATE INDEX IF NOT EXISTS enrolled_primary_sections_sis_subject_area_compressed_idx
+ON {rds_schema_sis_internal}.enrolled_primary_sections (sis_subject_area_compressed);
+CREATE INDEX IF NOT EXISTS enrolled_primary_sections_sis_catalog_id_idx
+ON {rds_schema_sis_internal}.enrolled_primary_sections (sis_catalog_id);
 
 CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.sis_terms
 (

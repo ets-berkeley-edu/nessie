@@ -28,7 +28,7 @@ from flask import current_app as app
 from nessie.externals import rds
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import current_term_id
-from nessie.lib.queries import get_enrolled_primary_sections_for_term
+from nessie.lib.queries import get_enrolled_primary_sections
 
 
 """Logic for current-term enrollments index job."""
@@ -41,7 +41,10 @@ class IndexEnrollments(BackgroundJob):
     def run(self, term_id=None):
         if not term_id:
             term_id = current_term_id()
-        app.logger.info(f'Starting enrollments index job for term {term_id}...')
+        if term_id == 'all':
+            app.logger.info(f'Starting enrollments index job for all terms...')
+        else:
+            app.logger.info(f'Starting enrollments index job for term {term_id}...')
 
         with rds.transaction() as transaction:
             if self.refresh_enrollments_index(term_id, transaction):
@@ -54,18 +57,29 @@ class IndexEnrollments(BackgroundJob):
         return f'Enrollments index job completed for term {term_id}.'
 
     def refresh_enrollments_index(self, term_id, transaction):
-        section_results = get_enrolled_primary_sections_for_term(term_id)
-        if not section_results:
-            return False
-        if not transaction.execute(f"DELETE FROM {self.rds_schema}.enrolled_primary_sections WHERE term_id = '{term_id}'"):
-            return False
+        if term_id == 'all':
+            section_results = get_enrolled_primary_sections()
+            if not section_results:
+                return False
+            if not transaction.execute(f'TRUNCATE {self.rds_schema}.enrolled_primary_sections'):
+                return False
+        else:
+            section_results = get_enrolled_primary_sections(term_id)
+            if not section_results:
+                return False
+            if not transaction.execute(f"DELETE FROM {self.rds_schema}.enrolled_primary_sections WHERE term_id = '{term_id}'"):
+                return False
 
         def insertable_tuple(row):
+            subject_area, catalog_id = row['sis_course_name'].rsplit(' ', 1)
+            subject_area_compressed = subject_area.translate({ord(c): None for c in '&-, '})
             return tuple([
-                str(term_id),
+                row['sis_term_id'],
                 row['sis_section_id'],
                 row['sis_course_name'],
                 row['sis_course_name_compressed'],
+                subject_area_compressed,
+                catalog_id,
                 row['sis_course_title'],
                 row['sis_instruction_format'],
                 row['sis_section_num'],
@@ -73,8 +87,8 @@ class IndexEnrollments(BackgroundJob):
             ])
         insert_result = transaction.insert_bulk(
             f"""INSERT INTO {self.rds_schema}.enrolled_primary_sections
-                (term_id, sis_section_id, sis_course_name, sis_course_name_compressed, sis_course_title,
-                sis_instruction_format, sis_section_num, instructors)
+                (term_id, sis_section_id, sis_course_name, sis_course_name_compressed, sis_subject_area_compressed, sis_catalog_id,
+                 sis_course_title, sis_instruction_format, sis_section_num, instructors)
                 VALUES %s""",
             [insertable_tuple(r) for r in section_results],
         )
