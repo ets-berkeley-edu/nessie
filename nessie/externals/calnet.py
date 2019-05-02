@@ -86,6 +86,9 @@ class Client:
                     # Next, with no-match ids, search for 'expired users' in LDAP.
                     expired_users = self._ldap_search(conn, ids_not_found, ldap_id_type, search_expired=True)
                     all_out += expired_users
+                    for p in expired_users:
+                        ids_not_found.remove(p[id_key_in_ldap_result])
+                    self.app.logger.warn(f'Did not find: {ids_not_found}')
         return all_out
 
     @classmethod

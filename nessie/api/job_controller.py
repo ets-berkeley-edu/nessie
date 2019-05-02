@@ -29,12 +29,14 @@ from flask import current_app as app, request
 from nessie.api.auth_helper import auth_required
 from nessie.api.errors import BadRequestError
 from nessie.jobs.background_job import ChainedBackgroundJob
+from nessie.jobs.chained_import_student_population import ChainedImportStudentPopulation
 from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
 from nessie.jobs.create_berkeleyx_schema import CreateBerkeleyxSchema
 from nessie.jobs.create_calnet_schema import CreateCalNetSchema
 from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.create_coe_schema import CreateCoeSchema
 from nessie.jobs.create_edw_schema import CreateEdwSchema
+from nessie.jobs.create_l_s_schema import CreateLSSchema
 from nessie.jobs.create_lrs_glue_jobs import CreateLrsGlueJobs
 from nessie.jobs.create_physics_schema import CreatePhysicsSchema
 from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
@@ -106,6 +108,13 @@ def create_calnet_schema():
 @auth_required
 def create_edw_schema():
     job_started = CreateEdwSchema().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/create_l_s_schema', methods=['POST'])
+@auth_required
+def create_l_s_schema():
+    job_started = CreateLSSchema().run_async()
     return respond_with_status(job_started)
 
 
@@ -299,16 +308,7 @@ def import_sis_terms_api(term_id):
 @app.route('/api/job/import_student_population', methods=['POST'])
 @auth_required
 def import_student_population():
-    chained_job = ChainedBackgroundJob(
-        steps=[
-            CreateCoeSchema(),
-            ImportAscAthletes(),
-            GenerateAscProfiles(),
-            ImportCalNetData(),
-            CreateCalNetSchema(),
-        ],
-    )
-    job_started = chained_job.run_async()
+    job_started = ChainedImportStudentPopulation().run_async()
     return respond_with_status(job_started)
 
 

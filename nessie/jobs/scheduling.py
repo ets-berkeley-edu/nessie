@@ -71,16 +71,12 @@ def initialize_job_schedules(_app, force=False):
 
 
 def schedule_all_jobs(force=False):
-    from nessie.jobs.create_calnet_schema import CreateCalNetSchema
-    from nessie.jobs.create_coe_schema import CreateCoeSchema
+    from nessie.jobs.chained_import_student_population import ChainedImportStudentPopulation
     from nessie.jobs.create_sis_schema import CreateSisSchema
-    from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
     from nessie.jobs.generate_canvas_caliper_analytics import GenerateCanvasCaliperAnalytics
     from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
     from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
-    from nessie.jobs.import_asc_athletes import ImportAscAthletes
-    from nessie.jobs.import_calnet_data import ImportCalNetData
     from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
     from nessie.jobs.import_degree_progress import ImportDegreeProgress
     from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
@@ -95,18 +91,7 @@ def schedule_all_jobs(force=False):
 
     schedule_job(sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots, force)
     schedule_job(sched, 'JOB_RESYNC_CANVAS_SNAPSHOTS', ResyncCanvasSnapshots, force)
-    schedule_chained_job(
-        sched,
-        'JOB_IMPORT_STUDENT_POPULATION',
-        [
-            CreateCoeSchema,
-            ImportAscAthletes,
-            GenerateAscProfiles,
-            ImportCalNetData,
-            CreateCalNetSchema,
-        ],
-        force,
-    )
+    schedule_job(sched, 'JOB_IMPORT_STUDENT_POPULATION', ChainedImportStudentPopulation, force)
     schedule_job(sched, 'JOB_IMPORT_DEGREE_PROGRESS', ImportDegreeProgress, force)
     schedule_job(sched, 'JOB_IMPORT_SIS_STUDENTS', ImportSisStudentApi, force)
     schedule_job(sched, 'JOB_IMPORT_CANVAS_ENROLLMENTS', ImportCanvasEnrollmentsApi, force)

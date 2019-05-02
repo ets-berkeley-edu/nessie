@@ -51,6 +51,27 @@ CREATE INDEX IF NOT EXISTS students_coe_advisor_ldap_uid_idx ON {rds_schema_coe}
 CREATE INDEX IF NOT EXISTS students_coe_probation_idx ON {rds_schema_coe}.students (probation);
 CREATE INDEX IF NOT EXISTS students_coe_status_idx ON {rds_schema_coe}.students (status);
 
+CREATE SCHEMA IF NOT EXISTS {rds_schema_l_s};
+GRANT USAGE ON SCHEMA {rds_schema_l_s} TO {rds_app_boa_user};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_l_s} GRANT SELECT ON TABLES TO {rds_app_boa_user};
+
+CREATE TABLE IF NOT EXISTS {rds_schema_l_s}.students
+(
+    sid VARCHAR NOT NULL,
+    acadplan_code VARCHAR,
+    acadplan_descr VARCHAR,
+    acadplan_type_code VARCHAR,
+    acadplan_ownedby_code VARCHAR,
+    ldap_uid VARCHAR,
+    first_name VARCHAR,
+    last_name VARCHAR,
+    email_address VARCHAR,
+    affiliations VARCHAR,
+    PRIMARY KEY (sid, acadplan_code)
+);
+
+CREATE INDEX IF NOT EXISTS students_l_s_sid_idx ON {rds_schema_l_s}.students (sid);
+
 CREATE SCHEMA IF NOT EXISTS {rds_schema_physics};
 GRANT USAGE ON SCHEMA {rds_schema_physics} TO {rds_app_boa_user};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_physics} GRANT SELECT ON TABLES TO {rds_app_boa_user};
