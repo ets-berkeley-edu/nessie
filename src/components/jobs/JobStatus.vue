@@ -79,7 +79,7 @@ export default {
 };
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 td {
   padding-left: 20px;
   vertical-align: top;

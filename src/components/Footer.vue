@@ -15,7 +15,7 @@ export default {
 };
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 .footer-container {
   align-items: flex-end;
   justify-content: space-between;

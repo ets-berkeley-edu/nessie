@@ -74,7 +74,7 @@ export default {
 };
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 h2 {
   color: #17a2b8;
   padding-top: 20px;

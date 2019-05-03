@@ -10,7 +10,7 @@ export default {
 };
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 .main {
   display: flex;
   flex-direction: column;
