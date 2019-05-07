@@ -65,6 +65,8 @@ LOCATION '{loch_s3_sis_data_path}/l_and_s/';
 
 DROP SCHEMA IF EXISTS {redshift_schema_l_s} CASCADE;
 CREATE SCHEMA {redshift_schema_l_s};
+GRANT USAGE ON SCHEMA {redshift_schema_l_s} TO GROUP {redshift_app_boa_user}_group;
+ALTER default PRIVILEGES IN SCHEMA {redshift_schema_l_s} GRANT SELECT ON TABLES TO GROUP {redshift_app_boa_user}_group;
 
 --------------------------------------------------------------------
 -- Internal Tables
