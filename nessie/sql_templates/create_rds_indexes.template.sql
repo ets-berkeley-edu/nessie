@@ -103,6 +103,14 @@ CREATE INDEX IF NOT EXISTS students_academic_status_level_idx ON {rds_schema_stu
 CREATE INDEX IF NOT EXISTS students_academic_status_gpa_idx ON {rds_schema_student}.student_academic_status (gpa);
 CREATE INDEX IF NOT EXISTS students_academic_status_units_idx ON {rds_schema_student}.student_academic_status (units);
 
+CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_enrollment_terms
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    enrollment_term TEXT NOT NULL,
+    PRIMARY KEY (sid, term_id)
+);
+
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_majors
 (
     sid VARCHAR NOT NULL,
@@ -112,6 +120,12 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_majors
 
 CREATE INDEX IF NOT EXISTS students_major_sid_idx ON {rds_schema_student}.student_majors (sid);
 CREATE INDEX IF NOT EXISTS students_major_major_idx ON {rds_schema_student}.student_majors (major);
+
+CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_profiles
+(
+    sid VARCHAR NOT NULL PRIMARY KEY,
+    profile TEXT NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_term_gpas
 (

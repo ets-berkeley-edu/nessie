@@ -44,6 +44,8 @@ from nessie.models import student_schema
 class GenerateMergedStudentFeeds(BackgroundJob):
 
     rds_schema = app.config['RDS_SCHEMA_STUDENT']
+    redshift_dblink_group = app.config['REDSHIFT_DBLINK_GROUP']
+    redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
 
     def run(self, term_id=None, backfill_new_students=True):
         app.logger.info(f'Starting merged profile generation job (backfill={backfill_new_students}).')
@@ -123,6 +125,15 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             any_pending_job = next((row for row in enrollment_results if row['status'] == 'created' or row['status'] == 'started'), None)
             if not any_pending_job:
                 break
+
+        app.logger.info('Refreshing enrollment terms in RDS.')
+        with rds.transaction() as transaction:
+            if self.refresh_rds_enrollment_terms(None, transaction):
+                transaction.commit()
+                app.logger.info('Refreshed RDS enrollment terms.')
+            else:
+                transaction.rollback()
+                raise BackgroundJobError('Failed to refresh RDS enrollment terms.')
 
         status_string = f'Generated merged profiles ({len(self.successes)} successes, {len(self.failures)} failures).'
         errored = False
@@ -207,33 +218,79 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         return merged_profile
 
     def refresh_rds_indexes(self, sids, transaction):
-        def delete_existing_rows(table):
-            if sids:
-                sql = f'DELETE FROM {self.rds_schema}.{table} WHERE sid = ANY(%s)'
-                params = (sids,)
-            else:
-                sql = f'TRUNCATE {self.rds_schema}.{table}'
-                params = None
-            return transaction.execute(sql, params)
-
-        # TODO LOAD THE RDS INDEXES FROM REDSHIFT TABLES RATHER THAN IN-MEMORY STORAGE.
         if len(self.rows['student_academic_status']):
-            if not delete_existing_rows('student_academic_status'):
+            if not self._delete_rds_rows('student_academic_status', sids, transaction):
                 return False
-            result = transaction.insert_bulk(
-                f"""INSERT INTO {self.rds_schema}.student_academic_status
-                    (sid, uid, first_name, last_name, level, gpa, units) VALUES %s""",
-                [split_tsv_row(r) for r in self.rows['student_academic_status']],
-            )
-            if not result:
+            if not self._refresh_rds_academic_status(transaction):
                 return False
         if len(self.rows['student_majors']):
-            if not delete_existing_rows('student_majors'):
+            if not self._delete_rds_rows('student_majors', sids, transaction):
                 return False
-            result = transaction.insert_bulk(
-                f'INSERT INTO {self.rds_schema}.student_majors (sid, major) VALUES %s',
-                [split_tsv_row(r) for r in self.rows['student_majors']],
-            )
-            if not result:
+            if not self._refresh_rds_majors(transaction):
+                return False
+        if len(self.rows['student_profiles']):
+            if not self._delete_rds_rows('student_profiles', sids, transaction):
+                return False
+            if not self._refresh_rds_profiles(transaction):
                 return False
         return True
+
+    def refresh_rds_enrollment_terms(self, sids, transaction):
+        if not self._delete_rds_rows('student_enrollment_terms', sids, transaction):
+            return False
+        if not self._refresh_rds_enrollment_terms(transaction):
+            return False
+        return True
+
+    def _delete_rds_rows(self, table, sids, transaction):
+        if sids:
+            sql = f'DELETE FROM {self.rds_schema}.{table} WHERE sid = ANY(%s)'
+            params = (sids,)
+        else:
+            sql = f'TRUNCATE {self.rds_schema}.{table}'
+            params = None
+        return transaction.execute(sql, params)
+
+    def _refresh_rds_academic_status(self, transaction):
+        # TODO LOAD THE RDS INDEXES FROM REDSHIFT TABLES RATHER THAN IN-MEMORY STORAGE.
+        return transaction.insert_bulk(
+            f"""INSERT INTO {self.rds_schema}.student_academic_status
+                (sid, uid, first_name, last_name, level, gpa, units) VALUES %s""",
+            [split_tsv_row(r) for r in self.rows['student_academic_status']],
+        )
+
+    def _refresh_rds_majors(self, transaction):
+        # TODO LOAD THE RDS INDEXES FROM REDSHIFT TABLES RATHER THAN IN-MEMORY STORAGE.
+        return transaction.insert_bulk(
+            f'INSERT INTO {self.rds_schema}.student_majors (sid, major) VALUES %s',
+            [split_tsv_row(r) for r in self.rows['student_majors']],
+        )
+
+    def _refresh_rds_profiles(self, transaction):
+        return transaction.insert_bulk(
+            f"""INSERT INTO {self.rds_schema}.student_profiles (
+            SELECT *
+                FROM dblink('{self.redshift_dblink_group}',$REDSHIFT$
+                    SELECT sid, profile
+                    FROM {self.redshift_schema}.student_profiles
+              $REDSHIFT$)
+            AS redshift_profiles (
+                sid VARCHAR,
+                profile TEXT
+            ));""",
+        )
+
+    def _refresh_rds_enrollment_terms(self, transaction):
+        return transaction.insert_bulk(
+            f"""INSERT INTO {self.rds_schema}.student_enrollment_terms (
+            SELECT *
+                FROM dblink('{self.redshift_dblink_group}',$REDSHIFT$
+                    SELECT sid, term_id, enrollment_term
+                    FROM {self.redshift_schema}.student_enrollment_terms
+              $REDSHIFT$)
+            AS redshift_enrollment_terms (
+                sid VARCHAR,
+                term_id VARCHAR,
+                enrollment_term TEXT
+            ));""",
+        )

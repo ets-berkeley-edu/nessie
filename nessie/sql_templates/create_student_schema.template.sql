@@ -26,6 +26,8 @@
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_student};
 GRANT USAGE ON SCHEMA {redshift_schema_student} TO GROUP {redshift_app_boa_user}_group;
 ALTER default PRIVILEGES IN SCHEMA {redshift_schema_student} GRANT SELECT ON TABLES TO GROUP {redshift_app_boa_user}_group;
+GRANT USAGE ON SCHEMA {redshift_schema_student} TO GROUP {redshift_dblink_group};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_student} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
 
 -- The following tables store the accumulated outputs of long-running API loops.
 
