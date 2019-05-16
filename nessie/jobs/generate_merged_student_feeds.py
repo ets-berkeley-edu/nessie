@@ -267,7 +267,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         )
 
     def _refresh_rds_profiles(self, transaction):
-        return transaction.insert_bulk(
+        return transaction.execute(
             f"""INSERT INTO {self.rds_schema}.student_profiles (
             SELECT *
                 FROM dblink('{self.redshift_dblink_group}',$REDSHIFT$
@@ -281,7 +281,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         )
 
     def _refresh_rds_enrollment_terms(self, transaction):
-        return transaction.insert_bulk(
+        return transaction.execute(
             f"""INSERT INTO {self.rds_schema}.student_enrollment_terms (
             SELECT *
                 FROM dblink('{self.redshift_dblink_group}',$REDSHIFT$
