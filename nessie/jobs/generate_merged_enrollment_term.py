@@ -52,9 +52,21 @@ class GenerateMergedEnrollmentTerm(BackgroundJob):
 
     def merge_analytics_data_for_term(self, term_id):
         feed_path = app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH'] + '/feeds/'
-        advisees_by_canvas_id = s3.get_object_json(feed_path + 'advisees_by_canvas_id.json')
-        canvas_site_map = s3.get_object_json(feed_path + f'canvas_site_map_{term_id}.json')
-        enrollment_term_map = s3.get_object_json(feed_path + f'enrollment_term_map_{term_id}.json')
+
+        advisees_by_canvas_id_path = feed_path + 'advisees_by_canvas_id.json'
+        advisees_by_canvas_id = s3.get_object_json(advisees_by_canvas_id_path)
+        if not advisees_by_canvas_id:
+            raise BackgroundJobError(f'Failed to retrieve advisee map at {advisees_by_canvas_id_path}, aborting')
+
+        canvas_site_map_path = feed_path + f'canvas_site_map_{term_id}.json'
+        canvas_site_map = s3.get_object_json(canvas_site_map_path)
+        if not canvas_site_map:
+            raise BackgroundJobError(f'Failed to retrieve Canvas site map at {canvas_site_map_path}, aborting')
+
+        enrollment_term_map_path = feed_path + f'enrollment_term_map_{term_id}.json'
+        enrollment_term_map = s3.get_object_json(enrollment_term_map_path)
+        if not enrollment_term_map:
+            raise BackgroundJobError(f'Failed to retrieve enrollment term map at {enrollment_term_map_path}, aborting')
 
         self.merge_course_analytics_for_term(term_id, canvas_site_map, enrollment_term_map, advisees_by_canvas_id)
         self.merge_advisee_assignment_submissions_for_term(term_id, enrollment_term_map, advisees_by_canvas_id)

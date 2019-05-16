@@ -44,7 +44,7 @@ from nessie.models import student_schema
 class GenerateMergedStudentFeeds(BackgroundJob):
 
     rds_schema = app.config['RDS_SCHEMA_STUDENT']
-    redshift_dblink_group = app.config['REDSHIFT_DBLINK_GROUP']
+    rds_dblink_to_redshift = app.config['REDSHIFT_DATABASE'] + '_redshift'
     redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
 
     def run(self, term_id=None, backfill_new_students=True):
@@ -270,7 +270,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         return transaction.execute(
             f"""INSERT INTO {self.rds_schema}.student_profiles (
             SELECT *
-                FROM dblink('{self.redshift_dblink_group}',$REDSHIFT$
+                FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                     SELECT sid, profile
                     FROM {self.redshift_schema}.student_profiles
               $REDSHIFT$)
@@ -284,7 +284,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         return transaction.execute(
             f"""INSERT INTO {self.rds_schema}.student_enrollment_terms (
             SELECT *
-                FROM dblink('{self.redshift_dblink_group}',$REDSHIFT$
+                FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                     SELECT sid, term_id, enrollment_term
                     FROM {self.redshift_schema}.student_enrollment_terms
               $REDSHIFT$)
