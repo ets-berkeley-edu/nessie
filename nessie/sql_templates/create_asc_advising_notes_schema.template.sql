@@ -88,11 +88,12 @@ ON function {redshift_schema_asc_advising_notes_internal}.to_utc_iso_string(VARC
 TO GROUP {redshift_app_boa_user}_group;
 
 CREATE TABLE {redshift_schema_asc_advising_notes_internal}.advising_notes
-SORTKEY (student_sid)
+SORTKEY (id)
 AS (
     SELECT
-      n.id,
-      n.studentSid AS student_sid,
+      n.studentSid || '-' || n.id AS id,
+      n.id AS asc_id,
+      n.studentSid AS sid,
       n.studentFirstName AS student_first_name,
       n.studentLastName AS student_last_name,
       n.meetingDate AS meeting_date,
@@ -105,10 +106,12 @@ AS (
 );
 
 CREATE TABLE {redshift_schema_asc_advising_notes_internal}.advising_note_topics
-SORTKEY (advising_note_id)
+SORTKEY (id)
 AS (
-    SELECT
-      n.id AS advising_note_id,
+    SELECT DISTINCT
+      n.studentSid || '-' || n.id AS id,
+      n.id AS asc_id,
+      n.studentSid AS sid,
       t AS topic
     FROM {redshift_schema_asc_advising_notes}.advising_notes a, a.notes n, n.topics t
 );
