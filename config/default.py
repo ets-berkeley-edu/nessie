@@ -141,7 +141,7 @@ LOCH_EDX_S3_TRANSACTION_LOG_PATH = 'path/to/edx/transaction/log'
 
 # Loch Nessie configs
 LOCH_S3_BUCKET = 'bucket_name'
-LOCH_S3_SIS_ADVISING_NOTES_BUCKET = 'advising notes bucket name'
+LOCH_S3_PROTECTED_BUCKET = 'advising notes bucket name'
 LOCH_S3_REGION = 'us-west-2'
 
 LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM = 'canvas/path/to/current/term'
@@ -155,7 +155,6 @@ LOCH_S3_BOAC_ANALYTICS_DATA_PATH = 'boac-analytics'
 LOCH_S3_CALNET_DATA_PATH = 'calnet-data'
 LOCH_S3_COE_DATA_PATH = 'coe-data'
 LOCH_S3_PHYSICS_DATA_PATH = 'physics-data'
-LOCH_S3_SIS_ADVISING_NOTES_DATA_PATH = 'sis-advising-notes-data'
 LOCH_S3_SIS_DATA_PATH = 'sis-data'
 LOCH_S3_SIS_API_DATA_PATH = 'sis-api-data'
 

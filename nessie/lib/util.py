@@ -103,7 +103,7 @@ def get_s3_sis_api_daily_path(cutoff=None):
 def resolve_sql_template_string(template_string, **kwargs):
     """Our DDL template files are simple enough to use standard Python string formatting."""
     s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
-    s3_advising_notes_prefix = 's3://' + app.config['LOCH_S3_SIS_ADVISING_NOTES_BUCKET'] + '/'
+    s3_protected_prefix = 's3://' + app.config['LOCH_S3_PROTECTED_BUCKET'] + '/'
     template_data = {
         'rds_app_boa_user': app.config['RDS_APP_BOA_USER'],
         'rds_dblink_to_redshift': app.config['REDSHIFT_DATABASE'] + '_redshift',
@@ -146,9 +146,9 @@ def resolve_sql_template_string(template_string, **kwargs):
         'loch_s3_canvas_data_path_current_term': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'],
         'loch_s3_coe_data_path': s3_prefix + get_s3_coe_daily_path(),
         'loch_s3_physics_data_path': s3_prefix + app.config['LOCH_S3_PHYSICS_DATA_PATH'],
-        'loch_s3_sis_advising_notes_data_path': s3_advising_notes_prefix + app.config['LOCH_S3_SIS_ADVISING_NOTES_DATA_PATH'],
         'loch_s3_sis_data_path': s3_prefix + app.config['LOCH_S3_SIS_DATA_PATH'],
         'loch_s3_sis_api_data_path': s3_prefix + get_s3_sis_api_daily_path(),
+        'loch_s3_sis_data_protected_path': s3_protected_prefix + app.config['LOCH_S3_SIS_DATA_PATH'],
     }
     # Kwargs may be passed in to modify default template data.
     template_data.update(kwargs)
