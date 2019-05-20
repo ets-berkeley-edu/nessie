@@ -103,6 +103,29 @@ CREATE INDEX IF NOT EXISTS students_academic_status_level_idx ON {rds_schema_stu
 CREATE INDEX IF NOT EXISTS students_academic_status_gpa_idx ON {rds_schema_student}.student_academic_status (gpa);
 CREATE INDEX IF NOT EXISTS students_academic_status_units_idx ON {rds_schema_student}.student_academic_status (units);
 
+DROP TABLE IF EXISTS {rds_schema_student}.student_names;
+
+CREATE TABLE {rds_schema_student}.student_names
+(
+    sid VARCHAR NOT NULL,
+    name VARCHAR NOT NULL,
+    PRIMARY KEY (sid, name)
+);
+
+CREATE INDEX student_names_name_idx ON {rds_schema_student}.student_names (name);
+
+INSERT INTO {rds_schema_student}.student_names (
+    SELECT DISTINCT sid, unnest(string_to_array(
+        regexp_replace(upper(first_name), '[^\w ]', '', 'g'),
+        ' '
+    )) AS name FROM {rds_schema_student}.student_academic_status
+    UNION
+    SELECT DISTINCT sid, unnest(string_to_array(
+        regexp_replace(upper(last_name), '[^\w ]', '', 'g'),
+        ' '
+    )) AS name FROM {rds_schema_student}.student_academic_status
+);
+
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_enrollment_terms
 (
     sid VARCHAR NOT NULL,
