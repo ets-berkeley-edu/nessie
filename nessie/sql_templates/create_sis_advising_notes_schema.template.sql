@@ -61,7 +61,7 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_notes'
+LOCATION '{loch_s3_sis_data_protected_path}/historical/advising-notes/advising_notes'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_details (PS_SCI_NOTE_TRNDTL)
@@ -82,7 +82,7 @@ ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 LINES TERMINATED BY '\r'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_details'
+LOCATION '{loch_s3_sis_data_protected_path}/historical/advising-notes/advising_note_details'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_topics (PS_SCI_NOTE_TOPIC)
@@ -99,7 +99,7 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_topics'
+LOCATION '{loch_s3_sis_data_protected_path}/historical/advising-notes/advising_note_topics'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_priorities (PS_SCI_NOTE_PRITBL)
@@ -123,7 +123,7 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_priorities'
+LOCATION '{loch_s3_sis_data_protected_path}/historical/advising-notes/advising_note_priorities'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_attachments (PS_SCI_NOTE_ATTACH)
@@ -149,7 +149,7 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_attachments'
+LOCATION '{loch_s3_sis_data_protected_path}/historical/advising-notes/advising_note_attachments'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_attachment_data (PS_SCI_FILE_ATT)
@@ -170,7 +170,7 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_attachment_data'
+LOCATION '{loch_s3_sis_data_protected_path}/historical/advising-notes/advising_note_attachment_data'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_topic_config (PS_SCI_NOTETPC_TBL)
@@ -194,7 +194,7 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_topic_config'
+LOCATION '{loch_s3_sis_data_protected_path}/historical/advising-notes/advising_note_topic_config'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_templates (PS_SCI_FREENOTETBL)
@@ -214,7 +214,7 @@ ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 LINES TERMINATED BY '\r'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_templates'
+LOCATION '{loch_s3_sis_data_protected_path}/historical/advising-notes/advising_note_templates'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_categories (PS_SAA_NOTE_TYPE)
@@ -238,7 +238,7 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_categories'
+LOCATION '{loch_s3_sis_data_protected_path}/historical/advising-notes/advising_note_categories'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 -- advising_note_subcategories (PS_SAA_NOTE_STYPE)
@@ -263,7 +263,7 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_advising_notes_data_path}/advising_note_subcategories'
+LOCATION '{loch_s3_sis_data_protected_path}/historical/advising-notes/advising_note_subcategories'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 --------------------------------------------------------------------
