@@ -26,7 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import re
 
 import pytest
-from tests.util import credentials, post_basic_auth
+from tests.util import credentials, delete_basic_auth, post_basic_auth
 
 
 @pytest.fixture()
@@ -100,6 +100,26 @@ class TestUpdateSchedule:
         assert sync_job['trigger'] == "cron[hour='1', minute='0']"
         resync_job = next(job for job in jobs if job['id'] == 'job_resync_canvas_snapshots')
         assert '01:40:00' in resync_job['nextRun']
+
+    def test_delete_job(self, app, client):
+        """Deletes obsolete job definition from schedule."""
+        post_basic_auth(
+            client,
+            '/api/schedule/reload',
+            credentials(app),
+        )
+        jobs = client.get('/api/schedule').json
+        assert len(jobs) == 10
+        assert next((job for job in jobs if job['id'] == 'job_generate_all_tables'), None) is not None
+        response = delete_basic_auth(
+            client,
+            '/api/schedule/job_generate_all_tables',
+            credentials(app),
+        )
+        assert response.status_code == 200
+        jobs = response.json
+        assert len(jobs) == 9
+        assert next((job for job in jobs if job['id'] == 'job_generate_all_tables'), None) is None
 
     def test_unknown_job_id(self, app, client):
         """Handles unknown job id."""
