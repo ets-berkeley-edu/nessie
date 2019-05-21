@@ -88,3 +88,9 @@ def get_basic_auth(client, path, credentials):
     auth_string = bytes(credentials[0] + ':' + credentials[1], 'utf-8')
     encoded_credentials = base64.b64encode(auth_string).decode('utf-8')
     return client.get(path, headers={'Authorization': 'Basic ' + encoded_credentials})
+
+
+def delete_basic_auth(client, path, credentials, data=None):
+    auth_string = bytes(credentials[0] + ':' + credentials[1], 'utf-8')
+    encoded_credentials = base64.b64encode(auth_string).decode('utf-8')
+    return client.delete(path, data=json.dumps(data), headers={'Authorization': 'Basic ' + encoded_credentials})

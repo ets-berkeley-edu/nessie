@@ -57,7 +57,7 @@ def get_job_schedule():
     return tolerant_jsonify([job_to_dict(job) for job in sched.get_jobs()])
 
 
-@app.route('/api/schedule/<job_id>', methods=['POST'])
+@app.route('/api/schedule/<job_id>', methods=['POST', 'DELETE'])
 @auth_required
 def update_job_schedule(job_id):
     try:
@@ -69,18 +69,23 @@ def update_job_schedule(job_id):
     job = sched.get_job(job_id)
     if not job:
         raise BadRequestError(f'No job found for job id: {job_id}')
-    # If JSON properties are present, they will be evaluated by APScheduler's cron trigger API.
-    # https://apscheduler.readthedocs.io/en/latest/modules/triggers/cron.html#module-apscheduler.triggers.cron
-    if args:
-        try:
-            job.reschedule(trigger='cron', **args)
-        except Exception as e:
-            raise BadRequestError(f'Error rescheduling job: {e}')
-    # Passing a empty JSON object will pause this job.
+    if request.method == 'DELETE':
+        app.logger.warn(f'About to delete schedule definition for job id: {job_id}')
+        sched.remove_job(job_id)
+        return tolerant_jsonify([job_to_dict(job) for job in sched.get_jobs()])
     else:
-        job.pause()
-    job = sched.get_job(job_id)
-    return tolerant_jsonify(job_to_dict(job))
+        # If JSON properties are present, they will be evaluated by APScheduler's cron trigger API.
+        # https://apscheduler.readthedocs.io/en/latest/modules/triggers/cron.html#module-apscheduler.triggers.cron
+        if args:
+            try:
+                job.reschedule(trigger='cron', **args)
+            except Exception as e:
+                raise BadRequestError(f'Error rescheduling job: {e}')
+        # Passing a empty JSON object will pause this job.
+        else:
+            job.pause()
+        job = sched.get_job(job_id)
+        return tolerant_jsonify(job_to_dict(job))
 
 
 @app.route('/api/schedule/<job_id>/args', methods=['POST'])
