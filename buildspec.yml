@@ -1,13 +1,10 @@
 version: 0.2
 
-eb_codebuild_settings:
-  CodeBuildServiceRole: arn:aws:iam::697877139013:role/service-role/code-build-nessie-service-role
-  ComputeType: BUILD_GENERAL1_MEDIUM
-  Image: aws/codebuild/nodejs:6.3.1
-  Timeout: 60
-
 phases:
   install:
+    runtime-versions:
+      nodejs: 8
+      python: 3.7
     commands:
       - npm -v
       - npm install
@@ -18,8 +15,8 @@ phases:
 
   build:
     commands:
-      - sudo npm install -g @vue/cli
-      - sudo npm run build-vue
+      - npm install -g @vue/cli
+      - npm run build-vue
 
   post_build:
     commands:
