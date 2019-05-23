@@ -23,11 +23,11 @@
  * ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-DROP SCHEMA IF EXISTS {rds_schema_sis_advising_notes} CASCADE;
-
-CREATE SCHEMA {rds_schema_sis_advising_notes};
+CREATE SCHEMA IF NOT EXISTS {rds_schema_sis_advising_notes};
 GRANT USAGE ON SCHEMA {rds_schema_sis_advising_notes} TO {rds_app_boa_user};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_sis_advising_notes} GRANT SELECT ON TABLES TO {rds_app_boa_user};
+
+DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_notes CASCADE;
 
 CREATE TABLE {rds_schema_sis_advising_notes}.advising_notes (
   id VARCHAR NOT NULL,
@@ -68,6 +68,8 @@ CREATE INDEX idx_boac_advising_notes_sid ON {rds_schema_sis_advising_notes}.advi
 CREATE INDEX idx_boac_advising_notes_advisor_sid ON {rds_schema_sis_advising_notes}.advising_notes(advisor_sid);
 CREATE INDEX idx_boac_advising_notes_updated_at ON {rds_schema_sis_advising_notes}.advising_notes(updated_at);
 
+DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_note_topics CASCADE;
+
 CREATE TABLE {rds_schema_sis_advising_notes}.advising_note_topics (
   advising_note_id VARCHAR NOT NULL,
   note_topic VARCHAR NOT NULL,
@@ -85,6 +87,8 @@ INSERT INTO {rds_schema_sis_advising_notes}.advising_note_topics (
     note_topic VARCHAR
   )
 );
+
+DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.advising_note_topics CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.advising_notes_search_index AS (
   SELECT id, to_tsvector('english', note_body) AS fts_index
