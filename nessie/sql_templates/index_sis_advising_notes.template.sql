@@ -88,7 +88,7 @@ INSERT INTO {rds_schema_sis_advising_notes}.advising_note_topics (
   )
 );
 
-DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.advising_note_topics CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.advising_notes_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.advising_notes_search_index AS (
   SELECT id, to_tsvector('english', note_body) AS fts_index
