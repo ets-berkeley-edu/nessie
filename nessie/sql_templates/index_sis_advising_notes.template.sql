@@ -46,9 +46,10 @@ CREATE TABLE {rds_schema_sis_advising_notes}.advising_notes (
 INSERT INTO {rds_schema_sis_advising_notes}.advising_notes (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT id, sid, student_note_nr, advisor_sid, note_category, note_subcategory, note_body, created_by,
-      created_at, updated_at
+    SELECT TOP 1 id, sid, student_note_nr, advisor_sid, note_category, note_subcategory,note_body,
+           created_by, created_at, updated_at
     FROM {redshift_schema_sis_advising_notes_internal}.advising_notes
+    ORDER BY updated_at DESC
   $REDSHIFT$)
   AS redshift_notes (
     id VARCHAR,
@@ -79,7 +80,7 @@ CREATE TABLE {rds_schema_sis_advising_notes}.advising_note_topics (
 INSERT INTO {rds_schema_sis_advising_notes}.advising_note_topics (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT advising_note_id, note_topic
+    SELECT DISTINCT advising_note_id, note_topic
     FROM {redshift_schema_sis_advising_notes_internal}.advising_note_topics
   $REDSHIFT$)
   AS redshift_notes (
