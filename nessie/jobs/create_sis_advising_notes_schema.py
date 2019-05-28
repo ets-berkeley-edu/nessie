@@ -38,16 +38,27 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
         app.logger.info(f'Executing SQL...')
         external_schema = app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES']
         redshift.drop_external_schema(external_schema)
+        self.create_historical_tables(external_schema)
+        self.create_internal_schema(external_schema)
+        app.logger.info(f'Redshift schema created. Creating RDS indexes...')
+        self.create_indexes()
+        return 'SIS Advising Notes schema creation job completed.'
+
+    def create_historical_tables(self, external_schema):
+        resolved_ddl = resolve_sql_template('create_sis_advising_notes_historical_schema.template.sql')
+        if redshift.execute_ddl_script(resolved_ddl):
+            verify_external_schema(external_schema, resolved_ddl)
+        else:
+            raise BackgroundJobError(f'SIS Advising Notes schema creation job failed to load historical data.')
+
+    def create_internal_schema(self, external_schema):
         resolved_ddl = resolve_sql_template('create_sis_advising_notes_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(external_schema, resolved_ddl)
         else:
-            raise BackgroundJobError(f'SIS Advising Notes schema creation job failed.')
+            raise BackgroundJobError(f'SIS Advising Notes schema creation job failed to load incremental data and create internal schema.')
 
-        app.logger.info(f'Redshift schema created. Creating RDS indexes...')
-
-        rds_index_ddl = resolve_sql_template('index_sis_advising_notes.template.sql')
-        if rds.execute(rds_index_ddl):
-            return 'SIS Advising Notes schema creation job completed.'
-        else:
-            raise BackgroundJobError(f'SIS Advising Notes schema creation job failed.')
+    def create_indexes(self):
+        resolved_ddl = resolve_sql_template('index_sis_advising_notes.template.sql')
+        if not rds.execute(resolved_ddl):
+            raise BackgroundJobError(f'SIS Advising Notes schema creation job failed to create indexes.')
