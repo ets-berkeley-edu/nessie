@@ -40,9 +40,9 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
 
         daily_path = get_s3_sis_sysadm_daily_path()
         bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
-        if not s3.get_keys_with_prefix(self.get_daily_advising_notes_path(daily_path), bucket=bucket):
+        if not s3.get_keys_with_prefix(f'{daily_path}/advising-notes', bucket=bucket):
             daily_path = get_s3_sis_sysadm_daily_path(datetime.now() - timedelta(days=1))
-            if not s3.get_keys_with_prefix(self.get_daily_advising_notes_path(daily_path), bucket=bucket):
+            if not s3.get_keys_with_prefix(f'{daily_path}/advising-notes', bucket=bucket):
                 raise BackgroundJobError('No timely SIS advising notes data found, aborting')
             else:
                 app.logger.info(f'Falling back to yesterday\'s SIS advising notes data')
@@ -56,9 +56,6 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
         self.create_indexes()
         return 'SIS Advising Notes schema creation job completed.'
 
-    def get_daily_advising_notes_path(self, daily_path):
-        return f'{daily_path}/advising-notes'
-
     def create_historical_tables(self, external_schema):
         resolved_ddl = resolve_sql_template('create_sis_advising_notes_historical_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
@@ -67,8 +64,9 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
             raise BackgroundJobError(f'SIS Advising Notes schema creation job failed to load historical data.')
 
     def create_internal_schema(self, external_schema, daily_path):
-        s3_data_url = 's3://' + app.config['LOCH_S3_PROTECTED_BUCKET'] + '/' + self.get_daily_advising_notes_path(daily_path)
-        resolved_ddl = resolve_sql_template('create_sis_advising_notes_schema.template.sql', loch_s3_sis_data_path_today=s3_data_url)
+        bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
+        s3_data_url = f's3://{bucket}/{daily_path}/advising-notes'
+        resolved_ddl = resolve_sql_template('create_sis_advising_notes_schema.template.sql', loch_s3_sis_notes_path_today=s3_data_url)
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(external_schema, resolved_ddl)
         else:

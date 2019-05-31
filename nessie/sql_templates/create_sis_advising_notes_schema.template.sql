@@ -59,7 +59,7 @@ CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_notes_incr
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
 WITH SERDEPROPERTIES ('strip.outer.array' = 'true')
-LOCATION '{loch_s3_sis_data_path_today}/notes';
+LOCATION '{loch_s3_sis_notes_path_today}/notes';
 
 -- advising note attachments incremental snapshot
 CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_attachments_incr
@@ -71,7 +71,7 @@ CREATE EXTERNAL TABLE {redshift_schema_sis_advising_notes}.advising_note_attachm
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
 WITH SERDEPROPERTIES ('strip.outer.array' = 'true')
-LOCATION '{loch_s3_sis_data_path_today}/note-attachments';
+LOCATION '{loch_s3_sis_notes_path_today}/note-attachments';
 
 --------------------------------------------------------------------
 -- Internal schema
