@@ -272,6 +272,8 @@ def merge_enrollment(enrollments, term_id, term_name):
             enrollments_by_class[class_name]['units'] = section_feed['units']
 
     enrollments_feed = sorted(enrollments_by_class.values(), key=lambda x: x['displayName'])
+    # Whenever we have floating arithmetic, we can expect floating errors.
+    enrolled_units = round(enrolled_units, 2)
     sort_sections(enrollments_feed)
     term_feed = {
         'termId': term_id,
