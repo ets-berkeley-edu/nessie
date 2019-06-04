@@ -60,10 +60,6 @@ def get_job_schedule():
 @app.route('/api/schedule/<job_id>', methods=['POST', 'DELETE'])
 @auth_required
 def update_job_schedule(job_id):
-    try:
-        args = request.get_json(force=True)
-    except Exception as e:
-        raise BadRequestError(str(e))
     sched = get_scheduler()
     job_id = job_id.upper()
     job = sched.get_job(job_id)
@@ -76,6 +72,10 @@ def update_job_schedule(job_id):
     else:
         # If JSON properties are present, they will be evaluated by APScheduler's cron trigger API.
         # https://apscheduler.readthedocs.io/en/latest/modules/triggers/cron.html#module-apscheduler.triggers.cron
+        try:
+            args = request.get_json(force=True)
+        except Exception as e:
+            raise BadRequestError(str(e))
         if args:
             try:
                 job.reschedule(trigger='cron', **args)
