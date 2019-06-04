@@ -23,7 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from nessie.merged.student_terms import generate_student_term_maps
+from nessie.merged.student_terms import generate_student_term_maps, merge_enrollment
 
 
 class TestMergedSisEnrollments:
@@ -68,3 +68,84 @@ class TestMergedSisEnrollments:
         assert enrollments[2]['canvasSites'][1]['canvasCourseId'] == 7654330
         assert (enrollments[2]['sections'][0]['canvasCourseIds']) == [7654323, 7654330]
         assert (enrollments[2]['sections'][1]['canvasCourseIds']) == [7654330]
+
+    def test_reasonable_precision(self, app):
+        enrollments = [
+            {
+                'grade': 'A',
+                'grade_midterm': None,
+                'grading_basis': 'GRD',
+                'ldap_uid': '1234567',
+                'sis_course_name': 'HIB 34-35',
+                'sis_course_title': 'GIBBON',
+                'sis_enrollment_status': 'E',
+                'sis_instruction_format': 'LEC',
+                'sis_primary': True,
+                'sis_section_id': 123,
+                'sis_section_num': '1',
+                'sis_term_id': 2182,
+                'units': 3.3,
+            },
+            {
+                'grade': 'B',
+                'grade_midterm': None,
+                'grading_basis': 'GRD',
+                'ldap_uid': '1234567',
+                'sis_course_name': 'HIB 45-35',
+                'sis_course_title': 'HUME',
+                'sis_enrollment_status': 'E',
+                'sis_instruction_format': 'LEC',
+                'sis_primary': True,
+                'sis_section_id': 234,
+                'sis_section_num': '1',
+                'sis_term_id': 2182,
+                'units': 3.3,
+            },
+            {
+                'grade': 'A-',
+                'grade_midterm': None,
+                'grading_basis': 'GRD',
+                'ldap_uid': '1234567',
+                'sis_course_name': 'HIB 22-35',
+                'sis_course_title': 'BURNEY',
+                'sis_enrollment_status': 'E',
+                'sis_instruction_format': 'LEC',
+                'sis_primary': True,
+                'sis_section_id': 345,
+                'sis_section_num': '1',
+                'sis_term_id': 2182,
+                'units': 3.3,
+            },
+            {
+                'grade': 'A',
+                'grade_midterm': None,
+                'grading_basis': 'GRD',
+                'ldap_uid': '1234567',
+                'sis_course_name': 'HIB 34-35',
+                'sis_course_title': 'BOZ',
+                'sis_enrollment_status': 'E',
+                'sis_instruction_format': 'LEC',
+                'sis_primary': True,
+                'sis_section_id': 456,
+                'sis_section_num': '1',
+                'sis_term_id': 2182,
+                'units': 1.7,
+            },
+            {
+                'grade': 'P',
+                'grade_midterm': None,
+                'grading_basis': 'EPN',
+                'ldap_uid': '1234567',
+                'sis_course_name': 'HIB 66-35',
+                'sis_course_title': 'SMART',
+                'sis_enrollment_status': 'E',
+                'sis_instruction_format': 'LEC',
+                'sis_primary': True,
+                'sis_section_id': 567,
+                'sis_section_num': '1',
+                'sis_term_id': 2182,
+                'units': 3.3,
+            },
+        ]
+        parsed = merge_enrollment(enrollments, '2182', 'Spring 2018')
+        assert str(parsed['enrolledUnits']) == '14.9'
