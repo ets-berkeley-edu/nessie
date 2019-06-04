@@ -123,6 +123,7 @@ def schedule_all_jobs(force=False):
         'JOB_GENERATE_CURRENT_TERM_FEEDS',
         [
             GenerateMergedStudentFeeds,
+            IndexEnrollments,
             RefreshBoacCache,
         ],
         force,
