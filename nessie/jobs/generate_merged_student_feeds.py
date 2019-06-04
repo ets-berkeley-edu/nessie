@@ -223,6 +223,10 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 return False
             if not self._refresh_rds_academic_status(transaction):
                 return False
+            if not self._delete_rds_rows('student_names', sids, transaction):
+                return False
+            if not self._refresh_rds_names(transaction):
+                return False
         if len(self.rows['student_majors']):
             if not self._delete_rds_rows('student_majors', sids, transaction):
                 return False
@@ -257,6 +261,21 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             f"""INSERT INTO {self.rds_schema}.student_academic_status
                 (sid, uid, first_name, last_name, level, gpa, units) VALUES %s""",
             [split_tsv_row(r) for r in self.rows['student_academic_status']],
+        )
+
+    def _refresh_rds_names(self, transaction):
+        return transaction.execute(
+            f"""INSERT INTO {self.rds_schema}.student_names (
+            SELECT DISTINCT sid, unnest(string_to_array(
+                regexp_replace(upper(first_name), '[^\w ]', '', 'g'),
+                ' '
+            )) AS name FROM {self.rds_schema}.student_academic_status
+            UNION
+            SELECT DISTINCT sid, unnest(string_to_array(
+                regexp_replace(upper(last_name), '[^\w ]', '', 'g'),
+                ' '
+            )) AS name FROM {self.rds_schema}.student_academic_status
+            );""",
         )
 
     def _refresh_rds_majors(self, transaction):
