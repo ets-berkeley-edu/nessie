@@ -24,7 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
-from nessie.externals import redshift
+from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.util import resolve_sql_template
 
@@ -36,6 +36,11 @@ class CreateAscAdvisingNotesSchema(BackgroundJob):
     def run(self):
         app.logger.info(f'Starting ASC Advising Notes schema creation job...')
         app.logger.info(f'Executing SQL...')
+        self.create_schema()
+        self.create_indexes()
+        app.logger.info(f'Redshift schema created.')
+
+    def create_schema(self):
         external_schema = app.config['REDSHIFT_SCHEMA_ASC_ADVISING_NOTES']
         redshift.drop_external_schema(external_schema)
         asc_data_sftp_historical_path = '/'.join([
@@ -52,4 +57,7 @@ class CreateAscAdvisingNotesSchema(BackgroundJob):
         else:
             raise BackgroundJobError(f'ASC Advising Notes schema creation job failed.')
 
-        app.logger.info(f'Redshift schema created.')
+    def create_indexes(self):
+        resolved_ddl = resolve_sql_template('index_asc_advising_notes.template.sql')
+        if not rds.execute(resolved_ddl):
+            raise BackgroundJobError(f'ASC Advising Notes schema creation job failed to create indexes.')
