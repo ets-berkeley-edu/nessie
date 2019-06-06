@@ -207,8 +207,12 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             level = str(sis_profile.get('level', {}).get('code') or '')
             gpa = str(sis_profile.get('cumulativeGPA') or '')
             units = str(sis_profile.get('cumulativeUnits') or '')
+            transfer = str(sis_profile.get('transfer') or False)
+            expected_grad_term = str(sis_profile.get('expectedGraduationTerm', {}).get('id') or '')
 
-            self.rows['student_academic_status'].append(encoded_tsv_row([sid, uid, first_name, last_name, level, gpa, units]))
+            self.rows['student_academic_status'].append(
+                encoded_tsv_row([sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term]),
+            )
 
             for plan in sis_profile.get('plans', []):
                 self.rows['student_majors'].append(encoded_tsv_row([sid, plan['description']]))
@@ -259,7 +263,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         # TODO LOAD THE RDS INDEXES FROM REDSHIFT TABLES RATHER THAN IN-MEMORY STORAGE.
         return transaction.insert_bulk(
             f"""INSERT INTO {self.rds_schema}.student_academic_status
-                (sid, uid, first_name, last_name, level, gpa, units) VALUES %s""",
+                (sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term) VALUES %s""",
             [split_tsv_row(r) for r in self.rows['student_academic_status']],
         )
 
