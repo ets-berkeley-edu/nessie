@@ -94,6 +94,8 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_academic_status
     level VARCHAR(2),
     gpa DECIMAL(4,3),
     units DECIMAL (6,3),
+    transfer BOOLEAN,
+    expected_grad_term VARCHAR(4),
     PRIMARY KEY (sid)
 );
 
@@ -102,6 +104,8 @@ CREATE INDEX IF NOT EXISTS students_academic_status_last_name_idx ON {rds_schema
 CREATE INDEX IF NOT EXISTS students_academic_status_level_idx ON {rds_schema_student}.student_academic_status (level);
 CREATE INDEX IF NOT EXISTS students_academic_status_gpa_idx ON {rds_schema_student}.student_academic_status (gpa);
 CREATE INDEX IF NOT EXISTS students_academic_status_units_idx ON {rds_schema_student}.student_academic_status (units);
+CREATE INDEX IF NOT EXISTS students_academic_status_transfer_idx ON {rds_schema_student}.student_academic_status (transfer);
+CREATE INDEX IF NOT EXISTS students_academic_status_grad_term_idx ON {rds_schema_student}.student_academic_status (expected_grad_term);
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_names
 (

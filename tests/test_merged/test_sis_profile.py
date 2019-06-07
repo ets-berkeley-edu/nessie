@@ -114,3 +114,16 @@ class TestMergedSisProfile:
                 break
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress)
         assert profile['cumulativeGPA'] is None
+
+    def test_expected_graduation_term(self, app, sis_api_profiles, sis_api_degree_progress):
+        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress)
+        assert profile['expectedGraduationTerm']['id'] == '2198'
+        assert profile['expectedGraduationTerm']['name'] == 'Fall 2019'
+
+    def test_transfer_true_if_notation_present(self, app, sis_api_profiles, sis_api_degree_progress):
+        profile = merged_profile('2345678901', sis_api_profiles, sis_api_degree_progress)
+        assert profile['transfer'] is True
+
+    def test_transfer_false_if_notation_not_present(self, app, sis_api_profiles, sis_api_degree_progress):
+        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress)
+        assert profile['transfer'] is False

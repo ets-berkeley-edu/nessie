@@ -86,7 +86,9 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_status
     last_name VARCHAR NOT NULL,
     level VARCHAR(2),
     gpa DECIMAL(4,3),
-    units DECIMAL (6,3)
+    units DECIMAL (6,3),
+    transfer BOOLEAN,
+    expected_grad_term VARCHAR(4)
 )
 DISTKEY (units)
 INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name);

@@ -101,11 +101,6 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
     sis_profile['termsInAttendance'] = academic_status.get('termsInAttendance')
     sis_profile['academicCareer'] = academic_status.get('currentRegistration', {}).get('academicCareer', {}).get('code')
 
-    matriculation_term_name = academic_status.get('studentCareer', {}).get('matriculation', {}).get('term', {}).get('name')
-    if matriculation_term_name and re.match('\A2\d{3} (?:Spring|Summer|Fall)\Z', matriculation_term_name):
-        # "2015 Fall" to "Fall 2015"
-        sis_profile['matriculation'] = ' '.join(reversed(matriculation_term_name.split()))
-
     for units in academic_status.get('currentRegistration', {}).get('termUnits', []):
         if units.get('type', {}).get('description') == 'Total':
             sis_profile['currentTerm'] = {
@@ -114,6 +109,7 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
             }
             break
 
+    merge_sis_profile_matriculation(academic_status, sis_profile)
     merge_sis_profile_plans(academic_status, sis_profile)
     merge_sis_profile_withdrawal_cancel(academic_status, sis_profile)
 
@@ -128,6 +124,19 @@ def merge_sis_profile_emails(sis_student_api_feed, sis_profile):
         elif email.get('type', {}).get('code') == 'CAMP':
             campus_email = email.get('emailAddress')
     sis_profile['emailAddress'] = primary_email or campus_email
+
+
+def merge_sis_profile_matriculation(academic_status, sis_profile):
+    matriculation = academic_status.get('studentCareer', {}).get('matriculation')
+    if matriculation:
+        matriculation_term_name = matriculation.get('term', {}).get('name')
+        if matriculation_term_name and re.match('\A2\d{3} (?:Spring|Summer|Fall)\Z', matriculation_term_name):
+            # "2015 Fall" to "Fall 2015"
+            sis_profile['matriculation'] = ' '.join(reversed(matriculation_term_name.split()))
+        if matriculation.get('type', {}).get('code') == 'TRN':
+            sis_profile['transfer'] = True
+    if not sis_profile.get('transfer'):
+        sis_profile['transfer'] = False
 
 
 def merge_sis_profile_names(sis_student_api_feed, sis_profile):
