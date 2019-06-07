@@ -66,6 +66,8 @@ DROP SCHEMA IF EXISTS {redshift_schema_asc_advising_notes_internal} CASCADE;
 CREATE SCHEMA {redshift_schema_asc_advising_notes_internal};
 GRANT USAGE ON SCHEMA {redshift_schema_asc_advising_notes_internal} TO GROUP {redshift_app_boa_user}_group;
 ALTER default PRIVILEGES IN SCHEMA {redshift_schema_asc_advising_notes_internal} GRANT SELECT ON TABLES TO GROUP {redshift_app_boa_user}_group;
+GRANT USAGE ON SCHEMA {redshift_schema_asc_advising_notes_internal} TO GROUP {redshift_dblink_group};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_asc_advising_notes_internal} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
 
 --------------------------------------------------------------------
 -- Internal tables
