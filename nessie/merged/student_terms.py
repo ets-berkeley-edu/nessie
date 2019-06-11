@@ -30,7 +30,7 @@ from flask import current_app as app
 from nessie.lib import berkeley, queries
 
 
-def generate_student_term_maps(advisees_by_canvas_id, advisees_by_sid):
+def generate_student_term_maps(advisees_by_sid):
     # Our mission is to produce 1) a dictionary of enrollment terms indexed by term_id and sid; 2) a dictionary
     # of Canvas sites indexed by Canvas course id.
     enrollment_terms_map = get_sis_enrollments()

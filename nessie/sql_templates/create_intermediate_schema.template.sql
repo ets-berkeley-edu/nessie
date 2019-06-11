@@ -177,6 +177,7 @@ AS (
         ON extracted_section_ids.sis_term_id = sc.term_id
         AND extracted_section_ids.sis_section_id = sc.section_id
     WHERE (s.workflow_state IS NULL OR s.workflow_state != 'deleted')
+        AND c.workflow_state IN ('available', 'completed')
     /* Clear out duplicates, since SIS data will contain multiple rows for multiple meetings or instructor assignments. */
     GROUP BY
         c.canvas_id, s.canvas_id, c.name, c.code, s.name, et.name,

@@ -29,8 +29,9 @@ from time import sleep
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
+from nessie.jobs.generate_merged_enrollment_term import GenerateMergedEnrollmentTerm
 from nessie.jobs.import_term_gpas import ImportTermGpas
-from nessie.lib.berkeley import reverse_term_ids
+from nessie.lib.berkeley import future_term_ids, reverse_term_ids
 from nessie.lib.metadata import get_merged_enrollment_term_job_status, queue_merged_enrollment_term_jobs, update_merged_feed_status
 from nessie.lib.queries import get_advisee_student_profile_feeds, get_all_student_ids, get_successfully_backfilled_students
 from nessie.lib.util import encoded_tsv_row, split_tsv_row
@@ -91,10 +92,14 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         self.failures = []
         profile_tables = self.generate_student_profile_tables(advisees_by_canvas_id, advisees_by_sid)
 
-        (enrollment_terms_map, canvas_site_map) = generate_student_term_maps(advisees_by_canvas_id, advisees_by_sid)
+        (enrollment_terms_map, canvas_site_map) = generate_student_term_maps(advisees_by_sid)
 
         feed_path = app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH'] + '/feeds/'
         s3.upload_json(advisees_by_canvas_id, feed_path + 'advisees_by_canvas_id.json')
+
+        # Avoid processing Canvas analytics data for future terms and pre-CS terms.
+        for term_id in future_term_ids():
+            GenerateMergedEnrollmentTerm().refresh_student_enrollment_term(term_id, enrollment_terms_map.get(term_id, {}))
 
         term_ids = reverse_term_ids()
         for term_id in term_ids:
