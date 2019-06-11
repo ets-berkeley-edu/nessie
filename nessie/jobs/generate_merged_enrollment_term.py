@@ -40,15 +40,17 @@ class GenerateMergedEnrollmentTerm(BackgroundJob):
 
     def run(self, term_id):
         merged_enrollment_term = self.merge_analytics_data_for_term(term_id)
-        term_rows = [encoded_tsv_row([sid, term_id, json.dumps(sid_term_feed)]) for (sid, sid_term_feed) in merged_enrollment_term.items()]
+        self.refresh_student_enrollment_term(term_id, merged_enrollment_term)
+        return f'Generated merged feeds for term {term_id} ({self.course_count} courses, {self.user_count} users).'
 
+    def refresh_student_enrollment_term(self, term_id, enrollment_term_map):
+        term_rows = [encoded_tsv_row([sid, term_id, json.dumps(sid_term_feed)]) for (sid, sid_term_feed) in enrollment_term_map.items()]
         student_schema.drop_staged_enrollment_term(term_id)
         student_schema.write_to_staging('student_enrollment_terms', term_rows, term_id)
         with redshift.transaction() as transaction:
             student_schema.refresh_from_staging('student_enrollment_terms', term_id, None, transaction, truncate_staging=False)
             if not transaction.commit():
                 raise BackgroundJobError(f'Final transaction commit failed on enrollment term refresh (term_id={term_id}).')
-        return f'Generated merged feeds for term {term_id} ({self.course_count} courses, {self.user_count} users).'
 
     def merge_analytics_data_for_term(self, term_id):
         feed_path = app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH'] + '/feeds/'

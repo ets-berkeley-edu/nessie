@@ -61,3 +61,16 @@ class TestBerkeleyDegreeProgramUrl:
         assert berkeley.degree_program_url_for_major('English for Billiards Players MS') is None
         assert berkeley.degree_program_url_for_major('Altaic Language BA') is None
         assert berkeley.degree_program_url_for_major('Entomology BS') is None
+
+
+class TestBerkeley:
+
+    def test_term_id_lists(self, app):
+        all_term_ids = set(berkeley.reverse_term_ids(include_future_terms=True))
+        canvas_integrated_term_ids = set(berkeley.reverse_term_ids())
+        future_term_ids = set(berkeley.future_term_ids())
+        assert canvas_integrated_term_ids < all_term_ids
+        assert berkeley.current_term_id() in canvas_integrated_term_ids
+        assert future_term_ids < all_term_ids
+        assert berkeley.future_term_id() in future_term_ids
+        assert future_term_ids.isdisjoint(canvas_integrated_term_ids)

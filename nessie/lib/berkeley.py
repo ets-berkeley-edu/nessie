@@ -161,6 +161,27 @@ def canvas_terms():
     return [term_name_for_sis_id(sid_id) for sid_id in sis_term_ids]
 
 
+def future_term_ids():
+    term_ids = []
+    stop_term_id = current_term_id()
+    term_id = future_term_id()
+    while True:
+        if term_id <= stop_term_id:
+            return term_ids
+        term_ids.append(term_id)
+        term_id = previous_term_id(term_id)
+
+
+def previous_term_id(term_id):
+    if term_id[3] == '8':
+        previous = term_id[:3] + '5'
+    elif term_id[3] == '5':
+        previous = term_id[:3] + '2'
+    elif term_id[3] == '2':
+        previous = term_id[:1] + str(int(term_id[1:3]) - 1).zfill(2) + '8'
+    return previous
+
+
 def reverse_term_ids(include_future_terms=False):
     term_ids = []
     stop_term_id = sis_term_id_for_name(app.config['EARLIEST_TERM'])
@@ -169,12 +190,7 @@ def reverse_term_ids(include_future_terms=False):
         term_ids.append(term_id)
         if term_id == stop_term_id:
             return term_ids
-        if term_id[3] == '8':
-            term_id = term_id[:3] + '5'
-        elif term_id[3] == '5':
-            term_id = term_id[:3] + '2'
-        elif term_id[3] == '2':
-            term_id = term_id[:1] + str(int(term_id[1:3]) - 1).zfill(2) + '8'
+        term_id = previous_term_id(term_id)
 
 
 def sis_term_id_for_name(term_name=None):
