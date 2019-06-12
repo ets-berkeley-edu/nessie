@@ -99,9 +99,9 @@ INSERT INTO {rds_schema_asc}.advising_note_topics (
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_asc}.advising_notes_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_asc}.advising_notes_search_index AS (
-  SELECT n.id, to_tsvector('english', t.topic || ' ' || n.advisor_first_name || ' ' || n.advisor_last_name) AS fts_index
+  SELECT n.id, to_tsvector('english', COALESCE(t.topic || ' ', '') || n.advisor_first_name || ' ' || n.advisor_last_name) AS fts_index
   FROM {rds_schema_asc}.advising_notes n
-  JOIN {rds_schema_asc}.advising_note_topics t
+  LEFT OUTER JOIN {rds_schema_asc}.advising_note_topics t
   ON n.id = t.id
 );
 
