@@ -177,7 +177,7 @@ AS (
         ON extracted_section_ids.sis_term_id = sc.term_id
         AND extracted_section_ids.sis_section_id = sc.section_id
     WHERE (s.workflow_state IS NULL OR s.workflow_state != 'deleted')
-        AND c.workflow_state IN ('available', 'completed')
+        AND (c.workflow_state IS NULL OR c.workflow_state IN ('available', 'completed'))
     /* Clear out duplicates, since SIS data will contain multiple rows for multiple meetings or instructor assignments. */
     GROUP BY
         c.canvas_id, s.canvas_id, c.name, c.code, s.name, et.name,
@@ -203,7 +203,7 @@ AS (
         crs.sis_instruction_format,
         crs.sis_section_num
     FROM {redshift_schema_sis}.enrollments en
-    JOIN intermediate.course_sections crs
+    JOIN {redshift_schema_intermediate}.course_sections crs
         ON crs.sis_section_id = en.section_id
         AND crs.sis_term_id = en.term_id
     WHERE
