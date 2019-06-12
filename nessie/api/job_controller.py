@@ -55,6 +55,7 @@ from nessie.jobs.import_degree_progress import ImportDegreeProgress
 from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
 from nessie.jobs.import_sis_student_api import ImportSisStudentApi
 from nessie.jobs.import_sis_terms_api import ImportSisTermsApi
+from nessie.jobs.import_student_photos import ImportStudentPhotos
 from nessie.jobs.import_term_gpas import ImportTermGpas
 from nessie.jobs.index_enrollments import IndexEnrollments
 from nessie.jobs.migrate_lrs_incrementals import MigrateLrsIncrementals
@@ -302,6 +303,13 @@ def import_sis_terms_api(term_id):
     else:
         term_ids = [term_id]
     job_started = ImportSisTermsApi(term_ids=term_ids).run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/import_student_photos', methods=['POST'])
+@auth_required
+def import_student_photos():
+    job_started = ImportStudentPhotos().run_async()
     return respond_with_status(job_started)
 
 

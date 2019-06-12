@@ -108,7 +108,15 @@ ON {rds_schema_metadata}.canvas_synced_snapshots (filename);
 CREATE TABLE IF NOT EXISTS {rds_schema_metadata}.merged_feed_status
 (
     sid VARCHAR NOT NULL PRIMARY KEY ,
-    -- Possible 'status' values: 'succeeded', 'failed'
+    -- Possible 'status' values: 'success', 'failure'
+    status VARCHAR NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS {rds_schema_metadata}.photo_import_status
+(
+    sid VARCHAR NOT NULL PRIMARY KEY,
+    -- Possible 'status' values: 'success', 'failure', 'photo_not_found'
     status VARCHAR NOT NULL,
     updated_at TIMESTAMP NOT NULL
 );

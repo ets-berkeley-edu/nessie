@@ -28,6 +28,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 TESTING = True
 
 LOCH_S3_BUCKET = 'mock-bucket'
+LOCH_S3_PUBLIC_BUCKET = 'mock-bucket'
 
 RDS_SCHEMA_ASC = 'asc_test'
 RDS_SCHEMA_COE = 'coe_test'

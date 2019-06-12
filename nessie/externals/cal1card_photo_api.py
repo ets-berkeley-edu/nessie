@@ -23,29 +23,33 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+
 from flask import current_app as app
-from nessie.jobs.background_job import ChainedBackgroundJob
-from nessie.jobs.create_calnet_schema import CreateCalNetSchema
-from nessie.jobs.create_coe_schema import CreateCoeSchema
-from nessie.jobs.create_l_s_schema import CreateLSSchema
-from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
-from nessie.jobs.import_asc_athletes import ImportAscAthletes
-from nessie.jobs.import_calnet_data import ImportCalNetData
-from nessie.jobs.import_student_photos import ImportStudentPhotos
+from nessie.lib import http
+from nessie.lib.mockingbird import fixture
+from requests.auth import HTTPBasicAuth
 
 
-class ChainedImportStudentPopulation(ChainedBackgroundJob):
-    def __init__(self):
-        steps = [
-            CreateCoeSchema(),
-            ImportAscAthletes(),
-            GenerateAscProfiles(),
-        ]
-        if app.config['L_AND_S_ENABLED']:
-            steps.append(CreateLSSchema())
-        steps += [
-            ImportCalNetData(),
-            CreateCalNetSchema(),
-            ImportStudentPhotos(),
-        ]
-        super().__init__(steps=steps)
+"""Official access to Cal1Card photos."""
+
+
+def get_cal1card_photo(uid):
+    response = _get_cal1card_photo(uid)
+    if response:
+        return response.content
+    else:
+        if hasattr(response, 'raw_response') and hasattr(response.raw_response, 'status_code') and response.raw_response.status_code == 404:
+            return False
+        else:
+            return None
+
+
+@fixture('cal1card_photo_{uid}.jpg')
+def _get_cal1card_photo(uid, mock=None):
+    url = http.build_url(app.config['CAL1CARD_PHOTO_API_URL'], {'uid': uid})
+    with mock(url):
+        return http.request(url, auth=cal1card_api_auth())
+
+
+def cal1card_api_auth():
+    return HTTPBasicAuth(app.config['CAL1CARD_PHOTO_API_USERNAME'], app.config['CAL1CARD_PHOTO_API_PASSWORD'])

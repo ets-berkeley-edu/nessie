@@ -23,29 +23,32 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from flask import current_app as app
-from nessie.jobs.background_job import ChainedBackgroundJob
-from nessie.jobs.create_calnet_schema import CreateCalNetSchema
-from nessie.jobs.create_coe_schema import CreateCoeSchema
-from nessie.jobs.create_l_s_schema import CreateLSSchema
-from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
-from nessie.jobs.import_asc_athletes import ImportAscAthletes
-from nessie.jobs.import_calnet_data import ImportCalNetData
-from nessie.jobs.import_student_photos import ImportStudentPhotos
+
+from nessie.externals import cal1card_photo_api
+from nessie.lib.mockingbird import MockResponse, register_mock
 
 
-class ChainedImportStudentPopulation(ChainedBackgroundJob):
-    def __init__(self):
-        steps = [
-            CreateCoeSchema(),
-            ImportAscAthletes(),
-            GenerateAscProfiles(),
-        ]
-        if app.config['L_AND_S_ENABLED']:
-            steps.append(CreateLSSchema())
-        steps += [
-            ImportCalNetData(),
-            CreateCalNetSchema(),
-            ImportStudentPhotos(),
-        ]
-        super().__init__(steps=steps)
+class TestCal1CardPhotoApi:
+    """Cal1Card Photo API query."""
+
+    def test_get_photo(self, app):
+        """Returns fixture data."""
+        oski_response = cal1card_photo_api.get_cal1card_photo(61889)
+        assert isinstance(oski_response, bytes)
+        assert len(oski_response) == 3559
+
+    def test_user_not_found(self, app, caplog):
+        """Logs error and returns False when user not found."""
+        response = cal1card_photo_api.get_cal1card_photo(9999999)
+        assert '404 Client Error' in caplog.text
+        assert response is False
+
+    def test_server_error(self, app, caplog):
+        """Logs unexpected server errors and returns informative message."""
+        api_error = MockResponse(500, {}, '{"message": "Internal server error."}')
+        with register_mock(cal1card_photo_api._get_cal1card_photo, api_error):
+            response = cal1card_photo_api._get_cal1card_photo(61889)
+            assert '500 Server Error' in caplog.text
+            assert not response
+            assert response.raw_response.status_code == 500
+            assert response.raw_response.json()['message']
