@@ -68,6 +68,10 @@ ASC_THIS_ACAD_YR = '2017-18'
 
 BOAC_REFRESHERS = [{'API_KEY': 'Regents of the University of California', 'URL': 'https://ets-boac.example.com/api/refresh_me'}]
 
+CAL1CARD_PHOTO_API_URL = 'https://secreturl.berkeley.edu/photos'
+CAL1CARD_PHOTO_API_USERNAME = 'secretuser'
+CAL1CARD_PHOTO_API_PASSWORD = 'secretpassword'
+
 CANVAS_DATA_API_KEY = 'some key'
 CANVAS_DATA_API_SECRET = 'some secret'
 CANVAS_DATA_HOST = 'foo.instructure.com'
@@ -141,7 +145,8 @@ LOCH_EDX_S3_TRANSACTION_LOG_PATH = 'path/to/edx/transaction/log'
 
 # Loch Nessie configs
 LOCH_S3_BUCKET = 'bucket_name'
-LOCH_S3_PROTECTED_BUCKET = 'advising notes bucket name'
+LOCH_S3_PROTECTED_BUCKET = 'protected_bucket_name'
+LOCH_S3_PUBLIC_BUCKET = 'public_bucket_name'
 LOCH_S3_REGION = 'us-west-2'
 
 LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM = 'canvas/path/to/current/term'
@@ -152,6 +157,7 @@ LOCH_S3_CANVAS_DATA_PATH_HISTORICAL = 'canvas/path/to/historical'
 LOCH_S3_ASC_DATA_PATH = 'asc-data'
 LOCH_S3_ASC_DATA_SFTP_PATH = 'asc-data/asc-sftp'
 LOCH_S3_BOAC_ANALYTICS_DATA_PATH = 'boac-analytics'
+LOCH_S3_CAL1CARD_PHOTOS_PATH = 'cal1card-data/photos'
 LOCH_S3_CALNET_DATA_PATH = 'calnet-data'
 LOCH_S3_COE_DATA_PATH = 'coe-data'
 LOCH_S3_PHYSICS_DATA_PATH = 'physics-data'

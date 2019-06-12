@@ -77,6 +77,15 @@ def get_all_student_ids():
     return redshift.fetch(sql)
 
 
+def get_advisee_ids(csids=None):
+    csid_filter = 'WHERE sid = ANY(%s)' if csids is not None else ''
+    sql = f"""SELECT ldap_uid, sid
+              FROM {calnet_schema()}.persons
+              {csid_filter}
+              ORDER BY sid"""
+    return redshift.fetch(sql, params=(csids,))
+
+
 @fixture('query_advisee_student_profile_feeds.csv')
 def get_advisee_student_profile_feeds():
     sql = f"""SELECT DISTINCT ldap.ldap_uid, ldap.sid, ldap.first_name, ldap.last_name,
@@ -110,6 +119,13 @@ def get_advisee_enrolled_canvas_sites():
         ORDER BY enr.canvas_course_term, enr.canvas_course_id
         """
     return redshift.fetch(sql)
+
+
+def get_advisee_sids_with_photos():
+    sql = f"""SELECT sid
+        FROM {metadata_schema()}.photo_import_status
+        WHERE status = 'success'"""
+    return rds.fetch(sql)
 
 
 @fixture('query_advisee_submissions_comparisons_{term_id}.csv')

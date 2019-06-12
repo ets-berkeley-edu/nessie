@@ -152,6 +152,31 @@ def update_merged_feed_status(successes, failures):
             app.logger.error('Error saving merged feed status updates to RDS.')
 
 
+def update_photo_import_status(successes, failures, photo_not_found):
+    rds.execute(
+        f'DELETE FROM {_rds_schema()}.photo_import_status WHERE sid = ANY(%s)',
+        params=(successes + failures + photo_not_found, ),
+    )
+    now = datetime.utcnow().isoformat()
+    success_records = [tuple([sid, 'success', now]) for sid in successes]
+    failure_records = [tuple([sid, 'failure', now]) for sid in failures]
+    photo_not_found_records = [tuple([sid, 'photo_not_found', now]) for sid in photo_not_found]
+    rows = success_records + failure_records + photo_not_found_records
+    with rds.transaction() as transaction:
+        result = transaction.insert_bulk(
+            f"""INSERT INTO {_rds_schema()}.photo_import_status
+                (sid, status, updated_at)
+                VALUES %s
+            """,
+            rows,
+        )
+        if result:
+            transaction.commit()
+        else:
+            transaction.rollback()
+            app.logger.error('Error saving photo import status updates to RDS.')
+
+
 def queue_merged_enrollment_term_jobs(master_job_id, term_ids):
     now = datetime.now().replace(microsecond=0).isoformat()
 

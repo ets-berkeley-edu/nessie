@@ -173,8 +173,9 @@ def object_exists(key):
         return False
 
 
-def upload_data(data, s3_key):
-    bucket = app.config['LOCH_S3_BUCKET']
+def upload_data(data, s3_key, bucket=None):
+    if bucket is None:
+        bucket = app.config['LOCH_S3_BUCKET']
     try:
         client = get_client()
         client.put_object(Bucket=bucket, Key=s3_key, Body=data, ServerSideEncryption='AES256')

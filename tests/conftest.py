@@ -125,6 +125,12 @@ def metadata_db(app):
        created_at TIMESTAMP NOT NULL,
        updated_at TIMESTAMP NOT NULL
     )""")
+    rds.execute(f"""CREATE TABLE IF NOT EXISTS {rds_schema}.photo_import_status
+    (
+        sid VARCHAR NOT NULL PRIMARY KEY,
+        status VARCHAR NOT NULL,
+        updated_at TIMESTAMP NOT NULL
+    );""")
 
 
 @pytest.fixture()
@@ -154,6 +160,7 @@ def student_tables(app):
     for schema in ['asc_test', 'coe_test', 'physics_test', 'student_test']:
         rds.execute(f'DROP SCHEMA {schema} CASCADE')
         redshift.execute(f'DROP SCHEMA {schema} CASCADE')
+    redshift.execute('DROP SCHEMA calnet_test CASCADE')
 
 
 @pytest.fixture()
