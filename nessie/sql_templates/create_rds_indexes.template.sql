@@ -20,6 +20,12 @@ CREATE INDEX IF NOT EXISTS students_asc_active_idx ON {rds_schema_asc}.students 
 CREATE INDEX IF NOT EXISTS students_asc_intensive_idx ON {rds_schema_asc}.students (intensive);
 CREATE INDEX IF NOT EXISTS students_asc_group_code_idx ON {rds_schema_asc}.students (group_code);
 
+CREATE TABLE IF NOT EXISTS {rds_schema_asc}.student_profiles
+(
+    sid VARCHAR NOT NULL PRIMARY KEY,
+    profile TEXT NOT NULL
+);
+
 CREATE SCHEMA IF NOT EXISTS {rds_schema_coe};
 GRANT USAGE ON SCHEMA {rds_schema_coe} TO {rds_app_boa_user};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_coe} GRANT SELECT ON TABLES TO {rds_app_boa_user};
@@ -50,6 +56,12 @@ CREATE INDEX IF NOT EXISTS students_coe_sid_idx ON {rds_schema_coe}.students (si
 CREATE INDEX IF NOT EXISTS students_coe_advisor_ldap_uid_idx ON {rds_schema_coe}.students (advisor_ldap_uid);
 CREATE INDEX IF NOT EXISTS students_coe_probation_idx ON {rds_schema_coe}.students (probation);
 CREATE INDEX IF NOT EXISTS students_coe_status_idx ON {rds_schema_coe}.students (status);
+
+CREATE TABLE IF NOT EXISTS {rds_schema_coe}.student_profiles
+(
+    sid VARCHAR NOT NULL PRIMARY KEY,
+    profile TEXT NOT NULL
+);
 
 CREATE SCHEMA IF NOT EXISTS {rds_schema_l_s};
 GRANT USAGE ON SCHEMA {rds_schema_l_s} TO {rds_app_boa_user};

@@ -71,6 +71,8 @@ DROP SCHEMA IF EXISTS {redshift_schema_coe} CASCADE;
 CREATE SCHEMA {redshift_schema_coe};
 GRANT USAGE ON SCHEMA {redshift_schema_coe} TO GROUP {redshift_app_boa_user}_group;
 ALTER default PRIVILEGES IN SCHEMA {redshift_schema_coe} GRANT SELECT ON TABLES TO GROUP {redshift_app_boa_user}_group;
+GRANT USAGE ON SCHEMA {redshift_schema_coe} TO GROUP {redshift_dblink_group};
+ALTER default PRIVILEGES IN SCHEMA {redshift_schema_coe} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
 
 --------------------------------------------------------------------
 -- Internal Tables
