@@ -37,8 +37,10 @@ class CreateAscAdvisingNotesSchema(BackgroundJob):
         app.logger.info(f'Starting ASC Advising Notes schema creation job...')
         app.logger.info(f'Executing SQL...')
         self.create_schema()
+        app.logger.info('Redshift schema created. Creating RDS indexes...')
         self.create_indexes()
-        app.logger.info(f'Redshift schema created.')
+
+        return 'ASC Advising Notes schema creation job completed.'
 
     def create_schema(self):
         external_schema = app.config['REDSHIFT_SCHEMA_ASC_ADVISING_NOTES']
@@ -54,9 +56,11 @@ class CreateAscAdvisingNotesSchema(BackgroundJob):
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(external_schema, resolved_ddl)
         else:
-            raise BackgroundJobError(f'ASC Advising Notes schema creation job failed.')
+            raise BackgroundJobError('ASC Advising Notes schema creation job failed.')
 
     def create_indexes(self):
         resolved_ddl = resolve_sql_template('index_asc_advising_notes.template.sql')
-        if not rds.execute(resolved_ddl):
-            raise BackgroundJobError(f'ASC Advising Notes schema creation job failed to create indexes.')
+        if rds.execute(resolved_ddl):
+            app.logger.info('Created ASC Advising Notes RDS indexes.')
+        else:
+            raise BackgroundJobError('ASC Advising Notes schema creation job failed to create indexes.')
