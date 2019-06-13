@@ -165,6 +165,10 @@ AS (
     AND M.institution = N.institution
     AND M.note_id = N.note_id
     AND M.max_seq_nr  = D.note_seq_nr
+    WHERE (N.sid || '-' || N.note_id) NOT IN (
+    	SELECT I.emplid || '-' || I.saa_note_id
+    	FROM {redshift_schema_sis_advising_notes}.advising_notes_incr I
+    )
 );
 
 CREATE TABLE {redshift_schema_sis_advising_notes_internal}.advising_note_attachments
