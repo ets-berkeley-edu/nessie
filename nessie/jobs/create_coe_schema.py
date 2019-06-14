@@ -41,6 +41,7 @@ external_schema = app.config['REDSHIFT_SCHEMA_COE_EXTERNAL']
 internal_schema = app.config['REDSHIFT_SCHEMA_COE']
 internal_schema_identifier = psycopg2.sql.Identifier(internal_schema)
 rds_schema = app.config['RDS_SCHEMA_COE']
+rds_dblink_to_redshift = app.config['REDSHIFT_DATABASE'] + '_redshift'
 
 
 class CreateCoeSchema(BackgroundJob):
@@ -132,4 +133,20 @@ class CreateCoeSchema(BackgroundJob):
             )
             if not result:
                 return False
+
+            result = transaction.execute(
+                f"""INSERT INTO {rds_schema}.student_profiles (
+                SELECT *
+                    FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+                        SELECT sid, profile
+                        FROM {internal_schema}.student_profiles
+                    $REDSHIFT$)
+                AS redshift_profiles (
+                    sid VARCHAR,
+                    profile TEXT
+                ));""",
+            )
+            if not result:
+                return False
+
         return True

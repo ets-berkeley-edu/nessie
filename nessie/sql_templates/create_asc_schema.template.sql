@@ -31,6 +31,8 @@
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_asc};
 GRANT USAGE ON SCHEMA {redshift_schema_asc} TO GROUP {redshift_app_boa_user}_group;
 ALTER default PRIVILEGES IN SCHEMA {redshift_schema_asc} GRANT SELECT ON TABLES TO GROUP {redshift_app_boa_user}_group;
+GRANT USAGE ON SCHEMA {redshift_schema_asc} TO GROUP {redshift_dblink_group};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_asc} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
 
 --------------------------------------------------------------------
 -- Internal Tables
