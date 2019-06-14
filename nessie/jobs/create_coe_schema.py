@@ -118,8 +118,7 @@ class CreateCoeSchema(BackgroundJob):
 
     def refresh_rds_indexes(self, coe_rows, transaction):
         if len(coe_rows):
-            result = transaction.execute(f'TRUNCATE {rds_schema}.students')
-            if not result:
+            if not transaction.execute(f'TRUNCATE {rds_schema}.students'):
                 return False
             columns = [
                 'sid', 'advisor_ldap_uid', 'gender', 'ethnicity', 'minority',
@@ -134,6 +133,8 @@ class CreateCoeSchema(BackgroundJob):
             if not result:
                 return False
 
+            if not transaction.execute(f'TRUNCATE {rds_schema}.student_profiles'):
+                return False
             result = transaction.execute(
                 f"""INSERT INTO {rds_schema}.student_profiles (
                 SELECT *
