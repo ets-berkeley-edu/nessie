@@ -54,6 +54,7 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
         self.create_internal_schema(external_schema, daily_path)
         app.logger.info(f'Redshift schema created. Creating RDS indexes...')
         self.create_indexes()
+
         return 'SIS Advising Notes schema creation job completed.'
 
     def create_historical_tables(self, external_schema):
@@ -74,5 +75,7 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
 
     def create_indexes(self):
         resolved_ddl = resolve_sql_template('index_sis_advising_notes.template.sql')
-        if not rds.execute(resolved_ddl):
-            raise BackgroundJobError(f'SIS Advising Notes schema creation job failed to create indexes.')
+        if rds.execute(resolved_ddl):
+            app.logger.info('Created SIS Advising Notes RDS indexes.')
+        else:
+            raise BackgroundJobError('SIS Advising Notes schema creation job failed to create indexes.')
