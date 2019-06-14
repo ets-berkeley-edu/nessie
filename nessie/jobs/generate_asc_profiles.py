@@ -122,8 +122,7 @@ class GenerateAscProfiles(BackgroundJob):
 
     def refresh_rds_indexes(self, asc_rows, transaction):
         if len(asc_rows):
-            result = transaction.execute(f'TRUNCATE {rds_schema}.students')
-            if not result:
+            if not transaction.execute(f'TRUNCATE {rds_schema}.students'):
                 return False
             columns = ['sid', 'active', 'intensive', 'status_asc', 'group_code', 'group_name', 'team_code', 'team_name']
             result = transaction.insert_bulk(
@@ -133,6 +132,8 @@ class GenerateAscProfiles(BackgroundJob):
             if not result:
                 return False
 
+            if not transaction.execute(f'TRUNCATE {rds_schema}.student_profiles'):
+                return False
             result = transaction.execute(
                 f"""INSERT INTO {rds_schema}.student_profiles (
                 SELECT *
