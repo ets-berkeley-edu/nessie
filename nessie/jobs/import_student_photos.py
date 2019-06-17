@@ -74,14 +74,17 @@ class ImportStudentPhotos(BackgroundJob):
                 app.logger.error(f'Photo import failed for SID {csid}.')
                 failures.append(csid)
 
-        if (len(successes) == 0) and (len(failures) > 0):
+        if (len(successes) == 0) and (len(photo_not_found) == 0) and (len(failures) > 0):
             raise BackgroundJobError('Failed to import student photos.')
         else:
             update_photo_import_status(successes, failures, photo_not_found)
-            return (
-                f'Student photo import completed: {len(successes)} succeeded, '
-                f'{len(photo_not_found)} had no photo available, {len(failures)} failed.'
-            )
+            status = 'Student photo import completed: '
+            if len(successes):
+                status += f'{len(successes)} succeeded, '
+            if len(photo_not_found):
+                status += f'{len(photo_not_found)} had no photo available, '
+            status += f'{len(failures)} failed.'
+            return status
 
 
 def _get_advisee_sids_without_photos():
