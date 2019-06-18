@@ -216,11 +216,15 @@ AS (
  * Since multiple mappings frequently exist for a given Canvas id, track only the user_ids which have an active
  * workflow_state. A handful (about 100) canvas_user_ids have multiple active sis_login_ids, represented in this
  * table by multiple rows.
+ *
+ * Our Canvas ID integration can temporarily cause a single CalNet UID to be associated with both an active and an
+ * inactive account. When that happens, prefer the SIS_LOGIN_ID which is not flagged by an "inactive-" prefix.
  */
 
 CREATE TABLE {redshift_schema_intermediate}.users
 INTERLEAVED SORTKEY (canvas_id, uid, sis_user_id)
 AS (
+  SELECT s.global_id, s.canvas_id, s.name, s.sortable_name, s.sis_user_id, s.sis_login_id, s.uid FROM (
     SELECT
         u.id AS global_id,
         u.canvas_id,
@@ -233,12 +237,15 @@ AS (
             WHEN REPLACE(p.unique_name, 'inactive-', '') !~ '[A-Za-z]'
             THEN REPLACE(p.unique_name, 'inactive-', '')
         ELSE NULL END
-            AS uid
+            AS uid,
+        ROW_NUMBER() OVER(PARTITION BY uid ORDER BY p.unique_name ASC) AS rk
     FROM
         {redshift_schema_canvas}.user_dim u
     LEFT JOIN {redshift_schema_canvas}.pseudonym_dim p ON u.id = p.user_id
     WHERE
         p.workflow_state = 'active'
+    ORDER BY uid
+  ) s WHERE s.rk = 1
 );
 
 /*
