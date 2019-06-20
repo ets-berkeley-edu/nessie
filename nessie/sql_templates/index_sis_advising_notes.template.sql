@@ -109,4 +109,26 @@ CREATE INDEX idx_advising_notes_ft_search
 ON {rds_schema_sis_advising_notes}.advising_notes_search_index
 USING gin(fts_index);
 
+CREATE TABLE IF NOT EXISTS {rds_schema_sis_advising_notes}.advising_note_authors
+(
+    uid VARCHAR NOT NULL,
+    sid VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    last_name VARCHAR NOT NULL,
+    PRIMARY KEY (uid)
+);
+
+CREATE INDEX IF NOT EXISTS advising_note_authors_sid_idx
+ON {rds_schema_sis_advising_notes}.advising_note_authors (sid);
+
+CREATE TABLE IF NOT EXISTS {rds_schema_sis_advising_notes}.advising_note_author_names
+(
+    sid VARCHAR NOT NULL,
+    name VARCHAR NOT NULL,
+    PRIMARY KEY (sid, name)
+);
+
+CREATE INDEX IF NOT EXISTS advising_note_author_names_name_idx
+ON {rds_schema_sis_advising_notes}.advising_note_author_names (name);
+
 COMMIT TRANSACTION;

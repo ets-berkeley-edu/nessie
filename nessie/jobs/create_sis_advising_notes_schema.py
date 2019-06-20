@@ -26,7 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from datetime import datetime, timedelta
 
 from flask import current_app as app
-from nessie.externals import rds, redshift, s3
+from nessie.externals import calnet, rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.util import get_s3_sis_sysadm_daily_path, resolve_sql_template
 
@@ -54,6 +54,9 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
         self.create_internal_schema(external_schema, daily_path)
         app.logger.info(f'Redshift schema created. Creating RDS indexes...')
         self.create_indexes()
+        app.logger.info(f'RDS indexes created. Importing note authors...')
+        self.import_note_authors()
+        self.index_author_names()
 
         return 'SIS Advising Notes schema creation job completed.'
 
@@ -79,3 +82,72 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
             app.logger.info('Created SIS Advising Notes RDS indexes.')
         else:
             raise BackgroundJobError('SIS Advising Notes schema creation job failed to create indexes.')
+
+    def import_note_authors(self):
+        schema = app.config['RDS_SCHEMA_SIS_ADVISING_NOTES']
+        advisor_sids = [r['advisor_sid'] for r in rds.fetch(f'SELECT DISTINCT advisor_sid FROM {schema}.advising_notes')]
+
+        advisor_attributes = calnet.client(app).search_csids(advisor_sids)
+        if not advisor_attributes:
+            raise BackgroundJobError('Failed to fetch note author attributes.')
+
+        with rds.transaction() as transaction:
+            if not transaction.execute(f'TRUNCATE {schema}.advising_note_authors'):
+                transaction.rollback()
+                raise BackgroundJobError('Failed to truncate advising note author index.')
+
+            insertable_rows = []
+            for entry in advisor_attributes:
+                first_name, last_name = calnet.split_sortable_name(entry)
+                insertable_rows.append(tuple((entry.get('uid'), entry.get('csid'), first_name, last_name)))
+
+            result = transaction.insert_bulk(
+                f'INSERT INTO {schema}.advising_note_authors (uid, sid, first_name, last_name) VALUES %s',
+                insertable_rows,
+            )
+            if result:
+                transaction.commit()
+                app.logger.info('Import advising note author attributes.')
+            else:
+                transaction.rollback()
+                raise BackgroundJobError('Failed to import advising note author attributes.')
+
+    def index_author_names(self):
+        # TODO This name index table combines advising note authors from the SIS and ASC schemas. For now we
+        # stash it in the SIS advising notes schema, but as we continue to import advising notes from other
+        # departments we may want to reorganize.
+        asc_schema = app.config['RDS_SCHEMA_ASC']
+        sis_schema = app.config['RDS_SCHEMA_SIS_ADVISING_NOTES']
+
+        with rds.transaction() as transaction:
+            if not transaction.execute(f'TRUNCATE {sis_schema}.advising_note_author_names'):
+                transaction.rollback()
+                raise BackgroundJobError('Failed to truncate advising note author name index.')
+
+            sql = f"""INSERT INTO {sis_schema}.advising_note_author_names (
+                SELECT DISTINCT uid, unnest(string_to_array(
+                    regexp_replace(upper(first_name), '[^\w ]', '', 'g'),
+                    ' '
+                )) AS name FROM {sis_schema}.advising_note_authors
+                UNION
+                SELECT DISTINCT uid, unnest(string_to_array(
+                    regexp_replace(upper(last_name), '[^\w ]', '', 'g'),
+                    ' '
+                )) AS name FROM {sis_schema}.advising_note_authors
+                UNION
+                SELECT DISTINCT advisor_uid, unnest(string_to_array(
+                    regexp_replace(upper(advisor_first_name), '[^\w ]', '', 'g'),
+                    ' '
+                )) AS name FROM {asc_schema}.advising_notes WHERE advisor_uid IS NOT NULL
+                UNION
+                SELECT DISTINCT advisor_uid, unnest(string_to_array(
+                    regexp_replace(upper(advisor_last_name), '[^\w ]', '', 'g'),
+                    ' '
+                )) AS name FROM {asc_schema}.advising_notes WHERE advisor_uid IS NOT NULL
+                );"""
+            if transaction.execute(sql):
+                transaction.commit()
+                app.logger.info('Indexed advising note author names.')
+            else:
+                transaction.rollback()
+                raise BackgroundJobError('Failed to index advising note author names.')

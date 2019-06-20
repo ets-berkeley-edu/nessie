@@ -57,7 +57,7 @@ def _put_calnet_data_to_s3(sids):
         sid = a['csid']
         app.logger.info(f'CalNet import: Fetch attributes of student {sid} ({index + 1} of {total_count})')
         affiliations = a['affiliations']
-        first_name, last_name = _split_sortable_name(a)
+        first_name, last_name = calnet.split_sortable_name(a)
         # JsonSerDe in Redshift schema creation requires one and only one JSON record per line in text file in S3.
         serialized_data += json.dumps({
             'affiliations': ','.join(affiliations) if isinstance(affiliations, list) else affiliations,
@@ -69,16 +69,3 @@ def _put_calnet_data_to_s3(sids):
             'sid': sid,
         }) + '\n'
     s3.upload_data(serialized_data, f'{get_s3_calnet_daily_path()}/persons.json')
-
-
-def _split_sortable_name(a):
-    if 'sortable_name' not in a:
-        name_split = []
-    elif isinstance(a['sortable_name'], list):
-        name_split = a['sortable_name'][0].split(',')
-    else:
-        name_split = a['sortable_name'].split(',')
-    full_name = [name.strip() for name in reversed(name_split)]
-    first_name = full_name[0] if len(full_name) else ''
-    last_name = full_name[1] if len(full_name) > 1 else ''
-    return first_name, last_name
