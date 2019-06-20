@@ -66,11 +66,23 @@ class TestBerkeleyDegreeProgramUrl:
 class TestBerkeley:
 
     def test_term_id_lists(self, app):
-        all_term_ids = set(berkeley.reverse_term_ids(include_future_terms=True))
+        all_term_ids = set(berkeley.reverse_term_ids(include_future_terms=True, include_legacy_terms=True))
         canvas_integrated_term_ids = set(berkeley.reverse_term_ids())
         future_term_ids = set(berkeley.future_term_ids())
+        legacy_term_ids = set(berkeley.legacy_term_ids())
         assert canvas_integrated_term_ids < all_term_ids
+        assert berkeley.sis_term_id_for_name(app.config['EARLIEST_LEGACY_TERM']) in all_term_ids
+        assert berkeley.sis_term_id_for_name(app.config['EARLIEST_TERM']) in all_term_ids
+        assert berkeley.sis_term_id_for_name(app.config['CURRENT_TERM']) in all_term_ids
+        assert berkeley.sis_term_id_for_name(app.config['FUTURE_TERM']) in all_term_ids
+
         assert berkeley.current_term_id() in canvas_integrated_term_ids
+        assert berkeley.earliest_term_id() in canvas_integrated_term_ids
+
+        assert future_term_ids.isdisjoint(canvas_integrated_term_ids)
         assert future_term_ids < all_term_ids
         assert berkeley.future_term_id() in future_term_ids
-        assert future_term_ids.isdisjoint(canvas_integrated_term_ids)
+
+        assert legacy_term_ids.isdisjoint(canvas_integrated_term_ids)
+        assert legacy_term_ids < all_term_ids
+        assert berkeley.earliest_legacy_term_id() in berkeley.legacy_term_ids()

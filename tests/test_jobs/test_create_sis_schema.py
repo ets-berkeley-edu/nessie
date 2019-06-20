@@ -77,17 +77,19 @@ class TestCreateSisSchema:
         s3.upload_data('some older enrollment data', f'{historical_path}/enrollments/enrollments-2172.gz')
         s3.upload_data('some perfectly antique course data', f'{historical_path}/courses/courses-2168.gz')
         s3.upload_data('some perfectly antique enrollment data', f'{historical_path}/enrollments/enrollments-2168.gz')
+        s3.upload_data('some ancient course data', f'{historical_path}/courses/courses-2165.gz')
+        s3.upload_data('some ancient enrollment data', f'{historical_path}/enrollments/enrollments-2165.gz')
 
     def _assert_complete_manifest(self, app, daily_path, historical_path):
         bucket = app.config['LOCH_S3_BUCKET']
         manifest_path = app.config['LOCH_S3_SIS_DATA_PATH'] + '/manifests'
 
         courses_manifest = json.loads(s3.get_object_text(manifest_path + '/courses.json'))
-        assert len(courses_manifest['entries']) == 5
+        assert len(courses_manifest['entries']) == 6
         assert courses_manifest['entries'][0]['url'] == f's3://{bucket}/{daily_path}/courses/courses-2178.gz'
         assert courses_manifest['entries'][0]['meta']['content_length'] == 20
 
         enrollments_manifest = json.loads(s3.get_object_text(manifest_path + '/enrollments.json'))
-        assert len(enrollments_manifest['entries']) == 5
-        assert (enrollments_manifest['entries'][3]['url'] == f's3://{bucket}/{historical_path}/enrollments/enrollments-2172.gz')
-        assert enrollments_manifest['entries'][3]['meta']['content_length'] == 26
+        assert len(enrollments_manifest['entries']) == 6
+        assert (enrollments_manifest['entries'][4]['url'] == f's3://{bucket}/{historical_path}/enrollments/enrollments-2172.gz')
+        assert enrollments_manifest['entries'][4]['meta']['content_length'] == 26

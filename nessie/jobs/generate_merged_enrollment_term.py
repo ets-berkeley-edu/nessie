@@ -32,6 +32,7 @@ from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib import queries
 from nessie.lib.analytics import merge_analytics_for_course, merge_assignment_submissions_for_user
+from nessie.lib.berkeley import reverse_term_ids
 from nessie.lib.util import encoded_tsv_row
 from nessie.models import student_schema
 
@@ -60,19 +61,25 @@ class GenerateMergedEnrollmentTerm(BackgroundJob):
         if not advisees_by_canvas_id:
             raise BackgroundJobError(f'Failed to retrieve advisee map at {advisees_by_canvas_id_path}, aborting')
 
-        canvas_site_map_path = feed_path + f'canvas_site_map_{term_id}.json'
-        canvas_site_map = s3.get_object_json(canvas_site_map_path)
-        if not canvas_site_map:
-            raise BackgroundJobError(f'Failed to retrieve Canvas site map at {canvas_site_map_path}, aborting')
-
         enrollment_term_map_path = feed_path + f'enrollment_term_map_{term_id}.json'
         enrollment_term_map = s3.get_object_json(enrollment_term_map_path)
         if not enrollment_term_map:
             raise BackgroundJobError(f'Failed to retrieve enrollment term map at {enrollment_term_map_path}, aborting')
 
+        canvas_site_map = self.merge_canvas_analytics_for_term(term_id, feed_path)
+
         self.merge_course_analytics_for_term(term_id, canvas_site_map, enrollment_term_map, advisees_by_canvas_id)
         self.merge_advisee_assignment_submissions_for_term(term_id, enrollment_term_map, advisees_by_canvas_id)
         return enrollment_term_map
+
+    def merge_canvas_analytics_for_term(self, term_id, feed_path):
+        if term_id not in reverse_term_ids():
+            return {}
+        canvas_site_map_path = feed_path + f'canvas_site_map_{term_id}.json'
+        canvas_site_map = s3.get_object_json(canvas_site_map_path)
+        if not canvas_site_map:
+            raise BackgroundJobError(f'Failed to retrieve Canvas site map at {canvas_site_map_path}, aborting')
+        return canvas_site_map
 
     def merge_course_analytics_for_term(self, term_id, canvas_site_map, enrollment_term_map, advisees_by_canvas_id):
         app.logger.info(f'Starting non-assignment-submissions analytics merge for {len(canvas_site_map)} Canvas courses')
