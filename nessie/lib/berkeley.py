@@ -45,13 +45,13 @@ ACADEMIC_PLAN_TO_DEGREE_PROGRAM_PAGE = {
     'Asian Am & Asian Diasp': 'asian-american-diaspora-studies',
     'Asian Studies': 'asian-studies-multi-area',
     'Astrophysics': 'astrophysics',
-    'BioE\/MSE Joint Major': 'bioengineering-materials-science-engineering-joint-major',
+    r'BioE/MSE Joint Major': 'bioengineering-materials-science-engineering-joint-major',
     'Bioengineering': 'bioengineering',
     'Buddhist Studies': 'buddhism',
     'Business Administration': 'business-administration',
     'Celtic Studies': 'celtic-studies',
-    'Chem Eng\/MSE Joint Major': 'chemical-engineering-materials-science-joint-major',
-    'Chem Eng\/NE Joint Major': 'chemical-engineering-nuclear-joint-major',
+    r'Chem Eng/MSE Joint Major': 'chemical-engineering-materials-science-joint-major',
+    r'Chem Eng/NE Joint Major': 'chemical-engineering-nuclear-joint-major',
     'Chemical Biology': 'chemical-biology',
     'Chemical Engineering': 'chemical-engineering',
     'Chemistry': 'chemistry',
@@ -114,15 +114,15 @@ ACADEMIC_PLAN_TO_DEGREE_PROGRAM_PAGE = {
     'MCB-Biochem & Mol Biol': 'molecular-cell-biology-biochemistry',
     'MCB-Cell & Dev Biology': 'molecular-cell-biology-developmental',
     'MCB-Neurobiology': 'molecular-cell-biology-neurobiology',
-    'ME\/NE Joint Major': 'mechanical-engineering-nuclear',
+    r'ME/NE Joint Major': 'mechanical-engineering-nuclear',
     'Mechanical Engineering': 'mechanical-engineering',
     'Media Studies': 'media-studies',
     'Medieval Studies': 'medieval-studies',
     'Microbial Biology': 'microbial-biology',
     'Middle Eastern Studies': 'middle-eastern-studies',
     'Molecular Environ Biology': 'molecular-environmental-biology',
-    'MSE\/ME Joint Major': 'materials-science-engineering-mechanical-joint-major',
-    'MSE\/NE Joint Major': 'materials-science-engineering-nuclear-joint-major',
+    r'MSE/ME Joint Major': 'materials-science-engineering-mechanical-joint-major',
+    r'MSE/NE Joint Major': 'materials-science-engineering-nuclear-joint-major',
     'Music': 'music',
     'Native American Studies': 'native-american-studies',
     'Near Eastern Studies': 'near-eastern-civilizations',
@@ -162,14 +162,11 @@ def canvas_terms():
 
 
 def future_term_ids():
-    term_ids = []
-    stop_term_id = current_term_id()
-    term_id = future_term_id()
-    while True:
-        if term_id <= stop_term_id:
-            return term_ids
-        term_ids.append(term_id)
-        term_id = previous_term_id(term_id)
+    return _collect_terms(start_term_id=future_term_id(), stop_term_id=current_term_id(), include_stop=False)
+
+
+def legacy_term_ids():
+    return _collect_terms(start_term_id=earliest_term_id(), stop_term_id=earliest_legacy_term_id(), include_start=False)
 
 
 def previous_term_id(term_id):
@@ -182,15 +179,11 @@ def previous_term_id(term_id):
     return previous
 
 
-def reverse_term_ids(include_future_terms=False):
-    term_ids = []
-    stop_term_id = sis_term_id_for_name(app.config['EARLIEST_TERM'])
-    term_id = future_term_id() if include_future_terms else current_term_id()
-    while True:
-        term_ids.append(term_id)
-        if term_id == stop_term_id:
-            return term_ids
-        term_id = previous_term_id(term_id)
+def reverse_term_ids(include_future_terms=False, include_legacy_terms=False):
+    stop_term_id = sis_term_id_for_name(app.config['EARLIEST_LEGACY_TERM']) if include_legacy_terms \
+        else sis_term_id_for_name(app.config['EARLIEST_TERM'])
+    start_term_id = future_term_id() if include_future_terms else current_term_id()
+    return _collect_terms(start_term_id, stop_term_id)
 
 
 def sis_term_id_for_name(term_name=None):
@@ -237,6 +230,16 @@ def future_term_id():
     return sis_term_id_for_name(term_name)
 
 
+def earliest_term_id():
+    term_name = app.config['EARLIEST_TERM']
+    return sis_term_id_for_name(term_name)
+
+
+def earliest_legacy_term_id():
+    term_name = app.config['EARLIEST_LEGACY_TERM']
+    return sis_term_id_for_name(term_name)
+
+
 def translate_grading_basis(code):
     bases = {
         'CNC': 'C/NC',
@@ -248,3 +251,14 @@ def translate_grading_basis(code):
         'SUS': 'S/U',
     }
     return bases.get(code) or code
+
+
+def _collect_terms(start_term_id, stop_term_id, include_start=True, include_stop=True):
+    term_ids = []
+    term_id = start_term_id if include_start else previous_term_id(start_term_id)
+    stop_term_id = previous_term_id(stop_term_id) if include_stop else stop_term_id
+    while True:
+        if term_id <= stop_term_id:
+            return term_ids
+        term_ids.append(term_id)
+        term_id = previous_term_id(term_id)

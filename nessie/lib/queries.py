@@ -172,7 +172,7 @@ def get_all_advisee_sis_enrollments():
               FROM {intermediate_schema()}.sis_enrollments enr
               JOIN {calnet_schema()}.persons ldap
                 ON enr.ldap_uid = ldap.ldap_uid
-              WHERE enr.sis_term_id=ANY('{{{','.join(reverse_term_ids(include_future_terms=True))}}}')
+              WHERE enr.sis_term_id=ANY('{{{','.join(reverse_term_ids(include_future_terms=True, include_legacy_terms=True))}}}')
               ORDER BY enr.sis_term_id DESC, ldap.sid, enr.sis_course_name, enr.sis_primary DESC, enr.sis_instruction_format, enr.sis_section_num
         """
     return redshift.fetch(sql)
@@ -184,7 +184,7 @@ def get_all_advisee_enrollment_drops():
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
               JOIN {calnet_schema()}.persons ldap
                 ON dr.sid = ldap.sid
-              WHERE dr.sis_term_id=ANY('{{{','.join(reverse_term_ids())}}}')
+              WHERE dr.sis_term_id=ANY('{{{','.join(reverse_term_ids(include_legacy_terms=True))}}}')
               ORDER BY dr.sis_term_id DESC, dr.sid, dr.sis_course_name
             """
     return redshift.fetch(sql)
@@ -195,7 +195,7 @@ def get_all_advisee_term_gpas():
               FROM {student_schema()}.student_term_gpas gp
               JOIN {calnet_schema()}.persons ldap
                 ON gp.sid = ldap.sid
-              WHERE gp.term_id=ANY('{{{','.join(reverse_term_ids())}}}')
+              WHERE gp.term_id=ANY('{{{','.join(reverse_term_ids(include_legacy_terms=True))}}}')
               ORDER BY gp.term_id, gp.sid DESC
         """
     return redshift.fetch(sql)
