@@ -127,6 +127,19 @@ class MockClient(Client):
         return conn
 
 
+def split_sortable_name(entry):
+    if 'sortable_name' not in entry:
+        name_split = []
+    elif isinstance(entry['sortable_name'], list):
+        name_split = entry['sortable_name'][0].split(',')
+    else:
+        name_split = entry['sortable_name'].split(',')
+    full_name = [name.strip() for name in reversed(name_split)]
+    first_name = full_name[0] if len(full_name) else ''
+    last_name = full_name[1] if len(full_name) > 1 else ''
+    return first_name, last_name
+
+
 def _attributes_to_dict(entry):
     out = dict.fromkeys(SCHEMA_DICT.values(), None)
     # ldap3's entry.entry_attributes_as_dict would work for us, except that it wraps a single value as a list.
