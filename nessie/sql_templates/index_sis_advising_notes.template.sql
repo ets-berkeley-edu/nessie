@@ -123,9 +123,9 @@ ON {rds_schema_sis_advising_notes}.advising_note_authors (sid);
 
 CREATE TABLE IF NOT EXISTS {rds_schema_sis_advising_notes}.advising_note_author_names
 (
-    sid VARCHAR NOT NULL,
+    uid VARCHAR NOT NULL,
     name VARCHAR NOT NULL,
-    PRIMARY KEY (sid, name)
+    PRIMARY KEY (uid, name)
 );
 
 CREATE INDEX IF NOT EXISTS advising_note_author_names_name_idx
