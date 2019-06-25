@@ -51,7 +51,12 @@ INSERT INTO {rds_schema_asc}.advising_notes (
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT DISTINCT id, asc_id, sid, student_first_name, student_last_name, meeting_date,
       advisor_uid, advisor_first_name, advisor_last_name, created_at, updated_at
-    FROM {redshift_schema_asc_advising_notes_internal}.advising_notes
+    FROM {redshift_schema_asc_advising_notes_internal}.advising_notes N
+    WHERE N.updated_at = (
+        SELECT MAX(M.updated_at)
+        FROM {redshift_schema_asc_advising_notes_internal}.advising_notes M
+        WHERE M.id = N.id
+    )
   $REDSHIFT$)
   AS redshift_notes (
     id VARCHAR,
