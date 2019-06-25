@@ -30,6 +30,7 @@ import socket
 
 import boto3
 from botocore.exceptions import ClientError, ConnectionError
+from botocore.vendored.requests.packages.urllib3.exceptions import TimeoutError
 from flask import current_app as app
 import requests
 import smart_open
@@ -147,7 +148,7 @@ def get_retriable_csv_stream(columns, key, retries=1):
             data = get_unzipped_text_reader(key)
             for line in data:
                 yield dict(zip(columns, [(int(f) if f.isdigit() else None) for f in line.strip().split(',')]))
-        except (ClientError, ConnectionError, socket.error) as e:
+        except (ClientError, ConnectionError, socket.error, TimeoutError) as e:
             if attempt + 1 < retries:
                 app.logger.error(f'CSV stream attempt {attempt + 1} of {retries} failed, will retry: {e}')
             else:
