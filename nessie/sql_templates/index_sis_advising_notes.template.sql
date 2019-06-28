@@ -40,8 +40,8 @@ CREATE TABLE {rds_schema_sis_advising_notes}.advising_notes (
   note_subcategory VARCHAR,
   note_body TEXT,
   created_by VARCHAR,
-  created_at TIMESTAMP NOT NULL,
-  updated_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
   PRIMARY KEY (id)
 );
 
@@ -62,8 +62,8 @@ INSERT INTO {rds_schema_sis_advising_notes}.advising_notes (
     note_subcategory VARCHAR,
     note_body TEXT,
     created_by VARCHAR,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE,
+    updated_at TIMESTAMP WITH TIME ZONE
   )
 );
 
