@@ -84,7 +84,7 @@ class ImportDegreeProgress(BackgroundJob):
                 WHERE sid IN (SELECT sid FROM {redshift_schema_student}_staging.sis_api_degree_progress);
             INSERT INTO {redshift_schema_student}.sis_api_degree_progress
                 (SELECT * FROM {redshift_schema_student}_staging.sis_api_degree_progress);
-            TRUNCATE {redshift_schema_student}_staging.sis_api_profiles;
+            TRUNCATE {redshift_schema_student}_staging.sis_api_degree_progress;
             """,
         )
         if not redshift.execute(staging_to_destination_query):
