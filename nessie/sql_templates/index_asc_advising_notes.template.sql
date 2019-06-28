@@ -41,13 +41,13 @@ CREATE TABLE {rds_schema_asc}.advising_notes (
   advisor_uid VARCHAR,
   advisor_first_name VARCHAR,
   advisor_last_name VARCHAR,
-  created_at TIMESTAMP NOT NULL,
-  updated_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
   PRIMARY KEY (id)
 );
 
 INSERT INTO {rds_schema_asc}.advising_notes (
-  SELECT * 
+  SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT DISTINCT id, asc_id, sid, student_first_name, student_last_name, meeting_date,
       advisor_uid, advisor_first_name, advisor_last_name, created_at, updated_at
@@ -68,8 +68,8 @@ INSERT INTO {rds_schema_asc}.advising_notes (
     advisor_uid VARCHAR,
     advisor_first_name VARCHAR,
     advisor_last_name VARCHAR,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE,
+    updated_at TIMESTAMP WITH TIME ZONE
   )
 );
 
