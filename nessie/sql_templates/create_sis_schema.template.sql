@@ -91,6 +91,26 @@ WITH SERDEPROPERTIES (
 STORED AS TEXTFILE
 LOCATION '{loch_s3_sis_data_path}/manifests/enrollments.json';
 
+-- Advisee demographics
+CREATE EXTERNAL TABLE {redshift_schema_sis}.demographics
+(
+    sid VARCHAR,
+    gender_of_record VARCHAR,
+    gender_identity VARCHAR,
+    usa_visa_type_code VARCHAR,
+    ethnicity_group_descr VARCHAR,
+    ethnicity_detail_descr VARCHAR,
+    foreigncountry_descr VARCHAR
+)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
+WITH SERDEPROPERTIES (
+  'separatorChar' = ',',
+  'quoteChar' = '\"',
+  'escapeChar' = '\\'
+)
+STORED AS TEXTFILE
+LOCATION '{loch_s3_sis_data_path}/advisees/demographics/';
+
 -- term gpa
 CREATE EXTERNAL TABLE {redshift_schema_sis}.term_gpa
 (

@@ -194,6 +194,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         if not uid:
             return
         sis_profile = parse_merged_sis_profile(feeds.get('sis_profile_feed'), feeds.get('degree_progress_feed'))
+        demographics = feeds.get('demographics_feed') and json.loads(feeds.get('demographics_feed'))
         merged_profile = {
             'sid': sid,
             'uid': uid,
@@ -203,6 +204,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'canvasUserId': feeds.get('canvas_user_id'),
             'canvasUserName': feeds.get('canvas_user_name'),
             'sisProfile': sis_profile,
+            'demographics': demographics,
         }
         self.rows['student_profiles'].append(encoded_tsv_row([sid, json.dumps(merged_profile)]))
 
