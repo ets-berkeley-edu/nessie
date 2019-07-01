@@ -249,6 +249,24 @@ AS (
 );
 
 /*
+ * Aggregate SIS-provided ethnicities and nationalities into single rows for further processing.
+ */
+
+CREATE TABLE {redshift_schema_intermediate}.advisee_sis_demographics
+DISTKEY (sid)
+SORTKEY (sid)
+AS (
+  SELECT
+    d.sid, d.gender_of_record, d.gender_identity,
+    LISTAGG(DISTINCT d.usa_visa_type_code, ' + ') visas,
+    LISTAGG(DISTINCT d.ethnicity_group_descr || ' : ' || d.ethnicity_detail_descr, ' + ') ethnicities,
+    LISTAGG(DISTINCT d.foreigncountry_descr, ' + ') countries
+    FROM {redshift_schema_sis}.demographics d
+    GROUP BY d.sid, d.gender_of_record, d.gender_identity
+    ORDER BY d.sid, d.gender_of_record, d.gender_identity
+);
+
+/*
  * Collect all active student Canvas course site enrollments and note SIS enrollment status, if any, in SIS sections integrated
  * with the course site.
  */

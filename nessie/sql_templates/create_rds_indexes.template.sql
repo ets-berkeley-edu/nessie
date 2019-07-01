@@ -146,6 +146,26 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_majors
 CREATE INDEX IF NOT EXISTS students_major_sid_idx ON {rds_schema_student}.student_majors (sid);
 CREATE INDEX IF NOT EXISTS students_major_major_idx ON {rds_schema_student}.student_majors (major);
 
+CREATE TABLE IF NOT EXISTS {rds_schema_student}.demographics
+(
+    sid VARCHAR NOT NULL,
+    gender VARCHAR,
+    minority BOOLEAN,
+    PRIMARY KEY (sid)
+);
+
+CREATE INDEX IF NOT EXISTS students_demographics_sid_idx ON {rds_schema_student}.demographics (sid);
+
+CREATE TABLE IF NOT EXISTS {rds_schema_student}.ethnicities
+(
+    sid VARCHAR NOT NULL,
+    ethnicity VARCHAR,
+    PRIMARY KEY (sid, ethnicity)
+);
+
+CREATE INDEX IF NOT EXISTS students_ethnicities_sid_idx ON {rds_schema_student}.ethnicities (sid);
+CREATE INDEX IF NOT EXISTS students_ethnicities_sid_idx ON {rds_schema_student}.ethnicities (ethnicity);
+
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_profiles
 (
     sid VARCHAR NOT NULL PRIMARY KEY,

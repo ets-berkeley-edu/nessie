@@ -91,7 +91,8 @@ def get_advisee_student_profile_feeds():
     sql = f"""SELECT DISTINCT ldap.ldap_uid, ldap.sid, ldap.first_name, ldap.last_name,
                 us.canvas_id AS canvas_user_id, us.name AS canvas_user_name,
                 sis.feed AS sis_profile_feed,
-                deg.feed AS degree_progress_feed
+                deg.feed AS degree_progress_feed,
+                demog.feed AS demographics_feed
               FROM {calnet_schema()}.persons ldap
               LEFT JOIN {intermediate_schema()}.users us
                 ON us.uid = ldap.ldap_uid
@@ -99,6 +100,8 @@ def get_advisee_student_profile_feeds():
                 ON sis.sid = ldap.sid
               LEFT JOIN {student_schema()}.sis_api_degree_progress deg
                 ON deg.sid = ldap.sid
+              LEFT JOIN {boac_schema()}.student_demographics demog
+                ON demog.sid = ldap.sid
               ORDER BY ldap.sid
         """
     return redshift.fetch(sql)
@@ -126,6 +129,15 @@ def get_advisee_sids_with_photos():
         FROM {metadata_schema()}.photo_import_status
         WHERE status = 'success'"""
     return rds.fetch(sql)
+
+
+@fixture('query_advisee_sis_demographics.csv')
+def get_advisee_sis_demographics():
+    sql = f"""SELECT d.sid, d.gender_of_record, d.gender_identity, d.visas, d.ethnicities, d.countries
+              FROM {intermediate_schema()}.advisee_sis_demographics d
+              ORDER BY d.sid
+    """
+    return redshift.fetch(sql)
 
 
 @fixture('query_advisee_submissions_comparisons_{term_id}.csv')

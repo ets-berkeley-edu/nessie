@@ -293,6 +293,16 @@ AS (
     GROUP BY enr.sis_term_id, enr.sis_section_id, gpa_term_id
 );
 
+
+CREATE TABLE {redshift_schema_boac}.student_demographics
+(
+    sid VARCHAR NOT NULL,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid);
+
+
 /*
  * After boiled-down derived tables are generated, pull out data for the current term and store snapshots in S3.
  */
