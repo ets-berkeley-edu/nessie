@@ -34,6 +34,8 @@ REDSHIFT_USER = 'username'
 # Schema names. Since Redshift instances are shared between environments, choose something that can
 # be repeatedly created and torn down without conflicts.
 
+REDSHIFT_SCHEMA_ADVISOR = 'testext_mynamehere_boac_advisor_external'
+REDSHIFT_SCHEMA_ADVISOR_INTERNAL = 'testext_mynamehere_boac_advisor'
 REDSHIFT_SCHEMA_ASC = 'testext_mynamehere_asc'
 REDSHIFT_SCHEMA_ASC_ADVISING_NOTES = 'testext_mynamehere_asc_advising_notes_external'
 REDSHIFT_SCHEMA_ASC_ADVISING_NOTES_INTERNAL = 'testext_mynamehere_asc_advising_notes'
