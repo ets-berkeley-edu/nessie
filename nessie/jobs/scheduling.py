@@ -74,6 +74,7 @@ def initialize_job_schedules(_app, force=False):
 def schedule_all_jobs(force=False):
     from nessie.jobs.chained_import_student_population import ChainedImportStudentPopulation
     from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
+    from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
     from nessie.jobs.create_sis_schema import CreateSisSchema
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
     from nessie.jobs.generate_canvas_caliper_analytics import GenerateCanvasCaliperAnalytics
@@ -97,7 +98,6 @@ def schedule_all_jobs(force=False):
     schedule_job(sched, 'JOB_IMPORT_DEGREE_PROGRESS', ImportDegreeProgress, force)
     schedule_job(sched, 'JOB_IMPORT_SIS_STUDENTS', ImportSisStudentApi, force)
     schedule_job(sched, 'JOB_IMPORT_CANVAS_ENROLLMENTS', ImportCanvasEnrollmentsApi, force)
-    schedule_job(sched, 'JOB_LOAD_ADVISING_NOTES', CreateAscAdvisingNotesSchema, force)
     schedule_chained_job(
         sched,
         'JOB_LOAD_LRS_INCREMENTALS',
@@ -128,6 +128,15 @@ def schedule_all_jobs(force=False):
             GenerateMergedStudentFeeds,
             IndexEnrollments,
             RefreshBoacCache,
+        ],
+        force,
+    )
+    schedule_chained_job(
+        sched,
+        'JOB_LOAD_ADVISING_NOTES',
+        [
+            CreateAscAdvisingNotesSchema,
+            CreateSisAdvisingNotesSchema,
         ],
         force,
     )
