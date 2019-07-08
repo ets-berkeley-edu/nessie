@@ -91,7 +91,8 @@ CREATE EXTERNAL TABLE {redshift_schema_advisor}.advisor_note_permissions
   USER_ID VARCHAR,
   CS_ID VARCHAR,
   PERMISSION_LIST VARCHAR,
-  DISPLAY_ONLY INT
+  DISPLAY_ONLY INT,
+  AUTH_ACTIONS VARCHAR
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
 WITH SERDEPROPERTIES (
@@ -101,3 +102,57 @@ WITH SERDEPROPERTIES (
 )
 STORED AS TEXTFILE
 LOCATION '{advisor_data_path}/advisor-note-permissions';
+
+--------------------------------------------------------------------
+-- Internal Schema
+--------------------------------------------------------------------
+
+DROP SCHEMA IF EXISTS {redshift_schema_advisor_internal} CASCADE;
+CREATE SCHEMA {redshift_schema_advisor_internal};
+GRANT USAGE ON SCHEMA {redshift_schema_advisor_internal} TO GROUP {redshift_app_boa_user}_group;
+ALTER default PRIVILEGES IN SCHEMA {redshift_schema_advisor_internal} GRANT SELECT ON TABLES TO GROUP {redshift_app_boa_user}_group;
+
+--------------------------------------------------------------------
+-- Internal Tables
+--------------------------------------------------------------------
+
+CREATE TABLE {redshift_schema_advisor_internal}.advisor_departments
+-- TODO: populate (BOAC-2351)
+(
+  sid VARCHAR NOT NULL,
+  uid VARCHAR NOT NULL,
+  department VARCHAR NOT NULL
+);
+
+CREATE TABLE {redshift_schema_advisor_internal}.advisor_roles
+SORTKEY (sid, uid)
+AS (
+    SELECT DISTINCT
+        I.ADVISOR_ID AS sid,
+        I.CAMPUS_ID AS uid,
+        I.ADVISOR_TYPE AS advisor_type_code,
+        I.ADVISOR_TYPE_DESCR AS advisor_type,
+        I.INSTRUCTOR_TYPE AS instructor_type_code,
+        I.INSTRUCTOR_TYPE_DESCR AS instructor_type,
+        P.PERMISSION_LIST AS cs_permissions,
+        P.AUTH_ACTIONS AS cs_auth_actions
+    FROM {redshift_schema_advisor}.instructor_advisor I
+    LEFT OUTER JOIN {redshift_schema_advisor}.advisor_note_permissions P
+    ON I.ADVISOR_ID = P.CS_ID
+);
+
+CREATE TABLE {redshift_schema_advisor_internal}.advisor_students
+SORTKEY (advisor_sid, student_sid, student_uid)
+AS (
+    SELECT
+        S.ADVISOR_ID AS advisor_sid,
+        S.STUDENT_ID AS student_sid,
+        S.CAMPUS_ID AS student_uid,
+        S.ADVISOR_ROLE AS advisor_type_code,
+        S.ADVISOR_ROLE_DESCR AS advisor_type,
+        S.ACADEMIC_PROGRAM AS academic_program_code,
+        S.ACADEMIC_PROGRAM_DESCR AS academic_program,
+        S.ACADEMIC_PLAN AS academic_plan_code,
+        S.ACADEMIC_PLAN_DESCR AS academic_plan
+    FROM {redshift_schema_advisor}.student_advisor S
+);
