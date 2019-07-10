@@ -93,6 +93,7 @@ def get_advisee_student_profile_feeds():
                 sis.feed AS sis_profile_feed,
                 deg.feed AS degree_progress_feed,
                 demog.feed AS demographics_feed
+                reg.feed AS last_registration_feed
               FROM {calnet_schema()}.persons ldap
               LEFT JOIN {intermediate_schema()}.users us
                 ON us.uid = ldap.ldap_uid
@@ -102,6 +103,8 @@ def get_advisee_student_profile_feeds():
                 ON deg.sid = ldap.sid
               LEFT JOIN {boac_schema()}.student_demographics demog
                 ON demog.sid = ldap.sid
+              LEFT JOIN {student_schema()}.student_last_registrations reg
+                ON reg.sid = ldap.sid
               ORDER BY ldap.sid
         """
     return redshift.fetch(sql)

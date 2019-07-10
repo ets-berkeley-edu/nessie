@@ -229,8 +229,12 @@ REDSHIFT_SCHEMA_SIS_ADVISING_NOTES = 'External SIS Advising Notes schema name'
 
 STUDENT_API_ID = 'secretid'
 STUDENT_API_KEY = 'secretkey'
-STUDENT_API_URL = 'https://secreturl.berkeley.edu/students'
+STUDENT_API_URL = 'https://secreturl.berkeley.edu/sis/v2/students'
+STUDENT_V1_API_URL = 'https://secreturl.berkeley.edu/sis/v1/students'
 STUDENT_API_MAX_THREADS = 5
+# Although production API hosts use app_id/app_key headers, non-production environments may use basic auth.
+STUDENT_API_PWD = None
+STUDENT_API_USER = None
 
 TERMS_API_ID = 'secretid'
 TERMS_API_KEY = 'secretkey'

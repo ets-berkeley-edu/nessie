@@ -146,9 +146,6 @@ def student_tables(app):
     params = {}
     for key in [
         'sis_degree_progress_11667051',
-        'sis_student_api_11667051',
-        'sis_student_api_1234567890',
-        'sis_student_api_2345678901',
     ]:
         with open(f'{fixture_path}/{key}.json', 'r') as f:
             feed = f.read()
@@ -157,7 +154,7 @@ def student_tables(app):
             params[key] = feed
     redshift.execute(resolve_sql_template_string(student_sql), params=params)
     yield
-    for schema in ['asc_test', 'coe_test', 'physics_test', 'student_test']:
+    for schema in ['asc_test', 'coe_test', 'l_s_test', 'physics_test', 'student_test']:
         rds.execute(f'DROP SCHEMA {schema} CASCADE')
         redshift.execute(f'DROP SCHEMA {schema} CASCADE')
     redshift.execute('DROP SCHEMA calnet_test CASCADE')

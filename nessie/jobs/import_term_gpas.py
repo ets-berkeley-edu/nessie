@@ -22,6 +22,10 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES,
 ENHANCEMENTS, OR MODIFICATIONS.
 """
+from concurrent.futures import ThreadPoolExecutor
+from itertools import repeat
+import json
+from timeit import default_timer as timer
 
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3, sis_student_api
@@ -29,66 +33,66 @@ from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.queries import get_all_student_ids
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
 
-"""Logic for term GPA import job."""
+"""Imports and stores SIS Students Registrations API data, including term GPAs and most recent registration."""
+
+
+def async_get_feed(app_obj, sid):
+    with app_obj.app_context():
+        app.logger.info(f'Fetching registration history for SID {sid}')
+        feed = sis_student_api.get_term_gpas_registration(sid)
+        result = {
+            'sid': sid,
+            'feed': feed,
+        }
+    return result
 
 
 class ImportTermGpas(BackgroundJob):
 
     rds_schema = app.config['RDS_SCHEMA_STUDENT']
     redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
+    max_threads = app.config['STUDENT_API_MAX_THREADS']
 
-    def run(self, csids=None):
-        if not csids:
-            csids = [row['sid'] for row in get_all_student_ids()]
+    def run(self, sids=None):
+        if not sids:
+            sids = [row['sid'] for row in get_all_student_ids()]
 
-        app.logger.info(f'Starting term GPA import job for {len(csids)} students...')
+        app.logger.info(f'Starting term GPA import job for {len(sids)} students...')
 
-        rows = []
-        success_count = 0
-        no_registrations_count = 0
-        failure_count = 0
-        index = 1
-        for csid in csids:
-            app.logger.info(f'Fetching term GPAs for SID {csid}, ({index} of {len(csids)})')
-            feed = sis_student_api.get_term_gpas(csid)
-            if feed:
-                success_count += 1
-                for term_id, term_data in feed.items():
-                    rows.append(encoded_tsv_row([csid, term_id, (term_data.get('gpa') or '0'), (term_data.get('unitsTakenForGpa') or '0')]))
-            elif feed == {}:
-                app.logger.info(f'No past UGRD registrations found for SID {csid}.')
-                no_registrations_count += 1
-            else:
-                failure_count += 1
-                app.logger.error(f'Term GPA import failed for SID {csid}.')
-            index += 1
-
+        rows = {
+            'term_gpas': [],
+            'last_registrations': [],
+        }
+        success_count, failure_count, no_registrations_count = self.load_concurrently(rows, sids)
         if (success_count == 0) and (failure_count > 0):
-            raise BackgroundJobError('Failed to import term GPAs: aborting job.')
+            raise BackgroundJobError('Failed to import registration histories: aborting job.')
 
-        s3_key = f'{get_s3_sis_api_daily_path()}/term_gpas.tsv'
-        app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
-        if not s3.upload_tsv_rows(rows, s3_key):
-            raise BackgroundJobError('Error on S3 upload: aborting job.')
-
-        app.logger.info('Will copy S3 feeds into Redshift...')
-        if not redshift.execute(f'TRUNCATE {self.redshift_schema}_staging.student_term_gpas'):
-            raise BackgroundJobError('Error truncating old staging rows: aborting job.')
-        if not redshift.copy_tsv_from_s3(f'{self.redshift_schema}_staging.student_term_gpas', s3_key):
-            raise BackgroundJobError('Error on Redshift copy: aborting job.')
-        staging_to_destination_query = resolve_sql_template_string("""
-            DELETE FROM {redshift_schema_student}.student_term_gpas
-                WHERE sid IN
-                (SELECT sid FROM {redshift_schema_student}_staging.student_term_gpas);
-            INSERT INTO {redshift_schema_student}.student_term_gpas
-                (SELECT * FROM {redshift_schema_student}_staging.student_term_gpas);
-            TRUNCATE TABLE {redshift_schema_student}_staging.student_term_gpas;
-            """)
-        if not redshift.execute(staging_to_destination_query):
-            raise BackgroundJobError('Error inserting staging entries into destination: aborting job.')
+        for key in rows.keys():
+            s3_key = f'{get_s3_sis_api_daily_path()}/{key}.tsv'
+            app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
+            if not s3.upload_tsv_rows(rows[key], s3_key):
+                raise BackgroundJobError('Error on S3 upload: aborting job.')
+            app.logger.info('Will copy S3 feeds into Redshift...')
+            if not redshift.execute(f'TRUNCATE {self.redshift_schema}_staging.student_{key}'):
+                raise BackgroundJobError('Error truncating old staging rows: aborting job.')
+            if not redshift.copy_tsv_from_s3(f'{self.redshift_schema}_staging.student_{key}', s3_key):
+                raise BackgroundJobError('Error on Redshift copy: aborting job.')
+            staging_to_destination_query = resolve_sql_template_string(
+                """
+                DELETE FROM {redshift_schema_student}.student_{table_key}
+                    WHERE sid IN
+                    (SELECT sid FROM {redshift_schema_student}_staging.student_{table_key});
+                INSERT INTO {redshift_schema_student}.student_{table_key}
+                    (SELECT * FROM {redshift_schema_student}_staging.student_{table_key});
+                TRUNCATE TABLE {redshift_schema_student}_staging.student_{table_key};
+                """,
+                table_key=key,
+            )
+            if not redshift.execute(staging_to_destination_query):
+                raise BackgroundJobError('Error inserting staging entries into destination: aborting job.')
 
         with rds.transaction() as transaction:
-            if self.refresh_rds_indexes(csids, rows, transaction):
+            if self.refresh_rds_indexes(sids, rows['term_gpas'], transaction):
                 transaction.commit()
                 app.logger.info('Refreshed RDS indexes.')
             else:
@@ -100,9 +104,43 @@ class ImportTermGpas(BackgroundJob):
             f'{no_registrations_count} returned no registrations, {failure_count} failed.'
         )
 
-    def refresh_rds_indexes(self, csids, rows, transaction):
+    def load_concurrently(self, rows, sids):
+        success_count = 0
+        failure_count = 0
+        no_registrations_count = 0
+        app_obj = app._get_current_object()
+        start_loop = timer()
+        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
+            for result in executor.map(async_get_feed, repeat(app_obj), sids):
+                sid = result['sid']
+                reg_feed = result['feed']
+                if reg_feed:
+                    success_count += 1
+                    rows['last_registrations'].append(
+                        encoded_tsv_row([sid, json.dumps(reg_feed.get('last_registration', {}))]),
+                    )
+                    gpa_feed = reg_feed.get('term_gpas', {})
+                    if gpa_feed:
+                        for term_id, term_data in gpa_feed.items():
+                            row = [
+                                sid,
+                                term_id,
+                                (term_data.get('gpa') or '0'),
+                                (term_data.get('unitsTakenForGpa') or '0'),
+                            ]
+                            rows['term_gpas'].append(encoded_tsv_row(row))
+                    else:
+                        app.logger.info(f'No past UGRD registrations found for SID {sid}.')
+                        no_registrations_count += 1
+                else:
+                    failure_count += 1
+                    app.logger.error(f'Registration history import failed for SID {sid}.')
+        app.logger.info(f'Wanted {len(sids)} students; got {success_count} in {timer() - start_loop} secs')
+        return success_count, failure_count, no_registrations_count
+
+    def refresh_rds_indexes(self, sids, rows, transaction):
         sql = f'DELETE FROM {self.rds_schema}.student_term_gpas WHERE sid = ANY(%s)'
-        params = (csids,)
+        params = (sids,)
         if not transaction.execute(sql, params):
             return False
         if not transaction.insert_bulk(

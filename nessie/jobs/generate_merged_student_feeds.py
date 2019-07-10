@@ -77,7 +77,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         new_sids = list(sids.difference(previous_backfills))
         if new_sids:
             app.logger.info(f'Found {len(new_sids)} new students, will backfill all terms.')
-            ImportTermGpas().run(csids=new_sids)
+            ImportTermGpas().run(sids=new_sids)
             update_merged_feed_status(new_sids, [])
             app.logger.info(f'Updated merged feed status for {len(new_sids)} students.')
         else:
@@ -193,7 +193,11 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         uid = feeds['ldap_uid']
         if not uid:
             return
-        sis_profile = parse_merged_sis_profile(feeds.get('sis_profile_feed'), feeds.get('degree_progress_feed'))
+        sis_profile = parse_merged_sis_profile(
+            feeds.get('sis_profile_feed'),
+            feeds.get('degree_progress_feed'),
+            feeds.get('last_registration_feed'),
+        )
         demographics = feeds.get('demographics_feed') and json.loads(feeds.get('demographics_feed'))
         merged_profile = {
             'sid': sid,

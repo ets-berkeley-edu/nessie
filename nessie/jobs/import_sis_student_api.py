@@ -28,20 +28,22 @@ import json
 from timeit import default_timer as timer
 
 from flask import current_app as app
-from nessie.externals import redshift, s3, sis_student_api
+from nessie.externals import redshift, s3
+from nessie.externals.sis_student_api import get_v2_by_sids_list
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
+from nessie.lib.berkeley import current_term_id
 from nessie.lib.queries import get_all_student_ids
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string
 
 """Logic for SIS student API import job."""
 
 
-def async_get_feed(app_obj, csid):
+def async_get_feeds(app_obj, up_to_100_sids):
     with app_obj.app_context():
-        feed = sis_student_api.get_student(csid)
+        feeds = get_v2_by_sids_list(up_to_100_sids, term_id=current_term_id(), with_registration=True)
         result = {
-            'sid': csid,
-            'feed': feed,
+            'sids': up_to_100_sids,
+            'feeds': feeds,
         }
     return result
 
@@ -82,19 +84,22 @@ class ImportSisStudentApi(BackgroundJob):
 
         return f'SIS student API import job completed: {len(rows)} succeeded, {failure_count} failed.'
 
-    def load_concurrently(self, csids):
+    def load_concurrently(self, all_sids):
+        chunked_sids = [all_sids[i:i + 100] for i in range(0, len(all_sids), 100)]
         rows = []
         failure_count = 0
         app_obj = app._get_current_object()
         start_loop = timer()
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
-            for result in executor.map(async_get_feed, repeat(app_obj), csids):
-                csid = result['sid']
-                feed = result['feed']
-                if feed:
-                    rows.append(encoded_tsv_row([csid, json.dumps(feed)]))
-                else:
-                    failure_count += 1
-                    app.logger.error(f'SIS student API import failed for CSID {csid}.')
-        app.logger.info(f'Wanted {len(csids)} students; got {len(rows)} in {timer() - start_loop} secs')
+            for result in executor.map(async_get_feeds, repeat(app_obj), chunked_sids):
+                remaining_sids = set(result['sids'])
+                feeds = result['feeds']
+                for feed in feeds:
+                    sid = next(id['id'] for id in feed['identifiers'] if id['type'] == 'student-id')
+                    remaining_sids.discard(sid)
+                    rows.append(encoded_tsv_row([sid, json.dumps(feed)]))
+                if remaining_sids:
+                    failure_count = len(remaining_sids)
+                    app.logger.error(f'SIS student API import failed for SIDs {remaining_sids}.')
+        app.logger.info(f'Wanted {len(all_sids)} students; got {len(rows)} in {timer() - start_loop} secs')
         return rows, failure_count

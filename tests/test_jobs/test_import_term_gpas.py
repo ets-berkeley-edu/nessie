@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from decimal import Decimal
+import json
 import logging
 
 from nessie.externals import redshift
@@ -34,15 +35,29 @@ class TestImportTermGpas:
 
     def test_import_term_gpas(self, app, metadata_db, student_tables, caplog):
         from nessie.jobs.import_term_gpas import ImportTermGpas
+        rows = redshift.fetch('SELECT * FROM student_test.student_term_gpas')
+        assert len(rows) == 0
+        rows = redshift.fetch('SELECT * FROM student_test.student_last_registrations')
+        assert len(rows) == 0
         caplog.set_level(logging.DEBUG)
         with capture_app_logs(app):
             with mock_s3(app):
                 result = ImportTermGpas().run_wrapped()
-            assert result == 'Term GPA import completed: 1 succeeded, 0 returned no registrations, 7 failed.'
+            assert result == 'Term GPA import completed: 2 succeeded, 0 returned no registrations, 7 failed.'
             rows = redshift.fetch('SELECT * FROM student_test.student_term_gpas')
-            assert len(rows) == 7
-            for row in rows:
+            assert len(rows) == 11
+            for row in rows[0:6]:
                 assert row['sid'] == '11667051'
-            row_2178 = next(r for r in rows if r['term_id'] == '2178')
-            assert row_2178['gpa'] == Decimal('3.000')
-            assert row_2178['units_taken_for_gpa'] == Decimal('8.0')
+            for row in rows[7:10]:
+                assert row['sid'] == '1234567890'
+            row_2168 = next(r for r in rows if r['term_id'] == '2168')
+            assert row_2168['gpa'] == Decimal('3.000')
+            assert row_2168['units_taken_for_gpa'] == Decimal('8.0')
+
+            rows = redshift.fetch('SELECT * FROM student_test.student_last_registrations')
+            assert len(rows) == 2
+            assert rows[0]['sid'] == '11667051'
+            assert rows[1]['sid'] == '1234567890'
+            feed = json.loads(rows[1]['feed'], strict=False)
+            assert feed['term']['id'] == '2172'
+            assert feed['academicLevels'][0]['level']['description'] == 'Sophomore'
