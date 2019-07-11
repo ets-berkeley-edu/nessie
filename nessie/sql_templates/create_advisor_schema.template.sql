@@ -103,6 +103,28 @@ WITH SERDEPROPERTIES (
 STORED AS TEXTFILE
 LOCATION '{advisor_data_path}/advisor-note-permissions';
 
+-- Academic plan owners (SISEDO.STUDENT_PLANV01_VW)
+CREATE EXTERNAL TABLE {redshift_schema_advisor}.academic_plan_owners
+(
+  ACADPLAN_CODE VARCHAR,
+  ACADPLAN_DESCR VARCHAR,
+  ACADPLAN_TYPE_CODE VARCHAR,
+  ACADPLAN_TYPE_DESCR VARCHAR,
+  ACADPLAN_OWNEDBY_CODE VARCHAR,
+  ACADPLAN_OWNEDBY_DESCR VARCHAR,
+  ACADPLAN_OWNED_BY_PCT INT,
+  ACADPROG_CODE VARCHAR,
+  ACADPROG_DESCR VARCHAR
+)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
+WITH SERDEPROPERTIES (
+  'separatorChar' = ',',
+  'quoteChar' = '\"',
+  'escapeChar' = '\\'
+)
+STORED AS TEXTFILE
+LOCATION '{advisor_data_path}/academic-plan-owners';
+
 --------------------------------------------------------------------
 -- Internal Schema
 --------------------------------------------------------------------
@@ -117,11 +139,27 @@ ALTER default PRIVILEGES IN SCHEMA {redshift_schema_advisor_internal} GRANT SELE
 --------------------------------------------------------------------
 
 CREATE TABLE {redshift_schema_advisor_internal}.advisor_departments
--- TODO: populate (BOAC-2351)
-(
-  sid VARCHAR NOT NULL,
-  uid VARCHAR NOT NULL,
-  department VARCHAR NOT NULL
+SORTKEY (sid)
+AS (
+    SELECT DISTINCT
+      I.ADVISOR_ID AS sid,
+      I.ADVISOR_TYPE AS advisor_type_code,
+      I.ADVISOR_TYPE_DESCR AS advisor_type,
+      O.ACADPLAN_OWNEDBY_CODE AS department_code,
+      O.ACADPLAN_OWNEDBY_DESCR AS department
+    FROM {redshift_schema_advisor}.instructor_advisor I
+    JOIN {redshift_schema_advisor}.academic_plan_owners O
+    ON I.ACADEMIC_PLAN = O.ACADPLAN_CODE
+    UNION
+    SELECT DISTINCT
+      S.ADVISOR_ID AS sid,
+      S.ADVISOR_ROLE AS advisor_type_code,
+      S.ADVISOR_ROLE_DESCR AS advisor_type,
+      O.ACADPLAN_OWNEDBY_CODE AS department_code,
+      O.ACADPLAN_OWNEDBY_DESCR AS department
+    FROM {redshift_schema_advisor}.student_advisor S
+    JOIN {redshift_schema_advisor}.academic_plan_owners O
+    ON S.ACADEMIC_PLAN = O.ACADPLAN_CODE
 );
 
 CREATE TABLE {redshift_schema_advisor_internal}.advisor_roles
