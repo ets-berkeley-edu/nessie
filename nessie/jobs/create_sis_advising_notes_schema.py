@@ -84,15 +84,23 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
             raise BackgroundJobError('SIS Advising Notes schema creation job failed to create indexes.')
 
     def import_note_authors(self):
-        schema = app.config['RDS_SCHEMA_SIS_ADVISING_NOTES']
-        advisor_sids = [r['advisor_sid'] for r in rds.fetch(f'SELECT DISTINCT advisor_sid FROM {schema}.advising_notes')]
+        notes_schema = app.config['RDS_SCHEMA_SIS_ADVISING_NOTES']
+        advisor_schema_redshift = app.config['REDSHIFT_SCHEMA_ADVISOR_INTERNAL']
 
+        advisor_sids_from_notes = set(
+            [r['advisor_sid'] for r in rds.fetch(f'SELECT DISTINCT advisor_sid FROM {notes_schema}.advising_notes')],
+        )
+        advisor_sids_from_advisors = set(
+            [r['sid'] for r in redshift.fetch(f'SELECT DISTINCT sid FROM {advisor_schema_redshift}.advisor_departments')],
+        )
+        advisor_sids = list(advisor_sids_from_notes | advisor_sids_from_advisors)
         advisor_attributes = calnet.client(app).search_csids(advisor_sids)
+
         if not advisor_attributes:
             raise BackgroundJobError('Failed to fetch note author attributes.')
 
         with rds.transaction() as transaction:
-            if not transaction.execute(f'TRUNCATE {schema}.advising_note_authors'):
+            if not transaction.execute(f'TRUNCATE {notes_schema}.advising_note_authors'):
                 transaction.rollback()
                 raise BackgroundJobError('Failed to truncate advising note author index.')
 
@@ -102,7 +110,7 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
                 insertable_rows.append(tuple((entry.get('uid'), entry.get('csid'), first_name, last_name)))
 
             result = transaction.insert_bulk(
-                f'INSERT INTO {schema}.advising_note_authors (uid, sid, first_name, last_name) VALUES %s',
+                f'INSERT INTO {notes_schema}.advising_note_authors (uid, sid, first_name, last_name) VALUES %s',
                 insertable_rows,
             )
             if result:
