@@ -50,9 +50,9 @@ def sis_api_degree_progress(app, student_tables):
 @pytest.fixture()
 def sis_api_last_registrations(app, student_tables):
     from nessie.externals import redshift
-    from nessie.jobs.import_term_gpas import ImportTermGpas
+    from nessie.jobs.import_registrations import ImportRegistrations
     with mock_s3(app):
-        ImportTermGpas().run_wrapped()
+        ImportRegistrations().run_wrapped()
     sql = f"""SELECT sid, feed FROM student_test.student_last_registrations"""
     return redshift.fetch(sql)
 

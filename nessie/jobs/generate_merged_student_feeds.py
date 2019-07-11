@@ -30,9 +30,9 @@ from flask import current_app as app
 from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.jobs.generate_merged_enrollment_term import GenerateMergedEnrollmentTerm
-from nessie.jobs.import_term_gpas import ImportTermGpas
+from nessie.jobs.import_registrations import ImportRegistrations
 from nessie.lib.berkeley import future_term_ids, legacy_term_ids, reverse_term_ids
-from nessie.lib.metadata import get_merged_enrollment_term_job_status, queue_merged_enrollment_term_jobs, update_merged_feed_status
+from nessie.lib.metadata import get_merged_enrollment_term_job_status, queue_merged_enrollment_term_jobs, update_registration_import_status
 from nessie.lib.queries import get_advisee_student_profile_feeds, get_all_student_ids, get_successfully_backfilled_students
 from nessie.lib.util import encoded_tsv_row, split_tsv_row
 from nessie.merged.sis_profile import parse_merged_sis_profile
@@ -77,8 +77,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         new_sids = list(sids.difference(previous_backfills))
         if new_sids:
             app.logger.info(f'Found {len(new_sids)} new students, will backfill all terms.')
-            ImportTermGpas().run(sids=new_sids)
-            update_merged_feed_status(new_sids, [])
+            ImportRegistrations().run(sids=new_sids)
+            update_registration_import_status(new_sids, [])
             app.logger.info(f'Updated merged feed status for {len(new_sids)} students.')
         else:
             app.logger.info(f'No new students to backfill.')

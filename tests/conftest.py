@@ -108,7 +108,7 @@ def metadata_db(app):
         created_at TIMESTAMP NOT NULL,
         deleted_at TIMESTAMP
     )""")
-    rds.execute(f"""CREATE TABLE IF NOT EXISTS {rds_schema}.merged_feed_status
+    rds.execute(f"""CREATE TABLE IF NOT EXISTS {rds_schema}.registration_import_status
     (
         sid VARCHAR NOT NULL PRIMARY KEY,
         status VARCHAR NOT NULL,

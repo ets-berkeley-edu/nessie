@@ -47,7 +47,7 @@ def async_get_feed(app_obj, sid):
     return result
 
 
-class ImportTermGpas(BackgroundJob):
+class ImportRegistrations(BackgroundJob):
 
     rds_schema = app.config['RDS_SCHEMA_STUDENT']
     redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']

@@ -31,10 +31,10 @@ from nessie.externals import redshift
 from tests.util import capture_app_logs, mock_s3
 
 
-class TestImportTermGpas:
+class TestImportRegistrations:
 
-    def test_import_term_gpas(self, app, metadata_db, student_tables, caplog):
-        from nessie.jobs.import_term_gpas import ImportTermGpas
+    def test_import_registrations(self, app, metadata_db, student_tables, caplog):
+        from nessie.jobs.import_registrations import ImportRegistrations
         rows = redshift.fetch('SELECT * FROM student_test.student_term_gpas')
         assert len(rows) == 0
         rows = redshift.fetch('SELECT * FROM student_test.student_last_registrations')
@@ -42,7 +42,7 @@ class TestImportTermGpas:
         caplog.set_level(logging.DEBUG)
         with capture_app_logs(app):
             with mock_s3(app):
-                result = ImportTermGpas().run_wrapped()
+                result = ImportRegistrations().run_wrapped()
             assert result == 'Term GPA import completed: 2 succeeded, 0 returned no registrations, 7 failed.'
             rows = redshift.fetch('SELECT * FROM student_test.student_term_gpas')
             assert len(rows) == 11

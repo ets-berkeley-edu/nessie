@@ -256,6 +256,6 @@ def get_enrolled_primary_sections(term_id=None):
 
 def get_successfully_backfilled_students():
     sql = f"""SELECT sid
-        FROM {metadata_schema()}.merged_feed_status
+        FROM {metadata_schema()}.registration_import_status
         WHERE status = 'success'"""
     return rds.fetch(sql)

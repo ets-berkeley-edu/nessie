@@ -54,10 +54,10 @@ from nessie.jobs.import_calnet_data import ImportCalNetData
 from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
 from nessie.jobs.import_degree_progress import ImportDegreeProgress
 from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
+from nessie.jobs.import_registrations import ImportRegistrations
 from nessie.jobs.import_sis_student_api import ImportSisStudentApi
 from nessie.jobs.import_sis_terms_api import ImportSisTermsApi
 from nessie.jobs.import_student_photos import ImportStudentPhotos
-from nessie.jobs.import_term_gpas import ImportTermGpas
 from nessie.jobs.index_enrollments import IndexEnrollments
 from nessie.jobs.migrate_lrs_incrementals import MigrateLrsIncrementals
 from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
@@ -331,7 +331,7 @@ def import_student_population():
 @app.route('/api/job/import_term_gpas', methods=['POST'])
 @auth_required
 def import_term_gpas():
-    job_started = ImportTermGpas().run_async()
+    job_started = ImportRegistrations().run_async()
     return respond_with_status(job_started)
 
 
