@@ -254,7 +254,7 @@ def get_enrolled_primary_sections(term_id=None):
     return redshift.fetch(sql)
 
 
-def get_successfully_backfilled_students():
+def get_sids_with_registration_imports():
     sql = f"""SELECT sid
         FROM {metadata_schema()}.registration_import_status
         WHERE status = 'success'"""

@@ -48,7 +48,7 @@ def sis_api_degree_progress(app, student_tables):
 
 
 @pytest.fixture()
-def sis_api_last_registrations(app, student_tables):
+def sis_api_last_registrations(app, metadata_db, student_tables):
     from nessie.externals import redshift
     from nessie.jobs.import_registrations import ImportRegistrations
     with mock_s3(app):

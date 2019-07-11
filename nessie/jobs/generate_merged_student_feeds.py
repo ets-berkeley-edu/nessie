@@ -30,10 +30,9 @@ from flask import current_app as app
 from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.jobs.generate_merged_enrollment_term import GenerateMergedEnrollmentTerm
-from nessie.jobs.import_registrations import ImportRegistrations
 from nessie.lib.berkeley import future_term_ids, legacy_term_ids, reverse_term_ids
-from nessie.lib.metadata import get_merged_enrollment_term_job_status, queue_merged_enrollment_term_jobs, update_registration_import_status
-from nessie.lib.queries import get_advisee_student_profile_feeds, get_all_student_ids, get_successfully_backfilled_students
+from nessie.lib.metadata import get_merged_enrollment_term_job_status, queue_merged_enrollment_term_jobs
+from nessie.lib.queries import get_advisee_student_profile_feeds
 from nessie.lib.util import encoded_tsv_row, split_tsv_row
 from nessie.merged.sis_profile import parse_merged_sis_profile
 from nessie.merged.student_terms import generate_student_term_maps
@@ -48,8 +47,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     rds_dblink_to_redshift = app.config['REDSHIFT_DATABASE'] + '_redshift'
     redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
 
-    def run(self, term_id=None, backfill_new_students=True):
-        app.logger.info(f'Starting merged profile generation job (backfill={backfill_new_students}).')
+    def run(self, term_id=None):
+        app.logger.info(f'Starting merged profile generation job.')
 
         # This version of the code will always generate feeds for all-terms and all-advisees, but we
         # expect support for term-specific or backfill-specific feed generation will return soon.
@@ -59,30 +58,13 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         app.logger.info('Cleaning up old data...')
         redshift.execute('VACUUM; ANALYZE;')
 
-        if backfill_new_students:
-            status = self.generate_with_backfills()
-        else:
-            status = self.generate_feeds()
+        status = self.generate_feeds()
 
         # Clean up the workbench.
         redshift.execute('VACUUM; ANALYZE;')
         app.logger.info(f'Vacuumed and analyzed.')
 
         return status
-
-    def generate_with_backfills(self):
-        """For students without a previous backfill, collect or generate any missing data."""
-        previous_backfills = {row['sid'] for row in get_successfully_backfilled_students()}
-        sids = {row['sid'] for row in get_all_student_ids()}
-        new_sids = list(sids.difference(previous_backfills))
-        if new_sids:
-            app.logger.info(f'Found {len(new_sids)} new students, will backfill all terms.')
-            ImportRegistrations().run(sids=new_sids)
-            update_registration_import_status(new_sids, [])
-            app.logger.info(f'Updated merged feed status for {len(new_sids)} students.')
-        else:
-            app.logger.info(f'No new students to backfill.')
-        return self.generate_feeds()
 
     def generate_feeds(self):
         # Translation between canvas_user_id and UID/SID is needed to merge Canvas analytics data and SIS enrollment-based data.

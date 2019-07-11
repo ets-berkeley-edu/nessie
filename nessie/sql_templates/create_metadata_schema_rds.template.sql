@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS {rds_schema_metadata}.canvas_synced_snapshots
 CREATE INDEX IF NOT EXISTS canvas_synced_snapshots_file_idx
 ON {rds_schema_metadata}.canvas_synced_snapshots (filename);
 
-CREATE TABLE IF NOT EXISTS {rds_schema_metadata}.merged_feed_status
+CREATE TABLE IF NOT EXISTS {rds_schema_metadata}.registration_import_status
 (
     sid VARCHAR NOT NULL PRIMARY KEY ,
     -- Possible 'status' values: 'success', 'failure'

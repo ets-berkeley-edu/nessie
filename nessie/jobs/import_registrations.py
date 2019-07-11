@@ -30,7 +30,8 @@ from timeit import default_timer as timer
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3, sis_student_api
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.queries import get_all_student_ids
+from nessie.lib.metadata import update_registration_import_status
+from nessie.lib.queries import get_all_student_ids, get_sids_with_registration_imports
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
 
 """Imports and stores SIS Students Registrations API data, including term GPAs and most recent registration."""
@@ -53,23 +54,25 @@ class ImportRegistrations(BackgroundJob):
     redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
     max_threads = app.config['STUDENT_API_MAX_THREADS']
 
-    def run(self, sids=None):
-        if not sids:
-            sids = [row['sid'] for row in get_all_student_ids()]
+    def run(self, load_all=False):
+        sids = [row['sid'] for row in get_all_student_ids()]
+        if not load_all:
+            previous_backfills = {row['sid'] for row in get_sids_with_registration_imports()}
+            sids = list(set(sids).difference(previous_backfills))
 
-        app.logger.info(f'Starting term GPA import job for {len(sids)} students...')
+        app.logger.info(f'Starting registrations import job for {len(sids)} students...')
 
         rows = {
             'term_gpas': [],
             'last_registrations': [],
         }
-        success_count, failure_count, no_registrations_count = self.load_concurrently(rows, sids)
-        if (success_count == 0) and (failure_count > 0):
+        successes, failures = self.load_concurrently(rows, sids)
+        if load_all and (len(successes) == 0) and (len(failures) > 0):
             raise BackgroundJobError('Failed to import registration histories: aborting job.')
 
         for key in rows.keys():
             s3_key = f'{get_s3_sis_api_daily_path()}/{key}.tsv'
-            app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
+            app.logger.info(f'Will stash {len(successes)} feeds in S3: {s3_key}')
             if not s3.upload_tsv_rows(rows[key], s3_key):
                 raise BackgroundJobError('Error on S3 upload: aborting job.')
             app.logger.info('Will copy S3 feeds into Redshift...')
@@ -99,15 +102,15 @@ class ImportRegistrations(BackgroundJob):
                 transaction.rollback()
                 raise BackgroundJobError('Failed to refresh RDS indexes.')
 
+        update_registration_import_status(successes, failures)
+
         return (
-            f'Term GPA import completed: {success_count} succeeded, '
-            f'{no_registrations_count} returned no registrations, {failure_count} failed.'
+            f'Registrations import completed: {len(successes)} succeeded, {len(failures)} failed.'
         )
 
     def load_concurrently(self, rows, sids):
-        success_count = 0
-        failure_count = 0
-        no_registrations_count = 0
+        successes = []
+        failures = []
         app_obj = app._get_current_object()
         start_loop = timer()
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
@@ -115,7 +118,7 @@ class ImportRegistrations(BackgroundJob):
                 sid = result['sid']
                 reg_feed = result['feed']
                 if reg_feed:
-                    success_count += 1
+                    successes.append(sid)
                     rows['last_registrations'].append(
                         encoded_tsv_row([sid, json.dumps(reg_feed.get('last_registration', {}))]),
                     )
@@ -131,12 +134,11 @@ class ImportRegistrations(BackgroundJob):
                             rows['term_gpas'].append(encoded_tsv_row(row))
                     else:
                         app.logger.info(f'No past UGRD registrations found for SID {sid}.')
-                        no_registrations_count += 1
                 else:
-                    failure_count += 1
+                    failures.append(sid)
                     app.logger.error(f'Registration history import failed for SID {sid}.')
-        app.logger.info(f'Wanted {len(sids)} students; got {success_count} in {timer() - start_loop} secs')
-        return success_count, failure_count, no_registrations_count
+        app.logger.info(f'Wanted {len(sids)} students; got {len(successes)} in {timer() - start_loop} secs')
+        return successes, failures
 
     def refresh_rds_indexes(self, sids, rows, transaction):
         sql = f'DELETE FROM {self.rds_schema}.student_term_gpas WHERE sid = ANY(%s)'
