@@ -26,7 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from datetime import datetime, timedelta
 
 from flask import current_app as app
-from nessie.externals import redshift, s3
+from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.util import get_s3_sis_sysadm_daily_path, resolve_sql_template
 
@@ -40,6 +40,7 @@ class CreateAdvisorSchema(BackgroundJob):
         app.logger.info(f'Executing SQL...')
         self.create_schema()
         app.logger.info('Redshift schema created.')
+        self.create_rds_indexes()
 
         return 'Advisor schema creation job completed.'
 
@@ -55,6 +56,13 @@ class CreateAdvisorSchema(BackgroundJob):
             verify_external_schema(external_schema, resolved_ddl)
         else:
             raise BackgroundJobError('Advisor schema creation job failed.')
+
+    def create_rds_indexes(self):
+        resolved_ddl = resolve_sql_template('index_advisors.template.sql')
+        if rds.execute(resolved_ddl):
+            app.logger.info('Created RDS indexes for advisor schema.')
+        else:
+            raise BackgroundJobError('Failed to create RDS indexes for advisor schema.')
 
     def s3_path(self):
         s3_sis_daily = get_s3_sis_sysadm_daily_path()

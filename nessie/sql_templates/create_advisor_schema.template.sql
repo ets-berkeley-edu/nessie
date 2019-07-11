@@ -133,6 +133,8 @@ DROP SCHEMA IF EXISTS {redshift_schema_advisor_internal} CASCADE;
 CREATE SCHEMA {redshift_schema_advisor_internal};
 GRANT USAGE ON SCHEMA {redshift_schema_advisor_internal} TO GROUP {redshift_app_boa_user}_group;
 ALTER default PRIVILEGES IN SCHEMA {redshift_schema_advisor_internal} GRANT SELECT ON TABLES TO GROUP {redshift_app_boa_user}_group;
+GRANT USAGE ON SCHEMA {redshift_schema_advisor_internal} TO GROUP {redshift_dblink_group};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_advisor_internal} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
 
 --------------------------------------------------------------------
 -- Internal Tables
