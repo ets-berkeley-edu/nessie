@@ -175,6 +175,7 @@ LOGGING_LEVEL = logging.DEBUG
 L_AND_S_ENABLED = False
 
 # These RDS schemas are copied from the Redshift schemas below and contain a subset of index tables.
+RDS_SCHEMA_ADVISOR = 'boac_advisor'
 RDS_SCHEMA_ASC = 'boac_advising_asc'
 RDS_SCHEMA_COE = 'boac_advising_coe'
 RDS_SCHEMA_METADATA = 'metadata'
