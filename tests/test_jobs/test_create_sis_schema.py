@@ -64,7 +64,7 @@ class TestCreateSisSchema:
             with capture_app_logs(app):
                 with pytest.raises(BackgroundJobError) as e:
                     CreateSisSchema().update_manifests()
-                assert 'Expected filename enrollments-2178.gz not found in S3, aborting' in str(e)
+                assert 'Expected filename enrollments-2178.gz not found in S3, aborting' in str(e.value)
 
     def _upload_data_to_s3(self, daily_path, historical_path):
         s3.upload_data('some futuristic course data', f'{daily_path}/courses/courses-2182.gz')
