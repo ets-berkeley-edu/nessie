@@ -37,7 +37,7 @@ class TestImportStudentPhotos:
         with capture_app_logs(app):
             with mock_s3(app):
                 result = ImportStudentPhotos().run_wrapped()
-                assert result == 'Student photo import completed: 1 succeeded, 7 had no photo available, 0 failed.'
+                assert result == 'Student photo import completed: 1 succeeded, 8 had no photo available, 0 failed.'
                 response = s3.get_keys_with_prefix('cal1card-data/photos')
                 assert len(response) == 1
                 assert response[0] == 'cal1card-data/photos/61889.jpg'
@@ -50,4 +50,4 @@ class TestImportStudentPhotos:
             assert len(failure_rows) == 0
 
             not_found_rows = rds.fetch(f"SELECT * FROM {app.config['RDS_SCHEMA_METADATA']}.photo_import_status WHERE status = 'photo_not_found'")
-            assert len(not_found_rows) == 7
+            assert len(not_found_rows) == 8

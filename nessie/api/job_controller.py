@@ -54,10 +54,10 @@ from nessie.jobs.import_calnet_data import ImportCalNetData
 from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
 from nessie.jobs.import_degree_progress import ImportDegreeProgress
 from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
+from nessie.jobs.import_registrations import ImportRegistrations
 from nessie.jobs.import_sis_student_api import ImportSisStudentApi
 from nessie.jobs.import_sis_terms_api import ImportSisTermsApi
 from nessie.jobs.import_student_photos import ImportStudentPhotos
-from nessie.jobs.import_term_gpas import ImportTermGpas
 from nessie.jobs.index_enrollments import IndexEnrollments
 from nessie.jobs.migrate_lrs_incrementals import MigrateLrsIncrementals
 from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
@@ -202,12 +202,7 @@ def generate_merged_enrollment_term(term_id):
 @app.route('/api/job/generate_merged_student_feeds/<term_id>', methods=['POST'])
 @auth_required
 def generate_merged_student_feeds(term_id):
-    args = get_json_args(request)
-    if args:
-        backfill = args.get('backfill')
-    else:
-        backfill = False
-    job_started = GenerateMergedStudentFeeds(term_id=term_id, backfill_new_students=backfill).run_async()
+    job_started = GenerateMergedStudentFeeds(term_id=term_id).run_async()
     return respond_with_status(job_started)
 
 
@@ -328,10 +323,15 @@ def import_student_population():
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/import_term_gpas', methods=['POST'])
+@app.route('/api/job/import_registrations', methods=['POST'])
 @auth_required
-def import_term_gpas():
-    job_started = ImportTermGpas().run_async()
+def import_registrations():
+    args = get_json_args(request)
+    if args:
+        load_all = args.get('load_all')
+    else:
+        load_all = False
+    job_started = ImportRegistrations(load_all=load_all).run_async()
     return respond_with_status(job_started)
 
 

@@ -104,18 +104,18 @@ INSERT INTO metadata.canvas_synced_snapshots (
   )
 );
 
-CREATE TABLE IF NOT EXISTS metadata.merged_feed_status
+CREATE TABLE IF NOT EXISTS metadata.registration_import_status
 (
     sid VARCHAR NOT NULL PRIMARY KEY ,
     status VARCHAR NOT NULL,
     updated_at TIMESTAMP NOT NULL
 );
 
-INSERT INTO metadata.merged_feed_status (
+INSERT INTO metadata.registration_import_status (
   SELECT *
   FROM dblink(:'redshift_db',$REDSHIFT$
     SELECT sid, status, updated_at
-    FROM metadata.merged_feed_status
+    FROM metadata.registration_import_status
     WHERE term_id='all'
   $REDSHIFT$) AS redshift_status (
     sid VARCHAR,

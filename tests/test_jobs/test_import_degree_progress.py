@@ -35,7 +35,7 @@ class TestImportDegreeProgress:
         from nessie.jobs.import_degree_progress import ImportDegreeProgress
         with mock_s3(app):
             result = ImportDegreeProgress().run_wrapped()
-        assert result == 'SIS degree progress API import job completed: 1 succeeded, 7 returned no information, 0 failed.'
+        assert result == 'SIS degree progress API import job completed: 1 succeeded, 8 returned no information, 0 failed.'
         rows = redshift.fetch('SELECT * FROM student_test.sis_api_degree_progress')
         assert len(rows) == 1
         assert rows[0]['sid'] == '11667051'

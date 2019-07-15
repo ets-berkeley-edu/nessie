@@ -52,7 +52,7 @@ def add_param_to_url(url, param):
 
 
 def build_url(url, query=None):
-    encoded_query = urllib.parse.urlencode(query, doseq=True) if query else ''
+    encoded_query = urllib.parse.urlencode(query, doseq=True, safe=',') if query else ''
     url_components = urllib.parse.urlparse(url)
     return urllib.parse.urlunparse([
         url_components.scheme,

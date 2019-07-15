@@ -128,9 +128,9 @@ def update_background_job_status(job_id, status, details=None):
     )
 
 
-def update_merged_feed_status(successes, failures):
+def update_registration_import_status(successes, failures):
     rds.execute(
-        f'DELETE FROM {_rds_schema()}.merged_feed_status WHERE sid = ANY(%s)',
+        f'DELETE FROM {_rds_schema()}.registration_import_status WHERE sid = ANY(%s)',
         params=(successes + failures, ),
     )
     now = datetime.utcnow().isoformat()
@@ -139,7 +139,7 @@ def update_merged_feed_status(successes, failures):
     rows = success_records + failure_records
     with rds.transaction() as transaction:
         result = transaction.insert_bulk(
-            f"""INSERT INTO {_rds_schema()}.merged_feed_status
+            f"""INSERT INTO {_rds_schema()}.registration_import_status
                 (sid, status, updated_at)
                 VALUES %s
             """,

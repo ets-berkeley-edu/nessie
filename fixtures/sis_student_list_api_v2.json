@@ -1,0 +1,1401 @@
+{
+  "apiResponse": {
+    "httpStatus": {
+      "code": "200",
+      "description": "OK"
+    },
+    "responseType": "namespaceURI=\"http://bmeta.berkeley.edu/student/studentV1.xsd\" element=\"students\"",
+    "response": {
+      "students": [
+        {
+          "identifiers": [
+            {
+              "disclose": false,
+              "id": "11667051",
+              "type": "student-id"
+            },
+            {
+              "disclose": false,
+              "id": "61889",
+              "type": "campus-uid"
+            },
+            {
+              "disclose": false,
+              "id": "***-**-****",
+              "type": "Social Security Number"
+            },
+            {
+              "disclose": false,
+              "fromDate": "1902-02-01",
+              "id": "11667051",
+              "type": "DB2"
+            }
+          ],
+          "names": [
+            {
+              "disclose": false,
+              "familyName": "Bear",
+              "formattedName": "Osk  Bear",
+              "fromDate": "2015-10-02",
+              "givenName": "Osk",
+              "middleName": "",
+              "preferred": true,
+              "prefixName": "",
+              "suffixName": "",
+              "type": {
+                "code": "PRF",
+                "description": "Preferred"
+              },
+              "uiControl": {
+                "code": "U",
+                "description": "Edit - No Delete"
+              }
+            },
+            {
+              "disclose": false,
+              "familyName": "Bear",
+              "formattedName": "Oski  Bear",
+              "fromDate": "1902-02-01",
+              "givenName": "Oski",
+              "middleName": "",
+              "preferred": false,
+              "prefixName": "",
+              "suffixName": "",
+              "type": {
+                "code": "PRI",
+                "description": "Primary"
+              },
+              "uiControl": {
+                "code": "D",
+                "description": "Display Only"
+              }
+            }
+          ],
+          "affiliations": [
+            {
+              "detail": "Admitted",
+              "fromDate": "2015-12-07",
+              "status": {
+                "code": "ACT",
+                "description": "Active"
+              },
+              "type": {
+                "code": "ADMT_UX",
+                "description": "Admitted student's access to Cal Central"
+              }
+            },
+            {
+              "detail": "",
+              "fromDate": "2015-12-14",
+              "status": {
+                "code": "ACT",
+                "description": "Active"
+              },
+              "type": {
+                "code": "STUDENT",
+                "description": ""
+              }
+            },
+            {
+              "detail": "Active",
+              "fromDate": "2015-12-14",
+              "status": {
+                "code": "ACT",
+                "description": "Active"
+              },
+              "type": {
+                "code": "UNDERGRAD",
+                "description": "Undergraduate Student"
+              }
+            }
+          ],
+          "addresses": [
+            {
+              "type": {
+                "code": "HOME",
+                "description": "Home"
+              },
+              "address1": "2121 BANCROFT WAY  #550",
+              "address2": "",
+              "address3": "",
+              "address4": "",
+              "num1": "",
+              "num2": "",
+              "addrField1": "",
+              "addrField2": "",
+              "addrField3": "",
+              "houseType": "",
+              "city": "BERKELEY",
+              "county": "",
+              "stateCode": "CA",
+              "postalCode": "454554",
+              "countryCode": "USA",
+              "formattedAddress": "2121 BANCROFT WAY  #550\nBERKELEY, CA 454554",
+              "disclose": false,
+              "uiControl": {
+                "code": "U",
+                "description": "Edit - No Delete"
+              },
+              "fromDate": "2015-10-07"
+            },
+            {
+              "type": {
+                "code": "LOCL",
+                "description": "Local"
+              },
+              "address1": "1001 Hearst",
+              "address2": "",
+              "address3": "",
+              "address4": "",
+              "num1": "",
+              "num2": "",
+              "addrField1": "",
+              "addrField2": "",
+              "addrField3": "",
+              "houseType": "",
+              "city": "Berkeley",
+              "county": "",
+              "stateCode": "CA",
+              "postalCode": "0",
+              "countryCode": "USA",
+              "formattedAddress": "1001 Hearst\nBerkeley, CA",
+              "disclose": false,
+              "uiControl": {
+                "code": "F",
+                "description": "Full Edit"
+              },
+              "fromDate": "2015-10-12"
+            }
+          ],
+          "phones": [
+            {
+              "countryCode": "",
+              "disclose": false,
+              "extension": "123",
+              "number": "415/123-4567",
+              "primary": false,
+              "type": {
+                "code": "CELL",
+                "description": "Mobile"
+              },
+              "uiControl": {
+                "code": "D",
+                "description": "Display Only"
+              }
+            },
+            {
+              "countryCode": "",
+              "disclose": false,
+              "extension": "114",
+              "number": "510/642-9505",
+              "primary": true,
+              "type": {
+                "code": "HOME",
+                "description": "Home/Permanent"
+              },
+              "uiControl": {
+                "code": "U",
+                "description": "Edit - No Delete"
+              }
+            }
+          ],
+          "emails": [
+            {
+              "type": {
+                "code": "CAMP",
+                "description": "Campus"
+              },
+              "emailAddress": "oski@berkeley.edu",
+              "primary": true,
+              "disclose": false,
+              "uiControl": {
+                "code": "D",
+                "description": "Display Only"
+              }
+            }
+          ],
+          "emergencyContacts": [],
+          "confidential": false,
+          "academicStatuses": [
+            {
+              "cumulativeGPA": {
+                "average": 0,
+                "source": "UCB",
+                "type": {
+                  "code": "Cumulative"
+                }
+              },
+              "cumulativeUnits": [
+                {
+                  "type": {
+                    "code": "Total"
+                  },
+                  "unitsCumulative": 0,
+                  "unitsEnrolled": 4,
+                  "unitsIncomplete": 0,
+                  "unitsOther": 0,
+                  "unitsPassed": 0,
+                  "unitsTaken": 0,
+                  "unitsTest": 0,
+                  "unitsTransferAccepted": 0,
+                  "unitsTransferEarned": 0,
+                  "unitsWaitlisted": 0
+                },
+                {
+                  "type": {
+                    "code": "For GPA"
+                  },
+                  "unitsEnrolled": 4,
+                  "unitsIncomplete": 0,
+                  "unitsPassed": 0,
+                  "unitsTaken": 0,
+                  "unitsTransferAccepted": 0,
+                  "unitsTransferEarned": 0,
+                  "unitsWaitlisted": 0
+                },
+                {
+                  "type": {
+                    "code": "Not For GPA"
+                  },
+                  "unitsEnrolled": 0,
+                  "unitsIncomplete": 0,
+                  "unitsPassed": 0,
+                  "unitsTaken": 0,
+                  "unitsTransferAccepted": 0,
+                  "unitsTransferEarned": 0,
+                  "unitsWaitlisted": 0
+                }
+              ],
+              "studentCareer": {
+                "academicCareer": {
+                  "code": "UCBX",
+                  "description": "UCB Ext",
+                  "formalDescription": "UC Berkeley Extension",
+                  "fromDate": "2018-01-09"
+                },
+                "fromDate": "2018-01-09",
+                "matriculation": {
+                  "term": {
+                    "id": "2182",
+                    "name": "2018 Spring"
+                  },
+                  "type": {
+                    "code": "NON",
+                    "description": "Non Degree/Course Work Only"
+                  }
+                }
+              },
+              "studentPlans": [
+                {
+                  "academicPlan": {
+                    "academicProgram": {
+                      "academicCareer": {
+                        "code": "UCBX",
+                        "description": "UCB Ext",
+                        "formalDescription": "UC Berkeley Extension",
+                        "fromDate": "2018-01-09"
+                      },
+                      "program": {
+                        "code": "XCCRT",
+                        "description": "UCBX Concurrent Enrollment"
+                      }
+                    },
+                    "cipCode": "",
+                    "hegisCode": "",
+                    "ownedBy": {
+                      "administrativeOwners": [
+                        {
+                          "organization": {
+                            "code": "UCB01",
+                            "description": "UC Berkeley"
+                          },
+                          "percentage": 100
+                        }
+                      ]
+                    },
+                    "plan": {
+                      "code": "30XCECCENX",
+                      "description": "UCBX Concurrent Enrollment",
+                      "fromDate": "2017-12-06"
+                    },
+                    "targetDegree": {},
+                    "type": {
+                      "code": "SS",
+                      "description": "Major - Self-Supporting"
+                    }
+                  },
+                  "expectedGraduationTerm": {
+                    "id": "2182",
+                    "name": "2018 Spring"
+                  },
+                  "primary": true,
+                  "statusInPlan": {
+                    "action": {
+                      "code": "MATR",
+                      "description": "Matriculation"
+                    },
+                    "reason": {
+                      "code": "NEW",
+                      "description": "New Admits"
+                    },
+                    "status": {
+                      "code": "AC",
+                      "description": "Active in Program"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "cumulativeGPA": {
+                "average": 3.7999999999999998,
+                "source": "UCB",
+                "type": {
+                  "code": "Cumulative"
+                }
+              },
+              "cumulativeUnits": [
+                {
+                  "type": {
+                    "code": "Total"
+                  },
+                  "unitsCumulative": 101.3,
+                  "unitsOther": 0,
+                  "unitsPassed": 73,
+                  "unitsTaken": 8,
+                  "unitsTest": 3.3,
+                  "unitsTransferAccepted": 25,
+                  "unitsTransferEarned": 25
+                },
+                {
+                  "type": {
+                    "code": "For GPA"
+                  },
+                  "unitsPassed": 8,
+                  "unitsTaken": 8,
+                  "unitsTransferEarned": 0
+                },
+                {
+                  "type": {
+                    "code": "Not For GPA"
+                  },
+                  "unitsPassed": 0,
+                  "unitsTaken": 0,
+                  "unitsTransferEarned": 0
+                }
+              ],
+              "studentCareer": {
+                "academicCareer": {
+                  "code": "UGRD",
+                  "description": "Undergraduate"
+                },
+                "fromDate": "2016-01-12",
+                "matriculation": {
+                  "homeLocation": {
+                    "code": "019",
+                    "description": "Los Angeles County"
+                  },
+                  "term": {
+                    "id": "2155",
+                    "name": "2015 Summer"
+                  }
+                }
+              },
+              "studentPlans": [
+                {
+                  "academicPlan": {
+                    "academicProgram": {
+                      "program": {
+                        "code": "UCLS",
+                        "description": "Undergrad Letters & Science"
+                      }
+                    },
+                    "plan": {
+                      "code": "25345U",
+                      "description": "English BA",
+                      "fromDate": "2016-01-12"
+                    },
+                    "targetDegree": {
+                      "type": {
+                        "code": "AB",
+                        "description": "Bachelor of Arts"
+                      }
+                    },
+                    "type": {
+                      "code": "MAJ",
+                      "description": "Major - Regular Acad/Prfnl"
+                    }
+                  },
+                  "expectedGraduationTerm": {
+                    "id": "2198",
+                    "name": "2019 Fall"
+                  },
+                  "primary": true,
+                  "statusInPlan": {
+                    "action": {
+                      "code": "DATA",
+                      "description": "Data Change"
+                    },
+                    "reason": {
+                      "code": "GTOI",
+                      "description": "Grad Term - Auto Opt-In"
+                    },
+                    "status": {
+                      "code": "AC",
+                      "description": "Active in Program"
+                    }
+                  }
+                },
+                {
+                  "academicPlan": {
+                    "academicProgram": {
+                      "program": {
+                        "code": "UCLS",
+                        "description": "Undergrad Letters & Science"
+                      }
+                    },
+                    "plan": {
+                      "code": "25345U",
+                      "description": "Astrophysics BS",
+                      "fromDate": "2016-01-12"
+                    },
+                    "targetDegree": {
+                      "type": {
+                        "code": "SB",
+                        "description": "Bachelor of Science"
+                      }
+                    },
+                    "type": {
+                      "code": "SP",
+                      "description": "Major - UG Specialization"
+                    }
+                  },
+                  "expectedGraduationTerm": {
+                    "id": "2192",
+                    "name": "2019 Spring"
+                  },
+                  "primary": false,
+                  "statusInPlan": {
+                    "action": {
+                      "code": "DATA",
+                      "description": "Data Change"
+                    },
+                    "reason": {
+                      "code": "GTOI",
+                      "description": "Grad Term - Auto Opt-In"
+                    },
+                    "status": {
+                      "code": "AC",
+                      "description": "Active in Program"
+                    }
+                  }
+                },
+                {
+                  "academicPlan": {
+                    "academicProgram": {
+                      "program": {
+                        "code": "UCLS",
+                        "description": "Undergrad Letters & Science"
+                      }
+                    },
+                    "plan": {
+                      "description": "Art History",
+                      "fromDate": "2016-01-12"
+                    },
+                    "type": {
+                      "code": "MIN"
+                    }
+                  }
+                }
+              ],
+              "termsInAttendance": 5
+            }
+          ],
+          "registrations": [
+            {
+              "term": {
+                "id": "2178",
+                "name": "2017 Fall",
+                "category": {
+                  "code": "R",
+                  "description": "Regular Term"
+                },
+                "academicYear": "2018",
+                "beginDate": "2017-08-16",
+                "endDate": "2017-12-15"
+              },
+              "academicCareer": {
+                "code": "UGRD",
+                "description": "Undergraduate"
+              },
+              "athlete": true,
+              "disabled": false,
+              "eligibleToRegister": true,
+              "intendsToGraduate": false,
+              "registered": false,
+              "academicLevels": [
+                {
+                  "type": {
+                    "code": "BOT",
+                    "description": "Begining of Term"
+                  },
+                  "level": {
+                    "code": "30",
+                    "description": "Junior"
+                  }
+                },
+                {
+                  "type": {
+                    "code": "EOT",
+                    "description": "End of Term"
+                  },
+                  "level": {
+                    "code": "30",
+                    "description": "Junior"
+                  }
+                }
+              ],
+              "termUnits": [
+                {
+                  "type": {
+                    "description": "Total"
+                  },
+                  "unitsEnrolled": 15,
+                  "unitsIncomplete": 0,
+                  "unitsMax": 24,
+                  "unitsMin": 15,
+                  "unitsOther": 0,
+                  "unitsPassed": 0,
+                  "unitsTaken": 0,
+                  "unitsTest": 0,
+                  "unitsTransferAccepted": 0,
+                  "unitsTransferEarned": 0,
+                  "unitsWaitlisted": 0
+                },
+                {
+                  "type": {
+                    "description": "For GPA"
+                  },
+                  "unitsEnrolled": 11,
+                  "unitsIncomplete": 0,
+                  "unitsMax": 0,
+                  "unitsMin": 0,
+                  "unitsPassed": 0,
+                  "unitsTaken": 0,
+                  "unitsTransferEarned": 0,
+                  "unitsWaitlisted": 0
+                },
+                {
+                  "type": {
+                    "description": "Not For GPA"
+                  },
+                  "unitsEnrolled": 4,
+                  "unitsIncomplete": 0,
+                  "unitsMax": 0,
+                  "unitsMin": 0,
+                  "unitsPassed": 0,
+                  "unitsTaken": 0,
+                  "unitsTransferEarned": 0,
+                  "unitsWaitlisted": 0
+                }
+              ],
+              "termGPA": {
+                "average": 0,
+                "type": {
+                  "code": "TGPA",
+                  "description": "Term GPA"
+                },
+                "source": "UCB"
+              }
+            }
+          ],
+          "holds": [],
+          "degrees": []
+        },
+        {
+          "identifiers": [
+            {
+              "disclose": false,
+              "id": "1234567890",
+              "type": "student-id"
+            },
+            {
+              "disclose": false,
+              "id": "12345",
+              "type": "campus-uid"
+            },
+            {
+              "disclose": false,
+              "id": "***-**-****",
+              "type": "Social Security Number"
+            },
+            {
+              "disclose": false,
+              "fromDate": "1902-02-01",
+              "id": "1234567890",
+              "type": "DB2"
+            }
+          ],
+          "names": [
+            {
+              "disclose": false,
+              "familyName": "Bear",
+              "formattedName": "Osk  Bear",
+              "fromDate": "2015-10-02",
+              "givenName": "Osk",
+              "middleName": "",
+              "preferred": true,
+              "prefixName": "",
+              "suffixName": "",
+              "type": {
+                "code": "PRF",
+                "description": "Preferred"
+              },
+              "uiControl": {
+                "code": "U",
+                "description": "Edit - No Delete"
+              }
+            },
+            {
+              "disclose": false,
+              "familyName": "Bear",
+              "formattedName": "Oski  Bear",
+              "fromDate": "1902-02-01",
+              "givenName": "Oski",
+              "middleName": "",
+              "preferred": false,
+              "prefixName": "",
+              "suffixName": "",
+              "type": {
+                "code": "PRI",
+                "description": "Primary"
+              },
+              "uiControl": {
+                "code": "D",
+                "description": "Display Only"
+              }
+            }
+          ],
+          "affiliations": [
+            {
+              "detail": "Admitted",
+              "fromDate": "2015-12-07",
+              "status": {
+                "code": "ACT",
+                "description": "Active"
+              },
+              "type": {
+                "code": "ADMT_UX",
+                "description": "Admitted student's access to Cal Central"
+              }
+            },
+            {
+              "detail": "",
+              "fromDate": "2015-12-14",
+              "status": {
+                "code": "ACT",
+                "description": "Active"
+              },
+              "type": {
+                "code": "STUDENT",
+                "description": ""
+              }
+            },
+            {
+              "detail": "Active",
+              "fromDate": "2015-12-14",
+              "status": {
+                "code": "ACT",
+                "description": "Active"
+              },
+              "type": {
+                "code": "UNDERGRAD",
+                "description": "Undergraduate Student"
+              }
+            }
+          ],
+          "addresses": [],
+          "phones": [],
+          "emails": [],
+          "confidential": false,
+          "academicStatuses": [
+            {
+              "studentCareer": {
+                "academicCareer": {
+                  "code": "UCBX",
+                  "description": "UCB Ext",
+                  "formalDescription": "UC Berkeley Extension",
+                  "fromDate": "2018-08-15"
+                },
+                "fromDate": "2018-08-15"
+              },
+              "studentPlans": [
+                {
+                  "academicPlan": {
+                    "plan": {
+                      "code": "30XCECCENX",
+                      "description": "UCBX Concurrent Enrollment",
+                      "fromDate": "2018-12-15"
+                    },
+                    "type": {
+                      "code": "SS",
+                      "description": "Major - Self-Supporting"
+                    },
+                    "cipCode": "",
+                    "hegisCode": "",
+                    "targetDegree": {},
+                    "ownedBy": {
+                      "administrativeOwners": [
+                        {
+                          "organization": {
+                            "code": "UCB01",
+                            "description": "UC Berkeley"
+                          },
+                          "percentage": 100
+                        }
+                      ]
+                    },
+                    "academicProgram": {
+                      "program": {
+                        "code": "XCCRT",
+                        "description": "UCBX Concurrent Enrollment"
+                      },
+                      "academicCareer": {
+                        "code": "UCBX",
+                        "description": "UCB Ext",
+                        "formalDescription": "UC Berkeley Extension",
+                        "fromDate": "2018-08-15"
+                      }
+                    }
+                  },
+                  "statusInPlan": {
+                    "status": {
+                      "code": "DC",
+                      "description": "Discontinued"
+                    },
+                    "action": {
+                      "code": "DISC",
+                      "description": "Discontinuation"
+                    },
+                    "reason": {
+                      "code": "1TRM",
+                      "description": "DISC After One Term"
+                    }
+                  },
+                  "primary": false
+                }
+              ],
+              "cumulativeGPA": {
+                "type": {
+                  "code": "Cumulative"
+                },
+                "average": 2.646,
+                "source": "UCB"
+              },
+              "cumulativeUnits": [
+                {
+                  "type": {
+                    "code": "Total"
+                  },
+                  "unitsEnrolled": 0,
+                  "unitsWaitlisted": 0,
+                  "unitsTaken": 13,
+                  "unitsPassed": 13,
+                  "unitsIncomplete": 0,
+                  "unitsTransferEarned": 0,
+                  "unitsTransferAccepted": 0,
+                  "unitsTest": 0,
+                  "unitsOther": 0,
+                  "unitsCumulative": 13
+                },
+                {
+                  "type": {
+                    "code": "For GPA"
+                  },
+                  "unitsEnrolled": 0,
+                  "unitsWaitlisted": 0,
+                  "unitsTaken": 13,
+                  "unitsPassed": 13,
+                  "unitsIncomplete": 0,
+                  "unitsTransferEarned": 0,
+                  "unitsTransferAccepted": 0
+                },
+                {
+                  "type": {
+                    "code": "Not For GPA"
+                  },
+                  "unitsEnrolled": 0,
+                  "unitsWaitlisted": 0,
+                  "unitsTaken": 0,
+                  "unitsPassed": 0,
+                  "unitsIncomplete": 0,
+                  "unitsTransferEarned": 0,
+                  "unitsTransferAccepted": 0
+                }
+              ]
+            },
+            {
+              "studentCareer": {
+                "academicCareer": {
+                  "code": "UCBX",
+                  "description": "UCB Ext",
+                  "formalDescription": "UC Berkeley Extension",
+                  "fromDate": "2018-08-15"
+                },
+                "fromDate": "2018-08-15"
+              },
+              "studentPlans": [
+                {
+                  "academicPlan": {
+                    "plan": {
+                      "code": "30XCECCENX",
+                      "description": "UCBX Concurrent Enrollment",
+                      "fromDate": "2018-12-15"
+                    },
+                    "type": {
+                      "code": "SS",
+                      "description": "Major - Self-Supporting"
+                    },
+                    "cipCode": "",
+                    "hegisCode": "",
+                    "targetDegree": {},
+                    "ownedBy": {
+                      "administrativeOwners": [
+                        {
+                          "organization": {
+                            "code": "UCB01",
+                            "description": "UC Berkeley"
+                          },
+                          "percentage": 100
+                        }
+                      ]
+                    },
+                    "academicProgram": {
+                      "program": {
+                        "code": "XCCRT",
+                        "description": "UCBX Concurrent Enrollment"
+                      },
+                      "academicCareer": {
+                        "code": "UCBX",
+                        "description": "UCB Ext",
+                        "formalDescription": "UC Berkeley Extension",
+                        "fromDate": "2018-08-15"
+                      }
+                    }
+                  },
+                  "statusInPlan": {
+                    "action": {
+                      "code": "DATA",
+                      "description": "Data Change"
+                    },
+                    "reason": {
+                      "code": "GTOI",
+                      "description": "Grad Term - Auto Opt-In"
+                    },
+                    "status": {
+                      "code": "AC",
+                      "description": "Active in Program"
+                    }
+                  },
+                  "primary": false
+                }
+              ],
+              "cumulativeGPA": {
+                "type": {
+                  "code": "Cumulative"
+                },
+                "average": 2.646,
+                "source": "UCB"
+              },
+              "cumulativeUnits": [
+                {
+                  "type": {
+                    "code": "Total"
+                  },
+                  "unitsEnrolled": 0,
+                  "unitsWaitlisted": 0,
+                  "unitsTaken": 13,
+                  "unitsPassed": 13,
+                  "unitsIncomplete": 0,
+                  "unitsTransferEarned": 0,
+                  "unitsTransferAccepted": 0,
+                  "unitsTest": 0,
+                  "unitsOther": 0,
+                  "unitsCumulative": 13
+                },
+                {
+                  "type": {
+                    "code": "For GPA"
+                  },
+                  "unitsEnrolled": 0,
+                  "unitsWaitlisted": 0,
+                  "unitsTaken": 13,
+                  "unitsPassed": 13,
+                  "unitsIncomplete": 0,
+                  "unitsTransferEarned": 0,
+                  "unitsTransferAccepted": 0
+                },
+                {
+                  "type": {
+                    "code": "Not For GPA"
+                  },
+                  "unitsEnrolled": 0,
+                  "unitsWaitlisted": 0,
+                  "unitsTaken": 0,
+                  "unitsPassed": 0,
+                  "unitsIncomplete": 0,
+                  "unitsTransferEarned": 0,
+                  "unitsTransferAccepted": 0
+                }
+              ]
+            }
+          ],
+          "degrees": []
+        },
+        {
+          "identifiers": [
+            {
+              "disclose": false,
+              "id": "2345678901",
+              "type": "student-id"
+            },
+            {
+              "disclose": false,
+              "id": "98765",
+              "type": "campus-uid"
+            },
+            {
+              "disclose": false,
+              "fromDate": "1902-02-01",
+              "id": "11667051",
+              "type": "DB2"
+            }
+          ],
+          "names": [
+            {
+              "disclose": false,
+              "familyName": "Doolittle",
+              "formattedName": "Dave Doolittle",
+              "fromDate": "2015-10-02",
+              "givenName": "Dave",
+              "middleName": "",
+              "preferred": true,
+              "prefixName": "",
+              "suffixName": "",
+              "type": {
+                "code": "PRF",
+                "description": "Preferred"
+              },
+              "uiControl": {
+                "code": "U",
+                "description": "Edit - No Delete"
+              }
+            },
+            {
+              "disclose": false,
+              "familyName": "Doolittle",
+              "formattedName": "Dave Doolittle",
+              "fromDate": "1902-02-01",
+              "givenName": "Dave",
+              "middleName": "",
+              "preferred": false,
+              "prefixName": "",
+              "suffixName": "",
+              "type": {
+                "code": "PRI",
+                "description": "Primary"
+              },
+              "uiControl": {
+                "code": "D",
+                "description": "Display Only"
+              }
+            }
+          ],
+          "affiliations": [
+            {
+              "detail": "Admitted",
+              "fromDate": "2015-12-07",
+              "status": {
+                "code": "ACT",
+                "description": "Active"
+              },
+              "type": {
+                "code": "ADMT_UX",
+                "description": "Admitted student's access to Cal Central"
+              }
+            },
+            {
+              "detail": "",
+              "fromDate": "2015-12-14",
+              "status": {
+                "code": "ACT",
+                "description": "Active"
+              },
+              "type": {
+                "code": "STUDENT",
+                "description": ""
+              }
+            },
+            {
+              "detail": "Active",
+              "fromDate": "2015-12-14",
+              "status": {
+                "code": "ACT",
+                "description": "Active"
+              },
+              "type": {
+                "code": "UNDERGRAD",
+                "description": "Undergraduate Student"
+              }
+            }
+          ],
+          "addresses": [],
+          "phones": [],
+          "emails": [],
+          "emergencyContacts": [],
+          "confidential": false,
+          "academicStatuses": [
+            {
+              "cumulativeGPA": {
+                "average": 3.2999999999999998,
+                "source": "UCB",
+                "type": {
+                  "code": "Cumulative"
+                }
+              },
+              "cumulativeUnits": [
+                {
+                  "type": {
+                    "code": "Total"
+                  },
+                  "unitsCumulative": 98.0,
+                  "unitsOther": 0,
+                  "unitsPassed": 62,
+                  "unitsTaken": 8,
+                  "unitsTest": 3.3,
+                  "unitsTransferAccepted": 25,
+                  "unitsTransferEarned": 25
+                },
+                {
+                  "type": {
+                    "code": "For GPA"
+                  },
+                  "unitsPassed": 8,
+                  "unitsTaken": 8,
+                  "unitsTransferEarned": 0
+                },
+                {
+                  "type": {
+                    "code": "Not For GPA"
+                  },
+                  "unitsPassed": 0,
+                  "unitsTaken": 0,
+                  "unitsTransferEarned": 0
+                }
+              ],
+              "studentCareer": {
+                "academicCareer": {
+                  "code": "UGRD",
+                  "description": "Undergraduate"
+                },
+                "fromDate": "2016-01-12",
+                "matriculation": {
+                  "homeLocation": {
+                    "code": "019",
+                    "description": "Los Angeles County"
+                  },
+                  "term": {
+                    "id": "2155",
+                    "name": "2015 Summer"
+                  },
+                  "type": {
+                    "code": "TRN",
+                    "description": "Transfer",
+                    "formalDescription": "Transfer Student"
+                  }
+                }
+              },
+              "studentPlans": [
+                {
+                  "academicPlan": {
+                    "academicProgram": {
+                      "program": {
+                        "code": "UCLS",
+                        "description": "Undergrad Letters & Science"
+                      }
+                    },
+                    "plan": {
+                      "code": "25345U",
+                      "description": "English BA",
+                      "fromDate": "2016-01-12"
+                    },
+                    "targetDegree": {
+                      "type": {
+                        "code": "AB",
+                        "description": "Bachelor of Arts"
+                      }
+                    },
+                    "type": {
+                      "code": "MAJ",
+                      "description": "Major - Regular Acad/Prfnl"
+                    }
+                  },
+                  "expectedGraduationTerm": {
+                    "id": "2198",
+                    "name": "2019 Fall"
+                  },
+                  "primary": true,
+                  "statusInPlan": {
+                    "action": {
+                      "code": "DATA",
+                      "description": "Data Change"
+                    },
+                    "reason": {
+                      "code": "GTOI",
+                      "description": "Grad Term - Auto Opt-In"
+                    },
+                    "status": {
+                      "code": "AC",
+                      "description": "Active in Program"
+                    }
+                  }
+                },
+                {
+                  "academicPlan": {
+                    "academicProgram": {
+                      "program": {
+                        "code": "UCLS",
+                        "description": "Undergrad Letters & Science"
+                      }
+                    },
+                    "plan": {
+                      "code": "25345U",
+                      "description": "Astrophysics BS",
+                      "fromDate": "2016-01-12"
+                    },
+                    "targetDegree": {
+                      "type": {
+                        "code": "SB",
+                        "description": "Bachelor of Science"
+                      }
+                    },
+                    "type": {
+                      "code": "SP",
+                      "description": "Major - UG Specialization"
+                    }
+                  },
+                  "expectedGraduationTerm": {
+                    "id": "2192",
+                    "name": "2019 Spring"
+                  },
+                  "primary": false,
+                  "statusInPlan": {
+                    "action": {
+                      "code": "DATA",
+                      "description": "Data Change"
+                    },
+                    "reason": {
+                      "code": "GTOI",
+                      "description": "Grad Term - Auto Opt-In"
+                    },
+                    "status": {
+                      "code": "AC",
+                      "description": "Active in Program"
+                    }
+                  }
+                },
+                {
+                  "academicPlan": {
+                    "academicProgram": {
+                      "program": {
+                        "code": "UCLS",
+                        "description": "Undergrad Letters & Science"
+                      }
+                    },
+                    "plan": {
+                      "description": "Art History",
+                      "fromDate": "2016-01-12"
+                    },
+                    "type": {
+                      "code": "MIN"
+                    }
+                  }
+                }
+              ],
+              "termsInAttendance": 5
+            }
+          ],
+          "registrations": [
+            {
+              "academicCareer": {
+                "code": "UGRD",
+                "description": "Undergraduate"
+              },
+              "academicLevel": {
+                "level": {
+                  "code": "30",
+                  "description": "Junior"
+                }
+              },
+              "athlete": true,
+              "disabled": false,
+              "eligibleToRegister": true,
+              "intendsToGraduate": false,
+              "new": false,
+              "registered": false,
+              "specialStudyPrograms": [],
+              "term": {
+                "id": "2178",
+                "name": "2017 Fall",
+                "category": {
+                  "code": "R",
+                  "description": "Regular Term"
+                },
+                "academicYear": "2018",
+                "beginDate": "2017-08-16",
+                "endDate": "2017-12-15"
+              },
+              "termGPA": {
+                "average": 0,
+                "type": {
+                  "description": "Term GPA"
+                }
+              },
+              "termUnits": [
+                {
+                  "type": {
+                    "description": "Total"
+                  },
+                  "unitsEnrolled": 15,
+                  "unitsIncomplete": 0,
+                  "unitsMax": 0,
+                  "unitsMin": 0,
+                  "unitsOther": 0,
+                  "unitsPassed": 0,
+                  "unitsTaken": 0,
+                  "unitsTest": 0,
+                  "unitsTransferAccepted": 0,
+                  "unitsTransferEarned": 0,
+                  "unitsWaitlisted": 0
+                },
+                {
+                  "type": {
+                    "description": "For GPA"
+                  },
+                  "unitsEnrolled": 11,
+                  "unitsIncomplete": 0,
+                  "unitsMax": 0,
+                  "unitsMin": 0,
+                  "unitsPassed": 0,
+                  "unitsTaken": 0,
+                  "unitsTransferEarned": 0,
+                  "unitsWaitlisted": 0
+                },
+                {
+                  "type": {
+                    "description": "Not For GPA"
+                  },
+                  "unitsEnrolled": 4,
+                  "unitsIncomplete": 0,
+                  "unitsMax": 0,
+                  "unitsMin": 0,
+                  "unitsPassed": 0,
+                  "unitsTaken": 0,
+                  "unitsTransferEarned": 0,
+                  "unitsWaitlisted": 0
+                }
+              ],
+              "withdrawalCancel": {
+                "date": "2017-10-31",
+                "lastAttendedDate": "2017-10-31",
+                "reason": {
+                  "code": "Personal"
+                },
+                "type": {
+                  "code": "WDR",
+                  "description": "Withdrew"
+                }
+              }
+            }
+          ],
+          "holds": [
+            {
+              "amountRequired": 0,
+              "comments": "",
+              "contact": {
+                "code": "",
+                "description": ""
+              },
+              "department": {
+                "code": "UCBKL",
+                "description": "Department"
+              },
+              "fromDate": "2018-07-18",
+              "impacts": [
+                {
+                  "code": "TRAN",
+                  "description": "Transcript Hold"
+                }
+              ],
+              "reason": {
+                "code": "CSBAL",
+                "description": "Past due balance",
+                "formalDescription": "Your student account has a past due balance. A hold is now placed against official registration for next semester. A hold prevents release of your transcript or diploma. Other campus services may also be withheld.\n\nUse the My Finances tab to make an online payment. \n\nFor billing questions, contact Cal Student Central at 510-664-9181 or open a case at https://studentcentral.berkeley.edu."
+              },
+              "reference": "",
+              "type": {
+                "code": "S01",
+                "description": "Past Due Balance"
+              }
+            },
+            {
+              "amountRequired": 0,
+              "comments": "",
+              "contact": {
+                "code": "",
+                "description": ""
+              },
+              "department": {
+                "code": "UCBKL",
+                "description": "Department"
+              },
+              "fromTerm": {
+                "academicYear": "2019",
+                "beginDate": "2018-08-15",
+                "category": {
+                  "code": "R",
+                  "description": "Regular Term"
+                },
+                "endDate": "2018-12-14",
+                "id": "2188",
+                "name": "2018 Fall"
+              },
+              "impacts": [
+                {
+                  "code": "AENR",
+                  "description": "Allow Drops, No Adds"
+                },
+                {
+                  "code": "IENR",
+                  "description": "No Initial Enroll, Add/Drop OK"
+                }
+              ],
+              "reason": {
+                "code": "ADVHD",
+                "description": "Advisor Hold",
+                "formalDescription": "You must see your College advisor immediately."
+              },
+              "reference": "",
+              "type": {
+                "code": "V00",
+                "description": "AA - Advising Holds"
+              }
+            }
+          ],
+          "awardHonors": [],
+          "degrees": []
+        }
+      ]
+    }
+  }
+}

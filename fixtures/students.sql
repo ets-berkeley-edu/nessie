@@ -60,6 +60,13 @@ CREATE TABLE {redshift_schema_coe}.student_profiles
     profile TEXT NOT NULL
 );
 
+
+CREATE SCHEMA IF NOT EXISTS {redshift_schema_l_s};
+
+CREATE TABLE {redshift_schema_l_s}.students(
+    sid VARCHAR
+);
+
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_physics};
 
 CREATE TABLE {redshift_schema_physics}.students
@@ -109,6 +116,12 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_enrollment_terms
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_holds
+(
+    sid VARCHAR NOT NULL,
+    feed TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_last_registrations
 (
     sid VARCHAR NOT NULL,
     feed TEXT NOT NULL
@@ -182,6 +195,12 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_holds
     feed TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_last_registrations
+(
+    sid VARCHAR NOT NULL,
+    feed TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_majors
 (
     sid VARCHAR NOT NULL,
@@ -227,6 +246,7 @@ INSERT INTO {redshift_schema_calnet}.persons
 (sid, ldap_uid, first_name, last_name, campus_email, email, affiliations)
 VALUES
 ('11667051', '61889', 'Deborah', 'Davies', 'dd1@berkeley.edu', 'dd1@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
+('1234567890', '12345', 'Osk', 'Bear', '', '', 'FORMER-STUDENT'),
 ('2345678901', '98765', 'Dave', 'Doolittle', 'dd2@berkeley.edu', 'dd2@berkeley', 'STUDENT-TYPE-REGISTERED'),
 ('3456789012', '242881', 'Paul', 'Kerschen', 'pk@berkeley.edu', 'pk@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
 ('5678901234', '9933311', 'Sandeep', 'Jayaprakash', 'sj@berkeley.edu', 'sj@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
@@ -245,6 +265,9 @@ VALUES
 ('9000000000', '1133399', 'F', 'B', TRUE, FALSE, TRUE, FALSE, FALSE, NULL, NULL, 720, FALSE, NULL, NULL, FALSE, 'Z'),
 ('9100000000', '90412', 'M', 'X', FALSE, FALSE, FALSE, FALSE, TRUE, 720, 760, 770, TRUE, 'fa', '2018', TRUE, 'N');
 
+INSERT INTO {redshift_schema_l_s}.students (sid)
+VALUES ('1234567890');
+
 INSERT INTO {redshift_schema_physics}.students (sid)
 VALUES ('2345678901');
 
@@ -252,10 +275,3 @@ INSERT INTO {redshift_schema_student}.sis_api_degree_progress
 (sid, feed)
 VALUES
 ('11667051', %(sis_degree_progress_11667051)s);
-
-INSERT INTO {redshift_schema_student}.sis_api_profiles
-(sid, feed)
-VALUES
-('11667051', %(sis_student_api_11667051)s),
-('1234567890', %(sis_student_api_1234567890)s),
-('2345678901', %(sis_student_api_2345678901)s);

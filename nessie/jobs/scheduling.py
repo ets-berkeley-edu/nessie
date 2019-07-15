@@ -44,6 +44,7 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_IMPORT_STUDENT_POPULATION': 2000,
     'JOB_IMPORT_DEGREE_PROGRESS': 2500,
     'JOB_IMPORT_SIS_STUDENTS': 2700,
+    'JOB_IMPORT_REGISTRATIONS': 2800,
     'JOB_IMPORT_CANVAS_ENROLLMENTS': 2900,
     'JOB_GENERATE_CANVAS_CALIPER_ANALYTICS': 2950,
     'JOB_GENERATE_ALL_TABLES': 3000,
@@ -84,6 +85,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.import_degree_progress import ImportDegreeProgress
     from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
     from nessie.jobs.import_sis_student_api import ImportSisStudentApi
+    from nessie.jobs.import_registrations import ImportRegistrations
     from nessie.jobs.index_enrollments import IndexEnrollments
     from nessie.jobs.migrate_lrs_incrementals import MigrateLrsIncrementals
     from nessie.jobs.refresh_boac_cache import RefreshBoacCache
@@ -97,6 +99,7 @@ def schedule_all_jobs(force=False):
     schedule_job(sched, 'JOB_IMPORT_STUDENT_POPULATION', ChainedImportStudentPopulation, force)
     schedule_job(sched, 'JOB_IMPORT_DEGREE_PROGRESS', ImportDegreeProgress, force)
     schedule_job(sched, 'JOB_IMPORT_SIS_STUDENTS', ImportSisStudentApi, force)
+    schedule_job(sched, 'JOB_IMPORT_REGISTRATIONS', ImportRegistrations, force)
     schedule_job(sched, 'JOB_IMPORT_CANVAS_ENROLLMENTS', ImportCanvasEnrollmentsApi, force)
     schedule_chained_job(
         sched,
