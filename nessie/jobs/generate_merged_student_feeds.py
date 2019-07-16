@@ -73,6 +73,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         self.successes = []
         self.failures = []
         profile_tables = self.generate_student_profile_tables(advisees_by_canvas_id, advisees_by_sid)
+        if not profile_tables:
+            raise BackgroundJobError('Failed to generate student profile tables.')
 
         (enrollment_terms_map, canvas_site_map) = generate_student_term_maps(advisees_by_sid)
 
@@ -150,7 +152,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
         all_student_feeds = get_advisee_student_profile_feeds()
         if not all_student_feeds:
-            app.logger.warn(f'No profile feeds returned, aborting job.')
+            app.logger.error(f'No profile feeds returned, aborting job.')
             return False
         count = len(all_student_feeds)
         app.logger.info(f'Will generate feeds for {count} students.')

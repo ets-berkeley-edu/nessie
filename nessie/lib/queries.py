@@ -92,7 +92,7 @@ def get_advisee_student_profile_feeds():
                 us.canvas_id AS canvas_user_id, us.name AS canvas_user_name,
                 sis.feed AS sis_profile_feed,
                 deg.feed AS degree_progress_feed,
-                demog.feed AS demographics_feed
+                demog.feed AS demographics_feed,
                 reg.feed AS last_registration_feed
               FROM {calnet_schema()}.persons ldap
               LEFT JOIN {intermediate_schema()}.users us
