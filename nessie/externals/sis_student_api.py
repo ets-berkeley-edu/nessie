@@ -158,6 +158,7 @@ def _get_v2_by_sids_list(up_to_100_sids, term_id=None, as_of=None, with_registra
         'inc-acad': True,
         'inc-cntc': True,
         'inc-completed-programs': True,
+        'inc-inactive-programs': True,
     }
     if term_id:
         params['term-id'] = term_id
@@ -177,7 +178,7 @@ def _get_v2_single_student(sid, term_id=None, as_of=None):
         'inc-attr': True,
         'inc-cntc': True,
         'inc-completed-programs': True,
-        'inc-incompleted-programs': True,
+        'inc-inactive-programs': True,
         'inc-dmgr': True,
         'inc-gndr': True,
         'inc-regs': True,
