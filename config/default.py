@@ -241,6 +241,8 @@ TERMS_API_ID = 'secretid'
 TERMS_API_KEY = 'secretkey'
 TERMS_API_URL = 'https://secreturl.berkeley.edu/terms'
 
+VUE_LOCALHOST_BASE_URL = None
+
 WORKER_HOST = 'hard-working-nessie.berkeley.edu'
 
 # Thread queues will be ignored if "master" is embedded in the EB_ENVIRONMENT environment variable.
