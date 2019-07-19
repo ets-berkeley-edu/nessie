@@ -68,7 +68,13 @@ def register_routes(app):
         return make_response(open(app.config['INDEX_HTML']).read())
 
     @app.after_request
-    def log_api_requests(response):
+    def after_api_request(response):
+        if app.config['NESSIE_ENV'] == 'development':
+            # In development the response can be shared with requesting code from any local origin.
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+            response.headers['Access-Control-Allow-Origin'] = app.config['VUE_LOCALHOST_BASE_URL']
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
         if request.full_path.startswith('/api'):
             log_message = ' '.join([
                 request.remote_addr,
