@@ -23,7 +23,13 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+
+AWS_APP_ROLE_ARN = '<app_role_arn>'
+
 # Redshift connection parameters.
+
+RDS_APP_BOA_USER = 'boa_rds_username'
+REDSHIFT_APP_BOA_USER = 'boa_redshift_username'
 
 REDSHIFT_DATABASE = 'database'
 REDSHIFT_HOST = 'redshift cluster'

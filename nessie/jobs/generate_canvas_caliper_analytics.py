@@ -58,7 +58,7 @@ class GenerateCanvasCaliperAnalytics(BackgroundJob):
                 raise BackgroundJobError(f'No timely S3 Caliper extracts found')
             else:
                 app.logger.info(f'Falling back S3 Caliper extracts for yesterday')
-        s3_caliper_daily_url = s3.build_s3_url(s3_caliper_daily_path, credentials=False)
+        s3_caliper_daily_url = s3.build_s3_url(s3_caliper_daily_path)
 
         resolved_ddl_caliper_explode = resolve_sql_template(
             'create_lrs_canvas_explode_table.template.sql',

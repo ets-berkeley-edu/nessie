@@ -61,7 +61,7 @@ def get_failures_from_last_sync():
 
 def update_canvas_sync_status(job_id, key, status, **kwargs):
     filename = key.split('/')[-1]
-    destination_url = s3.build_s3_url(key, credentials=False)
+    destination_url = s3.build_s3_url(key)
 
     sql = f"""UPDATE {_rds_schema()}.canvas_sync_job_status
              SET destination_url=%s, status=%s, updated_at=current_timestamp"""
@@ -81,7 +81,7 @@ def update_canvas_sync_status(job_id, key, status, **kwargs):
 
 def create_canvas_snapshot(key, size):
     canvas_table, filename = key.split('/')[-2:]
-    url = s3.build_s3_url(key, credentials=False)
+    url = s3.build_s3_url(key)
     sql = f"""INSERT INTO {_rds_schema()}.canvas_synced_snapshots
              (filename, canvas_table, url, size, created_at)
              VALUES (%s, %s, %s, %s, current_timestamp)"""
