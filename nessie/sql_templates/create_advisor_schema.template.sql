@@ -165,7 +165,7 @@ AS (
 );
 
 CREATE TABLE {redshift_schema_advisor_internal}.advisor_roles
-SORTKEY (sid, uid)
+SORTKEY (sid)
 AS (
     SELECT DISTINCT
         I.ADVISOR_ID AS sid,
@@ -174,10 +174,11 @@ AS (
         I.ADVISOR_TYPE_DESCR AS advisor_type,
         I.INSTRUCTOR_TYPE AS instructor_type_code,
         I.INSTRUCTOR_TYPE_DESCR AS instructor_type,
-        P.PERMISSION_LIST AS cs_permissions,
-        P.AUTH_ACTIONS AS cs_auth_actions
+        I.ACADEMIC_PROGRAM AS academic_program_code, 
+        I.ACADEMIC_PROGRAM_DESCR AS academic_program,
+        P.PERMISSION_LIST AS cs_permissions
     FROM {redshift_schema_advisor}.instructor_advisor I
-    LEFT OUTER JOIN {redshift_schema_advisor}.advisor_note_permissions P
+    JOIN {redshift_schema_advisor}.advisor_note_permissions P
     ON I.ADVISOR_ID = P.CS_ID
 );
 
