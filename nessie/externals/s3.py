@@ -81,7 +81,7 @@ def get_sts_credentials():
     assumed_role_object = sts_client.assume_role(
         RoleArn=role_arn,
         RoleSessionName='AssumeAppRoleSession',
-        DurationSeconds=1800,
+        DurationSeconds=900,
     )
     return assumed_role_object['Credentials']
 

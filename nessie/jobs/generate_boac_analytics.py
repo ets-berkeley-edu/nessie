@@ -44,8 +44,6 @@ class GenerateBoacAnalytics(BackgroundJob):
         boac_snapshot_daily_path = f'{self.s3_boa_path}/term/{term_id_series[0]}/daily/{hashed_datestamp()}'
         resolved_ddl = resolve_sql_template(
             'create_boac_schema.template.sql',
-            aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
-            aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY'],
             boac_snapshot_daily_path=boac_snapshot_daily_path,
             current_term_id=term_id_series[0],
             last_term_id=term_id_series[1],
@@ -61,8 +59,6 @@ class GenerateBoacAnalytics(BackgroundJob):
             term_name = term_name_for_sis_id(term_id)
             resolved_ddl = resolve_sql_template(
                 'unload_assignment_submissions.template.sql',
-                aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
-                aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY'],
                 boac_assignments_path=boac_assignments_path,
                 term_id=term_id,
                 term_name=term_name,

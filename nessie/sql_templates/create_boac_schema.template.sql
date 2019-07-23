@@ -316,8 +316,8 @@ UNLOAD (
     GROUP BY ce.uid, ce.canvas_user_id, ce.course_id, ce.sis_enrollment_status, ce.last_activity_at, ce.current_score, ce.final_score'
 )
 TO '{boac_snapshot_daily_path}/course_scores/snapshot'
-ACCESS_KEY_ID '{aws_access_key_id}'
-SECRET_ACCESS_KEY '{aws_secret_access_key}'
+IAM_ROLE '{redshift_iam_role}'
+ENCRYPTED
 DELIMITER AS '\t'
 NULL AS ''
 ALLOWOVERWRITE
@@ -335,8 +335,8 @@ UNLOAD (
         ass.due_at, ass.submitted_at, ass.score, ass.points_possible'
 )
 TO '{boac_snapshot_daily_path}/assignment_submissions_scores/snapshot'
-ACCESS_KEY_ID '{aws_access_key_id}'
-SECRET_ACCESS_KEY '{aws_secret_access_key}'
+IAM_ROLE '{redshift_iam_role}'
+ENCRYPTED
 DELIMITER AS '\t'
 NULL AS ''
 ALLOWOVERWRITE
