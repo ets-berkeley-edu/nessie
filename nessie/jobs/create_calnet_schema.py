@@ -44,8 +44,6 @@ class CreateCalNetSchema(BackgroundJob):
         ])
         resolved_ddl = resolve_sql_template(
             'create_calnet_schema.template.sql',
-            aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
-            aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY'],
             sid_snapshot_path=sid_snapshot_path,
         )
 

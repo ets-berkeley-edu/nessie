@@ -50,8 +50,8 @@ UNLOAD (
     ORDER BY reference_user_id, ac1.course_id, ac2.canvas_user_id'
 )
 TO '{boac_assignments_path}/{term_id}/sub_'
-ACCESS_KEY_ID '{aws_access_key_id}'
-SECRET_ACCESS_KEY '{aws_secret_access_key}'
+IAM_ROLE '{redshift_iam_role}'
+ENCRYPTED
 DELIMITER AS ','
 NULL AS ''
 ALLOWOVERWRITE

@@ -57,8 +57,8 @@ UNLOAD (
     FROM {redshift_schema_calnet}.persons'
 )
 TO '{sid_snapshot_path}/snapshot'
-ACCESS_KEY_ID '{aws_access_key_id}'
-SECRET_ACCESS_KEY '{aws_secret_access_key}'
+IAM_ROLE '{redshift_iam_role}'
+ENCRYPTED
 NULL AS ''
 DELIMITER AS '\t'
 PARALLEL OFF

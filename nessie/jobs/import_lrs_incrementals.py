@@ -130,15 +130,14 @@ class ImportLrsIncrementals(BackgroundJob):
             s3_url += '/' + localize_datetime(datetime.now()).strftime('%Y/%m/%d/statements_%Y%m%d_%H%M%S_')
         else:
             s3_url += '/statements'
-        credentials = ';'.join([
-            f"aws_access_key_id={app.config['AWS_ACCESS_KEY_ID']}",
-            f"aws_secret_access_key={app.config['AWS_SECRET_ACCESS_KEY']}",
-        ])
+
+        redshift_iam_role = app.config['REDSHIFT_IAM_ROLE']
         if not redshift.execute(
             f"""
                 UNLOAD ('SELECT statement FROM {schema}.statements')
                 TO '{s3_url}'
-                CREDENTIALS '{credentials}'
+                IAM_ROLE '{redshift_iam_role}'
+                ENCRYPTED
                 DELIMITER AS '  '
                 NULL AS ''
                 ALLOWOVERWRITE
