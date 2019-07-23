@@ -12,9 +12,8 @@ pytz==2019.1
 requests==2.22.0
 scipy==1.1.0
 simplejson==3.16.0
+smart-open==1.8.3
 xmltodict==0.12.0
-# ETS fork of https://github.com/RaRe-Technologies/smart_open, with added support for S3 upload arguments.
-https://github.com/ets-berkeley-edu/smart_open/archive/master.zip
 https://github.com/python-cas/python-cas/archive/master.zip
 
 # Dependencies for pandas 0.23.3. Note that pandas is not included in this requirements.txt file because

@@ -58,6 +58,7 @@ PORT = 1234
 INDEX_HTML = 'dist/static/index.html'
 
 AWS_ACCESS_KEY_ID = 'key'
+AWS_APP_ROLE_ARN = 'aws:arn::<account>:role/<app_nessie_specific_role>'
 AWS_DMS_VPC_ROLE = 'dms vpc role'
 AWS_SECRET_ACCESS_KEY = 'secret'
 AWS_REGION = 'aws region'
@@ -148,6 +149,7 @@ LOCH_EDX_S3_TRANSACTION_LOG_PATH = 'path/to/edx/transaction/log'
 
 # Loch Nessie configs
 LOCH_S3_BUCKET = 'bucket_name'
+LOCH_S3_ENCRYPTION = 'AES256'
 LOCH_S3_PROTECTED_BUCKET = 'protected_bucket_name'
 LOCH_S3_PUBLIC_BUCKET = 'public_bucket_name'
 LOCH_S3_REGION = 'us-west-2'

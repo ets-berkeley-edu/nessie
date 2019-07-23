@@ -38,13 +38,9 @@ import smart_open
 """Client code to run file operations against S3."""
 
 
-def build_s3_url(key, credentials=True):
+def build_s3_url(key):
     bucket = app.config['LOCH_S3_BUCKET']
-    if credentials:
-        credentials = ':'.join([app.config['AWS_ACCESS_KEY_ID'], app.config['AWS_SECRET_ACCESS_KEY']])
-        return f's3://{credentials}@{bucket}/{key}'
-    else:
-        return f's3://{bucket}/{key}'
+    return f's3://{bucket}/{key}'
 
 
 def copy(source_bucket, source_key, dest_bucket, dest_key):
@@ -58,7 +54,7 @@ def copy(source_bucket, source_key, dest_bucket, dest_key):
             Bucket=dest_bucket,
             Key=dest_key,
             CopySource=source,
-            ServerSideEncryption='AES256',
+            ServerSideEncryption=app.config['LOCH_S3_ENCRYPTION'],
         )
     except (ClientError, ConnectionError, ValueError) as e:
         app.logger.error(f'Error on S3 object copy: ({source_bucket}/{source_key} to {dest_bucket}/{dest_key}, error={e}')
@@ -79,13 +75,29 @@ def delete_objects(keys, bucket=None):
         return False
 
 
-def get_client():
-    return boto3.client(
-        's3',
-        aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
-        aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY'],
-        region_name=app.config['LOCH_S3_REGION'],
+def get_sts_credentials():
+    sts_client = boto3.client('sts')
+    role_arn = app.config['AWS_APP_ROLE_ARN']
+    assumed_role_object = sts_client.assume_role(
+        RoleArn=role_arn,
+        RoleSessionName='AssumeAppRoleSession',
+        DurationSeconds=1800,
     )
+    return assumed_role_object['Credentials']
+
+
+def get_session():
+    credentials = get_sts_credentials()
+    return boto3.Session(
+        aws_access_key_id=credentials['AccessKeyId'],
+        aws_secret_access_key=credentials['SecretAccessKey'],
+        aws_session_token=credentials['SessionToken'],
+    )
+
+
+def get_client():
+    session = get_session()
+    return session.client('s3', region_name=app.config['LOCH_S3_REGION'])
 
 
 def get_keys_with_prefix(prefix, full_objects=False, bucket=None):
@@ -179,7 +191,7 @@ def upload_data(data, s3_key, bucket=None):
         bucket = app.config['LOCH_S3_BUCKET']
     try:
         client = get_client()
-        client.put_object(Bucket=bucket, Key=s3_key, Body=data, ServerSideEncryption='AES256')
+        client.put_object(Bucket=bucket, Key=s3_key, Body=data, ServerSideEncryption=app.config['LOCH_S3_ENCRYPTION'])
     except (ClientError, ConnectionError, ValueError) as e:
         app.logger.error(f'Error on S3 upload: bucket={bucket}, key={s3_key}, error={e}')
         return False
@@ -204,14 +216,20 @@ def upload_from_url(url, s3_key, on_stream_opened=None):
         if on_stream_opened:
             on_stream_opened(response.headers)
         try:
-            s3_upload_args = {'ServerSideEncryption': 'AES256'}
+            s3_upload_args = {'ServerSideEncryption': app.config['LOCH_S3_ENCRYPTION']}
             if s3_url.endswith('.gz'):
                 s3_upload_args.update({
                     'ContentEncoding': 'gzip',
                     'ContentType': 'text/plain',
                 })
+            session = get_session()
             # smart_open needs to be told to ignore the .gz extension, or it will smartly attempt to double-compress it.
-            with smart_open.smart_open(s3_url, 'wb', ignore_extension=True, s3_upload_args=s3_upload_args) as s3_out:
+            with smart_open.open(
+                s3_url,
+                'wb',
+                ignore_ext=True,
+                transport_params=dict(session=session, multipart_upload_kwargs=s3_upload_args),
+            ) as s3_out:
                 for chunk in response.iter_content(chunk_size=1024):
                     s3_out.write(chunk)
         except (ClientError, ConnectionError, ValueError) as e:
