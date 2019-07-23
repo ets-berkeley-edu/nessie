@@ -41,6 +41,7 @@ sched = None
 PG_ADVISORY_LOCK_IDS = {
     'JOB_SYNC_CANVAS_SNAPSHOTS': 1000,
     'JOB_RESYNC_CANVAS_SNAPSHOTS': 1500,
+    'JOB_IMPORT_ADVISORS': 1800,
     'JOB_IMPORT_STUDENT_POPULATION': 2000,
     'JOB_IMPORT_DEGREE_PROGRESS': 2500,
     'JOB_IMPORT_SIS_STUDENTS': 2700,
@@ -74,6 +75,7 @@ def initialize_job_schedules(_app, force=False):
 
 def schedule_all_jobs(force=False):
     from nessie.jobs.chained_import_student_population import ChainedImportStudentPopulation
+    from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
     from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
     from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
     from nessie.jobs.create_sis_schema import CreateSisSchema
@@ -96,6 +98,7 @@ def schedule_all_jobs(force=False):
 
     schedule_job(sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots, force)
     schedule_job(sched, 'JOB_RESYNC_CANVAS_SNAPSHOTS', ResyncCanvasSnapshots, force)
+    schedule_job(sched, 'JOB_IMPORT_ADVISORS', CreateAdvisorSchema, force)
     schedule_job(sched, 'JOB_IMPORT_STUDENT_POPULATION', ChainedImportStudentPopulation, force)
     schedule_job(sched, 'JOB_IMPORT_DEGREE_PROGRESS', ImportDegreeProgress, force)
     schedule_job(sched, 'JOB_IMPORT_SIS_STUDENTS', ImportSisStudentApi, force)
