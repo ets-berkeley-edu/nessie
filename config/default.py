@@ -176,18 +176,16 @@ LOGGING_FORMAT = '[%(asctime)s] - %(levelname)s: %(message)s [in %(pathname)s:%(
 LOGGING_LOCATION = 'nessie.log'
 LOGGING_LEVEL = logging.DEBUG
 
-L_AND_S_ENABLED = False
-
 # These RDS schemas are copied from the Redshift schemas below and contain a subset of index tables.
 RDS_SCHEMA_ADVISOR = 'boac_advisor'
 RDS_SCHEMA_ASC = 'boac_advising_asc'
 RDS_SCHEMA_COE = 'boac_advising_coe'
 RDS_SCHEMA_METADATA = 'metadata'
-RDS_SCHEMA_L_S = 'boac_advising_l_s'
 RDS_SCHEMA_PHYSICS = 'boac_advising_physics'
 RDS_SCHEMA_SIS_ADVISING_NOTES = 'boac_advising_notes'
 RDS_SCHEMA_SIS_INTERNAL = 'sis_data'
 RDS_SCHEMA_STUDENT = 'student'
+RDS_SCHEMA_UNDERGRADS = 'undergrads'
 
 REDSHIFT_DATABASE = 'database'
 REDSHIFT_HOST = 'redshift cluster'
@@ -213,11 +211,11 @@ REDSHIFT_SCHEMA_CALIPER = 'lrs_caliper_analytics'
 REDSHIFT_SCHEMA_COE = 'boac_advising_coe'
 REDSHIFT_SCHEMA_EDW = 'edw_data'
 REDSHIFT_SCHEMA_INTERMEDIATE = 'intermediate'
-REDSHIFT_SCHEMA_L_S = 'boac_advising_l_s'
 REDSHIFT_SCHEMA_PHYSICS = 'boac_advising_physics'
 REDSHIFT_SCHEMA_SIS_INTERNAL = 'sis_data'
 REDSHIFT_SCHEMA_STUDENT = 'student'
 REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL = 'boac_advising_notes'
+REDSHIFT_SCHEMA_UNDERGRADS = 'boac_advising_undergrads'
 
 # The following external schemas vary between environments and do need to be overridden locally.
 REDSHIFT_SCHEMA_ADVISOR = 'External Advisor schema name'
@@ -226,10 +224,10 @@ REDSHIFT_SCHEMA_CALNET = 'External CalNet schema name'
 REDSHIFT_SCHEMA_CANVAS = 'External Canvas schema name'
 REDSHIFT_SCHEMA_COE_EXTERNAL = 'External COE schema name'
 REDSHIFT_SCHEMA_LRS = 'External LRS schema name'
-REDSHIFT_SCHEMA_L_S_EXTERNAL = 'External L & S schema name'
 REDSHIFT_SCHEMA_PHYSICS_EXTERNAL = 'External Physics schema name'
 REDSHIFT_SCHEMA_SIS = 'External SIS schema name'
 REDSHIFT_SCHEMA_SIS_ADVISING_NOTES = 'External SIS Advising Notes schema name'
+REDSHIFT_SCHEMA_UNDERGRADS_EXTERNAL = 'External Undergrads schema name'
 
 STUDENT_API_ID = 'secretid'
 STUDENT_API_KEY = 'secretkey'

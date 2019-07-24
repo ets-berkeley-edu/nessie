@@ -52,10 +52,6 @@ def intermediate_schema():
     return app.config['REDSHIFT_SCHEMA_INTERMEDIATE']
 
 
-def l_s_schema():
-    return app.config['REDSHIFT_SCHEMA_L_S']
-
-
 def metadata_schema():
     return app.config['RDS_SCHEMA_METADATA']
 
@@ -68,11 +64,14 @@ def student_schema():
     return app.config['REDSHIFT_SCHEMA_STUDENT']
 
 
+def undergrads_schema():
+    return app.config['REDSHIFT_SCHEMA_UNDERGRADS']
+
+
 def get_all_student_ids():
-    l_s_clause = f'UNION SELECT sid FROM {l_s_schema()}.students' if app.config['L_AND_S_ENABLED'] else ''
     sql = f"""SELECT sid FROM {asc_schema()}.students
         UNION SELECT sid FROM {coe_schema()}.students
-        {l_s_clause}
+        UNION SELECT sid FROM {undergrads_schema()}.students
         UNION SELECT sid FROM {physics_schema()}.students"""
     return redshift.fetch(sql)
 

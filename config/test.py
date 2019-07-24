@@ -61,8 +61,6 @@ REDSHIFT_SCHEMA_CANVAS = 'canvas_test'
 REDSHIFT_SCHEMA_COE = 'coe_test'
 REDSHIFT_SCHEMA_COE_EXTERNAL = 'coe_external_test'
 REDSHIFT_SCHEMA_INTERMEDIATE = 'intermediate_test'
-REDSHIFT_SCHEMA_L_S = 'l_s_test'
-REDSHIFT_SCHEMA_L_S_EXTERNAL = 'l_s_external_test'
 REDSHIFT_SCHEMA_PHYSICS = 'physics_test'
 REDSHIFT_SCHEMA_PHYSICS_EXTERNAL = 'physics_external_test'
 REDSHIFT_SCHEMA_SIS = 'sis_test'
@@ -70,14 +68,14 @@ REDSHIFT_SCHEMA_SIS_ADVISING_NOTES = 'sis_advising_notes_external_test'
 REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL = 'boac_advising_notes_test'
 REDSHIFT_SCHEMA_SIS_INTERNAL = 'sis_internal_test'
 REDSHIFT_SCHEMA_STUDENT = 'student_test'
+REDSHIFT_SCHEMA_UNDERGRADS = 'undergrads_test'
+REDSHIFT_SCHEMA_UNDERGRADS_EXTERNAL = 'undergrads_external_test'
 
 SQLALCHEMY_DATABASE_URI = 'postgres://nessie:nessie@localhost:5432/nessie_test'
 
 STUDENT_API_MAX_THREADS = 1
 
 LOGGING_LOCATION = 'STDOUT'
-
-L_AND_S_ENABLED = True
 
 JOB_SYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 0}
 JOB_RESYNC_CANVAS_SNAPSHOTS = {'hour': 1, 'minute': 40}

@@ -61,9 +61,9 @@ CREATE TABLE {redshift_schema_coe}.student_profiles
 );
 
 
-CREATE SCHEMA IF NOT EXISTS {redshift_schema_l_s};
+CREATE SCHEMA IF NOT EXISTS {redshift_schema_undergrads};
 
-CREATE TABLE {redshift_schema_l_s}.students(
+CREATE TABLE {redshift_schema_undergrads}.students(
     sid VARCHAR
 );
 
@@ -265,7 +265,7 @@ VALUES
 ('9000000000', '1133399', 'F', 'B', TRUE, FALSE, TRUE, FALSE, FALSE, NULL, NULL, 720, FALSE, NULL, NULL, FALSE, 'Z'),
 ('9100000000', '90412', 'M', 'X', FALSE, FALSE, FALSE, FALSE, TRUE, 720, 760, 770, TRUE, 'fa', '2018', TRUE, 'N');
 
-INSERT INTO {redshift_schema_l_s}.students (sid)
+INSERT INTO {redshift_schema_undergrads}.students (sid)
 VALUES ('1234567890');
 
 INSERT INTO {redshift_schema_physics}.students (sid)

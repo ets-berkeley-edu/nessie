@@ -27,9 +27,9 @@
 -- CREATE EXTERNAL SCHEMA
 --------------------------------------------------------------------
 
-CREATE EXTERNAL SCHEMA {redshift_schema_l_s_external}
+CREATE EXTERNAL SCHEMA {redshift_schema_undergrads_external}
 FROM data catalog
-DATABASE '{redshift_schema_l_s_external}'
+DATABASE '{redshift_schema_undergrads_external}'
 IAM_ROLE '{redshift_iam_role}'
 CREATE EXTERNAL DATABASE IF NOT EXISTS;
 
@@ -38,17 +38,14 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 -- External Tables
 --------------------------------------------------------------------
 
-CREATE EXTERNAL TABLE {redshift_schema_l_s_external}.students(
+CREATE EXTERNAL TABLE {redshift_schema_undergrads_external}.students(
     sid VARCHAR,
+    acadprog_code VARCHAR,
+    acadprog_descr VARCHAR,
     acadplan_code VARCHAR,
     acadplan_descr VARCHAR,
     acadplan_type_code VARCHAR,
-    acadplan_ownedby_code VARCHAR,
-    ldap_uid VARCHAR,
-    first_name VARCHAR,
-    last_name VARCHAR,
-    email_address VARCHAR,
-    affiliations VARCHAR
+    acadplan_ownedby_code VARCHAR
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
 WITH SERDEPROPERTIES (
@@ -57,24 +54,24 @@ WITH SERDEPROPERTIES (
   'escapeChar' = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_data_path}/l_and_s/';
+LOCATION '{loch_s3_sis_data_path}/undergrads/';
 
 --------------------------------------------------------------------
 -- Internal Schema
 --------------------------------------------------------------------
 
-DROP SCHEMA IF EXISTS {redshift_schema_l_s} CASCADE;
-CREATE SCHEMA {redshift_schema_l_s};
-GRANT USAGE ON SCHEMA {redshift_schema_l_s} TO GROUP {redshift_app_boa_user}_group;
-ALTER default PRIVILEGES IN SCHEMA {redshift_schema_l_s} GRANT SELECT ON TABLES TO GROUP {redshift_app_boa_user}_group;
+DROP SCHEMA IF EXISTS {redshift_schema_undergrads} CASCADE;
+CREATE SCHEMA {redshift_schema_undergrads};
+GRANT USAGE ON SCHEMA {redshift_schema_undergrads} TO GROUP {redshift_app_boa_user}_group;
+ALTER default PRIVILEGES IN SCHEMA {redshift_schema_undergrads} GRANT SELECT ON TABLES TO GROUP {redshift_app_boa_user}_group;
 
 --------------------------------------------------------------------
 -- Internal Tables
 --------------------------------------------------------------------
 
-CREATE TABLE {redshift_schema_l_s}.students
+CREATE TABLE {redshift_schema_undergrads}.students
 DISTKEY (sid)
 SORTKEY (sid)
 AS (
-    SELECT DISTINCT s.sid FROM {redshift_schema_l_s_external}.students s
+    SELECT DISTINCT s.sid FROM {redshift_schema_undergrads_external}.students s
 );
