@@ -31,50 +31,51 @@ from nessie.lib.util import resolve_sql_template
 import psycopg2
 
 
-"""Logic for College of Letters & Science schema creation job."""
+"""Logic for Active Undergraduates schema creation job."""
 
 
-external_schema = app.config['REDSHIFT_SCHEMA_L_S_EXTERNAL']
-internal_schema = app.config['REDSHIFT_SCHEMA_L_S']
+external_schema = app.config['REDSHIFT_SCHEMA_UNDERGRADS_EXTERNAL']
+internal_schema = app.config['REDSHIFT_SCHEMA_UNDERGRADS']
 internal_schema_identifier = psycopg2.sql.Identifier(internal_schema)
-rds_schema = app.config['RDS_SCHEMA_L_S']
+rds_schema = app.config['RDS_SCHEMA_UNDERGRADS']
 
 
-class CreateLSSchema(BackgroundJob):
+class CreateUndergradsSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting Letters & Science schema creation job...')
+        app.logger.info(f'Starting Undergrads schema creation job...')
         redshift.drop_external_schema(external_schema)
-        resolved_ddl = resolve_sql_template('create_l_s_schema.template.sql')
+        resolved_ddl = resolve_sql_template('create_undergrads_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
-            app.logger.info(f'Letters & Science external schema created.')
+            app.logger.info(f'Undergrads external schema created.')
             verify_external_schema(external_schema, resolved_ddl)
         else:
-            raise BackgroundJobError(f'Letters & Science external schema creation failed.')
-        l_s_rows = redshift.fetch(f'SELECT * FROM {external_schema}.students ORDER by sid')
+            raise BackgroundJobError(f'Undergrads external schema creation failed.')
+        undergrads_rows = redshift.fetch(f'SELECT * FROM {external_schema}.students ORDER by sid')
 
         with rds.transaction() as transaction:
-            if self.refresh_rds_indexes(l_s_rows, transaction):
+            if self.refresh_rds_indexes(undergrads_rows, transaction):
                 transaction.commit()
                 app.logger.info('Refreshed RDS indexes.')
             else:
                 transaction.rollback()
                 raise BackgroundJobError('Error refreshing RDS indexes.')
 
-        return 'Letters & Science internal schema created.'
+        return 'Undergrads internal schema created.'
 
-    def refresh_rds_indexes(self, l_s_rows, transaction):
-        if len(l_s_rows):
+    def refresh_rds_indexes(self, undergrads_rows, transaction):
+        if len(undergrads_rows):
             result = transaction.execute(f'TRUNCATE {rds_schema}.students')
             if not result:
                 return False
             columns = [
-                'sid', 'acadplan_code', 'acadplan_descr', 'acadplan_type_code', 'acadplan_ownedby_code',
-                'ldap_uid', 'first_name', 'last_name', 'email_address', 'affiliations',
+                'sid', 'acadprog_code', 'acadprog_descr',
+                'acadplan_code', 'acadplan_descr',
+                'acadplan_type_code', 'acadplan_ownedby_code',
             ]
             result = transaction.insert_bulk(
                 f'INSERT INTO {rds_schema}.students ({", ".join(columns)}) VALUES %s',
-                [tuple([r[c] for c in columns]) for r in l_s_rows],
+                [tuple([r[c] for c in columns]) for r in undergrads_rows],
             )
             if not result:
                 return False
