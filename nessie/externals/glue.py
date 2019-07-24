@@ -29,11 +29,30 @@ from flask import current_app as app
 """Client code to run AWS Glue operations."""
 
 
+def get_sts_credentials():
+    sts_client = boto3.client('sts')
+    role_arn = app.config['AWS_APP_ROLE_ARN']
+    assumed_role_object = sts_client.assume_role(
+        RoleArn=role_arn,
+        RoleSessionName='AssumeAppRoleSession',
+        DurationSeconds=900,
+    )
+    return assumed_role_object['Credentials']
+
+
+def get_session():
+    credentials = get_sts_credentials()
+    return boto3.Session(
+        aws_access_key_id=credentials['AccessKeyId'],
+        aws_secret_access_key=credentials['SecretAccessKey'],
+        aws_session_token=credentials['SessionToken'],
+    )
+
+
 def get_client():
-    return boto3.client(
+    session = get_session()
+    return session.client(
         service_name='glue',
-        aws_access_key_id=app.config['AWS_ACCESS_KEY_ID'],
-        aws_secret_access_key=app.config['AWS_SECRET_ACCESS_KEY'],
         region_name=app.config['LOCH_S3_REGION'],
         endpoint_url='https://glue.{}.amazonaws.com'.format(app.config['LOCH_S3_REGION']),
     )
