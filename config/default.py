@@ -175,6 +175,7 @@ LOCH_CANVAS_DATA_REQUESTS_CUTOFF_DATE = '20180101'
 LOGGING_FORMAT = '[%(asctime)s] - %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 LOGGING_LOCATION = 'nessie.log'
 LOGGING_LEVEL = logging.DEBUG
+LOGGING_PROPAGATION_LEVEL = logging.INFO
 
 # These RDS schemas are copied from the Redshift schemas below and contain a subset of index tables.
 RDS_SCHEMA_ADVISOR = 'boac_advisor'

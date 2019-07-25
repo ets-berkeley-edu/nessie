@@ -30,6 +30,7 @@ from logging.handlers import RotatingFileHandler
 def initialize_logger(app):
     level = app.config['LOGGING_LEVEL']
     location = app.config['LOGGING_LOCATION']
+    log_propagation_level = app.config['LOGGING_PROPAGATION_LEVEL']
 
     # Configure the root logger and library loggers as desired.
     loggers = [
@@ -55,3 +56,5 @@ def initialize_logger(app):
         for handler in handlers:
             logger.addHandler(handler)
             logger.setLevel(level)
+
+    logging.getLogger('botocore').setLevel(log_propagation_level)
