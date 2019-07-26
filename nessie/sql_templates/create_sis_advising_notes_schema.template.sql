@@ -180,7 +180,8 @@ AS (
     	A.saa_note_id AS student_note_nr,
         N.scc_row_add_oprid AS created_by,
         A.userfilename AS user_file_name,
-        A.attachsysfilename AS sis_file_name
+        A.attachsysfilename AS sis_file_name,
+        FALSE AS is_historical
     FROM
         {redshift_schema_sis_advising_notes}.advising_note_attachments_incr A
     JOIN
@@ -194,7 +195,8 @@ AS (
         note_id AS student_note_nr,
         created_by,
         user_file_name,
-        (sid || '_' || note_id || '_' || attachment_seq_nr || REGEXP_SUBSTR(system_file_name, '\\.[^.]*$')) AS sis_file_name
+        (sid || '_' || note_id || '_' || attachment_seq_nr || REGEXP_SUBSTR(system_file_name, '\\.[^.]*$')) AS sis_file_name,
+        TRUE AS is_historical
     FROM
         {redshift_schema_sis_advising_notes}.advising_note_attachments
 );
