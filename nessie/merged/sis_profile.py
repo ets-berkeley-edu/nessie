@@ -117,21 +117,28 @@ def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile
     if not registration:
         return
 
-    if not sis_profile['academicCareer']:
+    if not sis_profile.get('academicCareer'):
         sis_profile['academicCareer'] = registration.get('academicCareer', {}).get('code')
+
+    term_units = registration.get('termUnits', [])
+    total_units = next((u for u in term_units if u['type']['description'] == 'Total'), {})
 
     # The old 'academicLevel' element has become at least two 'academicLevels': one for the beginning-of-term, one
     # for the end-of-term. The beginning-of-term level should match what V1 gave us.
     levels = registration.get('academicLevels', [])
     if levels:
-        sis_profile['level'] = next((l['level'] for l in levels if l['type']['code'] == 'BOT'), None)
-    for units in registration.get('termUnits', []):
-        if units.get('type', {}).get('description') == 'Total':
-            sis_profile['currentTerm'] = {
-                'unitsMaxOverride': units.get('unitsMax'),
-                'unitsMinOverride': units.get('unitsMin'),
-            }
-            break
+        # If the latest-term is in the past, then it probably makes sense to show the student's academic level
+        # as it was expected to be at the End-of-Term.
+        is_pending = (not total_units.get('unitsTaken')) and total_units.get('unitsEnrolled')
+        level_type = 'BOT' if is_pending else 'EOT'
+        sis_profile['level'] = next((l['level'] for l in levels if l['type']['code'] == level_type), None)
+
+    if total_units:
+        sis_profile['currentTerm'] = {
+            'unitsMaxOverride': total_units.get('unitsMax'),
+            'unitsMinOverride': total_units.get('unitsMin'),
+        }
+
     # TODO Should we also check for ['academicStanding']['status'] == {'code': 'DIS', 'description': 'Dismissed'}?
     withdrawal_cancel = registration.get('withdrawalCancel', {})
     if withdrawal_cancel:
