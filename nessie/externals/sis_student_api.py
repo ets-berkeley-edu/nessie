@@ -23,6 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from datetime import datetime, timedelta
 from timeit import default_timer as timer
 
 from flask import current_app as app
@@ -200,9 +201,17 @@ def get_term_gpas_registration(sid):
         last_registration = {}
 
         for registration in registrations:
-            # Ignore terms in which the student took no classes with units. These may include future terms.
-            total_units = next((u for u in registration.get('termUnits', []) if u['type']['code'] == 'Total'), None)
-            if not total_units or not total_units.get('unitsTaken'):
+            # Ignore terms in which the student took no classes with units (or, for current/future terms, will
+            # take classes with units).
+            term_units = registration.get('termUnits', [])
+            total_units = next((u for u in term_units if u['type']['code'] == 'Total'), None)
+            if not total_units or not (total_units.get('unitsTaken') or total_units.get('unitsEnrolled')):
+                continue
+
+            # We prefer the most recent completed registration. But if the only registration data
+            # is for an in-progress or future term, use it as a fallback.
+            is_pending = (not total_units.get('unitsTaken')) and total_units.get('unitsEnrolled')
+            if is_pending and last_registration:
                 continue
 
             # At present, terms spent as an Extension student are not included in Term GPAs (but see BOAC-2266).
@@ -214,19 +223,25 @@ def get_term_gpas_registration(sid):
             # The most recent registration will be at the end of the list.
             last_registration = registration
 
-            # Specifically for Term GPAs, ignore terms in which the student was not an undergraduate, or currently
-            # active terms.
-            # It looks as if only currently active term registrations will have non-zero 'unitsEnrolled'.
-            # Or we can check registration['term']['endDate'] > localized_datestamp()
+            # Future and current registrations lack interesting GPAs.
+            if is_pending:
+                continue
+
+            # Specifically for Term GPAs, ignore terms in which the student was not an undergraduate.
             if registration.get('academicCareer', {}).get('code') != 'UGRD':
                 continue
 
             term_id = registration.get('term', {}).get('id')
             gpa = registration.get('termGPA', {}).get('average')
-            term_units = registration.get('termUnits', [])
-            units_taken_for_gpa = next((tu.get('unitsTaken') for tu in term_units if tu['type']['code'] == 'For GPA'), None)
-            units_taken_total = next((tu.get('unitsTaken') for tu in term_units if tu['type']['code'] == 'Total'), None)
             if term_id and gpa is not None:
+                units_taken_for_gpa = next(
+                    (tu.get('unitsTaken') for tu in term_units if tu['type']['code'] == 'For GPA'),
+                    None,
+                )
+                units_taken_total = next(
+                    (tu.get('unitsTaken') for tu in term_units if tu['type']['code'] == 'Total'),
+                    None,
+                )
                 term_gpas[term_id] = {
                     'gpa': gpa,
                     'unitsTaken': units_taken_total,
@@ -242,7 +257,10 @@ def get_term_gpas_registration(sid):
 
 
 def get_registrations(sid):
-    response = _get_v2_registrations(sid)
+    # Unlike the V1 Students API, V2 will not returns 'registrations' data for the upcoming term unless
+    # we request an 'as-of-date' in the future.
+    near_future = (datetime.now() + timedelta(days=60)).strftime('%Y-%m-%d')
+    response = _get_v2_registrations(sid, as_of=near_future)
     if response and hasattr(response, 'json'):
         registrations = response.json().get('apiResponse', {}).get('response', {}).get('registrations', [])
         return registrations
@@ -251,11 +269,14 @@ def get_registrations(sid):
 
 
 @fixture('sis_student_registrations_api_{sid}')
-def _get_v2_registrations(sid, mock=None):
+def _get_v2_registrations(sid, as_of=None, mock=None):
     params = {
         'affiliation-status': 'ALL',
         'inc-regs': True,
     }
+    if as_of:
+        params['as-of-date'] = as_of
+
     url = http.build_url(app.config['STUDENT_API_URL'] + f'/{sid}', params)
     with mock(url):
         return authorized_request_v2(url)
