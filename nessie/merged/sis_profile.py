@@ -123,7 +123,8 @@ def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile
     # The old 'academicLevel' element has become at least two 'academicLevels': one for the beginning-of-term, one
     # for the end-of-term. The beginning-of-term level should match what V1 gave us.
     levels = registration.get('academicLevels', [])
-    sis_profile['level'] = next((l['level'] for l in levels if l['type']['code'] == 'BOT'), None)
+    if levels:
+        sis_profile['level'] = next((l['level'] for l in levels if l['type']['code'] == 'BOT'), None)
     for units in registration.get('termUnits', []):
         if units.get('type', {}).get('description') == 'Total':
             sis_profile['currentTerm'] = {
