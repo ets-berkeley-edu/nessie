@@ -94,10 +94,11 @@ class ImportSisStudentApi(BackgroundJob):
             for result in executor.map(async_get_feeds, repeat(app_obj), chunked_sids):
                 remaining_sids = set(result['sids'])
                 feeds = result['feeds']
-                for feed in feeds:
-                    sid = next(id['id'] for id in feed['identifiers'] if id['type'] == 'student-id')
-                    remaining_sids.discard(sid)
-                    rows.append(encoded_tsv_row([sid, json.dumps(feed)]))
+                if feeds:
+                    for feed in feeds:
+                        sid = next(id['id'] for id in feed['identifiers'] if id['type'] == 'student-id')
+                        remaining_sids.discard(sid)
+                        rows.append(encoded_tsv_row([sid, json.dumps(feed)]))
                 if remaining_sids:
                     failure_count = len(remaining_sids)
                     app.logger.error(f'SIS student API import failed for SIDs {remaining_sids}.')
