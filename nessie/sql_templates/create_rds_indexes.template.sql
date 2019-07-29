@@ -98,8 +98,8 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_academic_status
 (
     sid VARCHAR NOT NULL,
     uid VARCHAR NOT NULL,
-    first_name VARCHAR NOT NULL,
-    last_name VARCHAR NOT NULL,
+    first_name VARCHAR,
+    last_name VARCHAR,
     level VARCHAR(2),
     gpa DECIMAL(4,3),
     units DECIMAL (6,3),
