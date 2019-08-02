@@ -146,10 +146,12 @@ def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile
     # TODO Should we also check for ['academicStanding']['status'] == {'code': 'DIS', 'description': 'Dismissed'}?
     withdrawal_cancel = registration.get('withdrawalCancel', {})
     if withdrawal_cancel:
+        term_id = registration.get('term', {}).get('id')
         sis_profile['withdrawalCancel'] = {
             'description': withdrawal_cancel.get('type', {}).get('description'),
-            'reason': withdrawal_cancel.get('reason', {}).get('code'),
+            'reason': withdrawal_cancel.get('reason', {}).get('description'),
             'date': withdrawal_cancel.get('date'),
+            'termId': term_id,
         }
 
 
