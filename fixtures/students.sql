@@ -67,13 +67,6 @@ CREATE TABLE {redshift_schema_undergrads}.students(
     sid VARCHAR
 );
 
-CREATE SCHEMA IF NOT EXISTS {redshift_schema_physics};
-
-CREATE TABLE {redshift_schema_physics}.students
-(
-    sid VARCHAR NOT NULL
-);
-
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_student};
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.canvas_api_enrollments
@@ -267,9 +260,6 @@ VALUES
 
 INSERT INTO {redshift_schema_undergrads}.students (sid)
 VALUES ('1234567890');
-
-INSERT INTO {redshift_schema_physics}.students (sid)
-VALUES ('2345678901');
 
 INSERT INTO {redshift_schema_student}.sis_api_degree_progress
 (sid, feed)

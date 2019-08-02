@@ -81,15 +81,6 @@ CREATE TABLE IF NOT EXISTS {rds_schema_undergrads}.students
 
 CREATE INDEX IF NOT EXISTS students_undergrads_sid_idx ON {rds_schema_undergrads}.students (sid);
 
-CREATE SCHEMA IF NOT EXISTS {rds_schema_physics};
-GRANT USAGE ON SCHEMA {rds_schema_physics} TO {rds_app_boa_user};
-ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_physics} GRANT SELECT ON TABLES TO {rds_app_boa_user};
-CREATE TABLE IF NOT EXISTS {rds_schema_physics}.students
-(
-    sid VARCHAR NOT NULL,
-    PRIMARY KEY (sid)
-);
-
 CREATE SCHEMA IF NOT EXISTS {rds_schema_student};
 GRANT USAGE ON SCHEMA {rds_schema_student} TO {rds_app_boa_user};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_student} GRANT SELECT ON TABLES TO {rds_app_boa_user};
