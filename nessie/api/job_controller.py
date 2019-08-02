@@ -36,6 +36,7 @@ from nessie.jobs.create_berkeleyx_schema import CreateBerkeleyxSchema
 from nessie.jobs.create_calnet_schema import CreateCalNetSchema
 from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.create_coe_schema import CreateCoeSchema
+from nessie.jobs.create_e_i_advising_notes_schema import CreateEIAdvisingNotesSchema
 from nessie.jobs.create_edw_schema import CreateEdwSchema
 from nessie.jobs.create_lrs_glue_jobs import CreateLrsGlueJobs
 from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
@@ -57,6 +58,7 @@ from nessie.jobs.import_registrations import ImportRegistrations
 from nessie.jobs.import_sis_student_api import ImportSisStudentApi
 from nessie.jobs.import_sis_terms_api import ImportSisTermsApi
 from nessie.jobs.import_student_photos import ImportStudentPhotos
+from nessie.jobs.index_advising_note_authors import IndexAdvisingNoteAuthors
 from nessie.jobs.index_enrollments import IndexEnrollments
 from nessie.jobs.migrate_lrs_incrementals import MigrateLrsIncrementals
 from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
@@ -109,6 +111,13 @@ def create_coe_schema():
 @auth_required
 def create_calnet_schema():
     job_started = CreateCalNetSchema().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/create_e_and_i_schema', methods=['POST'])
+@auth_required
+def create_e_and_i_schema():
+    job_started = CreateEIAdvisingNotesSchema().run_async()
     return respond_with_status(job_started)
 
 
@@ -233,6 +242,13 @@ def import_lrs_incrementals():
 @auth_required
 def index_enrollments(term_id):
     job_started = IndexEnrollments(term_id=term_id).run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/index_advising_note_authors', methods=['POST'])
+@auth_required
+def index_advising_note_authors():
+    job_started = IndexAdvisingNoteAuthors().run_async()
     return respond_with_status(job_started)
 
 
