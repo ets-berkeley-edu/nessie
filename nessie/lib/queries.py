@@ -56,10 +56,6 @@ def metadata_schema():
     return app.config['RDS_SCHEMA_METADATA']
 
 
-def physics_schema():
-    return app.config['REDSHIFT_SCHEMA_PHYSICS']
-
-
 def student_schema():
     return app.config['REDSHIFT_SCHEMA_STUDENT']
 
@@ -71,8 +67,7 @@ def undergrads_schema():
 def get_all_student_ids():
     sql = f"""SELECT sid FROM {asc_schema()}.students
         UNION SELECT sid FROM {coe_schema()}.students
-        UNION SELECT sid FROM {undergrads_schema()}.students
-        UNION SELECT sid FROM {physics_schema()}.students"""
+        UNION SELECT sid FROM {undergrads_schema()}.students"""
     return redshift.fetch(sql)
 
 
