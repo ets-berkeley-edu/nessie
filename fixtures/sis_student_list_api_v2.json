@@ -1309,7 +1309,8 @@
                 "date": "2017-10-31",
                 "lastAttendedDate": "2017-10-31",
                 "reason": {
-                  "code": "Personal"
+                  "code": "PERS",
+                  "description": "Personal"
                 },
                 "type": {
                   "code": "WDR",

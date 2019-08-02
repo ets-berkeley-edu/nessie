@@ -86,6 +86,7 @@ class TestMergedSisProfile:
         assert profile['withdrawalCancel']['description'] == 'Withdrew'
         assert profile['withdrawalCancel']['reason'] == 'Personal'
         assert profile['withdrawalCancel']['date'] == '2017-10-31'
+        assert profile['withdrawalCancel']['termId'] == '2178'
 
     def test_degree_progress(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
