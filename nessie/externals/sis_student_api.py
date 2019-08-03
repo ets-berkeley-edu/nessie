@@ -53,9 +53,11 @@ def get_v2_student(sid, term_id=None, as_of=None):
         return
 
 
-def _get_v1_student(sid):
+@fixture('sis_student_api_v1_{sid}')
+def _get_v1_student(sid, mock=None):
     url = http.build_url(app.config['STUDENT_V1_API_URL'] + '/' + str(sid) + '/all')
-    return authorized_request_v1(url)
+    with mock(url):
+        return authorized_request_v1(url)
 
 
 def get_v2_by_sids_list(up_to_100_sids, term_id=None, as_of=None, with_registration=False):
