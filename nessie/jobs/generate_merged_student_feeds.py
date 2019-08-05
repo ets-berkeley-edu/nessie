@@ -35,6 +35,7 @@ from nessie.lib.metadata import get_merged_enrollment_term_job_status, queue_mer
 from nessie.lib.queries import get_advisee_student_profile_feeds
 from nessie.lib.util import encoded_tsv_row, split_tsv_row
 from nessie.merged.sis_profile import parse_merged_sis_profile
+from nessie.merged.sis_profile_v1 import parse_merged_sis_profile_v1
 from nessie.merged.student_terms import generate_student_term_maps
 from nessie.models import student_schema
 
@@ -177,11 +178,17 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         uid = feeds['ldap_uid']
         if not uid:
             return
-        sis_profile = parse_merged_sis_profile(
-            feeds.get('sis_profile_feed'),
-            feeds.get('degree_progress_feed'),
-            feeds.get('last_registration_feed'),
-        )
+        if app.config['STUDENT_V1_API_PREFERRED']:
+            sis_profile = parse_merged_sis_profile_v1(
+                feeds.get('sis_profile_feed'),
+                feeds.get('degree_progress_feed'),
+            )
+        else:
+            sis_profile = parse_merged_sis_profile(
+                feeds.get('sis_profile_feed'),
+                feeds.get('degree_progress_feed'),
+                feeds.get('last_registration_feed'),
+            )
         demographics = feeds.get('demographics_feed') and json.loads(feeds.get('demographics_feed'))
         merged_profile = {
             'sid': sid,
