@@ -65,15 +65,15 @@ def merge_holds(sis_student_api_feed, sis_profile):
 
 
 def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
-    # The Hub may return multiple academic statuses. We'll select the first status with a well-formed academic
-    # career that is not a concurrent enrollment.
+    # The Hub may return multiple academic statuses. We'll prefer an undergraduate enrollment, but
+    # otherwise select the first well-formed status that is not a Law enrollment.
     academic_status = None
     for status in sis_student_api_feed.get('academicStatuses', []):
         career_code = status.get('currentRegistration', {}).get('academicCareer', {}).get('code')
-        if career_code and career_code != 'UCBX':
+        if career_code and career_code == 'UGRD':
             academic_status = status
             break
-        elif career_code == 'UCBX':
+        elif career_code in {'UCBX', 'GRAD'}:
             academic_status = status
             next
     if not academic_status:
