@@ -84,6 +84,7 @@ INSERT INTO {rds_schema_sis_advising_notes}.advising_note_topics (
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT DISTINCT advising_note_id, note_topic
     FROM {redshift_schema_sis_advising_notes_internal}.advising_note_topics
+    WHERE note_topic IS NOT NULL
   $REDSHIFT$)
   AS redshift_notes (
     advising_note_id VARCHAR,
