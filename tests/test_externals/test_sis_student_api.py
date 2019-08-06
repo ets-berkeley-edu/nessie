@@ -100,3 +100,25 @@ class TestSisStudentApi:
             assert not response
             assert response.raw_response.status_code == 500
             assert response.raw_response.json()['message']
+
+    def test_get_v1_student(self, app):
+        """Returns unwrapped data."""
+        student = student_api.get_v1_student(11667051)
+        assert len(student['academicStatuses']) == 2
+        assert student['academicStatuses'][0]['currentRegistration']['academicCareer']['code'] == 'UCBX'
+        assert student['academicStatuses'][1]['cumulativeGPA']['average'] == pytest.approx(3.8, 0.01)
+        assert student['academicStatuses'][1]['currentRegistration']['academicLevel']['level']['description'] == 'Junior'
+        assert student['academicStatuses'][1]['currentRegistration']['athlete'] is True
+        assert student['academicStatuses'][1]['currentRegistration']['termUnits'][0]['unitsMax'] == 24
+        assert student['academicStatuses'][1]['currentRegistration']['termUnits'][0]['unitsMin'] == 15
+        assert student['academicStatuses'][1]['studentPlans'][0]['academicPlan']['plan']['description'] == 'English BA'
+        assert student['academicStatuses'][1]['termsInAttendance'] == 5
+        assert student['emails'][0]['emailAddress'] == 'oski@berkeley.edu'
+
+    def test_inner_get_v1_student(self, app):
+        """Returns fixture data."""
+        oski_response = student_api._get_v1_student(11667051)
+        assert oski_response
+        assert oski_response.status_code == 200
+        students = oski_response.json()['apiResponse']['response']['any']['students']
+        assert len(students) == 1

@@ -146,6 +146,9 @@ def student_tables(app):
     params = {}
     for key in [
         'sis_degree_progress_11667051',
+        'sis_student_api_v1_11667051',
+        'sis_student_api_v1_1234567890',
+        'sis_student_api_v1_2345678901',
     ]:
         with open(f'{fixture_path}/{key}.json', 'r') as f:
             feed = f.read()

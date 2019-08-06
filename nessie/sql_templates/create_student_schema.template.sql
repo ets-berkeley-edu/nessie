@@ -58,6 +58,14 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_profiles
 DISTKEY(sid)
 SORTKEY(sid);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_profiles_v1
+(
+    sid VARCHAR NOT NULL,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY(sid)
+SORTKEY(sid);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_last_registrations
 (
     sid VARCHAR NOT NULL,
