@@ -114,9 +114,9 @@ def create_calnet_schema():
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/create_e_and_i_schema', methods=['POST'])
+@app.route('/api/job/create_e_and_i_advising_notes_schema', methods=['POST'])
 @auth_required
-def create_e_and_i_schema():
+def create_e_and_i_advising_notes_schema():
     job_started = CreateEIAdvisingNotesSchema().run_async()
     return respond_with_status(job_started)
 

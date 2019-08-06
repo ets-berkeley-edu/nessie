@@ -178,12 +178,13 @@ LOGGING_LEVEL = logging.DEBUG
 LOGGING_PROPAGATION_LEVEL = logging.INFO
 
 # These RDS schemas are copied from the Redshift schemas below and contain a subset of index tables.
+RDS_SCHEMA_ADVISING_NOTES = 'boac_advising_notes'
 RDS_SCHEMA_ADVISOR = 'boac_advisor'
 RDS_SCHEMA_ASC = 'boac_advising_asc'
 RDS_SCHEMA_COE = 'boac_advising_coe'
 RDS_SCHEMA_E_I = 'boac_advising_e_i'
 RDS_SCHEMA_METADATA = 'metadata'
-RDS_SCHEMA_SIS_ADVISING_NOTES = 'boac_advising_notes'
+RDS_SCHEMA_SIS_ADVISING_NOTES = 'sis_advising_notes'
 RDS_SCHEMA_SIS_INTERNAL = 'sis_data'
 RDS_SCHEMA_STUDENT = 'student'
 RDS_SCHEMA_UNDERGRADS = 'undergrads'
@@ -215,7 +216,7 @@ REDSHIFT_SCHEMA_EDW = 'edw_data'
 REDSHIFT_SCHEMA_INTERMEDIATE = 'intermediate'
 REDSHIFT_SCHEMA_SIS_INTERNAL = 'sis_data'
 REDSHIFT_SCHEMA_STUDENT = 'student'
-REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL = 'boac_advising_notes'
+REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL = 'sis_advising_notes'
 REDSHIFT_SCHEMA_UNDERGRADS = 'boac_advising_undergrads'
 
 # The following external schemas vary between environments and do need to be overridden locally.

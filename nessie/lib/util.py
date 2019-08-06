@@ -111,6 +111,7 @@ def resolve_sql_template_string(template_string, **kwargs):
     template_data = {
         'rds_app_boa_user': app.config['RDS_APP_BOA_USER'],
         'rds_dblink_to_redshift': app.config['REDSHIFT_DATABASE'] + '_redshift',
+        'rds_schema_advising_notes': app.config['RDS_SCHEMA_ADVISING_NOTES'],
         'rds_schema_advisor': app.config['RDS_SCHEMA_ADVISOR'],
         'rds_schema_asc': app.config['RDS_SCHEMA_ASC'],
         'rds_schema_coe': app.config['RDS_SCHEMA_COE'],

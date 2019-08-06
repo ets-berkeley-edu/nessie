@@ -56,7 +56,6 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
         self.create_indexes()
         app.logger.info(f'RDS indexes created. Importing note authors...')
         self.import_note_authors()
-        self.index_author_names()
 
         return 'SIS Advising Notes schema creation job completed.'
 
@@ -115,7 +114,7 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
             )
             if result:
                 transaction.commit()
-                app.logger.info('Import advising note author attributes.')
+                app.logger.info('Imported advising note author attributes.')
             else:
                 transaction.rollback()
                 raise BackgroundJobError('Failed to import advising note author attributes.')

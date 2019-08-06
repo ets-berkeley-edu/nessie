@@ -26,6 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from nessie.externals import rds
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
+from nessie.lib.util import resolve_sql_template
 
 """Logic for advising note author names index job."""
 
@@ -40,49 +41,8 @@ class IndexAdvisingNoteAuthors(BackgroundJob):
         return 'Advising Note author names index job completed.'
 
     def index_author_names(self):
-        asc_schema = app.config['RDS_SCHEMA_ASC']
-        e_i_schema = app.config['RDS_SCHEMA_E_I']
-        sis_schema = app.config['RDS_SCHEMA_SIS_ADVISING_NOTES']
-
-        with rds.transaction() as transaction:
-            if not transaction.execute(f'TRUNCATE {sis_schema}.advising_note_author_names'):
-                transaction.rollback()
-                raise BackgroundJobError('Failed to truncate advising note author name index.')
-
-            sql = f"""INSERT INTO {sis_schema}.advising_note_author_names (
-                SELECT DISTINCT uid, unnest(string_to_array(
-                    regexp_replace(upper(first_name), '[^\w ]', '', 'g'),
-                    ' '
-                )) AS name FROM {sis_schema}.advising_note_authors
-                UNION
-                SELECT DISTINCT uid, unnest(string_to_array(
-                    regexp_replace(upper(last_name), '[^\w ]', '', 'g'),
-                    ' '
-                )) AS name FROM {sis_schema}.advising_note_authors
-                UNION
-                SELECT DISTINCT advisor_uid, unnest(string_to_array(
-                    regexp_replace(upper(advisor_first_name), '[^\w ]', '', 'g'),
-                    ' '
-                )) AS name FROM {asc_schema}.advising_notes WHERE advisor_uid IS NOT NULL
-                UNION
-                SELECT DISTINCT advisor_uid, unnest(string_to_array(
-                    regexp_replace(upper(advisor_last_name), '[^\w ]', '', 'g'),
-                    ' '
-                )) AS name FROM {asc_schema}.advising_notes WHERE advisor_uid IS NOT NULL
-                UNION
-                SELECT DISTINCT advisor_uid, unnest(string_to_array(
-                    regexp_replace(upper(advisor_first_name), '[^\w ]', '', 'g'),
-                    ' '
-                )) AS name FROM {e_i_schema}.advising_notes WHERE advisor_uid IS NOT NULL
-                UNION
-                SELECT DISTINCT advisor_uid, unnest(string_to_array(
-                    regexp_replace(upper(advisor_last_name), '[^\w ]', '', 'g'),
-                    ' '
-                )) AS name FROM {e_i_schema}.advising_notes WHERE advisor_uid IS NOT NULL
-                );"""
-            if transaction.execute(sql):
-                transaction.commit()
-                app.logger.info('Indexed advising note author names.')
-            else:
-                transaction.rollback()
-                raise BackgroundJobError('Failed to index advising note author names.')
+        resolved_ddl = resolve_sql_template('index_advising_note_authors.template.sql')
+        if rds.execute(resolved_ddl):
+            app.logger.info('Indexed advising note author names.')
+        else:
+            raise BackgroundJobError('Failed to index advising note author names.')

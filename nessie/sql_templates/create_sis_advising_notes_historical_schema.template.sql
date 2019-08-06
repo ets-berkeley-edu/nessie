@@ -27,7 +27,7 @@
 -- CREATE EXTERNAL SCHEMA
 --------------------------------------------------------------------
 
-CREATE EXTERNAL SCHEMA {redshift_schema_sis_advising_notes}
+CREATE EXTERNAL SCHEMA IF NOT EXISTS {redshift_schema_sis_advising_notes}
 FROM data catalog
 DATABASE '{redshift_schema_sis_advising_notes}'
 IAM_ROLE '{redshift_iam_role}'
