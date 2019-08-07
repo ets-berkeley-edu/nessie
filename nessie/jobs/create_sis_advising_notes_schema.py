@@ -56,7 +56,6 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
         self.create_indexes()
         app.logger.info(f'RDS indexes created. Importing note authors...')
         self.import_note_authors()
-        self.index_author_names()
 
         return 'SIS Advising Notes schema creation job completed.'
 
@@ -115,47 +114,7 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
             )
             if result:
                 transaction.commit()
-                app.logger.info('Import advising note author attributes.')
+                app.logger.info('Imported advising note author attributes.')
             else:
                 transaction.rollback()
                 raise BackgroundJobError('Failed to import advising note author attributes.')
-
-    def index_author_names(self):
-        # TODO This name index table combines advising note authors from the SIS and ASC schemas. For now we
-        # stash it in the SIS advising notes schema, but as we continue to import advising notes from other
-        # departments we may want to reorganize.
-        asc_schema = app.config['RDS_SCHEMA_ASC']
-        sis_schema = app.config['RDS_SCHEMA_SIS_ADVISING_NOTES']
-
-        with rds.transaction() as transaction:
-            if not transaction.execute(f'TRUNCATE {sis_schema}.advising_note_author_names'):
-                transaction.rollback()
-                raise BackgroundJobError('Failed to truncate advising note author name index.')
-
-            sql = f"""INSERT INTO {sis_schema}.advising_note_author_names (
-                SELECT DISTINCT uid, unnest(string_to_array(
-                    regexp_replace(upper(first_name), '[^\w ]', '', 'g'),
-                    ' '
-                )) AS name FROM {sis_schema}.advising_note_authors
-                UNION
-                SELECT DISTINCT uid, unnest(string_to_array(
-                    regexp_replace(upper(last_name), '[^\w ]', '', 'g'),
-                    ' '
-                )) AS name FROM {sis_schema}.advising_note_authors
-                UNION
-                SELECT DISTINCT advisor_uid, unnest(string_to_array(
-                    regexp_replace(upper(advisor_first_name), '[^\w ]', '', 'g'),
-                    ' '
-                )) AS name FROM {asc_schema}.advising_notes WHERE advisor_uid IS NOT NULL
-                UNION
-                SELECT DISTINCT advisor_uid, unnest(string_to_array(
-                    regexp_replace(upper(advisor_last_name), '[^\w ]', '', 'g'),
-                    ' '
-                )) AS name FROM {asc_schema}.advising_notes WHERE advisor_uid IS NOT NULL
-                );"""
-            if transaction.execute(sql):
-                transaction.commit()
-                app.logger.info('Indexed advising note author names.')
-            else:
-                transaction.rollback()
-                raise BackgroundJobError('Failed to index advising note author names.')

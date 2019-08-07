@@ -29,6 +29,8 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_sis_advising_notes} GRANT SELECT 
 
 BEGIN TRANSACTION;
 
+DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_note_author_names CASCADE;
+
 DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_notes CASCADE;
 
 CREATE TABLE {rds_schema_sis_advising_notes}.advising_notes (
@@ -121,15 +123,5 @@ CREATE TABLE IF NOT EXISTS {rds_schema_sis_advising_notes}.advising_note_authors
 
 CREATE INDEX IF NOT EXISTS advising_note_authors_sid_idx
 ON {rds_schema_sis_advising_notes}.advising_note_authors (sid);
-
-CREATE TABLE IF NOT EXISTS {rds_schema_sis_advising_notes}.advising_note_author_names
-(
-    uid VARCHAR NOT NULL,
-    name VARCHAR NOT NULL,
-    PRIMARY KEY (uid, name)
-);
-
-CREATE INDEX IF NOT EXISTS advising_note_author_names_name_idx
-ON {rds_schema_sis_advising_notes}.advising_note_author_names (name);
 
 COMMIT TRANSACTION;
