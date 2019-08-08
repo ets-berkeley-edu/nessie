@@ -28,8 +28,8 @@ import hashlib
 import inspect
 
 from flask import current_app as app
+from nessie.lib.berkeley import earliest_term_id
 import pytz
-
 
 """Generic utilities."""
 
@@ -109,6 +109,7 @@ def resolve_sql_template_string(template_string, **kwargs):
     s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
     s3_protected_prefix = 's3://' + app.config['LOCH_S3_PROTECTED_BUCKET'] + '/'
     template_data = {
+        'earliest_term_id': earliest_term_id(),
         'rds_app_boa_user': app.config['RDS_APP_BOA_USER'],
         'rds_dblink_to_redshift': app.config['REDSHIFT_DATABASE'] + '_redshift',
         'rds_schema_advising_notes': app.config['RDS_SCHEMA_ADVISING_NOTES'],

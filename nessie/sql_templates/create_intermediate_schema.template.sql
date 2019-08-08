@@ -132,8 +132,8 @@ CREATE TABLE {redshift_schema_intermediate}.course_sections
 INTERLEAVED SORTKEY (canvas_course_id, canvas_section_id, sis_term_id, sis_section_id)
 AS (
     /*
-     * Translate SIS section IDs from Canvas data, when parseable, to section and term ids as represented in SIS
-     * data. Otherwise leave blank.
+     * Translate SIS section IDs from Canvas data, when parseable and post-CS-transition, to section and term ids as
+     * represented in SIS data. Otherwise leave blank.
      */
     WITH extracted_section_ids AS (
         SELECT
@@ -174,7 +174,8 @@ AS (
          ON c.enrollment_term_id = et.id
     LEFT JOIN extracted_section_ids ON s.canvas_id = extracted_section_ids.canvas_section_id
     FULL OUTER JOIN {redshift_schema_sis}.courses sc
-        ON extracted_section_ids.sis_term_id = sc.term_id
+        ON extracted_section_ids.sis_term_id >= '{earliest_term_id}'
+        AND extracted_section_ids.sis_term_id = sc.term_id
         AND extracted_section_ids.sis_section_id = sc.section_id
         AND (c.workflow_state IN ('available', 'completed'))
     WHERE (s.workflow_state IS NULL OR s.workflow_state != 'deleted')
