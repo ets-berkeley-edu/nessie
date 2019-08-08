@@ -29,8 +29,6 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_sis_advising_notes} GRANT SELECT 
 
 BEGIN TRANSACTION;
 
-DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_note_author_names CASCADE;
-
 DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_notes CASCADE;
 
 CREATE TABLE {rds_schema_sis_advising_notes}.advising_notes (
