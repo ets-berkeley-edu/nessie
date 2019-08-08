@@ -77,6 +77,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.chained_import_student_population import ChainedImportStudentPopulation
     from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
     from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
+    from nessie.jobs.create_e_i_advising_notes_schema import CreateEIAdvisingNotesSchema
     from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
     from nessie.jobs.create_sis_schema import CreateSisSchema
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
@@ -88,6 +89,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
     from nessie.jobs.import_sis_student_api import ImportSisStudentApi
     from nessie.jobs.import_registrations import ImportRegistrations
+    from nessie.jobs.index_advising_note_authors import IndexAdvisingNoteAuthors
     from nessie.jobs.index_enrollments import IndexEnrollments
     from nessie.jobs.migrate_lrs_incrementals import MigrateLrsIncrementals
     from nessie.jobs.refresh_boac_cache import RefreshBoacCache
@@ -142,7 +144,9 @@ def schedule_all_jobs(force=False):
         'JOB_LOAD_ADVISING_NOTES',
         [
             CreateAscAdvisingNotesSchema,
+            CreateEIAdvisingNotesSchema,
             CreateSisAdvisingNotesSchema,
+            IndexAdvisingNoteAuthors,
         ],
         force,
     )
