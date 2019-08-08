@@ -54,7 +54,7 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
         self.create_internal_schema(external_schema, daily_path)
         app.logger.info(f'Redshift schema created. Creating RDS indexes...')
         self.create_indexes()
-        app.logger.info(f'RDS indexes created. Importing note authors...')
+        app.logger.info(f'RDS indexes created.')
 
         return 'SIS Advising Notes schema creation job completed.'
 
