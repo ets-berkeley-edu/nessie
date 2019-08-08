@@ -29,28 +29,18 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_advising_notes} GRANT SELECT ON T
 
 BEGIN TRANSACTION;
 
-DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_note_author_names CASCADE;
+DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_note_authors CASCADE;
 
-CREATE TABLE {rds_schema_advising_notes}.advising_note_author_names
+CREATE TABLE {rds_schema_advising_notes}.advising_note_authors
 (
     uid VARCHAR NOT NULL,
-    name VARCHAR NOT NULL,
-    PRIMARY KEY (uid, name)
+    sid VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    last_name VARCHAR NOT NULL,
+    PRIMARY KEY (uid)
 );
 
-CREATE INDEX IF NOT EXISTS advising_note_author_names_name_idx
-ON {rds_schema_advising_notes}.advising_note_author_names (name);
-
-INSERT INTO {rds_schema_advising_notes}.advising_note_author_names (
-    SELECT DISTINCT uid, unnest(string_to_array(
-        regexp_replace(upper(first_name), '[^\w ]', '', 'g'),
-        ' '
-    )) AS name FROM {rds_schema_advising_notes}.advising_note_authors
-    UNION
-    SELECT DISTINCT uid, unnest(string_to_array(
-        regexp_replace(upper(last_name), '[^\w ]', '', 'g'),
-        ' '
-    )) AS name FROM {rds_schema_advising_notes}.advising_note_authors
-);
+CREATE INDEX IF NOT EXISTS advising_note_authors_sid_idx
+ON {rds_schema_advising_notes}.advising_note_authors (sid);
 
 COMMIT TRANSACTION;

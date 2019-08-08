@@ -26,7 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from datetime import datetime, timedelta
 
 from flask import current_app as app
-from nessie.externals import calnet, rds, redshift, s3
+from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.util import get_s3_sis_sysadm_daily_path, resolve_sql_template
 
@@ -55,7 +55,6 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
         app.logger.info(f'Redshift schema created. Creating RDS indexes...')
         self.create_indexes()
         app.logger.info(f'RDS indexes created. Importing note authors...')
-        self.import_note_authors()
 
         return 'SIS Advising Notes schema creation job completed.'
 
@@ -81,40 +80,3 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
             app.logger.info('Created SIS Advising Notes RDS indexes.')
         else:
             raise BackgroundJobError('SIS Advising Notes schema creation job failed to create indexes.')
-
-    def import_note_authors(self):
-        notes_schema = app.config['RDS_SCHEMA_SIS_ADVISING_NOTES']
-        advisor_schema_redshift = app.config['REDSHIFT_SCHEMA_ADVISOR_INTERNAL']
-
-        advisor_sids_from_notes = set(
-            [r['advisor_sid'] for r in rds.fetch(f'SELECT DISTINCT advisor_sid FROM {notes_schema}.advising_notes')],
-        )
-        advisor_sids_from_advisors = set(
-            [r['sid'] for r in redshift.fetch(f'SELECT DISTINCT sid FROM {advisor_schema_redshift}.advisor_departments')],
-        )
-        advisor_sids = list(advisor_sids_from_notes | advisor_sids_from_advisors)
-        advisor_attributes = calnet.client(app).search_csids(advisor_sids)
-
-        if not advisor_attributes:
-            raise BackgroundJobError('Failed to fetch note author attributes.')
-
-        with rds.transaction() as transaction:
-            if not transaction.execute(f'TRUNCATE {notes_schema}.advising_note_authors'):
-                transaction.rollback()
-                raise BackgroundJobError('Failed to truncate advising note author index.')
-
-            insertable_rows = []
-            for entry in advisor_attributes:
-                first_name, last_name = calnet.split_sortable_name(entry)
-                insertable_rows.append(tuple((entry.get('uid'), entry.get('csid'), first_name, last_name)))
-
-            result = transaction.insert_bulk(
-                f'INSERT INTO {notes_schema}.advising_note_authors (uid, sid, first_name, last_name) VALUES %s',
-                insertable_rows,
-            )
-            if result:
-                transaction.commit()
-                app.logger.info('Imported advising note author attributes.')
-            else:
-                transaction.rollback()
-                raise BackgroundJobError('Failed to import advising note author attributes.')
