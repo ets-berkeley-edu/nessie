@@ -23,6 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta
 from itertools import repeat
 import json
 from timeit import default_timer as timer
@@ -38,9 +39,9 @@ from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_
 """Logic for SIS student API import job."""
 
 
-def async_get_feeds(app_obj, up_to_100_sids):
+def async_get_feeds(app_obj, up_to_100_sids, as_of):
     with app_obj.app_context():
-        feeds = get_v2_by_sids_list(up_to_100_sids, term_id=current_term_id(), with_registration=True)
+        feeds = get_v2_by_sids_list(up_to_100_sids, term_id=current_term_id(), with_registration=True, as_of=as_of)
         result = {
             'sids': up_to_100_sids,
             'feeds': feeds,
@@ -97,13 +98,17 @@ class ImportSisStudentApi(BackgroundJob):
         return f'SIS student API import job completed: {len(rows)} succeeded, {failure_count} failed.'
 
     def load_concurrently(self, all_sids):
+        # Unlike the V1 Students API, V2 will not returns 'unitsTransferEarned' and 'unitsTransferAccepted' data
+        # for incoming transfer students unless we request an 'as-of-date' in their enrolled term.
+        near_future = (datetime.now() + timedelta(days=60)).strftime('%Y-%m-%d')
+
         chunked_sids = [all_sids[i:i + 100] for i in range(0, len(all_sids), 100)]
         rows = []
         failure_count = 0
         app_obj = app._get_current_object()
         start_loop = timer()
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
-            for result in executor.map(async_get_feeds, repeat(app_obj), chunked_sids):
+            for result in executor.map(async_get_feeds, repeat(app_obj), chunked_sids, repeat(near_future)):
                 remaining_sids = set(result['sids'])
                 feeds = result['feeds']
                 if feeds:
