@@ -33,7 +33,7 @@ from nessie.jobs.generate_merged_enrollment_term import GenerateMergedEnrollment
 from nessie.lib.berkeley import future_term_ids, legacy_term_ids, reverse_term_ids
 from nessie.lib.metadata import get_merged_enrollment_term_job_status, queue_merged_enrollment_term_jobs
 from nessie.lib.queries import get_advisee_student_profile_feeds
-from nessie.lib.util import encoded_tsv_row, split_tsv_row
+from nessie.lib.util import encoded_tsv_row
 from nessie.merged.sis_profile import parse_merged_sis_profile
 from nessie.merged.sis_profile_v1 import parse_merged_sis_profile_v1
 from nessie.merged.student_terms import generate_student_term_maps
@@ -140,7 +140,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
     def generate_student_profile_tables(self, advisees_by_canvas_id, advisees_by_sid):
         # In-memory storage for generated feeds prior to TSV output.
-        self.rows = {
+        # TODO: store in Redis or filesystem to free up memory
+        rows = {
             'student_profiles': [],
             'student_academic_status': [],
             'student_majors': [],
@@ -159,7 +160,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         app.logger.info(f'Will generate feeds for {count} students.')
         for index, student_feeds in enumerate(all_student_feeds):
             sid = student_feeds['sid']
-            merged_profile = self.generate_student_profile_from_feeds(student_feeds)
+            merged_profile = self.generate_student_profile_from_feeds(student_feeds, rows)
             if merged_profile:
                 canvas_user_id = student_feeds['canvas_user_id']
                 if canvas_user_id:
@@ -169,11 +170,11 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             else:
                 self.failures.append(sid)
         for table in tables:
-            if self.rows[table]:
-                student_schema.write_to_staging(table, self.rows[table])
+            if rows[table]:
+                student_schema.write_to_staging(table, rows[table])
         return tables
 
-    def generate_student_profile_from_feeds(self, feeds):
+    def generate_student_profile_from_feeds(self, feeds, rows):
         sid = feeds['sid']
         uid = feeds['ldap_uid']
         if not uid:
@@ -201,7 +202,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'sisProfile': sis_profile,
             'demographics': demographics,
         }
-        self.rows['student_profiles'].append(encoded_tsv_row([sid, json.dumps(merged_profile)]))
+        rows['student_profiles'].append(encoded_tsv_row([sid, json.dumps(merged_profile)]))
 
         if sis_profile:
             first_name = merged_profile['firstName'] or ''
@@ -212,37 +213,34 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             transfer = str(sis_profile.get('transfer') or False)
             expected_grad_term = str(sis_profile.get('expectedGraduationTerm', {}).get('id') or '')
 
-            self.rows['student_academic_status'].append(
+            rows['student_academic_status'].append(
                 encoded_tsv_row([sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term]),
             )
 
             for plan in sis_profile.get('plans', []):
-                self.rows['student_majors'].append(encoded_tsv_row([sid, plan['description']]))
+                rows['student_majors'].append(encoded_tsv_row([sid, plan['description']]))
             for hold in sis_profile.get('holds', []):
-                self.rows['student_holds'].append(encoded_tsv_row([sid, json.dumps(hold)]))
+                rows['student_holds'].append(encoded_tsv_row([sid, json.dumps(hold)]))
 
         return merged_profile
 
     def refresh_rds_indexes(self, sids, transaction):
-        if len(self.rows['student_academic_status']):
-            if not self._delete_rds_rows('student_academic_status', sids, transaction):
-                return False
-            if not self._refresh_rds_academic_status(transaction):
-                return False
-            if not self._delete_rds_rows('student_names', sids, transaction):
-                return False
-            if not self._refresh_rds_names(transaction):
-                return False
-        if len(self.rows['student_majors']):
-            if not self._delete_rds_rows('student_majors', sids, transaction):
-                return False
-            if not self._refresh_rds_majors(transaction):
-                return False
-        if len(self.rows['student_profiles']):
-            if not self._delete_rds_rows('student_profiles', sids, transaction):
-                return False
-            if not self._refresh_rds_profiles(transaction):
-                return False
+        if not self._delete_rds_rows('student_academic_status', sids, transaction):
+            return False
+        if not self._refresh_rds_academic_status(transaction):
+            return False
+        if not self._delete_rds_rows('student_names', sids, transaction):
+            return False
+        if not self._refresh_rds_names(transaction):
+            return False
+        if not self._delete_rds_rows('student_majors', sids, transaction):
+            return False
+        if not self._refresh_rds_majors(transaction):
+            return False
+        if not self._delete_rds_rows('student_profiles', sids, transaction):
+            return False
+        if not self._refresh_rds_profiles(transaction):
+            return False
         return True
 
     def refresh_rds_enrollment_terms(self, sids, transaction):
@@ -262,11 +260,24 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         return transaction.execute(sql, params)
 
     def _refresh_rds_academic_status(self, transaction):
-        # TODO LOAD THE RDS INDEXES FROM REDSHIFT TABLES RATHER THAN IN-MEMORY STORAGE.
-        return transaction.insert_bulk(
-            f"""INSERT INTO {self.rds_schema}.student_academic_status
-                (sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term) VALUES %s""",
-            [split_tsv_row(r) for r in self.rows['student_academic_status']],
+        return transaction.execute(
+            f"""INSERT INTO {self.rds_schema}.student_academic_status (
+            SELECT *
+            FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
+                SELECT DISTINCT sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term
+                FROM {self.redshift_schema}.student_academic_status
+              $REDSHIFT$)
+            AS redshift_academic_status (
+                sid VARCHAR,
+                uid VARCHAR,
+                first_name VARCHAR,
+                last_name VARCHAR,
+                level VARCHAR,
+                gpa NUMERIC,
+                units NUMERIC,
+                transfer BOOLEAN,
+                expected_grad_term VARCHAR
+            ));""",
         )
 
     def _refresh_rds_names(self, transaction):
@@ -285,10 +296,17 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         )
 
     def _refresh_rds_majors(self, transaction):
-        # TODO LOAD THE RDS INDEXES FROM REDSHIFT TABLES RATHER THAN IN-MEMORY STORAGE.
-        return transaction.insert_bulk(
-            f'INSERT INTO {self.rds_schema}.student_majors (sid, major) VALUES %s',
-            [split_tsv_row(r) for r in self.rows['student_majors']],
+        return transaction.execute(
+            f"""INSERT INTO {self.rds_schema}.student_majors (
+            SELECT *
+            FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
+                SELECT DISTINCT sid, major
+                FROM {self.redshift_schema}.student_majors
+              $REDSHIFT$)
+            AS redshift_majors (
+                sid VARCHAR,
+                major VARCHAR
+            ));""",
         )
 
     def _refresh_rds_profiles(self, transaction):
