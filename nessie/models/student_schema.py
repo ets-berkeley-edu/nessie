@@ -155,6 +155,34 @@ def upload_to_staging(table, rows, term_id=None):
         raise BackgroundJobError('Error on Redshift copy: aborting job.')
 
 
+def upload_file_to_staging(table, term_file, row_count, term_id):
+    if term_id:
+        tsv_filename = f'staging_{table}_{term_id}.tsv'
+    else:
+        tsv_filename = f'staging_{table}.tsv'
+    s3_key = f'{get_s3_sis_api_daily_path()}/{tsv_filename}'
+    app.logger.info(f'Will stash {row_count} feeds in S3: {s3_key}')
+    # Be kind; rewind
+    term_file.seek(0)
+    if not s3.upload_data(term_file, s3_key):
+        raise BackgroundJobError('Error on S3 upload: aborting job.')
+
+    app.logger.info('Will copy S3 feeds into Redshift...')
+    query = resolve_sql_template_string(
+        """
+        COPY {staging_schema}.{table}
+            FROM '{loch_s3_sis_api_data_path}/{tsv_filename}'
+            IAM_ROLE '{redshift_iam_role}'
+            DELIMITER '\\t';
+        """,
+        staging_schema=staging_schema(),
+        table=table,
+        tsv_filename=tsv_filename,
+    )
+    if not redshift.execute(query):
+        raise BackgroundJobError('Error on Redshift copy: aborting job.')
+
+
 def verify_table(table):
     result = redshift.fetch(
         'SELECT COUNT(*) FROM {schema}.{table}',
@@ -170,5 +198,11 @@ def verify_table(table):
 
 def write_to_staging(table, rows, term_id=None):
     upload_to_staging(table, rows, term_id)
+    verify_table(table)
+    return True
+
+
+def write_file_to_staging(table, term_file, row_count, term_id=None):
+    upload_file_to_staging(table, term_file, row_count, term_id)
     verify_table(table)
     return True

@@ -36,7 +36,7 @@ from nessie.lib.queries import get_advisee_student_profile_feeds
 from nessie.lib.util import encoded_tsv_row
 from nessie.merged.sis_profile import parse_merged_sis_profile
 from nessie.merged.sis_profile_v1 import parse_merged_sis_profile_v1
-from nessie.merged.student_terms import generate_student_term_maps
+from nessie.merged.student_terms import upload_student_term_maps
 from nessie.models import student_schema
 
 """Logic for merged student profile and term generation."""
@@ -77,20 +77,17 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         if not profile_tables:
             raise BackgroundJobError('Failed to generate student profile tables.')
 
-        (enrollment_terms_map, canvas_site_map) = generate_student_term_maps(advisees_by_sid)
-
         feed_path = app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH'] + '/feeds/'
         s3.upload_json(advisees_by_canvas_id, feed_path + 'advisees_by_canvas_id.json')
 
-        for term_id in (future_term_ids() + legacy_term_ids()):
-            GenerateMergedEnrollmentTerm().refresh_student_enrollment_term(term_id, enrollment_terms_map.get(term_id, {}))
+        upload_student_term_maps(advisees_by_sid)
 
         # Avoid processing Canvas analytics data for future terms and pre-CS terms.
-        canvas_integrated_term_ids = reverse_term_ids()
-        for term_id in canvas_integrated_term_ids:
-            s3.upload_json(enrollment_terms_map.get(term_id, {}), feed_path + f'enrollment_term_map_{term_id}.json')
-            s3.upload_json(canvas_site_map.get(term_id, {}), feed_path + f'canvas_site_map_{term_id}.json')
+        for term_id in (future_term_ids() + legacy_term_ids()):
+            enrollment_term_map = s3.get_object_json(feed_path + f'enrollment_term_map_{term_id}.json')
+            GenerateMergedEnrollmentTerm().refresh_student_enrollment_term(term_id, enrollment_term_map)
 
+        canvas_integrated_term_ids = reverse_term_ids()
         app.logger.info(f'Will queue analytics generation for {len(canvas_integrated_term_ids)} terms on worker nodes.')
         result = queue_merged_enrollment_term_jobs(self.job_id, canvas_integrated_term_ids)
         if not result:
