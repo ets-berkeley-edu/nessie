@@ -26,6 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from itertools import groupby
 import json
 import operator
+import tempfile
 
 from flask import current_app as app
 from nessie.externals import redshift, s3
@@ -45,9 +46,13 @@ class GenerateMergedEnrollmentTerm(BackgroundJob):
         return f'Generated merged feeds for term {term_id} ({self.course_count} courses, {self.user_count} users).'
 
     def refresh_student_enrollment_term(self, term_id, enrollment_term_map):
-        term_rows = [encoded_tsv_row([sid, term_id, json.dumps(sid_term_feed)]) for (sid, sid_term_feed) in enrollment_term_map.items()]
-        student_schema.drop_staged_enrollment_term(term_id)
-        student_schema.write_to_staging('student_enrollment_terms', term_rows, term_id)
+        with tempfile.TemporaryFile() as enrollment_term_file:
+            for (sid, sid_term_feed) in enrollment_term_map.items():
+                enrollment_term_file.write(encoded_tsv_row([sid, term_id, json.dumps(sid_term_feed)]) + b'\n')
+
+            student_schema.drop_staged_enrollment_term(term_id)
+            student_schema.write_file_to_staging('student_enrollment_terms', enrollment_term_file, len(enrollment_term_map), term_id)
+
         with redshift.transaction() as transaction:
             student_schema.refresh_from_staging('student_enrollment_terms', term_id, None, transaction, truncate_staging=False)
             if not transaction.commit():

@@ -27,7 +27,17 @@ from itertools import groupby
 import operator
 
 from flask import current_app as app
+from nessie.externals import s3
 from nessie.lib import berkeley, queries
+
+
+def upload_student_term_maps(advisees_by_sid):
+    (enrollment_terms_map, canvas_site_map) = generate_student_term_maps(advisees_by_sid)
+    feed_path = app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH'] + '/feeds/'
+    for term_id, enrollment_term_map in enrollment_terms_map.items():
+        s3.upload_json(enrollment_term_map, feed_path + f'enrollment_term_map_{term_id}.json')
+    for term_id, canvas_site in canvas_site_map.items():
+        s3.upload_json(canvas_site, feed_path + f'canvas_site_map_{term_id}.json')
 
 
 def generate_student_term_maps(advisees_by_sid):
