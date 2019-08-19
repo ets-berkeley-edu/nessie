@@ -77,6 +77,10 @@ def get_s3_asc_daily_path(cutoff=None):
     return app.config['LOCH_S3_ASC_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
 
+def get_s3_boac_analytics_incremental_path(cutoff=None):
+    return app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH'] + '/incremental/' + hashed_datestamp(cutoff)
+
+
 def get_s3_calnet_daily_path(cutoff=None):
     return app.config['LOCH_S3_CALNET_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
@@ -149,6 +153,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_schema_undergrads_external': app.config['REDSHIFT_SCHEMA_UNDERGRADS_EXTERNAL'],
         'redshift_iam_role': app.config['REDSHIFT_IAM_ROLE'],
         'loch_s3_asc_data_path': s3_prefix + get_s3_asc_daily_path(),
+        'loch_s3_boac_analytics_incremental_path': s3_prefix + get_s3_boac_analytics_incremental_path(),
         'loch_s3_calnet_data_path': s3_prefix + get_s3_calnet_daily_path(),
         'loch_s3_canvas_data_path_today': s3_prefix + get_s3_canvas_daily_path(),
         'loch_s3_canvas_data_path_historical': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_HISTORICAL'],

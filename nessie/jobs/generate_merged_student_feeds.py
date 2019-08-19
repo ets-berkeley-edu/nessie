@@ -30,7 +30,7 @@ from flask import current_app as app
 from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.jobs.generate_merged_enrollment_term import GenerateMergedEnrollmentTerm
-from nessie.lib.berkeley import future_term_ids, legacy_term_ids, reverse_term_ids
+from nessie.lib.berkeley import current_term_id, future_term_id, future_term_ids, legacy_term_ids, reverse_term_ids
 from nessie.lib.metadata import get_merged_enrollment_term_job_status, queue_merged_enrollment_term_jobs
 from nessie.lib.queries import get_advisee_student_profile_feeds
 from nessie.lib.util import encoded_tsv_row
@@ -112,6 +112,9 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             any_pending_job = next((row for row in enrollment_results if row['status'] == 'created' or row['status'] == 'started'), None)
             if not any_pending_job:
                 break
+
+        app.logger.info('Exporting analytics data for archival purposes.')
+        student_schema.unload_enrollment_terms([current_term_id(), future_term_id()])
 
         app.logger.info('Refreshing enrollment terms in RDS.')
         with rds.transaction() as transaction:

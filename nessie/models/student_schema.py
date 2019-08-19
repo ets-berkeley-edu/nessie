@@ -129,6 +129,26 @@ def truncate_staging_table(table):
     )
 
 
+def unload_enrollment_terms(term_ids):
+    query = resolve_sql_template_string(
+        """
+        UNLOAD ('SELECT *, GETDATE() AS analytics_generated_at
+            FROM {schema}.student_enrollment_terms
+            WHERE term_id=ANY(\''{{{term_ids}}}\'')')
+            TO '{loch_s3_boac_analytics_incremental_path}/student_enrollment_terms'
+            IAM_ROLE '{redshift_iam_role}'
+            ENCRYPTED
+            DELIMITER AS '\\t'
+            ALLOWOVERWRITE
+            GZIP;
+        """,
+        schema=redshift_schema(),
+        term_ids=','.join(term_ids),
+    )
+    if not redshift.execute(query):
+        raise BackgroundJobError('Error on Redshift unload: aborting job.')
+
+
 def upload_to_staging(table, rows, term_id=None):
     if term_id:
         tsv_filename = f'staging_{table}_{term_id}.tsv'
