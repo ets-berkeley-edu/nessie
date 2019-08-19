@@ -67,9 +67,11 @@ INSERT INTO {rds_schema_sis_advising_notes}.advising_notes (
   )
 );
 
-CREATE INDEX idx_boac_advising_notes_sid ON {rds_schema_sis_advising_notes}.advising_notes(sid);
-CREATE INDEX idx_boac_advising_notes_advisor_sid ON {rds_schema_sis_advising_notes}.advising_notes(advisor_sid);
-CREATE INDEX idx_boac_advising_notes_updated_at ON {rds_schema_sis_advising_notes}.advising_notes(updated_at);
+CREATE INDEX idx_sis_advising_notes_advisor_sid ON {rds_schema_sis_advising_notes}.advising_notes(advisor_sid);
+CREATE INDEX idx_sis_advising_notes_created_at ON {rds_schema_sis_advising_notes}.advising_notes(created_at);
+CREATE INDEX idx_sis_advising_notes_created_by ON {rds_schema_sis_advising_notes}.advising_notes(created_by);
+CREATE INDEX idx_sis_advising_notes_sid ON {rds_schema_sis_advising_notes}.advising_notes(sid);
+CREATE INDEX idx_sis_advising_notes_updated_at ON {rds_schema_sis_advising_notes}.advising_notes(updated_at);
 
 DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_note_topics CASCADE;
 
@@ -91,6 +93,8 @@ INSERT INTO {rds_schema_sis_advising_notes}.advising_note_topics (
     note_topic VARCHAR
   )
 );
+
+CREATE INDEX idx_sis_advising_note_topics_topic ON {rds_schema_sis_advising_notes}.advising_note_topics(note_topic);
 
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.advising_notes_search_index CASCADE;
 
