@@ -80,11 +80,13 @@ class TestMergedSisProfile:
         """Skips concurrent academic status if another academic status exists."""
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
         assert profile['academicCareer'] == 'UGRD'
+        assert profile['plans'][0]['program'] == 'Undergrad Letters & Science'
 
     def test_falls_back_on_concurrent_academic_status(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         """Selects concurrent academic status if no other academic status exists."""
         profile = merged_profile('1234567890', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
         assert profile['academicCareer'] == 'UCBX'
+        assert profile['plans'][0]['program'] == 'UCBX Concurrent Enrollment'
 
     def test_withdrawal_cancel_ignored_if_empty(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
