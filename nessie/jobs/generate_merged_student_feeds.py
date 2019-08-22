@@ -229,6 +229,10 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             return False
         if not self._refresh_rds_academic_status(transaction):
             return False
+        if not self._delete_rds_rows('holds', sids, transaction):
+            return False
+        if not self._refresh_rds_holds(transaction):
+            return False
         if not self._delete_rds_rows('student_names', sids, transaction):
             return False
         if not self._refresh_rds_names(transaction):
@@ -277,6 +281,20 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 units NUMERIC,
                 transfer BOOLEAN,
                 expected_grad_term VARCHAR
+            ));""",
+        )
+
+    def _refresh_rds_holds(self, transaction):
+        return transaction.execute(
+            f"""INSERT INTO {self.rds_schema}.student_holds (
+            SELECT *
+                FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
+                    SELECT sid, feed
+                    FROM {self.redshift_schema}.student_holds
+              $REDSHIFT$)
+            AS redshift_holds (
+                sid VARCHAR,
+                feed TEXT
             ));""",
         )
 

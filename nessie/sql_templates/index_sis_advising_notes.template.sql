@@ -73,6 +73,39 @@ CREATE INDEX idx_sis_advising_notes_created_by ON {rds_schema_sis_advising_notes
 CREATE INDEX idx_sis_advising_notes_sid ON {rds_schema_sis_advising_notes}.advising_notes(sid);
 CREATE INDEX idx_sis_advising_notes_updated_at ON {rds_schema_sis_advising_notes}.advising_notes(updated_at);
 
+DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_note_attachments CASCADE;
+
+CREATE TABLE {rds_schema_sis_advising_notes}.advising_note_attachments (
+    advising_note_id VARCHAR,
+    sid VARCHAR,
+    student_note_nr VARCHAR,
+    created_by VARCHAR,
+    user_file_name VARCHAR,
+    sis_file_name VARCHAR,
+    is_historical BOOLEAN
+);
+
+INSERT INTO {rds_schema_sis_advising_notes}.advising_note_attachments (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+    SELECT advising_note_id, sid, student_note_nr, created_by, user_file_name,
+      sis_file_name, is_historical
+    FROM {redshift_schema_sis_advising_notes_internal}.advising_note_attachments
+  $REDSHIFT$)
+  AS redshift_notes (
+    advising_note_id VARCHAR,
+    sid VARCHAR,
+    student_note_nr VARCHAR,
+    created_by VARCHAR,
+    user_file_name VARCHAR,
+    sis_file_name VARCHAR,
+    is_historical BOOLEAN
+  )
+);
+
+CREATE INDEX idx_sis_advising_note_attachments_advising_note_id
+ON {rds_schema_sis_advising_notes}.advising_note_attachments(advising_note_id);
+
 DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_note_topics CASCADE;
 
 CREATE TABLE {rds_schema_sis_advising_notes}.advising_note_topics (

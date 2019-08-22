@@ -24,7 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
-from nessie.externals import redshift
+from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import current_term_id
 from nessie.lib.util import resolve_sql_template
@@ -36,11 +36,20 @@ class GenerateIntermediateTables(BackgroundJob):
 
     def run(self):
         app.logger.info(f'Starting intermediate table generation job...')
-        resolved_ddl = resolve_sql_template(
+
+        resolved_ddl_redshift = resolve_sql_template(
             'create_intermediate_schema.template.sql',
             current_term_id=current_term_id(),
         )
-        if redshift.execute_ddl_script(resolved_ddl):
-            return 'Intermediate table creation job completed.'
+        if redshift.execute_ddl_script(resolved_ddl_redshift):
+            app.logger.info('Redshift tables generated.')
         else:
             raise BackgroundJobError(f'Intermediate table creation job failed.')
+
+        resolved_ddl_rds = resolve_sql_template('update_rds_indexes_sis.template.sql')
+        if rds.execute(resolved_ddl_rds):
+            app.logger.info('RDS indexes updated.')
+        else:
+            raise BackgroundJobError('Failed to update RDS indexes for intermediate schema.')
+
+        return 'Intermediate table generation job completed.'

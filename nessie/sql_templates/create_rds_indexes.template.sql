@@ -154,6 +154,14 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.ethnicities
 CREATE INDEX IF NOT EXISTS students_ethnicities_sid_idx ON {rds_schema_student}.ethnicities (sid);
 CREATE INDEX IF NOT EXISTS students_ethnicities_sid_idx ON {rds_schema_student}.ethnicities (ethnicity);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_holds
+(
+    sid VARCHAR NOT NULL,
+    feed TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS student_holds_sid_idx ON {rds_schema_student}.student_holds (sid);
+
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_profiles
 (
     sid VARCHAR NOT NULL PRIMARY KEY,

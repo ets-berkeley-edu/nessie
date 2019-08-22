@@ -181,6 +181,7 @@ LOGGING_PROPAGATION_LEVEL = logging.INFO
 RDS_SCHEMA_ADVISING_NOTES = 'boac_advising_notes'
 RDS_SCHEMA_ADVISOR = 'boac_advisor'
 RDS_SCHEMA_ASC = 'boac_advising_asc'
+RDS_SCHEMA_BOAC = 'boac_analytics'
 RDS_SCHEMA_COE = 'boac_advising_coe'
 RDS_SCHEMA_E_I = 'boac_advising_e_i'
 RDS_SCHEMA_METADATA = 'metadata'
