@@ -407,7 +407,8 @@
                     "academicProgram": {
                       "program": {
                         "code": "UCLS",
-                        "description": "Undergrad Letters & Science"
+                        "description": "UG L&S",
+                        "formalDescription": "Undergrad Letters & Science"
                       }
                     },
                     "plan": {
@@ -451,7 +452,8 @@
                     "academicProgram": {
                       "program": {
                         "code": "UCLS",
-                        "description": "Undergrad Letters & Science"
+                        "description": "UG L&S",
+                        "formalDescription": "Undergrad Letters & Science"
                       }
                     },
                     "plan": {
@@ -495,7 +497,8 @@
                     "academicProgram": {
                       "program": {
                         "code": "UCLS",
-                        "description": "Undergrad Letters & Science"
+                        "description": "UG L&S",
+                        "formalDescription": "Undergrad Letters & Science"
                       }
                     },
                     "plan": {
@@ -1121,7 +1124,8 @@
                     "academicProgram": {
                       "program": {
                         "code": "UCLS",
-                        "description": "Undergrad Letters & Science"
+                        "description": "UG L&S",
+                        "formalDescription": "Undergrad Letters & Science"
                       }
                     },
                     "plan": {
@@ -1165,7 +1169,8 @@
                     "academicProgram": {
                       "program": {
                         "code": "UCLS",
-                        "description": "Undergrad Letters & Science"
+                        "description": "UG L&S",
+                        "formalDescription": "Undergrad Letters & Science"
                       }
                     },
                     "plan": {
@@ -1209,7 +1214,8 @@
                     "academicProgram": {
                       "program": {
                         "code": "UCLS",
-                        "description": "Undergrad Letters & Science"
+                        "description": "UG L&S",
+                        "formalDescription": "Undergrad Letters & Science"
                       }
                     },
                     "plan": {
