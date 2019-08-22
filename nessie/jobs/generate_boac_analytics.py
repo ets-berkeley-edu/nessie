@@ -66,6 +66,10 @@ class GenerateBoacAnalytics(BackgroundJob):
             if not redshift.execute_ddl_script(resolved_ddl):
                 raise BackgroundJobError(f'Assignment submissions upload failed for term {term_id}.')
 
+        resolved_ddl_rds = resolve_sql_template('update_rds_indexes_boac.template.sql')
+        if not rds.execute(resolved_ddl_rds):
+            raise BackgroundJobError('Failed to update RDS indexes for BOAC analytics schema.')
+
         return 'BOAC analytics creation job completed.'
 
     def store_boa_demographics_data(self):

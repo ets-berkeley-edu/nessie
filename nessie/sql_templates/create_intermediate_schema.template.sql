@@ -31,6 +31,8 @@ DROP SCHEMA IF EXISTS {redshift_schema_intermediate} CASCADE;
 CREATE SCHEMA {redshift_schema_intermediate};
 GRANT USAGE ON SCHEMA {redshift_schema_intermediate} TO GROUP {redshift_app_boa_user}_group;
 ALTER default PRIVILEGES IN SCHEMA {redshift_schema_intermediate} GRANT SELECT ON TABLES TO GROUP {redshift_app_boa_user}_group;
+GRANT USAGE ON SCHEMA {redshift_schema_intermediate} TO GROUP {redshift_dblink_group};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_intermediate} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
 
 /*
  * A final grade of 'W' signals Withdraw Without Academic Penalty, in which a student is allowed to withdraw from

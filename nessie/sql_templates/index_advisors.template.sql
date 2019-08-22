@@ -29,6 +29,45 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_advisor} GRANT SELECT ON TABLES T
 
 BEGIN TRANSACTION;
 
+DROP TABLE IF EXISTS {rds_schema_advisor}.advisor_roles CASCADE;
+
+CREATE TABLE {rds_schema_advisor}.advisor_roles (
+   sid VARCHAR,
+   uid VARCHAR,
+   advisor_type_code VARCHAR,
+   advisor_type VARCHAR,
+   instructor_type_code VARCHAR,
+   instructor_type VARCHAR,
+   academic_program_code VARCHAR,
+   academic_program VARCHAR,
+   cs_permissions VARCHAR
+);
+
+INSERT INTO {rds_schema_advisor}.advisor_roles (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+    SELECT sid, uid, advisor_type_code, advisor_type, instructor_type_code, instructor_type,
+           academic_program_code, academic_program, cs_permissions
+    FROM {redshift_schema_advisor_internal}.advisor_roles
+    ORDER BY uid, academic_program_code, advisor_type_code
+  $REDSHIFT$)
+  AS redshift_advisor_roles (
+    sid VARCHAR,
+    uid VARCHAR,
+    advisor_type_code VARCHAR,
+    advisor_type VARCHAR,
+    instructor_type_code VARCHAR,
+    instructor_type VARCHAR,
+    academic_program_code VARCHAR,
+    academic_program VARCHAR,
+    cs_permissions VARCHAR
+  )
+);
+
+CREATE INDEX idx_advisor_roles_uid ON {rds_schema_advisor}.advisor_roles(uid);
+CREATE INDEX idx_advisor_roles_advisor_type_code ON {rds_schema_advisor}.advisor_roles(advisor_type_code);
+CREATE INDEX idx_advisor_roles_academic_program_code ON {rds_schema_advisor}.advisor_roles(academic_program_code);
+
 DROP TABLE IF EXISTS {rds_schema_advisor}.advisor_students CASCADE;
 
 CREATE TABLE {rds_schema_advisor}.advisor_students (
@@ -42,7 +81,6 @@ CREATE TABLE {rds_schema_advisor}.advisor_students (
    academic_plan_code VARCHAR,
    academic_plan VARCHAR
 );
-
 
 INSERT INTO {rds_schema_advisor}.advisor_students (
   SELECT *
