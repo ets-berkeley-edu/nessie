@@ -229,7 +229,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             return False
         if not self._refresh_rds_academic_status(transaction):
             return False
-        if not self._delete_rds_rows('holds', sids, transaction):
+        if not self._delete_rds_rows('student_holds', sids, transaction):
             return False
         if not self._refresh_rds_holds(transaction):
             return False

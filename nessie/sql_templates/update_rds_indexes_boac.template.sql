@@ -34,8 +34,7 @@ CREATE TABLE {rds_schema_boac}.section_mean_gpas
     sis_term_id VARCHAR,
     sis_section_id VARCHAR,
     gpa_term_id VARCHAR,
-    avg_gpa DOUBLE PRECISION,
-    PRIMARY KEY (sis_term_id, sis_section_id)
+    avg_gpa DOUBLE PRECISION
 );
 
 INSERT INTO {rds_schema_boac}.section_mean_gpas (
@@ -51,3 +50,5 @@ INSERT INTO {rds_schema_boac}.section_mean_gpas (
     avg_gpa DOUBLE PRECISION
   )
 );
+
+CREATE INDEX idx_section_mean_gpas_term_id_section_id ON {rds_schema_boac}.section_mean_gpas(sis_term_id, sis_section_id);
