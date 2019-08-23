@@ -51,7 +51,7 @@ VALUES
 ('Senior Residency','Senior Residency'),
 ('Simultaneous Degree','Dbl Major/Simultaneous Degree'),
 ('Special Studies','Special Studies'),
-('Student Coduct','Student Coduct'),
+('Student Conduct','Student Conduct'),
 ('Study Abroad','EAP/Study Abroad'),
 ('Transfer Coursework','Transfer Coursework'),
 ('Waive College Requirement','Waive College Requirement'),
