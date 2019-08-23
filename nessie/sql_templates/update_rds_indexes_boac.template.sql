@@ -34,7 +34,7 @@ CREATE TABLE {rds_schema_boac}.section_mean_gpas
     sis_term_id VARCHAR,
     sis_section_id VARCHAR,
     gpa_term_id VARCHAR,
-    avg_gpa DOUBLE PRECISION
+    avg_gpa DOUBLE PRECISION,
     PRIMARY KEY (sis_term_id, sis_section_id)
 );
 
