@@ -36,10 +36,12 @@ CREATE TABLE {rds_schema_sis_advising_notes}.advising_notes (
   sid VARCHAR NOT NULL,
   student_note_nr INTEGER NOT NULL,
   advisor_sid VARCHAR NOT NULL,
+  appointment_id VARCHAR,
   note_category VARCHAR,
   note_subcategory VARCHAR,
   note_body TEXT,
   created_by VARCHAR,
+  updated_by VARCHAR,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
   PRIMARY KEY (id)
@@ -48,8 +50,8 @@ CREATE TABLE {rds_schema_sis_advising_notes}.advising_notes (
 INSERT INTO {rds_schema_sis_advising_notes}.advising_notes (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT id, sid, student_note_nr, advisor_sid, note_category, note_subcategory, note_body,
-           created_by, created_at, updated_at
+    SELECT id, sid, student_note_nr, advisor_sid, appointment_id, note_category, note_subcategory, note_body,
+           created_by, updated_by, created_at, updated_at
     FROM {redshift_schema_sis_advising_notes_internal}.advising_notes
     ORDER BY updated_at DESC
   $REDSHIFT$)
@@ -58,10 +60,12 @@ INSERT INTO {rds_schema_sis_advising_notes}.advising_notes (
     sid VARCHAR,
     student_note_nr INTEGER,
     advisor_sid VARCHAR,
+    appointment_id VARCHAR,
     note_category VARCHAR,
     note_subcategory VARCHAR,
     note_body TEXT,
     created_by VARCHAR,
+    updated_by VARCHAR,
     created_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE
   )
@@ -110,6 +114,8 @@ DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_note_topics CASCAD
 
 CREATE TABLE {rds_schema_sis_advising_notes}.advising_note_topics (
   advising_note_id VARCHAR NOT NULL,
+  sid VARCHAR,
+  student_note_nr VARCHAR,
   note_topic VARCHAR NOT NULL,
   PRIMARY KEY (advising_note_id, note_topic)
 );
@@ -117,16 +123,20 @@ CREATE TABLE {rds_schema_sis_advising_notes}.advising_note_topics (
 INSERT INTO {rds_schema_sis_advising_notes}.advising_note_topics (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT DISTINCT advising_note_id, note_topic
+    SELECT DISTINCT advising_note_id, sid, student_note_nr, note_topic
     FROM {redshift_schema_sis_advising_notes_internal}.advising_note_topics
     WHERE note_topic IS NOT NULL
   $REDSHIFT$)
   AS redshift_notes (
     advising_note_id VARCHAR,
+    sid VARCHAR,
+    student_note_nr VARCHAR,
     note_topic VARCHAR
   )
 );
 
+CREATE INDEX idx_sis_advising_note_topics_note_id ON {rds_schema_sis_advising_notes}.advising_note_topics(advising_note_id);
+CREATE INDEX idx_sis_advising_note_topics_sid ON {rds_schema_sis_advising_notes}.advising_note_topics(sid);
 CREATE INDEX idx_sis_advising_note_topics_topic ON {rds_schema_sis_advising_notes}.advising_note_topics(note_topic);
 
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.advising_notes_search_index CASCADE;
