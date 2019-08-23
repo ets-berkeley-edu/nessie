@@ -44,7 +44,7 @@ def initialize_logger(app):
     if location == 'STDOUT':
         handlers = app.logger.handlers
     else:
-        file_handler = RotatingFileHandler(location, mode='a', maxBytes=1024 * 1024 * 100, backupCount=20)
+        file_handler = RotatingFileHandler(location, mode='a', encoding='utf-8', maxBytes=1024 * 1024 * 100, backupCount=20)
         handlers = [file_handler]
 
     for handler in handlers:

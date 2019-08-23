@@ -117,4 +117,4 @@ def _log_db_error(e, sql):
     if e.pgcode:
         error_str += f'{e.pgcode}: {e.pgerror}\n'
     error_str += f'on SQL: {sql}'
-    app.logger.warn({'message': error_str})
+    app.logger.warning(error_str)
