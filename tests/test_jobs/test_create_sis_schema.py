@@ -28,7 +28,6 @@ import json
 
 from nessie.externals import s3
 from nessie.jobs.background_job import BackgroundJobError
-from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.lib.util import get_s3_sis_daily_path
 import pytest
 from tests.util import capture_app_logs, mock_s3
@@ -38,6 +37,7 @@ class TestCreateSisSchema:
 
     def test_update_manifests(self, app):
         """Updates manifests in S3."""
+        from nessie.jobs.create_sis_schema import CreateSisSchema
         with mock_s3(app):
             daily_path = get_s3_sis_daily_path()
             historical_path = app.config['LOCH_S3_SIS_DATA_PATH'] + '/historical'
@@ -47,6 +47,7 @@ class TestCreateSisSchema:
 
     def test_fallback_update_manifests(self, app):
         """Uses yesterday's news if today's is unavailable."""
+        from nessie.jobs.create_sis_schema import CreateSisSchema
         with mock_s3(app):
             yesterday = datetime.now() - timedelta(days=1)
             daily_path = get_s3_sis_daily_path(yesterday)
@@ -56,6 +57,7 @@ class TestCreateSisSchema:
             self._assert_complete_manifest(app, daily_path, historical_path)
 
     def test_aborts_on_missing_term(self, app, caplog):
+        from nessie.jobs.create_sis_schema import CreateSisSchema
         with mock_s3(app):
             daily_path = get_s3_sis_daily_path()
             historical_path = app.config['LOCH_S3_SIS_DATA_PATH'] + '/historical'

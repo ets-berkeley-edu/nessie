@@ -206,17 +206,13 @@ ON {rds_schema_sis_internal}.enrolled_primary_sections (sis_subject_area_compres
 CREATE INDEX IF NOT EXISTS enrolled_primary_sections_sis_catalog_id_idx
 ON {rds_schema_sis_internal}.enrolled_primary_sections (sis_catalog_id);
 
-CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.sis_terms
+CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.term_definitions
 (
     term_id VARCHAR(4) NOT NULL,
     term_name VARCHAR NOT NULL,
-    academic_career VARCHAR NOT NULL,
     term_begins DATE NOT NULL,
-    term_ends DATE NOT NULL,
-    session_id VARCHAR NOT NULL,
-    session_name VARCHAR NOT NULL,
-    session_begins DATE NOT NULL,
-    session_ends DATE NOT NULL
+    term_ends DATE NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS sis_terms_term_id_academic_career_idx ON {rds_schema_sis_internal}.sis_terms (term_id, academic_career);
+CREATE INDEX IF NOT EXISTS term_definitions_term_id_idx
+ON {rds_schema_sis_internal}.term_definitions (term_id);

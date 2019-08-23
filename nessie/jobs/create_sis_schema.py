@@ -28,12 +28,15 @@ import json
 import re
 
 from flask import current_app as app
-from nessie.externals import redshift, s3
+from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.berkeley import reverse_term_ids
 from nessie.lib.util import get_s3_sis_daily_path, resolve_sql_template
 
 """Logic for SIS schema creation job."""
+
+external_schema = app.config['REDSHIFT_SCHEMA_SIS']
+rds_schema = app.config['RDS_SCHEMA_SIS_INTERNAL']
 
 
 class CreateSisSchema(BackgroundJob):
@@ -49,9 +52,10 @@ class CreateSisSchema(BackgroundJob):
         resolved_ddl = resolve_sql_template('create_sis_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(external_schema, resolved_ddl)
-            return 'SIS schema creation job completed.'
         else:
             raise BackgroundJobError(f'SIS schema creation job failed.')
+        self.refresh_sis_term_definitions()
+        return 'SIS schema creation job completed.'
 
     def update_manifests(self):
         app.logger.info(f'Updating manifests...')
@@ -102,3 +106,27 @@ class CreateSisSchema(BackgroundJob):
         courses_result = s3.upload_data(courses_manifest, app.config['LOCH_S3_SIS_DATA_PATH'] + '/manifests/courses.json')
         enrollments_result = s3.upload_data(enrollments_manifest, app.config['LOCH_S3_SIS_DATA_PATH'] + '/manifests/enrollments.json')
         return courses_result and enrollments_result
+
+    def refresh_sis_term_definitions(self):
+        rows = redshift.fetch(f'SELECT * FROM {external_schema}.term_definitions')
+        if len(rows):
+            with rds.transaction() as transaction:
+                if self.refresh_rds(rows, transaction):
+                    transaction.commit()
+                    app.logger.info('Refreshed RDS indexes.')
+                else:
+                    transaction.rollback()
+                    raise BackgroundJobError('Error refreshing RDS indexes.')
+
+    def refresh_rds(self, rows, transaction):
+        result = transaction.execute(f'TRUNCATE {rds_schema}.term_definitions')
+        if not result:
+            return False
+        columns = ['term_id', 'term_name', 'term_begins', 'term_ends']
+        result = transaction.insert_bulk(
+            f'INSERT INTO {rds_schema}.term_definitions ({", ".join(columns)}) VALUES %s',
+            [tuple([r[c] for c in columns]) for r in rows],
+        )
+        if not result:
+            return False
+        return True
