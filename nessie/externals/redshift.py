@@ -85,7 +85,7 @@ def copy_tsv_from_s3(table, s3_key):
             error_str = str(e)
             if e.pgcode:
                 error_str += f'{e.pgcode}: {e.pgerror}\n'
-            app.logger.warning({'message': error_str})
+            app.logger.warning(error_str)
             return False
     # Real Redshift accepts an S3 URL with IAM role.
     else:
@@ -194,7 +194,7 @@ def _get_cursor(autocommit=True, operation='write'):
         error_str = str(e)
         if e.pgcode:
             error_str += f'{e.pgcode}: {e.pgerror}\n'
-        app.logger.warning({'message': error_str})
+        app.logger.warning(error_str)
         yield None
 
 
@@ -227,5 +227,5 @@ def _execute(sql, operation, cursor, **kwargs):
         if e.pgcode:
             error_str += f'{e.pgcode}: {e.pgerror}\n'
         error_str += f'on SQL: {sql_for_log}'
-        app.logger.warning({'message': error_str})
+        app.logger.warning(error_str)
     return result
