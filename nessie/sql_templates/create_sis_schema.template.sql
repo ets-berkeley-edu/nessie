@@ -125,6 +125,24 @@ FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
 LOCATION '{loch_s3_sis_data_path}/historical/gpa';
 
+-- SIS Term Definitions
+CREATE EXTERNAL TABLE {redshift_schema_sis}.term_definitions
+(
+    term_id VARCHAR(4),
+    term_name VARCHAR,
+    term_begins DATE,
+    term_ends DATE
+)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
+WITH SERDEPROPERTIES (
+  'separatorChar' = ',',
+  'quoteChar' = '\"',
+  'escapeChar' = '\\'
+)
+STORED AS TEXTFILE
+LOCATION '{loch_s3_sis_data_path}/term_definitions/';
+
+
 --------------------------------------------------------------------
 -- Internal schema
 --------------------------------------------------------------------
@@ -134,20 +152,6 @@ CREATE SCHEMA IF NOT EXISTS {redshift_schema_sis_internal};
 --------------------------------------------------------------------
 -- Internal tables
 --------------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_sis_internal}.sis_terms
-(
-    term_id VARCHAR(4) NOT NULL,
-    term_name VARCHAR NOT NULL,
-    academic_career VARCHAR NOT NULL,
-    term_begins DATE NOT NULL,
-    term_ends DATE NOT NULL,
-    session_id VARCHAR NOT NULL,
-    session_name VARCHAR NOT NULL,
-    session_begins DATE NOT NULL,
-    session_ends DATE NOT NULL
-)
-SORTKEY(term_id, academic_career);
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_sis_internal}.add_dates (
   sis_term_id INT,

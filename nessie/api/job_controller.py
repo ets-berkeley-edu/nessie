@@ -56,7 +56,6 @@ from nessie.jobs.import_degree_progress import ImportDegreeProgress
 from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
 from nessie.jobs.import_registrations import ImportRegistrations
 from nessie.jobs.import_sis_student_api import ImportSisStudentApi
-from nessie.jobs.import_sis_terms_api import ImportSisTermsApi
 from nessie.jobs.import_student_photos import ImportStudentPhotos
 from nessie.jobs.index_advising_note_authors import IndexAdvisingNoteAuthors
 from nessie.jobs.index_enrollments import IndexEnrollments
@@ -303,17 +302,6 @@ def delete_lrs_glue_jobs():
 @auth_required
 def import_sis_student_api():
     job_started = ImportSisStudentApi().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/import_sis_terms_api/<term_id>', methods=['POST'])
-@auth_required
-def import_sis_terms_api(term_id):
-    if term_id == 'all':
-        term_ids = None
-    else:
-        term_ids = [term_id]
-    job_started = ImportSisTermsApi(term_ids=term_ids).run_async()
     return respond_with_status(job_started)
 
 

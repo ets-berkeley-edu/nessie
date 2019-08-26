@@ -85,7 +85,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         # Avoid processing Canvas analytics data for future terms and pre-CS terms.
         for term_id in (future_term_ids() + legacy_term_ids()):
             enrollment_term_map = s3.get_object_json(feed_path + f'enrollment_term_map_{term_id}.json')
-            GenerateMergedEnrollmentTerm().refresh_student_enrollment_term(term_id, enrollment_term_map)
+            if enrollment_term_map:
+                GenerateMergedEnrollmentTerm().refresh_student_enrollment_term(term_id, enrollment_term_map)
 
         canvas_integrated_term_ids = reverse_term_ids()
         app.logger.info(f'Will queue analytics generation for {len(canvas_integrated_term_ids)} terms on worker nodes.')
