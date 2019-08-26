@@ -174,5 +174,5 @@ def resolve_sql_template(sql_filename, **kwargs):
     with open(app.config['BASE_DIR'] + f'/nessie/sql_templates/{sql_filename}', encoding='utf-8') as file:
         template_string = file.read()
     # Let's leave the preprended copyright and license text out of this.
-    template_string = re.sub(r'^/\*.*\*/\s*', '', template_string, flags=re.DOTALL)
+    template_string = re.sub(r'^/\*.*?\*/\s*', '', template_string, flags=re.DOTALL)
     return resolve_sql_template_string(template_string, **kwargs)
