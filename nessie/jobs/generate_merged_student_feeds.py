@@ -253,6 +253,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             return False
         if not self._refresh_rds_enrollment_terms(transaction):
             return False
+        if not self._index_rds_midpoint_deficient_grades(transaction):
+            return False
         return True
 
     def _delete_rds_rows(self, table, sids, transaction):
@@ -355,4 +357,14 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 term_id VARCHAR,
                 enrollment_term TEXT
             ));""",
+        )
+
+    def _index_rds_midpoint_deficient_grades(self, transaction):
+        return transaction.execute(
+            f"""UPDATE {self.rds_schema}.student_enrollment_terms t1
+            SET midpoint_deficient_grade = TRUE
+            FROM {self.rds_schema}.student_enrollment_terms t2, json_array_elements(t2.enrollment_term::json->'enrollments') enr
+            WHERE t1.sid = t2.sid
+            AND t1.term_id = t2.term_id
+            AND enr->>'midtermGrade' IS NOT NULL;""",
         )
