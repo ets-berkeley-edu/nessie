@@ -121,8 +121,12 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_enrollment_terms
     sid VARCHAR NOT NULL,
     term_id VARCHAR(4) NOT NULL,
     enrollment_term TEXT NOT NULL,
+    midpoint_deficient_grade BOOLEAN NOT NULL,
     PRIMARY KEY (sid, term_id)
 );
+
+CREATE INDEX IF NOT EXISTS students_enrollment_terms_midpoint_deficient_grade
+ON {rds_schema_student}.student_enrollment_terms (midpoint_deficient_grade);
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_majors
 (
