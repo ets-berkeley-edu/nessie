@@ -58,7 +58,13 @@ class TestSisStudentApi:
 
     def test_inner_get_students(self, app):
         """Returns fixture data."""
-        oski_response = student_api._get_v2_by_sids_list(TEST_SID_LIST, term_id=current_term_id(), with_registration=True)
+        oski_response = student_api._get_v2_by_sids_list(
+            TEST_SID_LIST,
+            term_id=current_term_id(),
+            as_of=None,
+            with_registration=True,
+            with_contacts=True,
+        )
         assert oski_response
         assert oski_response.status_code == 200
         students = oski_response.json()['apiResponse']['response']['students']
