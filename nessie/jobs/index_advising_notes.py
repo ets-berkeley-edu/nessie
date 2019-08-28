@@ -31,16 +31,16 @@ from nessie.lib.util import resolve_sql_template
 """Logic for advising note author names index job."""
 
 
-class IndexAdvisingNoteAuthors(BackgroundJob):
+class IndexAdvisingNotes(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting Advising Note author names index job...')
+        app.logger.info(f'Starting advising note index job...')
         app.logger.info(f'Executing SQL...')
         self.create_advising_note_authors()
         self.import_note_authors()
-        self.index_author_names()
+        self.index_advising_notes()
 
-        return 'Advising Note author names index job completed.'
+        return 'Advising note index job completed.'
 
     def create_advising_note_authors(self):
         resolved_ddl = resolve_sql_template('create_advising_note_authors.template.sql')
@@ -95,9 +95,9 @@ class IndexAdvisingNoteAuthors(BackgroundJob):
                 transaction.rollback()
                 raise BackgroundJobError('Failed to import advising note author attributes.')
 
-    def index_author_names(self):
-        resolved_ddl = resolve_sql_template('index_advising_note_authors.template.sql')
+    def index_advising_notes(self):
+        resolved_ddl = resolve_sql_template('index_advising_notes.template.sql')
         if rds.execute(resolved_ddl):
-            app.logger.info('Indexed advising note author names.')
+            app.logger.info('Indexed advising notes.')
         else:
-            raise BackgroundJobError('Failed to index advising note author names.')
+            raise BackgroundJobError('Failed to index advising notes.')
