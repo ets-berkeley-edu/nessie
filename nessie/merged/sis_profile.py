@@ -82,6 +82,24 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
     if not academic_status:
         return
 
+    # Try to derive a coherent career-status from the SIS affiliations.
+    career_to_affiliation = {
+        'UGRD': 'UNDERGRAD',
+        'UCBX': 'EXTENSION',
+        'GRAD': 'GRADUATE',
+    }
+    career_status = None
+    for affiliation in sis_student_api_feed.get('affiliations', []):
+        if affiliation.get('type', {}).get('code') == career_to_affiliation.get(career_code):
+            career_status = affiliation.get('status', {}).get('description')
+            if affiliation.get('detail') == 'Completed':
+                career_status = 'Completed'
+            break
+    if not career_status:
+        app.logger.warning(f'Conflict between affiliations and academicStatuses in SIS feed: {sis_student_api_feed}')
+    else:
+        sis_profile['academicCareerStatus'] = career_status
+
     cumulative_units = None
     cumulative_units_taken_for_gpa = None
 
@@ -223,6 +241,14 @@ def merge_sis_profile_plans(academic_status, sis_profile):
         if plan.get('code') != '25000U':
             program = student_plan.get('academicPlan', {}).get('academicProgram', {}).get('program', {})
             plan_feed['program'] = program.get('formalDescription') or program.get('description')
+
+        # Add plan status.
+        plan_status = student_plan.get('statusInPlan', {}).get('status', {})
+        plan_feed['status'] = plan_status.get('formalDescription') or plan_status.get('description')
+        # We generally prefer the 'formalDescription', but our formality has limits.
+        if plan_feed['status'] == 'Active in Program':
+            plan_feed['status'] = 'Active'
+
         # Add plan unless it's a duplicate.
         if not next((p for p in sis_profile['plans'] if p.get('description') == plan_feed.get('description')), None):
             sis_profile['plans'].append(plan_feed)
