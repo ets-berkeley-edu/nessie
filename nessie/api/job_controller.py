@@ -57,7 +57,7 @@ from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
 from nessie.jobs.import_registrations import ImportRegistrations
 from nessie.jobs.import_sis_student_api import ImportSisStudentApi
 from nessie.jobs.import_student_photos import ImportStudentPhotos
-from nessie.jobs.index_advising_note_authors import IndexAdvisingNoteAuthors
+from nessie.jobs.index_advising_notes import IndexAdvisingNotes
 from nessie.jobs.index_enrollments import IndexEnrollments
 from nessie.jobs.migrate_lrs_incrementals import MigrateLrsIncrementals
 from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
@@ -244,10 +244,10 @@ def index_enrollments(term_id):
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/index_advising_note_authors', methods=['POST'])
+@app.route('/api/job/index_advising_notes', methods=['POST'])
 @auth_required
-def index_advising_note_authors():
-    job_started = IndexAdvisingNoteAuthors().run_async()
+def index_advising_notes():
+    job_started = IndexAdvisingNotes().run_async()
     return respond_with_status(job_started)
 
 

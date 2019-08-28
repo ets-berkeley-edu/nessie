@@ -53,4 +53,41 @@ INSERT INTO {rds_schema_advising_notes}.advising_note_author_names (
     )) AS name FROM {rds_schema_advising_notes}.advising_note_authors
 );
 
+DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_notes CASCADE;
+
+CREATE TABLE {rds_schema_advising_notes}.advising_notes AS (
+SELECT sis.sid, sis.id, sis.note_body, sis.advisor_sid,
+       NULL::varchar AS advisor_uid, NULL::varchar AS advisor_first_name, NULL::varchar AS advisor_last_name,
+       sis.note_category, sis.note_subcategory, sis.created_by, sis.created_at, sis.updated_at
+FROM {sis_advising_notes_schema()}.advising_notes sis
+UNION
+SELECT ascn.sid, ascn.id, NULL AS note_body, NULL AS advisor_sid, ascn.advisor_uid, ascn.advisor_first_name, ascn.advisor_last_name,
+       NULL AS note_category, NULL AS note_subcategory, NULL AS created_by, ascn.created_at, ascn.updated_at
+FROM {asc_schema()}.advising_notes ascn
+UNION
+SELECT ein.sid, ein.id, NULL AS note_body, NULL AS advisor_sid, ein.advisor_uid, ein.advisor_first_name, ein.advisor_last_name,
+       NULL AS note_category, NULL AS note_subcategory, NULL AS created_by, ein.created_at, ein.updated_at
+FROM {e_i_schema()}.advising_notes ein
+);
+
+CREATE INDEX idx_sis_advising_notes_id ON {rds_schema_advising_notes}.advising_notes(id);
+CREATE INDEX idx_sis_advising_notes_sid ON {rds_schema_advising_notes}.advising_notes(sid);
+CREATE INDEX idx_sis_advising_notes_advisor_sid ON {rds_schema_advising_notes}.advising_notes(advisor_sid);
+CREATE INDEX idx_sis_advising_notes_advisor_uid ON {rds_schema_advising_notes}.advising_notes(advisor_uid);
+CREATE INDEX idx_sis_advising_notes_created_at ON {rds_schema_advising_notes}.advising_notes(created_at);
+CREATE INDEX idx_sis_advising_notes_created_by ON {rds_schema_advising_notes}.advising_notes(created_by);
+CREATE INDEX idx_sis_advising_notes_updated_at ON {rds_schema_advising_notes}.advising_notes(updated_at);
+
+DROP MATERIALIZED VIEW IF EXISTS {rds_schema_advising_notes}.advising_notes_search_index CASCADE;
+
+CREATE MATERIALIZED VIEW {rds_schema_advising_notes}.advising_notes_search_index AS (
+  SELECT id, fts_index FROM {rds_schema_asc}.advising_notes_search_index
+  UNION SELECT id, fts_index FROM {rds_schema_e_i}.advising_notes_search_index
+  UNION SELECT id, fts_index FROM {rds_schema_sis_advising_notes}.advising_notes_search_index
+);
+
+CREATE INDEX idx_advising_notes_ft_search
+ON {rds_schema_advising_notes}.advising_notes_search_index
+USING gin(fts_index);
+
 COMMIT TRANSACTION;
