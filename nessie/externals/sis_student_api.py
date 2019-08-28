@@ -60,8 +60,8 @@ def _get_v1_student(sid, mock=None):
         return authorized_request_v1(url)
 
 
-def get_v2_by_sids_list(up_to_100_sids, term_id=None, as_of=None, with_registration=False):
-    response = _get_v2_by_sids_list(up_to_100_sids, term_id, as_of, with_registration)
+def get_v2_by_sids_list(up_to_100_sids, term_id=None, as_of=None, with_registration=False, with_contacts=True):
+    response = _get_v2_by_sids_list(up_to_100_sids, term_id, as_of, with_registration, with_contacts)
     if response and hasattr(response, 'json'):
         unwrapped = response.json().get('apiResponse', {}).get('response', {}).get('students', [])
         if len(unwrapped) < len(up_to_100_sids):
@@ -145,7 +145,7 @@ def get_sis_students_list(all_sids):
 
 
 @fixture('sis_student_list_api_v2')
-def _get_v2_by_sids_list(up_to_100_sids, term_id=None, as_of=None, with_registration=False, mock=None):
+def _get_v2_by_sids_list(up_to_100_sids, term_id, as_of, with_registration, with_contacts, mock=None):
     """Collect SIS Student Profile data for up to 100 SIDs at a time.
 
     The SIS 'list' request does not return studentAttributes, ethnicities, or gender. (In other words, 'inc-attr',
@@ -158,7 +158,7 @@ def _get_v2_by_sids_list(up_to_100_sids, term_id=None, as_of=None, with_registra
         'id-list': id_list,
         'affiliation-status': 'ALL',
         'inc-acad': True,
-        'inc-cntc': True,
+        'inc-cntc': with_contacts,
         'inc-completed-programs': True,
         'inc-inactive-programs': True,
     }
