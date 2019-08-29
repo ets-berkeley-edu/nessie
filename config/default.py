@@ -155,6 +155,9 @@ LOCH_S3_PROTECTED_BUCKET = 'protected_bucket_name'
 LOCH_S3_PUBLIC_BUCKET = 'public_bucket_name'
 LOCH_S3_REGION = 'us-west-2'
 
+LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH = 'sis/path/to/historical'
+LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH = 'sis/path/to/incremental'
+
 LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM = 'canvas/path/to/current/term'
 LOCH_S3_CANVAS_DATA_PATH_DAILY = 'canvas/path/to/daily'
 LOCH_S3_CANVAS_DATA_PATH_HISTORICAL = 'canvas/path/to/historical'
