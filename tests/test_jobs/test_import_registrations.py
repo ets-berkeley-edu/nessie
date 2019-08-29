@@ -28,7 +28,7 @@ import json
 import logging
 
 from nessie.externals import rds, redshift
-from tests.util import capture_app_logs, mock_s3
+from tests.util import capture_app_logs, mock_s3, override_config
 
 
 class TestImportRegistrations:
@@ -76,7 +76,7 @@ class TestImportRegistrations:
                 assert next(r['status'] for r in rows if r['sid'] == '11667051') == 'success'
                 result = ImportRegistrations().run_wrapped()
                 assert result == 'Registrations import completed: 0 succeeded, 7 failed.'
-                result = ImportRegistrations().run_wrapped(load_all=True)
+                result = ImportRegistrations().run_wrapped(load_mode='all')
                 assert result == 'Registrations import completed: 2 succeeded, 7 failed.'
                 rds.execute("DELETE FROM nessie_metadata_test.registration_import_status WHERE sid = '11667051'")
                 result = ImportRegistrations().run_wrapped()
@@ -86,3 +86,24 @@ class TestImportRegistrations:
                 result = ImportRegistrations().run_wrapped()
                 assert result == 'Registrations import completed: 1 succeeded, 7 failed.'
                 assert next(r['status'] for r in rows if r['sid'] == '11667051') == 'success'
+
+    def test_import_registrations_batch_mode(self, app, metadata_db, student_tables, caplog):
+        from nessie.jobs.import_registrations import ImportRegistrations
+        with mock_s3(app):
+            ImportRegistrations().run_wrapped()
+            rows = rds.fetch('SELECT * FROM nessie_metadata_test.registration_import_status')
+            assert len(rows) == 9
+
+            with override_config(app, 'CYCLICAL_API_IMPORT_BATCH_SIZE', 8):
+
+                def _success_history_after_batch_import():
+                    result = ImportRegistrations().run_wrapped(load_mode='batch')
+                    assert result == 'Registrations import completed: 1 succeeded, 7 failed.'
+                    rows = rds.fetch("SELECT * FROM nessie_metadata_test.registration_import_status WHERE status = 'success' ORDER BY updated_at")
+                    assert len(rows) == 2
+                    assert rows[0]['updated_at'] < rows[1]['updated_at']
+                    return (rows[0]['sid'], rows[1]['sid'])
+
+                sid_1, sid_2 = _success_history_after_batch_import()
+                assert _success_history_after_batch_import() == (sid_2, sid_1)
+                assert _success_history_after_batch_import() == (sid_1, sid_2)

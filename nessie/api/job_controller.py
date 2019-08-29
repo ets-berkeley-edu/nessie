@@ -320,15 +320,12 @@ def import_student_population():
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/import_registrations', methods=['POST'])
+@app.route('/api/job/import_registrations/<load_mode>', methods=['POST'])
 @auth_required
-def import_registrations():
-    args = get_json_args(request)
-    if args:
-        load_all = args.get('load_all')
-    else:
-        load_all = False
-    job_started = ImportRegistrations(load_all=load_all).run_async()
+def import_registrations(load_mode):
+    if load_mode not in ['all', 'batch', 'new']:
+        raise BadRequestError('Unrecognized mode for registrations import.')
+    job_started = ImportRegistrations(load_mode=load_mode).run_async()
     return respond_with_status(job_started)
 
 

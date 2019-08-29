@@ -254,3 +254,12 @@ def get_sids_with_registration_imports():
         FROM {metadata_schema()}.registration_import_status
         WHERE status = 'success'"""
     return rds.fetch(sql)
+
+
+def get_active_sids_with_oldest_registration_imports(limit):
+    active_sids = [r['sid'] for r in get_all_student_ids()]
+    sql = f"""SELECT sid FROM {metadata_schema()}.registration_import_status
+        WHERE sid = ANY(%s)
+        AND status = 'success'
+        ORDER BY updated_at LIMIT %s"""
+    return rds.fetch(sql, params=(active_sids, limit))

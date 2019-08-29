@@ -82,6 +82,8 @@ CANVAS_HTTP_TOKEN = 'yet another secret'
 
 CURRENT_TERM = 'Fall 2017'
 
+CYCLICAL_API_IMPORT_BATCH_SIZE = 5000
+
 DEGREE_PROGRESS_API_URL = 'https://secreturl.berkeley.edu/PSFT_CS'
 DEGREE_PROGRESS_API_USERNAME = 'secretuser'
 DEGREE_PROGRESS_API_PASSWORD = 'secretpassword'
