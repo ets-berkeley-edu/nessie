@@ -92,6 +92,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.index_advising_notes import IndexAdvisingNotes
     from nessie.jobs.index_enrollments import IndexEnrollments
     from nessie.jobs.migrate_lrs_incrementals import MigrateLrsIncrementals
+    from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
     from nessie.jobs.refresh_boac_cache import RefreshBoacCache
     from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
     from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
@@ -147,6 +148,7 @@ def schedule_all_jobs(force=False):
             CreateEIAdvisingNotesSchema,
             CreateSisAdvisingNotesSchema,
             IndexAdvisingNotes,
+            MigrateSisAdvisingNoteAttachments,
         ],
         force,
     )
