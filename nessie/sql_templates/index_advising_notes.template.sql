@@ -59,15 +59,15 @@ CREATE TABLE {rds_schema_advising_notes}.advising_notes AS (
 SELECT sis.sid, sis.id, sis.note_body, sis.advisor_sid,
        NULL::varchar AS advisor_uid, NULL::varchar AS advisor_first_name, NULL::varchar AS advisor_last_name,
        sis.note_category, sis.note_subcategory, sis.created_by, sis.created_at, sis.updated_at
-FROM {sis_advising_notes_schema()}.advising_notes sis
+FROM {rds_schema_sis_advising_notes}.advising_notes sis
 UNION
 SELECT ascn.sid, ascn.id, NULL AS note_body, NULL AS advisor_sid, ascn.advisor_uid, ascn.advisor_first_name, ascn.advisor_last_name,
        NULL AS note_category, NULL AS note_subcategory, NULL AS created_by, ascn.created_at, ascn.updated_at
-FROM {asc_schema()}.advising_notes ascn
+FROM {rds_schema_asc}.advising_notes ascn
 UNION
 SELECT ein.sid, ein.id, NULL AS note_body, NULL AS advisor_sid, ein.advisor_uid, ein.advisor_first_name, ein.advisor_last_name,
        NULL AS note_category, NULL AS note_subcategory, NULL AS created_by, ein.created_at, ein.updated_at
-FROM {e_i_schema()}.advising_notes ein
+FROM {rds_schema_e_i}.advising_notes ein
 );
 
 CREATE INDEX idx_sis_advising_notes_id ON {rds_schema_advising_notes}.advising_notes(id);
