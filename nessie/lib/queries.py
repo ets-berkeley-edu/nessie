@@ -174,9 +174,10 @@ def get_all_enrollments_in_advisee_canvas_sites():
 
 @fixture('query_advisee_sis_enrollments.csv')
 def get_all_advisee_sis_enrollments():
+    # The calnet persons table is used as a convenient union of all BOA advisees,
     sql = f"""SELECT
                   enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id,
-                  enr.ldap_uid, ldap.sid,
+                  enr.ldap_uid, enr.sid,
                   enr.sis_course_title, enr.sis_course_name,
                   enr.sis_section_id, enr.sis_primary, enr.sis_instruction_format, enr.sis_section_num
               FROM {intermediate_schema()}.sis_enrollments enr
@@ -245,6 +246,29 @@ def get_enrolled_primary_sections(term_id=None):
                 sec.sis_term_id, sec.sis_section_id, sec.sis_course_name,
                 sec.sis_course_title, sec.sis_instruction_format, sec.sis_section_num
               ORDER BY sec.sis_section_id
+        """
+    return redshift.fetch(sql)
+
+
+def get_non_advisee_student_ids():
+    sql = f"""SELECT DISTINCT(en.sid)
+              FROM {intermediate_schema()}.sis_enrollments en
+              LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = en.sid
+              LEFT JOIN {coe_schema()}.students coe ON coe.sid = en.sid
+              LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = en.sid
+              WHERE ascs.sid IS NULL AND coe.sid IS NULL AND ug.sid IS NULL
+        """
+    return redshift.fetch(sql)
+
+
+def get_non_advisee_unfetched_student_ids():
+    sql = f"""SELECT DISTINCT(en.sid)
+              FROM {intermediate_schema()}.sis_enrollments en
+              LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = en.sid
+              LEFT JOIN {coe_schema()}.students coe ON coe.sid = en.sid
+              LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = en.sid
+              LEFT JOIN {student_schema()}.sis_api_profiles_hist_enr hist ON hist.sid = en.sid
+              WHERE ascs.sid IS NULL AND coe.sid IS NULL AND ug.sid IS NULL AND hist.sid IS NULL
         """
     return redshift.fetch(sql)
 

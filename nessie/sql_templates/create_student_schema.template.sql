@@ -66,6 +66,15 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_profiles_v1
 DISTKEY(sid)
 SORTKEY(sid);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_profiles_hist_enr
+(
+    sid VARCHAR NOT NULL,
+    uid VARCHAR,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY(sid)
+SORTKEY(sid);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_last_registrations
 (
     sid VARCHAR NOT NULL,
@@ -87,6 +96,14 @@ SORTKEY (sid, term_id);
 -- The following are derivative tables generated from previously stored data.
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles
+(
+    sid VARCHAR NOT NULL,
+    profile VARCHAR(max) NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles_hist_enr
 (
     sid VARCHAR NOT NULL,
     profile VARCHAR(max) NOT NULL
