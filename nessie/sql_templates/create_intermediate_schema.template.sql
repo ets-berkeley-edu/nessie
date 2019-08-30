@@ -200,6 +200,7 @@ AS (
         en.grading_basis,
         TRIM(en.grade) AS grade,
         TRIM(en.grade_midterm) AS grade_midterm,
+        en.sis_id AS sid,
         crs.sis_course_title,
         crs.sis_course_name,
         crs.sis_primary,
