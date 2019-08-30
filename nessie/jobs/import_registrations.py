@@ -31,7 +31,7 @@ from flask import current_app as app
 from nessie.externals import rds, redshift, s3, sis_student_api
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.metadata import update_registration_import_status
-from nessie.lib.queries import get_all_student_ids, get_sids_with_registration_imports
+from nessie.lib.queries import get_active_sids_with_oldest_registration_imports, get_all_student_ids, get_sids_with_registration_imports
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
 
 """Imports and stores SIS Students Registrations API data, including term GPAs and most recent registration."""
@@ -54,11 +54,22 @@ class ImportRegistrations(BackgroundJob):
     redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
     max_threads = app.config['STUDENT_API_MAX_THREADS']
 
-    def run(self, load_all=False):
-        sids = [row['sid'] for row in get_all_student_ids()]
-        if not load_all:
-            previous_backfills = {row['sid'] for row in get_sids_with_registration_imports()}
-            sids = list(set(sids).difference(previous_backfills))
+    def run(self, load_mode='new'):
+        all_sids = [row['sid'] for row in get_all_student_ids()]
+        previous_backfills = {row['sid'] for row in get_sids_with_registration_imports()}
+
+        if load_mode == 'new':
+            sids = list(set(all_sids).difference(previous_backfills))
+        elif load_mode == 'batch':
+            new_sids = list(set(all_sids).difference(previous_backfills))
+            limit = app.config['CYCLICAL_API_IMPORT_BATCH_SIZE'] - len(new_sids)
+            if limit > 0:
+                oldest_backfills = [row['sid'] for row in get_active_sids_with_oldest_registration_imports(limit=limit)]
+                sids = new_sids + oldest_backfills
+            else:
+                sids = new_sids
+        elif load_mode == 'all':
+            sids = all_sids
 
         app.logger.info(f'Starting registrations import job for {len(sids)} students...')
 
@@ -67,7 +78,7 @@ class ImportRegistrations(BackgroundJob):
             'last_registrations': [],
         }
         successes, failures = self.load_concurrently(rows, sids)
-        if load_all and (len(successes) == 0) and (len(failures) > 0):
+        if load_mode != 'new' and (len(successes) == 0) and (len(failures) > 0):
             raise BackgroundJobError('Failed to import registration histories: aborting job.')
 
         for key in rows.keys():
