@@ -23,6 +23,9 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+
+from datetime import date
+
 from flask import current_app as app
 from nessie.externals import s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
@@ -33,15 +36,22 @@ from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 
 class MigrateSisAdvisingNoteAttachments(BackgroundJob):
 
-    def run(self, datestamp):
+    def run(self, datestamp=None):
         app.logger.info(f'Starting SIS Advising Note attachments migration job...')
 
-        source_prefix = '/'.join([app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH'], datestamp])
         dest_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH']
 
-        app.logger.info(f'Will copy files from the {datestamp} folder.')
+        if not datestamp:
+            datestamp = date.today().strftime('%Y%m%d')
+        if datestamp == 'all':
+            app.logger.info(f'Will copy all files.')
+            source_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH']
+        else:
+            app.logger.info(f'Will copy files from the {datestamp} folder.')
+            source_prefix = '/'.join([app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH'], datestamp])
+
         self.copy_to_destination(source_prefix, dest_prefix)
-        return f'SIS advising note attachment migration complete for {datestamp}'
+        return f'SIS advising note attachment migration complete for {datestamp} files.'
 
     def copy_to_destination(self, source_prefix, dest_prefix):
         bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
@@ -51,7 +61,7 @@ class MigrateSisAdvisingNoteAttachments(BackgroundJob):
             sid = file_name.split('_')[0]
 
             dest_key = f'{dest_prefix}/{sid}/{file_name}'
-            if not s3.copy(bucket, f'{source_prefix}/{file_name}', bucket, dest_key):
+            if not s3.copy(bucket, o, bucket, dest_key):
                 raise BackgroundJobError(f'Copy from source to destination {dest_key} failed.')
 
         app.logger.info(f'Copied {len(objects) if objects else 0} attachments to the destination folder.')

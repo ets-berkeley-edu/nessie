@@ -24,9 +24,11 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
+from datetime import date
 import logging
 
 from botocore.exceptions import ClientError, ConnectionError
+import mock
 from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
 from tests.util import capture_app_logs, mock_s3
 
@@ -41,8 +43,30 @@ def object_exists(m3, bucket, key):
 
 class TestMigrateSisAdvisingNoteAttachments:
 
-    def test_run(self, app, caplog):
-        """Copies files from dated folder to destination, organized into folders by SID."""
+    @mock.patch('nessie.jobs.migrate_sis_advising_note_attachments.date', autospec=True)
+    def test_run_with_no_param(self, mock_date, app, caplog):
+        """Copies files from today's dated folder to destination, organized into folders by SID."""
+        mock_date.today.return_value = date(year=2019, month=8, day=28)
+        bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
+        source_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH']
+        dest_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH']
+
+        caplog.set_level(logging.INFO)
+        with capture_app_logs(app):
+            with mock_s3(app, bucket=bucket) as m3:
+                m3.Object(bucket, f'{source_prefix}/20190828/12345678_00012_1.pdf').put(Body=b'a note attachment')
+                m3.Object(bucket, f'{source_prefix}/20190828/23456789_00003_1.png').put(Body=b'another note attachment')
+                m3.Object(bucket, f'{source_prefix}/20190901/34567890_00014_2.xls').put(Body=b'don\'t copy me')
+
+                MigrateSisAdvisingNoteAttachments().run()
+
+                assert 'Copied 2 attachments to the destination folder.' in caplog.text
+                assert object_exists(m3, bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf')
+                assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00003_1.png')
+                assert not object_exists(m3, bucket, f'{dest_prefix}/34567890/34567890_00014_2.xls')
+
+    def test_run_with_datestamp_param(self, app, caplog):
+        """Copies files from the specified dated folder to destination, organized into folders by SID."""
         bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
         datestamp = '20190828'
         source_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH']
@@ -61,3 +85,24 @@ class TestMigrateSisAdvisingNoteAttachments:
                 assert object_exists(m3, bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf')
                 assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00003_1.png')
                 assert not object_exists(m3, bucket, f'{dest_prefix}/34567890/34567890_00014_2.xls')
+
+    def test_run_with_all_param(self, app, caplog):
+        """Copies files from all folders to destination, organized into folders by SID."""
+        bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
+        datestamp = 'all'
+        source_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH']
+        dest_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH']
+
+        caplog.set_level(logging.INFO)
+        with capture_app_logs(app):
+            with mock_s3(app, bucket=bucket) as m3:
+                m3.Object(bucket, f'{source_prefix}/{datestamp}/12345678_00012_1.pdf').put(Body=b'a note attachment')
+                m3.Object(bucket, f'{source_prefix}/{datestamp}/23456789_00003_1.png').put(Body=b'another note attachment')
+                m3.Object(bucket, f'{source_prefix}/20190901/34567890_00014_2.xls').put(Body=b'ok to copy me')
+
+                MigrateSisAdvisingNoteAttachments().run(datestamp=datestamp)
+
+                assert 'Copied 3 attachments to the destination folder.' in caplog.text
+                assert object_exists(m3, bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf')
+                assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00003_1.png')
+                assert object_exists(m3, bucket, f'{dest_prefix}/34567890/34567890_00014_2.xls')

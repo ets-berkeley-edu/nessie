@@ -157,14 +157,13 @@ LOCH_S3_PROTECTED_BUCKET = 'protected_bucket_name'
 LOCH_S3_PUBLIC_BUCKET = 'public_bucket_name'
 LOCH_S3_REGION = 'us-west-2'
 
-LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH = 'sis/path/to/historical'
-LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH = 'sis/path/to/incremental'
-
 LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM = 'canvas/path/to/current/term'
 LOCH_S3_CANVAS_DATA_PATH_DAILY = 'canvas/path/to/daily'
 LOCH_S3_CANVAS_DATA_PATH_HISTORICAL = 'canvas/path/to/historical'
 
 # The following paths are consistent across environments and do not need to be overridden locally.
+LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH = 'sis-data/sis-sftp/historical/advising-notes/attachment-files'
+LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH = 'sis-data/sis-sftp/incremental/advising-notes/attachment-files'
 LOCH_S3_ASC_DATA_PATH = 'asc-data'
 LOCH_S3_ASC_DATA_SFTP_PATH = 'asc-data/asc-sftp'
 LOCH_S3_BOAC_ANALYTICS_DATA_PATH = 'boac-analytics'
