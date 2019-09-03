@@ -115,6 +115,12 @@ class ImportSisStudentApi(BackgroundJob):
                     for feed in feeds:
                         sid = next(id['id'] for id in feed['identifiers'] if id['type'] == 'student-id')
                         remaining_sids.discard(sid)
+
+                        # An extremely crude defense against SISRP-48296.
+                        for ac_stat in feed.get('academicStatuses', []):
+                            for ac_plan in ac_stat.get('studentPlans', []):
+                                ac_plan['academicSubPlans'] = []
+
                         rows.append(encoded_tsv_row([sid, json.dumps(feed)]))
                 if remaining_sids:
                     failure_count = len(remaining_sids)
