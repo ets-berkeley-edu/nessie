@@ -24,29 +24,21 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
-from nessie.lib import http
+from nessie.externals import redshift
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
+from nessie.lib.util import resolve_sql_template
 
-"""BOAC auth API."""
-
-
-def get_manually_added_advisees():
-    response = authorized_request(app.config['BOA_ADVISEES_API_URL'], app.config['BOA_ADVISEES_API_KEY'])
-    if not response or not hasattr(response, 'json'):
-        error = f'BOA manually added advisees API unexpected response: {response}'
-        app.logger.error(error)
-        return {'error': error}
-    return response.json()
+"""Logic for Advisee schema creation job."""
 
 
-def kickoff_refresh():
-    successful = True
-    for boac in app.config['BOAC_REFRESHERS']:
-        successful = authorized_request(boac['URL'], boac['API_KEY']) and successful
-    return successful
+class CreateAdviseeSchema(BackgroundJob):
 
-
-def authorized_request(url, api_key):
-    # The more typical underscored "app_key" header will be stripped out by the AWS load balancer.
-    # A hyphened "app-key" header passes through.
-    auth_headers = {'app-key': api_key}
-    return http.request(url, auth_headers)
+    def run(self):
+        app.logger.info(f'Starting Advisee schema creation job...')
+        app.logger.info(f'Executing SQL...')
+        resolved_ddl = resolve_sql_template('create_advisee_schema.template.sql')
+        if redshift.execute_ddl_script(resolved_ddl):
+            app.logger.info(f"Schema '{app.config['REDSHIFT_SCHEMA_ADVISEE']}' found or created.")
+        else:
+            raise BackgroundJobError(f'Advisee schema creation failed.')
+        return True

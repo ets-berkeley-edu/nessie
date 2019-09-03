@@ -78,6 +78,10 @@ def get_s3_asc_daily_path(cutoff=None):
     return app.config['LOCH_S3_ASC_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
 
+def get_s3_boa_api_daily_path(cutoff=None):
+    return app.config['LOCH_S3_BOA_DATA_API_PATH'] + '/daily/' + hashed_datestamp(cutoff)
+
+
 def get_s3_boac_analytics_incremental_path(cutoff=None):
     return app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH'] + '/incremental/' + hashed_datestamp(cutoff)
 
@@ -130,6 +134,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'rds_schema_undergrads': app.config['RDS_SCHEMA_UNDERGRADS'],
         'redshift_app_boa_user': app.config['REDSHIFT_APP_BOA_USER'],
         'redshift_dblink_group': app.config['REDSHIFT_DBLINK_GROUP'],
+        'redshift_schema_advisee': app.config['REDSHIFT_SCHEMA_ADVISEE'],
         'redshift_schema_advisor': app.config['REDSHIFT_SCHEMA_ADVISOR'],
         'redshift_schema_advisor_internal': app.config['REDSHIFT_SCHEMA_ADVISOR_INTERNAL'],
         'redshift_schema_asc': app.config['REDSHIFT_SCHEMA_ASC'],

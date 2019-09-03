@@ -30,6 +30,7 @@ from nessie.jobs.create_undergrads_schema import CreateUndergradsSchema
 from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.jobs.import_calnet_data import ImportCalNetData
+from nessie.jobs.import_non_current_students import ImportNonCurrentStudents
 from nessie.jobs.import_student_photos import ImportStudentPhotos
 
 
@@ -40,6 +41,7 @@ class ChainedImportStudentPopulation(ChainedBackgroundJob):
             ImportAscAthletes(),
             GenerateAscProfiles(),
             CreateUndergradsSchema(),
+            ImportNonCurrentStudents(),
             ImportCalNetData(),
             CreateCalNetSchema(),
             ImportStudentPhotos(),
