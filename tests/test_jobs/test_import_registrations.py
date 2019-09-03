@@ -43,7 +43,7 @@ class TestImportRegistrations:
         with capture_app_logs(app):
             with mock_s3(app):
                 result = ImportRegistrations().run_wrapped()
-            assert result == 'Registrations import completed: 2 succeeded, 7 failed.'
+            assert result == 'Registrations import completed: 2 succeeded, 8 failed.'
             rows = redshift.fetch('SELECT * FROM student_test.student_term_gpas ORDER BY sid')
             assert len(rows) == 11
             for row in rows[0:6]:
@@ -71,20 +71,20 @@ class TestImportRegistrations:
             with mock_s3(app):
                 ImportRegistrations().run_wrapped()
                 rows = rds.fetch('SELECT * FROM nessie_metadata_test.registration_import_status')
-                assert len(rows) == 9
-                assert len([r for r in rows if r['status'] == 'failure']) == 7
+                assert len(rows) == 10
+                assert len([r for r in rows if r['status'] == 'failure']) == 8
                 assert next(r['status'] for r in rows if r['sid'] == '11667051') == 'success'
                 result = ImportRegistrations().run_wrapped()
-                assert result == 'Registrations import completed: 0 succeeded, 7 failed.'
+                assert result == 'Registrations import completed: 0 succeeded, 8 failed.'
                 result = ImportRegistrations().run_wrapped(load_mode='all')
-                assert result == 'Registrations import completed: 2 succeeded, 7 failed.'
+                assert result == 'Registrations import completed: 2 succeeded, 8 failed.'
                 rds.execute("DELETE FROM nessie_metadata_test.registration_import_status WHERE sid = '11667051'")
                 result = ImportRegistrations().run_wrapped()
-                assert result == 'Registrations import completed: 1 succeeded, 7 failed.'
+                assert result == 'Registrations import completed: 1 succeeded, 8 failed.'
                 assert next(r['status'] for r in rows if r['sid'] == '11667051') == 'success'
                 rds.execute("UPDATE nessie_metadata_test.registration_import_status SET status='failure' WHERE sid = '11667051'")
                 result = ImportRegistrations().run_wrapped()
-                assert result == 'Registrations import completed: 1 succeeded, 7 failed.'
+                assert result == 'Registrations import completed: 1 succeeded, 8 failed.'
                 assert next(r['status'] for r in rows if r['sid'] == '11667051') == 'success'
 
     def test_import_registrations_batch_mode(self, app, metadata_db, student_tables, caplog):
@@ -92,13 +92,13 @@ class TestImportRegistrations:
         with mock_s3(app):
             ImportRegistrations().run_wrapped()
             rows = rds.fetch('SELECT * FROM nessie_metadata_test.registration_import_status')
-            assert len(rows) == 9
+            assert len(rows) == 10
 
-            with override_config(app, 'CYCLICAL_API_IMPORT_BATCH_SIZE', 8):
+            with override_config(app, 'CYCLICAL_API_IMPORT_BATCH_SIZE', 9):
 
                 def _success_history_after_batch_import():
                     result = ImportRegistrations().run_wrapped(load_mode='batch')
-                    assert result == 'Registrations import completed: 1 succeeded, 7 failed.'
+                    assert result == 'Registrations import completed: 1 succeeded, 8 failed.'
                     rows = rds.fetch("SELECT * FROM nessie_metadata_test.registration_import_status WHERE status = 'success' ORDER BY updated_at")
                     assert len(rows) == 2
                     assert rows[0]['updated_at'] < rows[1]['updated_at']

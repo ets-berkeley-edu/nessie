@@ -32,6 +32,10 @@ from nessie.lib.mockingdata import fixture
 data_loch_db = None
 
 
+def advisee_schema():
+    return app.config['REDSHIFT_SCHEMA_ADVISEE']
+
+
 def asc_schema():
     return app.config['REDSHIFT_SCHEMA_ASC']
 
@@ -67,7 +71,8 @@ def undergrads_schema():
 def get_all_student_ids():
     sql = f"""SELECT sid FROM {asc_schema()}.students
         UNION SELECT sid FROM {coe_schema()}.students
-        UNION SELECT sid FROM {undergrads_schema()}.students"""
+        UNION SELECT sid FROM {undergrads_schema()}.students
+        UNION SELECT sid FROM {advisee_schema()}.non_current_students"""
     return redshift.fetch(sql)
 
 

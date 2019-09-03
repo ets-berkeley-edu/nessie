@@ -50,6 +50,7 @@ REDSHIFT_USER = 'nessie'
 RDS_APP_BOA_USER = 'nessie'
 REDSHIFT_APP_BOA_USER = 'nessie'
 
+REDSHIFT_SCHEMA_ADVISEE = 'advisee_test'
 REDSHIFT_SCHEMA_ADVISOR = 'boac_advisor_external_test'
 REDSHIFT_SCHEMA_ADVISOR_INTERNAL = 'boac_advisor_test'
 REDSHIFT_SCHEMA_ASC = 'asc_test'

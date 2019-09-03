@@ -1,3 +1,10 @@
+CREATE SCHEMA IF NOT EXISTS {redshift_schema_advisee};
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_advisee}.non_current_students
+(
+    sid VARCHAR NOT NULL
+);
+
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_asc};
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_asc}.students
@@ -227,6 +234,9 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_term_gpas
     units_taken_for_gpa DECIMAL(4,1)
 );
 
+INSERT INTO {redshift_schema_advisee}.non_current_students (sid)
+VALUES ('5000000000');
+
 INSERT INTO {redshift_schema_asc}.students
 (sid, intensive, active, status_asc, group_code, group_name, team_code, team_name)
 VALUES
@@ -254,12 +264,13 @@ VALUES
 ('1234567890', '12345', 'Osk', 'Bear', '', '', 'FORMER-STUDENT'),
 ('2345678901', '98765', 'Dave', 'Doolittle', 'dd2@berkeley.edu', 'dd2@berkeley', 'STUDENT-TYPE-REGISTERED'),
 ('3456789012', '242881', 'Paul', 'Kerschen', 'pk@berkeley.edu', 'pk@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
+('5000000000', '505050', 'Moon Unit', 'Zappa', 'muz@berkeley.edu', 'muz@berkeley.edu', 'FORMER-STUDENT'),
 ('5678901234', '9933311', 'Sandeep', 'Jayaprakash', 'sj@berkeley.edu', 'sj@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
 ('7890123456', '1049291', 'Paul', 'Farestveit', 'pf@berkeley.edu', 'pf@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
 ('8901234567', '123456', 'John David', 'Crossman', 'jdc@berkeley.edu', 'jdc@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
 ('890127492', '211159', 'Siegfried', 'Schlemiel', 'ss@berkeley.edu', 'ss@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
 ('9000000000', '300847', 'Wolfgang', 'Pauli-O''Rourke', 'wpo@berkeley.edu', 'wpo@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
-('9100000000', '300848', 'Nora Stanton', 'Barney', 'nsb@berkeley.edu', 'nsb@berkeley.edu', 'STUDENT-TYPE-REGISTERED');
+('9100000000', '300848', 'Nora Stanton', 'Barney', 'nsb@berkeley.edu', 'nsb@berkeley.edu', 'STUDENT-TYPE-REGISTERED');;
 
 INSERT INTO {redshift_schema_coe}.students
 (sid, advisor_ldap_uid, gender, ethnicity, minority, did_prep, prep_eligible, did_tprep, tprep_eligible,
@@ -283,4 +294,5 @@ INSERT INTO {redshift_schema_student}.sis_api_profiles_v1
 VALUES
 ('11667051', %(sis_student_api_v1_11667051)s),
 ('1234567890', %(sis_student_api_v1_1234567890)s),
-('2345678901', %(sis_student_api_v1_2345678901)s);
+('2345678901', %(sis_student_api_v1_2345678901)s),
+('5000000000', %(sis_student_api_v1_5000000000)s);

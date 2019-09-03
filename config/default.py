@@ -166,6 +166,7 @@ LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH = 'sis-data/sis-sftp/historical/advis
 LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH = 'sis-data/sis-sftp/incremental/advising-notes/attachment-files'
 LOCH_S3_ASC_DATA_PATH = 'asc-data'
 LOCH_S3_ASC_DATA_SFTP_PATH = 'asc-data/asc-sftp'
+LOCH_S3_BOA_DATA_API_PATH = 'boa-data/boa-api'
 LOCH_S3_BOAC_ANALYTICS_DATA_PATH = 'boac-analytics'
 LOCH_S3_CAL1CARD_PHOTOS_PATH = 'cal1card-data/photos'
 LOCH_S3_CALNET_DATA_PATH = 'calnet-data'
@@ -210,6 +211,7 @@ REDSHIFT_APP_BOA_USER = 'boa redshift username'
 REDSHIFT_DBLINK_GROUP = 'nessie_dblink_group'
 
 # The following internal schemas are consistent across environments and do not need to be overridden locally.
+REDSHIFT_SCHEMA_ADVISEE = 'boac_advisee'
 REDSHIFT_SCHEMA_ADVISOR_INTERNAL = 'boac_advisor'
 REDSHIFT_SCHEMA_ASC = 'boac_advising_asc'
 REDSHIFT_SCHEMA_ASC_ADVISING_NOTES_INTERNAL = 'asc_advising_notes'

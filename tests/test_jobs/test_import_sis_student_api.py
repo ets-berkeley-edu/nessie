@@ -37,7 +37,7 @@ class TestImportSisStudentApi:
         assert len(initial_rows) == 0
         with mock_s3(app):
             result = ImportSisStudentApi().run_wrapped()
-        assert result == 'SIS student API import job completed: 3 succeeded, 6 failed.'
+        assert result == 'SIS student API import job completed: 3 succeeded, 7 failed.'
         rows = redshift.fetch('SELECT * FROM student_test.sis_api_profiles ORDER BY sid')
         assert len(rows) == 3
         assert rows[0]['sid'] == '11667051'
@@ -57,11 +57,12 @@ class TestImportSisStudentApi:
         with override_config(app, 'STUDENT_V1_API_PREFERRED', True):
             with mock_s3(app):
                 result = ImportSisStudentApi().run_wrapped()
-            assert result == 'SIS student API V1 import job completed: 3 succeeded, 6 failed.'
+            assert result == 'SIS student API V1 import job completed: 4 succeeded, 6 failed.'
             rows = redshift.fetch('SELECT * FROM student_test.sis_api_profiles_v1 ORDER BY sid')
-            assert len(rows) == 3
+            assert len(rows) == 4
             assert rows[0]['sid'] == '11667051'
             assert rows[1]['sid'] == '1234567890'
             assert rows[2]['sid'] == '2345678901'
+            assert rows[3]['sid'] == '5000000000'
             feed = json.loads(rows[0]['feed'], strict=False)
             assert feed['names'][0]['familyName'] == 'Bear'
