@@ -96,6 +96,12 @@ class ImportSisStudentApiHistEnr(BackgroundJob):
                     for feed in feeds:
                         sid = next(id['id'] for id in feed['identifiers'] if id['type'] == 'student-id')
                         uid = next(id['id'] for id in feed['identifiers'] if id['type'] == 'campus-uid')
+
+                        # An extremely crude defense against SISRP-48296.
+                        for ac_stat in feed.get('academicStatuses', []):
+                            for ac_plan in ac_stat.get('studentPlans', []):
+                                ac_plan['academicSubPlans'] = []
+
                         feed_file.write(encoded_tsv_row([sid, uid, json.dumps(feed)]) + b'\n')
                         remaining_sids.discard(sid)
                         saved_sids.append(sid)
