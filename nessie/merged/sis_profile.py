@@ -99,6 +99,7 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
         app.logger.warning(f'Conflict between affiliations and academicStatuses in SIS feed: {sis_student_api_feed}')
     else:
         sis_profile['academicCareerStatus'] = career_status
+        merge_completion_date(sis_profile, academic_status)
 
     cumulative_units = None
     cumulative_units_taken_for_gpa = None
@@ -122,6 +123,13 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
 
     merge_sis_profile_matriculation(academic_status, sis_profile)
     merge_sis_profile_plans(academic_status, sis_profile)
+
+
+def merge_completion_date(sis_profile, academic_status):
+    # If completed, look for a completion date under student career (which seems to indicate graduation date)
+    # rather than under affiliations (which seems to indicate the expiration of a grace period).
+    if sis_profile.get('academicCareerStatus') == 'Completed':
+        sis_profile['academicCareerCompleted'] = academic_status.get('studentCareer', {}).get('toDate')
 
 
 def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile):
