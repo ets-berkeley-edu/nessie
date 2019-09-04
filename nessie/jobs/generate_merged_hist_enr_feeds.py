@@ -91,9 +91,22 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
             sid = row['sid']
             feed = row['feed']
             parsed_profile = parse_merged_sis_profile(feed, None, None)
+            self.fill_names_from_sis_profile(feed, parsed_profile)
             feed_file.write(encoded_tsv_row([sid, row['uid'], json.dumps(parsed_profile)]) + b'\n')
             successes.append(sid)
         return len(successes)
+
+    def fill_names_from_sis_profile(self, api_json, profile):
+        if 'preferredName' in profile:
+            name_type = 'PRF'
+        elif 'primaryName' in profile:
+            name_type = 'PRI'
+        else:
+            return
+        api_feed = json.loads(api_json, strict=False)
+        name_element = next(ne for ne in api_feed['names'] if ne['type']['code'] == name_type)
+        profile['firstName'] = name_element.get('givenName')
+        profile['lastName'] = name_element.get('familyName')
 
     def generate_student_enrollments_table(self, unmerged_sids):
         # Split all S3/Redshift operations by term in hope of not overloading memory or other resources.
