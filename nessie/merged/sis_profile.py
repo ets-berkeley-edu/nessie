@@ -69,18 +69,18 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
     # The Hub may return multiple academic statuses. We'll prefer an undergraduate enrollment, but
     # otherwise select the first well-formed status that is not a Law enrollment.
     academic_status = None
-    career_code = None
     for status in sis_student_api_feed.get('academicStatuses', []):
-        career_code = status.get('studentCareer', {}).get('academicCareer', {}).get('code')
-        if career_code and career_code == 'UGRD':
+        status_code = status.get('studentCareer', {}).get('academicCareer', {}).get('code')
+        if status_code and status_code == 'UGRD':
             academic_status = status
             break
-        elif career_code in {'UCBX', 'GRAD'}:
+        elif status_code in {'UCBX', 'GRAD'}:
             academic_status = status
             next
-    sis_profile['academicCareer'] = career_code
     if not academic_status:
         return
+    career_code = academic_status['studentCareer']['academicCareer']['code']
+    sis_profile['academicCareer'] = career_code
 
     # Try to derive a coherent career-status from the SIS affiliations.
     career_to_affiliation = {
