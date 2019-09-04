@@ -48,6 +48,7 @@ from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
 from nessie.jobs.generate_canvas_caliper_analytics import GenerateCanvasCaliperAnalytics
 from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
 from nessie.jobs.generate_merged_enrollment_term import GenerateMergedEnrollmentTerm
+from nessie.jobs.generate_merged_hist_enr_feeds import GenerateMergedHistEnrFeeds
 from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.jobs.import_calnet_data import ImportCalNetData
@@ -199,6 +200,13 @@ def generate_intermediate_tables():
 @auth_required
 def generate_merged_enrollment_term(term_id):
     job_started = GenerateMergedEnrollmentTerm(term_id=term_id).run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/generate_merged_hist_enr_feeds', methods=['POST'])
+@auth_required
+def generate_merged_hist_enr_feeds():
+    job_started = GenerateMergedHistEnrFeeds().run_async()
     return respond_with_status(job_started)
 
 
