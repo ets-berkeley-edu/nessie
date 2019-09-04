@@ -54,8 +54,12 @@ def generate_student_term_maps(advisees_by_sid):
 
 
 def get_sis_enrollments():
-    student_enrollments_map = {}
     sis_enrollments = queries.get_all_advisee_sis_enrollments()
+    return map_sis_enrollments(sis_enrollments)
+
+
+def map_sis_enrollments(sis_enrollments):
+    student_enrollments_map = {}
     for key, all_sids_grp in groupby(sis_enrollments, operator.itemgetter('sis_term_id')):
         term_id = str(key)
         term_name = berkeley.term_name_for_sis_id(term_id)

@@ -57,7 +57,7 @@ class ImportSisStudentApiHistEnr(BackgroundJob):
     def run(self, sids=None):
         if not sids:
             sids = [row['sid'] for row in get_non_advisee_unfetched_student_ids()]
-        app.logger.info(f'Starting SIS student API import job for {len(sids)} non-current advisees...')
+        app.logger.info(f'Starting SIS student API import job for {len(sids)} non-advisees...')
 
         with tempfile.TemporaryFile() as feed_file:
             saved_sids, failure_count = self.load_concurrently(sids, feed_file)
@@ -78,7 +78,7 @@ class ImportSisStudentApiHistEnr(BackgroundJob):
             if not redshift.execute(staging_to_destination_query):
                 raise BackgroundJobError('Error on Redshift copy: aborting job.')
 
-        return f'SIS student API import job completed: {len(saved_sids)} succeeded, {failure_count} failed.'
+        return f'SIS student API non-advisee import job completed: {len(saved_sids)} succeeded, {failure_count} failed.'
 
     def load_concurrently(self, all_sids, feed_file):
 
@@ -107,7 +107,7 @@ class ImportSisStudentApiHistEnr(BackgroundJob):
                         saved_sids.append(sid)
                 if remaining_sids:
                     failure_count = len(remaining_sids)
-                    app.logger.error(f'SIS student API import failed for SIDs {remaining_sids}.')
+                    app.logger.error(f'SIS student API import failed for non-advisees {remaining_sids}.')
 
-        app.logger.info(f'Wanted {len(all_sids)} students; got {len(saved_sids)} in {timer() - start_loop} secs')
+        app.logger.info(f'Wanted {len(all_sids)} non-advisees; got {len(saved_sids)} in {timer() - start_loop} secs')
         return saved_sids, failure_count

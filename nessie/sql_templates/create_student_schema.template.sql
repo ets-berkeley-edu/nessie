@@ -106,6 +106,7 @@ SORTKEY (sid);
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles_hist_enr
 (
     sid VARCHAR NOT NULL,
+    uid VARCHAR,
     profile VARCHAR(max) NOT NULL
 )
 DISTKEY (sid)
@@ -143,6 +144,15 @@ DISTKEY (major)
 SORTKEY (major);
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_enrollment_terms
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    enrollment_term VARCHAR(max) NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid, term_id);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_enrollment_terms_hist_enr
 (
     sid VARCHAR NOT NULL,
     term_id VARCHAR(4) NOT NULL,

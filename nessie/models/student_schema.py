@@ -64,7 +64,7 @@ def refresh_from_staging(table, term_id, sids, transaction, truncate_staging=Tru
     # matching those restrictions. If there are no restrictions, the entire destination table can be truncated.
     refresh_conditions = []
     refresh_params = []
-    if (term_id and table == 'student_enrollment_terms'):
+    if term_id:
         refresh_conditions.append('term_id = %s')
         refresh_params.append(term_id)
     if sids:

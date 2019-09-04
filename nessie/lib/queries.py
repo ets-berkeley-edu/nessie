@@ -278,6 +278,38 @@ def get_non_advisee_unfetched_student_ids():
     return redshift.fetch(sql)
 
 
+def get_non_advisee_unmerged_student_ids():
+    sql = f"""SELECT DISTINCT(api.sid)
+              FROM {student_schema()}.sis_api_profiles_hist_enr api
+              LEFT JOIN {student_schema()}.student_profiles_hist_enr merged ON api.sid = merged.sid
+              WHERE merged.sid IS NULL
+        """
+    return redshift.fetch(sql)
+
+
+def get_non_advisee_api_feeds(sids):
+    sql = f"""SELECT DISTINCT sis.sid, sis.uid, sis.feed
+              FROM {student_schema()}.sis_api_profiles_hist_enr sis
+              WHERE sis.sid=ANY(%s)
+              ORDER BY sis.sid
+        """
+    return redshift.fetch(sql, params=(sids,))
+
+
+def get_non_advisee_sis_enrollments(sids, term_id):
+    sql = f"""SELECT
+                  enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id,
+                  enr.ldap_uid, enr.sid,
+                  enr.sis_course_title, enr.sis_course_name,
+                  enr.sis_section_id, enr.sis_primary, enr.sis_instruction_format, enr.sis_section_num
+              FROM {intermediate_schema()}.sis_enrollments enr
+              WHERE enr.sid=ANY(%s)
+                AND enr.sis_term_id='{term_id}'
+              ORDER BY enr.sis_term_id DESC, enr.sid, enr.sis_course_name, enr.sis_primary DESC, enr.sis_instruction_format, enr.sis_section_num
+        """
+    return redshift.fetch(sql, params=(sids,))
+
+
 def get_sids_with_registration_imports():
     sql = f"""SELECT sid
         FROM {metadata_schema()}.registration_import_status
