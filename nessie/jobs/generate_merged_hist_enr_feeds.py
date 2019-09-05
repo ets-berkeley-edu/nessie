@@ -27,11 +27,11 @@ import json
 import tempfile
 
 from flask import current_app as app
-from nessie.externals import redshift
-from nessie.jobs.background_job import BackgroundJob
+from nessie.externals import rds, redshift
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib import queries
 from nessie.lib.berkeley import reverse_term_ids
-from nessie.lib.util import encoded_tsv_row
+from nessie.lib.util import encoded_tsv_row, resolve_sql_template
 from nessie.merged.sis_profile import parse_merged_sis_profile
 from nessie.merged.student_terms import map_sis_enrollments
 from nessie.models import student_schema
@@ -66,9 +66,18 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         unmerged_sids = [r['sid'] for r in unmerged_sids]
 
         profile_count = self.generate_student_profile_table(unmerged_sids)
-        self.generate_student_enrollments_table(unmerged_sids)
+        enrollment_count = self.generate_student_enrollments_table(unmerged_sids)
 
-        return f'Generated {profile_count} non-advisee profiles.'
+        if profile_count and enrollment_count:
+            resolved_ddl_rds = resolve_sql_template('update_rds_indexes_hist_enr.template.sql')
+            if rds.execute(resolved_ddl_rds):
+                app.logger.info('RDS indexes updated.')
+            else:
+                raise BackgroundJobError('Failed to refresh RDS copies of non-advisee data.')
+        else:
+            app.logger.warning('No non-advisee data loaded into Redshift; will not refresh RDS copies.')
+
+        return f'Generated {profile_count} non-advisee profiles, {enrollment_count} enrollments.'
 
     def generate_student_profile_table(self, unmerged_sids):
         profile_count = 0
@@ -112,6 +121,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         # Split all S3/Redshift operations by term in hope of not overloading memory or other resources.
         # (Using finer-grained batches of SIDs would probably involve replacing the staging table by a Spectrum
         # external table.)
+        total_count = 0
         table_name = 'student_enrollment_terms_hist_enr'
         student_schema.truncate_staging_table(table_name)
         for term_id in reverse_term_ids(include_future_terms=True, include_legacy_terms=True):
@@ -132,7 +142,9 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
                         None,
                         transaction,
                     )
+                total_count += term_count
         app.logger.info('Non-advisee term enrollment generation complete.')
+        return total_count
 
     def collect_merged_enrollments(self, sids, term_id, feed_file):
         sis_enrollments = queries.get_non_advisee_sis_enrollments(sids, term_id)
