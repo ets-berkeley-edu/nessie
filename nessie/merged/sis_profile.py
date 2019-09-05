@@ -99,7 +99,8 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
         app.logger.warning(f'Conflict between affiliations and academicStatuses in SIS feed: {sis_student_api_feed}')
     else:
         sis_profile['academicCareerStatus'] = career_status
-        merge_completion_date(sis_profile, academic_status)
+
+    merge_degrees(sis_student_api_feed, sis_profile, academic_status)
 
     cumulative_units = None
     cumulative_units_taken_for_gpa = None
@@ -125,11 +126,46 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
     merge_sis_profile_plans(academic_status, sis_profile)
 
 
-def merge_completion_date(sis_profile, academic_status):
+def merge_degrees(sis_student_api_feed, sis_profile, academic_status):
+    if sis_profile.get('academicCareerStatus') != 'Completed':
+        return
     # If completed, look for a completion date under student career (which seems to indicate graduation date)
     # rather than under affiliations (which seems to indicate the expiration of a grace period).
-    if sis_profile.get('academicCareerStatus') == 'Completed':
-        sis_profile['academicCareerCompleted'] = academic_status.get('studentCareer', {}).get('toDate')
+    completion_date = academic_status.get('studentCareer', {}).get('toDate')
+    # Next, look for a degree matching that completion date. If we can't make a match, take the most recent degree
+    # on offer.
+    degree = None
+    for candidate_degree in sis_student_api_feed.get('degrees', []):
+        date_awarded = candidate_degree.get('dateAwarded')
+        if not date_awarded or candidate_degree.get('status', {}).get('description') != 'Awarded':
+            break
+        if date_awarded == completion_date:
+            degree = candidate_degree
+            break
+        if not degree or date_awarded > degree.get('dateAwarded'):
+            degree = candidate_degree
+
+    if completion_date:
+        sis_profile['academicCareerCompleted'] = completion_date
+    if degree:
+        degree_desc = degree.get('academicDegree', {}).get('type', {}).get('description')
+        degree_plans = []
+        for plan in degree.get('academicPlans'):
+            if plan.get('targetDegree', {}).get('type', {}).get('description', {}) == degree_desc:
+                # formalDescription seems to work for UGRD plans but gets too wordy for others.
+                if sis_profile.get('academicCareer') == 'UGRD':
+                    plan_desc = plan.get('plan', {}).get('formalDescription')
+                else:
+                    plan_desc = plan.get('plan', {}).get('description')
+                degree_plans.append({
+                    'group': plan.get('academicProgram', {}).get('academicGroup', {}).get('formalDescription'),
+                    'plan': plan_desc,
+                })
+        sis_profile['degree'] = {
+            'dateAwarded': degree.get('dateAwarded'),
+            'description': degree_desc,
+            'plans': degree_plans,
+        }
 
 
 def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile):
