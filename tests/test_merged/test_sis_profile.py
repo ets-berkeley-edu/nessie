@@ -198,12 +198,21 @@ class TestMergedSisProfile:
                     _active_grad_affiliation(),
                     _completed_ugrd_affiliation(),
                 ],
+                'degrees': [
+                    _certificate_degree(),
+                    _ugrd_degree(),
+                ],
             }
             profile = {}
             merge_sis_profile_academic_status(feed, profile)
             assert profile['academicCareer'] == 'UGRD'
-            assert profile.get('academicCareerStatus') == 'Completed'
-            assert profile.get('academicCareerCompleted') == '2018-05-17'
+            assert profile['academicCareerStatus'] == 'Completed'
+            assert profile['academicCareerCompleted'] == '2018-05-17'
+            assert profile['degree']['dateAwarded'] == '2018-05-17'
+            assert profile['degree']['description'] == 'Bachelor of Arts'
+            assert len(profile['degree']['plans']) == 1
+            assert profile['degree']['plans'][0]['group'] == 'College of Letters and Science'
+            assert profile['degree']['plans'][0]['plan'] == 'Physics'
 
         def test_affiliations_conflict(self, app, caplog):
             feed = {
@@ -599,4 +608,164 @@ def _active_grad_academic_status():
                 },
             },
         ],
+    }
+
+
+def _certificate_degree():
+    return {
+        'academicDegree': {
+            'type': {
+                'code': '87',
+                'description': 'Cert-Resident Studies',
+            },
+        },
+        'academicPlans': [
+            {
+                'plan': {
+                    'code': '701F1C87G',
+                    'description': 'Financial Eng Res Studies Cert',
+                    'formalDescription': 'Resident Studies Certificate in Financial Engineering',
+                },
+                'type': {
+                    'code': 'CRT',
+                    'description': 'Certificat',
+                    'formalDescription': 'Graduate Certificate',
+                },
+                'academicProgram': {
+                    'program': {
+                        'code': 'GSSDP',
+                        'description': 'GR SSD Pgm',
+                        'formalDescription': 'Graduate Self-Supporting Pgms',
+                    },
+                    'academicGroup': {
+                        'code': 'CRT',
+                        'description': 'Grad Div',
+                        'formalDescription': 'Graduate Division',
+                    },
+                    'academicCareer': {
+                        'code': 'GRAD',
+                        'description': 'Graduate',
+                        'formalDescription': 'Graduate',
+                        'fromDate': '2011-01-11',
+                    },
+                },
+            },
+        ],
+        'completionTerm': {
+            'id': '2192',
+            'name': '2019 Spring',
+            'category': {
+                'code': 'R',
+                'description': 'Regular Term',
+            },
+            'academicYear': '2019',
+            'beginDate': '2019-01-10',
+            'endDate': '2019-05-17',
+        },
+        'honors': {},
+        'dateAwarded': '2019-05-17',
+        'status': {
+            'code': 'A',
+            'description': 'Awarded',
+        },
+        'statusDate': '2019-08-23',
+    }
+
+
+def _ugrd_degree():
+    return {
+        'academicDegree': {
+            'type': {
+                'code': 'AB',
+                'description': 'Bachelor of Arts',
+            },
+        },
+        'academicPlans': [
+            {
+                'academicProgram': {
+                    'academicCareer': {
+                        'code': 'UGRD',
+                        'description': 'Undergrad',
+                        'formalDescription': 'Undergraduate',
+                    },
+                    'academicGroup': {
+                        'code': 'CLS',
+                        'description': 'L&S',
+                        'formalDescription': 'College of Letters and Science',
+                    },
+                    'program': {
+                        'code': 'UCLS',
+                        'description': 'UG L&S',
+                        'formalDescription': 'Undergrad Letters & Science',
+                    },
+                },
+                'cipCode': '40.0801',
+                'ownedBy': [
+                    {
+                        'organization': {
+                            'code': 'PHYSICS',
+                            'description': 'Physics',
+                            'formalDescription': 'Physics',
+                        },
+                        'percentage': 100.0,
+                    },
+                ],
+                'plan': {
+                    'code': '25666U',
+                    'description': 'Physics BA',
+                    'formalDescription': 'Physics',
+                },
+                'targetDegree': {
+                    'type': {
+                        'code': 'AB',
+                        'description': 'Bachelor of Arts',
+                        'formalDescription': 'Bachelor of Arts',
+                    },
+                },
+                'type': {
+                    'code': 'MAJ',
+                    'description': 'Major - Regular Acad/Prfnl',
+                    'formalDescription': 'Major - Regular Acad/Prfnl',
+                },
+            },
+            {
+                'ownedBy': [
+                    {
+                        'organization': {
+                            'code': 'MUSIC',
+                            'description': 'Music',
+                            'formalDescription': 'Music',
+                        },
+                        'percentage': 100.0,
+                    },
+                ],
+                'plan': {
+                    'code': '25I055U',
+                    'description': 'Music UG',
+                    'formalDescription': 'Minor in Music',
+                },
+                'type': {
+                    'code': 'MIN',
+                    'description': 'Minor',
+                    'formalDescription': 'Minor',
+                },
+            },
+        ],
+        'completionTerm': {
+            'academicYear': '2018',
+            'beginDate': '2018-01-24',
+            'category': {
+                'code': 'R',
+                'description': 'Regular Term',
+            },
+            'endDate': '2018-05-17',
+            'id': '2182',
+            'name': '2018 Spring',
+        },
+        'dateAwarded': '2018-05-17',
+        'status': {
+            'code': 'A',
+            'description': 'Awarded',
+        },
+        'statusDate': '2019-08-23',
     }
