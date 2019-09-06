@@ -114,13 +114,15 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
     def fill_names_from_sis_profile(self, api_json, profile):
         api_feed = json.loads(api_json, strict=False)
         for name_type in ['PRF', 'PRI']:
-            name_element = next(ne for ne in api_feed['names'] if ne['type']['code'] == name_type)
+            name_element = next((ne for ne in api_feed.get('names', []) if ne['type']['code'] == name_type), None)
             if name_element:
                 break
         if name_element:
             profile['firstName'] = name_element.get('givenName')
             profile['lastName'] = name_element.get('familyName')
             profile['name'] = name_element.get('formattedName')
+        else:
+            app.logger.debug(f'No name parsed in {api_json}')
 
     def generate_student_enrollments_table(self, unmerged_sids):
         # Split all S3/Redshift operations by term in hope of not overloading memory or other resources.
