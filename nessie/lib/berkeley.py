@@ -188,12 +188,13 @@ def reverse_term_ids(include_future_terms=False, include_legacy_terms=False):
 
 def sis_term_id_for_name(term_name=None):
     if term_name:
-        match = re.match(r'\A(Spring|Summer|Fall) (\d)[09](\d{2})\Z', term_name)
+        match = re.match(r'\A(Spring|Summer|Fall|Winter) (\d)[09](\d{2})\Z', term_name)
         if match:
             season_codes = {
                 'Spring': '2',
                 'Summer': '5',
                 'Fall': '8',
+                'Winter': '0',
             }
             return match.group(2) + match.group(3) + season_codes[match.group(1)]
 
@@ -205,6 +206,7 @@ def term_name_for_sis_id(sis_id=None):
             '2': 'Spring',
             '5': 'Summer',
             '8': 'Fall',
+            '0': 'Winter',
         }
         year = f'19{sis_id[1:3]}' if sis_id.startswith('1') else f'20{sis_id[1:3]}'
         return f'{season_codes[sis_id[3:4]]} {year}'
