@@ -219,7 +219,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             )
 
             for plan in sis_profile.get('plans', []):
-                rows['student_majors'].append(encoded_tsv_row([sid, plan['description']]))
+                if plan.get('status') == 'Active':
+                    rows['student_majors'].append(encoded_tsv_row([sid, plan['description']]))
             for hold in sis_profile.get('holds', []):
                 rows['student_holds'].append(encoded_tsv_row([sid, json.dumps(hold)]))
 
