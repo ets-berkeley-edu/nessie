@@ -24,13 +24,23 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-from datetime import date
+from datetime import datetime
 import logging
 
 from botocore.exceptions import ClientError, ConnectionError
 import mock
 from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
+import pytest
 from tests.util import capture_app_logs, mock_s3
+
+
+@pytest.fixture()
+def prior_job_status(app):
+    from nessie.externals import rds
+    rds_schema = app.config['RDS_SCHEMA_METADATA']
+    rds.execute(f"""INSERT INTO {rds_schema}.background_job_status
+                (job_id, status, instance_id, created_at, updated_at)
+                VALUES ('MigrateSisAdvisingNoteAttachments_123', 'succeeded', 'abc', '2019-08-27 00:00:00', '2019-08-27 00:00:00')""")
 
 
 def object_exists(m3, bucket, key):
@@ -41,46 +51,75 @@ def object_exists(m3, bucket, key):
         return False
 
 
+def get_s3_refs(app):
+    bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
+    source_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH']
+    dest_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH']
+    return (bucket, source_prefix, dest_prefix)
+
+
 class TestMigrateSisAdvisingNoteAttachments:
 
-    @mock.patch('nessie.jobs.migrate_sis_advising_note_attachments.date', autospec=True)
-    def test_run_with_no_param(self, mock_date, app, caplog):
-        """Copies files from today's dated folder to destination, organized into folders by SID."""
-        mock_date.today.return_value = date(year=2019, month=8, day=28)
-        bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
-        source_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH']
-        dest_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH']
+    @mock.patch('nessie.jobs.migrate_sis_advising_note_attachments.datetime', autospec=True)
+    def test_first_time_run_with_no_param(self, mock_datetime, app, caplog, metadata_db):
+        """Copies files from all folders to destination, organized into folders by SID."""
+        (bucket, source_prefix, dest_prefix) = get_s3_refs(app)
+        mock_datetime.now.return_value = datetime(year=2019, month=8, day=29)
 
         caplog.set_level(logging.INFO)
         with capture_app_logs(app):
             with mock_s3(app, bucket=bucket) as m3:
                 m3.Object(bucket, f'{source_prefix}/2019/08/28/12345678_00012_1.pdf').put(Body=b'a note attachment')
                 m3.Object(bucket, f'{source_prefix}/2019/08/28/23456789_00003_1.png').put(Body=b'another note attachment')
-                m3.Object(bucket, f'{source_prefix}/2019/09/01/34567890_00014_2.xls').put(Body=b'don\'t copy me')
+                m3.Object(bucket, f'{source_prefix}/2019/08/29/34567890_00014_2.xls').put(Body=b'ok to copy me')
 
                 MigrateSisAdvisingNoteAttachments().run()
 
-                assert 'Copied 2 attachments to the destination folder.' in caplog.text
+                assert f'Will copy files from {source_prefix}/.' in caplog.text
+                assert 'Copied 3 attachments to the destination folder.' in caplog.text
+                assert object_exists(m3, bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf')
+                assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00003_1.png')
+                assert object_exists(m3, bucket, f'{dest_prefix}/34567890/34567890_00014_2.xls')
+
+    @mock.patch('nessie.jobs.migrate_sis_advising_note_attachments.datetime', autospec=True)
+    def test_run_with_no_param(self, mock_datetime, app, caplog, metadata_db, prior_job_status):
+        """Copies new files since the last succesful run to destination (excluding today's date), organized into folders by SID."""
+        (bucket, source_prefix, dest_prefix) = get_s3_refs(app)
+        mock_datetime.now.return_value = datetime(year=2019, month=8, day=29)
+
+        caplog.set_level(logging.INFO)
+        with capture_app_logs(app):
+            with mock_s3(app, bucket=bucket) as m3:
+                m3.Object(bucket, f'{source_prefix}/2019/08/26/45678912_00027_1.pdf').put(Body=b'i\'ve already been copied')
+                m3.Object(bucket, f'{source_prefix}/2019/08/27/12345678_00012_1.pdf').put(Body=b'a note attachment')
+                m3.Object(bucket, f'{source_prefix}/2019/08/28/23456789_00003_1.png').put(Body=b'another note attachment')
+                m3.Object(bucket, f'{source_prefix}/2019/08/29/34567890_00014_2.xls').put(Body=b'don\'t copy me')
+
+                MigrateSisAdvisingNoteAttachments().run()
+
+                assert f'Will copy files from {source_prefix}/2019/08/27.' in caplog.text
+                assert f'Will copy files from {source_prefix}/2019/08/28.' in caplog.text
+                assert 'Copied 1 attachments to the destination folder.' in caplog.text
+                assert not object_exists(m3, bucket, f'{dest_prefix}/45678912/45678912_00027_1.xls')
                 assert object_exists(m3, bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf')
                 assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00003_1.png')
                 assert not object_exists(m3, bucket, f'{dest_prefix}/34567890/34567890_00014_2.xls')
 
     def test_run_with_datestamp_param(self, app, caplog):
         """Copies files from the specified dated folder to destination, organized into folders by SID."""
-        bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
+        (bucket, source_prefix, dest_prefix) = get_s3_refs(app)
         datestamp = '2019/08/28'
-        source_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH']
-        dest_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH']
 
         caplog.set_level(logging.INFO)
         with capture_app_logs(app):
             with mock_s3(app, bucket=bucket) as m3:
                 m3.Object(bucket, f'{source_prefix}/{datestamp}/12345678_00012_1.pdf').put(Body=b'a note attachment')
                 m3.Object(bucket, f'{source_prefix}/{datestamp}/23456789_00003_1.png').put(Body=b'another note attachment')
-                m3.Object(bucket, f'{source_prefix}/2019/09/01/34567890_00014_2.xls').put(Body=b'don\'t copy me')
+                m3.Object(bucket, f'{source_prefix}/2019/08/29/34567890_00014_2.xls').put(Body=b'don\'t copy me')
 
                 MigrateSisAdvisingNoteAttachments().run(datestamp=datestamp)
 
+                assert f'Will copy files from {source_prefix}/{datestamp}.' in caplog.text
                 assert 'Copied 2 attachments to the destination folder.' in caplog.text
                 assert object_exists(m3, bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf')
                 assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00003_1.png')
@@ -88,20 +127,19 @@ class TestMigrateSisAdvisingNoteAttachments:
 
     def test_run_with_all_param(self, app, caplog):
         """Copies files from all folders to destination, organized into folders by SID."""
-        bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
+        (bucket, source_prefix, dest_prefix) = get_s3_refs(app)
         datestamp = 'all'
-        source_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH']
-        dest_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH']
 
         caplog.set_level(logging.INFO)
         with capture_app_logs(app):
             with mock_s3(app, bucket=bucket) as m3:
                 m3.Object(bucket, f'{source_prefix}/{datestamp}/12345678_00012_1.pdf').put(Body=b'a note attachment')
                 m3.Object(bucket, f'{source_prefix}/{datestamp}/23456789_00003_1.png').put(Body=b'another note attachment')
-                m3.Object(bucket, f'{source_prefix}/2019/09/01/34567890_00014_2.xls').put(Body=b'ok to copy me')
+                m3.Object(bucket, f'{source_prefix}/2019/08/29/34567890_00014_2.xls').put(Body=b'ok to copy me')
 
                 MigrateSisAdvisingNoteAttachments().run(datestamp=datestamp)
 
+                assert f'Will copy files from {source_prefix}/.' in caplog.text
                 assert 'Copied 3 attachments to the destination folder.' in caplog.text
                 assert object_exists(m3, bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf')
                 assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00003_1.png')
@@ -109,10 +147,8 @@ class TestMigrateSisAdvisingNoteAttachments:
 
     def test_run_with_invalid_param(self, app, caplog):
         """Job completes but copies zero files."""
-        bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
+        (bucket, source_prefix, dest_prefix) = get_s3_refs(app)
         datestamp = 'wrong!#$&'
-        source_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH']
-        dest_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH']
 
         caplog.set_level(logging.INFO)
         with capture_app_logs(app):
@@ -121,5 +157,6 @@ class TestMigrateSisAdvisingNoteAttachments:
 
                 MigrateSisAdvisingNoteAttachments().run(datestamp=datestamp)
 
+                assert f'Will copy files from {source_prefix}/{datestamp}.' in caplog.text
                 assert 'Copied 0 attachments to the destination folder.' in caplog.text
                 assert not object_exists(m3, bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf')
