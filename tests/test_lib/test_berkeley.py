@@ -35,14 +35,16 @@ class TestBerkeleySisTermIdForName:
         assert berkeley.sis_term_id_for_name('Summer 2016') == '2165'
         assert berkeley.sis_term_id_for_name('Fall 2017') == '2178'
         assert berkeley.sis_term_id_for_name('Fall 1997') == '1978'
+        assert berkeley.sis_term_id_for_name('Winter 1976') == '1760'
 
     def test_term_name_for_sis_id(self):
         assert berkeley.term_name_for_sis_id('2178') == 'Fall 2017'
         assert berkeley.term_name_for_sis_id('1978') == 'Fall 1997'
+        assert berkeley.term_name_for_sis_id('1760') == 'Winter 1976'
 
     def test_unparseable_term_name(self):
         """Returns None for unparseable term names."""
-        assert berkeley.sis_term_id_for_name('Winter 2061') is None
+        assert berkeley.sis_term_id_for_name('Autumn 2061') is None
         assert berkeley.sis_term_id_for_name('Default Term') is None
 
     def test_missing_term_name(self):
