@@ -98,24 +98,29 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         sis_profile_feeds = queries.get_non_advisee_api_feeds(sids)
         for row in sis_profile_feeds:
             sid = row['sid']
-            feed = row['feed']
-            parsed_profile = parse_merged_sis_profile(feed, None, None)
-            self.fill_names_from_sis_profile(feed, parsed_profile)
-            feed_file.write(encoded_tsv_row([sid, row['uid'], json.dumps(parsed_profile)]) + b'\n')
+            uid = row['uid']
+            sis_api_feed = row['feed']
+            sis_profile = parse_merged_sis_profile(sis_api_feed, None, None)
+            merged_profile = {
+                'sid': sid,
+                'uid': uid,
+                'sisProfile': sis_profile,
+            }
+            self.fill_names_from_sis_profile(sis_api_feed, merged_profile)
+            feed_file.write(encoded_tsv_row([sid, uid, json.dumps(merged_profile)]) + b'\n')
             successes.append(sid)
         return len(successes)
 
     def fill_names_from_sis_profile(self, api_json, profile):
-        if 'preferredName' in profile:
-            name_type = 'PRF'
-        elif 'primaryName' in profile:
-            name_type = 'PRI'
-        else:
-            return
         api_feed = json.loads(api_json, strict=False)
-        name_element = next(ne for ne in api_feed['names'] if ne['type']['code'] == name_type)
-        profile['firstName'] = name_element.get('givenName')
-        profile['lastName'] = name_element.get('familyName')
+        for name_type in ['PRF', 'PRI']:
+            name_element = next(ne for ne in api_feed['names'] if ne['type']['code'] == name_type)
+            if name_element:
+                break
+        if name_element:
+            profile['firstName'] = name_element.get('givenName')
+            profile['lastName'] = name_element.get('familyName')
+            profile['name'] = name_element.get('formattedName')
 
     def generate_student_enrollments_table(self, unmerged_sids):
         # Split all S3/Redshift operations by term in hope of not overloading memory or other resources.
