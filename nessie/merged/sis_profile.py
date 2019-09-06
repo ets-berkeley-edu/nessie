@@ -150,7 +150,7 @@ def merge_degrees(sis_student_api_feed, sis_profile, academic_status):
     if degree:
         degree_desc = degree.get('academicDegree', {}).get('type', {}).get('description')
         degree_plans = []
-        for plan in degree.get('academicPlans'):
+        for plan in degree.get('academicPlans', []):
             if plan.get('targetDegree', {}).get('type', {}).get('description', {}) == degree_desc:
                 # formalDescription seems to work for UGRD plans but gets too wordy for others.
                 if sis_profile.get('academicCareer') == 'UGRD':

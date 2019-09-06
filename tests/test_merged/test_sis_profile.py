@@ -214,6 +214,18 @@ class TestMergedSisProfile:
             assert profile['degree']['plans'][0]['group'] == 'College of Letters and Science'
             assert profile['degree']['plans'][0]['plan'] == 'Physics'
 
+        def test_pre_cs_degree(self, app):
+            # Older feeds may be missing normal post-CS fields.
+            feed = _pre_cs_completed_ugrd()
+            profile = {}
+            merge_sis_profile_academic_status(feed, profile)
+            assert profile['academicCareer'] == 'UGRD'
+            assert profile['academicCareerStatus'] == 'Completed'
+            assert profile.get('academicCareerCompleted') is None
+            assert profile['degree']['dateAwarded'] == '2015-08-14'
+            assert profile['degree']['description'] == 'Bachelor of Arts'
+            assert not profile['degree']['plans']
+
         def test_affiliations_conflict(self, app, caplog):
             feed = {
                 'academicStatuses': [
@@ -768,4 +780,143 @@ def _ugrd_degree():
             'description': 'Awarded',
         },
         'statusDate': '2019-08-23',
+    }
+
+
+def _pre_cs_completed_ugrd():
+    return {
+        'academicStatuses': [
+            {
+                'studentCareer': {
+                    'academicCareer': {
+                        'code': 'UGRD',
+                        'description': 'Undergrad',
+                        'formalDescription': 'Undergraduate',
+                    },
+                },
+                'studentPlans': [
+                    {
+                        'academicPlan': {
+                            'academicProgram': {
+                                'academicCareer': {
+                                    'code': 'UGRD',
+                                    'description': 'Undergrad',
+                                    'formalDescription': 'Undergraduate',
+                                },
+                                'academicGroup': {
+                                    'code': 'CLS',
+                                    'description': 'L&S',
+                                    'formalDescription': 'College of Letters and Science',
+                                },
+                                'program': {
+                                    'code': 'UCLS',
+                                    'description': 'UG L&S',
+                                    'formalDescription': 'Undergrad Letters & Science',
+                                },
+                            },
+                            'cipCode': '42.2799',
+                            'ownedBy': [
+                                {
+                                    'organization': {
+                                        'code': 'PSYCH',
+                                        'description': 'Psychology',
+                                        'formalDescription': 'Psychology',
+                                    },
+                                    'percentage': 100.0,
+                                },
+                            ],
+                            'plan': {
+                                'code': '25780U',
+                                'description': 'Psychology BA',
+                                'formalDescription': 'Psychology',
+                            },
+                            'targetDegree': {
+                                'type': {
+                                    'code': 'AB',
+                                    'description': 'Bachelor of Arts',
+                                    'formalDescription': 'Bachelor of Arts',
+                                },
+                            },
+                            'type': {
+                                'code': 'MAJ',
+                                'description': 'Major - Regular Acad/Prfnl',
+                                'formalDescription': 'Major - Regular Acad/Prfnl',
+                            },
+                        },
+                        'degreeCheckoutStatus': {
+                            'code': 'AW',
+                            'description': 'Awarded',
+                            'formalDescription': 'Degree Awarded',
+                        },
+                        'fromDate': '1995-08-22',
+                        'primary': False,
+                        'statusInPlan': {
+                            'action': {
+                                'code': 'COMP',
+                                'description': 'Completion',
+                                'formalDescription': 'Completion of Program',
+                            },
+                            'reason': {
+                                'code': 'CONV',
+                                'description': 'Conversion',
+                            },
+                            'status': {
+                                'code': 'CM',
+                                'description': 'Completed',
+                                'formalDescription': 'Completed Program',
+                            },
+                        },
+                    },
+                ],
+            },
+        ],
+        'affiliations': [
+            {
+                'detail': 'Alumni',
+                'fromDate': '2018-07-11',
+                'status': {
+                    'code': 'ACT',
+                    'description': 'Active',
+                    'formalDescription': 'Active',
+                },
+                'type': {
+                    'code': 'ALUMFORMER',
+                    'description': 'Alum/Former Student',
+                    'formalDescription': 'An individual who has graduated or is no longer active as a Student.',
+                },
+            },
+            {
+                'detail': 'Completed',
+                'fromDate': '2015-12-14',
+                'status': {
+                    'code': 'INA',
+                    'description': 'Inactive',
+                    'formalDescription': 'Inactive',
+                },
+                'toDate': '2016-07-28',
+                'type': {
+                    'code': 'UNDERGRAD',
+                    'description': 'Undergraduate Student',
+                    'formalDescription': 'An individual with an Undergraduate-based Career/Program/Plan.',
+                },
+            },
+        ],
+        'degrees': [
+            {
+                'academicDegree': {
+                    'type': {'code': 'AB', 'description': 'Bachelor of Arts'},
+                },
+                'completionTerm': {
+                    'academicYear': '2016',
+                    'beginDate': '2015-05-26',
+                    'category': {'code': 'S', 'description': 'Summer Term'},
+                    'endDate': '2015-08-14',
+                    'id': '2155',
+                    'name': '2015 Summer',
+                },
+                'dateAwarded': '2015-08-14',
+                'status': {'code': 'A', 'description': 'Awarded'},
+                'statusDate': '2015-12-12',
+            },
+        ],
     }
