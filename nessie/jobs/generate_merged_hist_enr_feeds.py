@@ -92,6 +92,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
                 student_schema.write_file_to_staging(table_name, feed_file, profile_count)
         student_schema.refresh_all_from_staging([table_name])
         app.logger.info('Non-advisee profile generation complete.')
+        return profile_count
 
     def collect_merged_profiles(self, sids, feed_file):
         successes = []
