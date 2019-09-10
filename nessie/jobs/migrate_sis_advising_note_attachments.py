@@ -33,7 +33,7 @@ from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.metadata import most_recent_background_job_status
 
 
-"""Logic for migrating SIS advising note attachments."""
+"""Logic for migrating SIS advising note attachments. Expects a full or partial datestamp parameter in the form YYYY-MM-DD."""
 
 
 class MigrateSisAdvisingNoteAttachments(BackgroundJob):
@@ -54,7 +54,7 @@ class MigrateSisAdvisingNoteAttachments(BackgroundJob):
         if datestamp == 'all':
             return ['']
         if datestamp:
-            return [datestamp]
+            return ['/'.join(datestamp.split('-'))]
 
         # If no datestamp param, calculate a range of dates from the last successful run to yesterday.
         # The files land in S3 in PDT, but we're running in UTC - thus 'yesterday' instead of 'today'.
