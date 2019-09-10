@@ -108,18 +108,18 @@ class TestMigrateSisAdvisingNoteAttachments:
     def test_run_with_datestamp_param(self, app, caplog):
         """Copies files from the specified dated folder to destination, organized into folders by SID."""
         (bucket, source_prefix, dest_prefix) = get_s3_refs(app)
-        datestamp = '2019/08/28'
+        datestamp = '2019-08-28'
 
         caplog.set_level(logging.INFO)
         with capture_app_logs(app):
             with mock_s3(app, bucket=bucket) as m3:
-                m3.Object(bucket, f'{source_prefix}/{datestamp}/12345678_00012_1.pdf').put(Body=b'a note attachment')
-                m3.Object(bucket, f'{source_prefix}/{datestamp}/23456789_00003_1.png').put(Body=b'another note attachment')
+                m3.Object(bucket, f'{source_prefix}/2019/08/28/12345678_00012_1.pdf').put(Body=b'a note attachment')
+                m3.Object(bucket, f'{source_prefix}/2019/08/28/23456789_00003_1.png').put(Body=b'another note attachment')
                 m3.Object(bucket, f'{source_prefix}/2019/08/29/34567890_00014_2.xls').put(Body=b'don\'t copy me')
 
                 MigrateSisAdvisingNoteAttachments().run(datestamp=datestamp)
 
-                assert f'Will copy files from {source_prefix}/{datestamp}.' in caplog.text
+                assert f'Will copy files from {source_prefix}/2019/08/28.' in caplog.text
                 assert 'Copied 2 attachments to the destination folder.' in caplog.text
                 assert object_exists(m3, bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf')
                 assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00003_1.png')
@@ -133,8 +133,8 @@ class TestMigrateSisAdvisingNoteAttachments:
         caplog.set_level(logging.INFO)
         with capture_app_logs(app):
             with mock_s3(app, bucket=bucket) as m3:
-                m3.Object(bucket, f'{source_prefix}/{datestamp}/12345678_00012_1.pdf').put(Body=b'a note attachment')
-                m3.Object(bucket, f'{source_prefix}/{datestamp}/23456789_00003_1.png').put(Body=b'another note attachment')
+                m3.Object(bucket, f'{source_prefix}/2019/08/28/12345678_00012_1.pdf').put(Body=b'a note attachment')
+                m3.Object(bucket, f'{source_prefix}/2019/08/28/23456789_00003_1.png').put(Body=b'another note attachment')
                 m3.Object(bucket, f'{source_prefix}/2019/08/29/34567890_00014_2.xls').put(Body=b'ok to copy me')
 
                 MigrateSisAdvisingNoteAttachments().run(datestamp=datestamp)
