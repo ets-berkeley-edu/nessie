@@ -57,13 +57,14 @@ class MigrateSisAdvisingNoteAttachments(BackgroundJob):
             return ['/'.join(datestamp.split('-'))]
 
         # If no datestamp param, calculate a range of dates from the last successful run to yesterday.
-        # The files land in S3 in PDT, but we're running in UTC - thus 'yesterday' instead of 'today'.
+        # The files land in S3 in PDT, but we're running in UTC, so we subtract 1 day from start and end date.
         last_successful_run = most_recent_background_job_status(self.__class__.__name__, 'succeeded')
         if not last_successful_run:
             return ['']
+        start_date = last_successful_run.get('updated_at') - timedelta(days=1)
         yesterday = datetime.now() - timedelta(days=1)
 
-        return [d.strftime('%Y/%m/%d') for d in rrule(DAILY, dtstart=last_successful_run.get('updated_at'), until=yesterday)]
+        return [d.strftime('%Y/%m/%d') for d in rrule(DAILY, dtstart=start_date, until=yesterday)]
 
     def copy_to_destination(self, source_prefix, dest_prefix):
         bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
