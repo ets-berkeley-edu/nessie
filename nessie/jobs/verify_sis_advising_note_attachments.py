@@ -53,7 +53,9 @@ class VerifySisAdvisingNoteAttachments(BackgroundJob):
         missing_s3_attachments = self.find_missing_notes_view_attachments(dest_prefix)
 
         verification_results = {
+            'attachment_sync_failure_count': len(s3_attachment_sync_failures),
             's3_attachment_sync_failures': s3_attachment_sync_failures,
+            'missing_s3_attachments_count': len(s3_attachment_sync_failures),
             'missing_s3_attachments': missing_s3_attachments,
         }
 
@@ -67,18 +69,20 @@ class VerifySisAdvisingNoteAttachments(BackgroundJob):
             return ['']
         if datestamp == 'month':
             return [date.today().strftime('%Y/%m')]
+        if datestamp == 'since_successful_run':
+            # Calculate a range of dates from the last successful run to yesterday.
+            # The files land in S3 in PDT, but we're running in UTC, so we subtract 1 day from start and end date.
+            last_successful_run = most_recent_background_job_status(self.__class__.__name__, 'succeeded')
+            if not last_successful_run:
+                return ['']
+            start_date = last_successful_run.get('updated_at') - timedelta(days=1)
+            yesterday = datetime.now() - timedelta(days=1)
+
+            return [d.strftime('%Y/%m/%d') for d in rrule(DAILY, dtstart=start_date, until=yesterday)]
         if datestamp:
-            return [datestamp]
-
-        # If no datestamp param, calculate a range of dates from the last successful run to yesterday.
-        # The files land in S3 in PDT, but we're running in UTC, so we subtract 1 day from start and end date.
-        last_successful_run = most_recent_background_job_status(self.__class__.__name__, 'succeeded')
-        if not last_successful_run:
-            return ['']
-        start_date = last_successful_run.get('updated_at') - timedelta(days=1)
-        yesterday = datetime.now() - timedelta(days=1)
-
-        return [d.strftime('%Y/%m/%d') for d in rrule(DAILY, dtstart=start_date, until=yesterday)]
+            return ['/'.join(datestamp.split('-'))]
+        # If no datestamp param tracks and validates all files
+        return ['']
 
     def verify_attachment_migration(self, source_prefix, dest_prefix):
         s3_attachment_sync_failures = []
@@ -111,15 +115,19 @@ class VerifySisAdvisingNoteAttachments(BackgroundJob):
         return sis_notes_attachments
 
     def find_missing_notes_view_attachments(self, dest_prefix):
+        # Checks for attachments in SIS view that are not on S3.
         missing_s3_attachments = []
+        sis_attachments_files_names = []
         bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
         sis_notes_view_attachments = sorted(self.get_all_notes_attachments())
         sis_s3_attachments = sorted(s3.get_keys_with_prefix(dest_prefix, False, bucket))
 
         for dest_key in sis_s3_attachments:
             file_name = dest_key.split('/')[-1]
+            sis_attachments_files_names.append(file_name)
 
-            if file_name not in sis_notes_view_attachments:
+        for file_name in sis_notes_view_attachments:
+            if file_name not in sis_attachments_files_names:
                 missing_s3_attachments.append(file_name)
 
         if missing_s3_attachments:
