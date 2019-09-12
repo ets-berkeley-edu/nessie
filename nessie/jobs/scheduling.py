@@ -98,6 +98,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
     from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
     from nessie.jobs.transform_lrs_incrementals import TransformLrsIncrementals
+    from nessie.jobs.verify_sis_advising_note_attachments import VerifySisAdvisingNoteAttachments
 
     schedule_job(sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots, force)
     schedule_job(sched, 'JOB_RESYNC_CANVAS_SNAPSHOTS', ResyncCanvasSnapshots, force)
@@ -149,6 +150,7 @@ def schedule_all_jobs(force=False):
             CreateSisAdvisingNotesSchema,
             IndexAdvisingNotes,
             MigrateSisAdvisingNoteAttachments,
+            VerifySisAdvisingNoteAttachments,
         ],
         force,
     )
