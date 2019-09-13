@@ -43,12 +43,14 @@ class MigrateSisAdvisingNoteAttachments(BackgroundJob):
 
         dest_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH']
 
-        for path in self.source_paths(datestamp):
+        source_paths = self.source_paths(datestamp)
+        for path in source_paths:
             source_prefix = '/'.join([app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH'], path])
             app.logger.info(f'Will copy files from {source_prefix}.')
             self.copy_to_destination(source_prefix, dest_prefix)
 
-        return f'SIS advising note attachment migration complete for {datestamp} files.'
+        sources = 'all' if datestamp == 'all' else ','.join(source_paths)
+        return f'SIS advising note attachment migration complete for {sources} files.'
 
     def source_paths(self, datestamp):
         if datestamp == 'all':
