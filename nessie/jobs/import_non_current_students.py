@@ -35,7 +35,11 @@ class ImportNonCurrentStudents(BackgroundJob):
     def run(self):
         app.logger.info(f'Starting BOA manually added advisees import job...')
         feed = get_manually_added_advisees()
-        rows = [advisee['sid'].encode() for advisee in feed]
+
+        if feed.get('error'):
+            raise BackgroundJobError('Error on S3 upload: aborting job.')
+
+        rows = [advisee['sid'].encode() for advisee in feed.get('feed')]
         s3_key = f'{get_s3_boa_api_daily_path()}/manually-added-advisees/manually-added-advisees.tsv'
         if not s3.upload_tsv_rows(rows, s3_key):
             raise BackgroundJobError('Error on S3 upload: aborting job.')
