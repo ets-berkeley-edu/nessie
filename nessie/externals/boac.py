@@ -35,7 +35,7 @@ def get_manually_added_advisees():
         error = f'BOA manually added advisees API unexpected response: {response}'
         app.logger.error(error)
         return {'error': error}
-    return response.json()
+    return {'feed': response.json()}
 
 
 def kickoff_refresh():
