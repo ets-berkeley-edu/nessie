@@ -183,7 +183,8 @@ def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile
         sis_profile['academicCareer'] = registration.get('academicCareer', {}).get('code')
 
     term_units = registration.get('termUnits', [])
-    total_units = next((u for u in term_units if u['type']['description'] == 'Total'), {})
+    # The v2 SIS API has been inconsistent w.r.t. termUnits.type.description value. We tolerate the variance.
+    total_units = next((u for u in term_units if u['type']['description'] in ['Total', 'Total Units']), {})
 
     # The old 'academicLevel' element has become at least two 'academicLevels': one for the beginning-of-term, one
     # for the end-of-term. The beginning-of-term level should match what V1 gave us.
