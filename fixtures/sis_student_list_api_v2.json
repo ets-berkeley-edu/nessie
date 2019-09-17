@@ -561,7 +561,7 @@
               "termUnits": [
                 {
                   "type": {
-                    "description": "Total"
+                    "description": "Total Units"
                   },
                   "unitsEnrolled": 15,
                   "unitsIncomplete": 0,
