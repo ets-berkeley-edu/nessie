@@ -55,7 +55,7 @@ class VerifySisAdvisingNoteAttachments(BackgroundJob):
         verification_results = {
             'attachment_sync_failure_count': len(s3_attachment_sync_failures),
             's3_attachment_sync_failures': s3_attachment_sync_failures,
-            'missing_s3_attachments_count': len(s3_attachment_sync_failures),
+            'missing_s3_attachments_count': len(missing_s3_attachments),
             'missing_s3_attachments': missing_s3_attachments,
         }
 
