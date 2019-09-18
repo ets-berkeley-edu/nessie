@@ -28,7 +28,7 @@ import re
 
 from flask import current_app as app
 from nessie.lib.berkeley import degree_program_url_for_major, term_name_for_sis_id
-from nessie.lib.util import vacuum_whitespace
+from nessie.lib.util import to_float, vacuum_whitespace
 
 
 def parse_merged_sis_profile(sis_student_api_feed, degree_progress_api_feed, last_registration_feed):
@@ -201,10 +201,14 @@ def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile
                 break
 
     if total_units:
-        sis_profile['currentTerm'] = {
-            'unitsMaxOverride': total_units.get('unitsMax'),
-            'unitsMinOverride': total_units.get('unitsMin'),
-        }
+        sis_profile['currentTerm'] = {}
+        units_min = to_float(total_units.get('unitsMin')) or None
+        # For reasons we are working to understand, if a student does not have a 'unitsMinOverride' then SIS assigns a
+        # default of termUnits.unitsMin = 0.5. Thus, a student carrying 3 units in the current term will NOT be flagged
+        # as units-deficient. As a result, the system will not recognize the need to alert advisors.
+        # TODO: Until SISRP-48560 is resolved we will treat "0.5" as "12", the expected min units value.
+        sis_profile['currentTerm']['unitsMin'] = 12 if units_min == 0.5 else units_min
+        sis_profile['currentTerm']['unitsMax'] = to_float(total_units.get('unitsMax'))
 
     # TODO Should we also check for ['academicStanding']['status'] == {'code': 'DIS', 'description': 'Dismissed'}?
     withdrawal_cancel = registration.get('withdrawalCancel', {})

@@ -104,8 +104,8 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
     for units in academic_status.get('currentRegistration', {}).get('termUnits', []):
         if units.get('type', {}).get('description') == 'Total':
             sis_profile['currentTerm'] = {
-                'unitsMaxOverride': units.get('unitsMax'),
-                'unitsMinOverride': units.get('unitsMin'),
+                'unitsMax': units.get('unitsMax'),
+                'unitsMin': units.get('unitsMin'),
             }
             break
 

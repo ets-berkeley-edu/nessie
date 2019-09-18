@@ -181,3 +181,10 @@ def resolve_sql_template(sql_filename, **kwargs):
     # Let's leave the preprended copyright and license text out of this.
     template_string = re.sub(r'^/\*.*?\*/\s*', '', template_string, flags=re.DOTALL)
     return resolve_sql_template_string(template_string, **kwargs)
+
+
+def to_float(s):
+    try:
+        return float(s)
+    except ValueError:
+        return None
