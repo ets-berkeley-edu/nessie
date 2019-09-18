@@ -121,8 +121,8 @@ class TestMergedSisProfile:
         assert profile['currentRegistration']['term']['id'] == '2178'
         assert profile['level']['code'] == '30'
         assert profile['level']['description'] == 'Junior'
-        assert profile['currentTerm']['unitsMaxOverride'] == 24
-        assert profile['currentTerm']['unitsMinOverride'] == 15
+        assert profile['currentTerm']['unitsMax'] == 24
+        assert profile['currentTerm']['unitsMin'] == 15
 
     def test_zero_gpa_when_gpa_units(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         for row in sis_api_profiles:
