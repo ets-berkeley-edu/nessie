@@ -91,8 +91,8 @@ class TestMergedSisProfile:
 
     def test_current_term(self, app, sis_api_profiles, sis_api_degree_progress):
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress)
-        assert profile['currentTerm']['unitsMaxOverride'] == 24
-        assert profile['currentTerm']['unitsMinOverride'] == 15
+        assert profile['currentTerm']['unitsMax'] == 24
+        assert profile['currentTerm']['unitsMin'] == 15
 
     def test_zero_gpa_when_gpa_units(self, app, sis_api_profiles, sis_api_degree_progress):
         for row in sis_api_profiles:
