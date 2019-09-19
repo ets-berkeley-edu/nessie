@@ -186,5 +186,5 @@ def resolve_sql_template(sql_filename, **kwargs):
 def to_float(s):
     try:
         return float(s)
-    except ValueError:
+    except (TypeError, ValueError):
         return None
