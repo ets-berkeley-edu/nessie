@@ -292,11 +292,15 @@ def merge_sis_profile_plans(academic_status, sis_profile):
             plan_feed['program'] = program.get('formalDescription') or program.get('description')
 
         # Add plan status.
-        plan_status = student_plan.get('statusInPlan', {}).get('status', {})
-        plan_feed['status'] = plan_status.get('formalDescription') or plan_status.get('description')
-        # We generally prefer the 'formalDescription', but our formality has limits.
-        if plan_feed['status'] == 'Active in Program':
-            plan_feed['status'] = 'Active'
+        plan_status = student_plan.get('statusInPlan', {}).get('status')
+        if plan_status:
+            plan_feed['status'] = plan_status.get('formalDescription') or plan_status.get('description')
+            # We generally prefer the 'formalDescription', but our formality has limits.
+            if plan_feed['status'] == 'Active in Program':
+                plan_feed['status'] = 'Active'
+        else:
+            # A plan with no status is considered discontinued. (NS-689)
+            plan_feed['status'] = 'Discontinued'
 
         # Add plan unless it's a duplicate.
         if not next((p for p in sis_profile['plans'] if p.get('description') == plan_feed.get('description')), None):
