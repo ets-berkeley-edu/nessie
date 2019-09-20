@@ -185,8 +185,10 @@ class TestMergedSisProfile:
             assert profile['academicCareerStatus'] == 'Inactive'
             assert profile['plans'][0]['description'] == 'Interdisciplinary Studies BA'
             assert profile['plans'][0]['status'] == 'Cancelled'
-            assert profile['plans'][1]['description'] == 'Summer Domestic Visitor UG'
+            assert profile['plans'][1]['description'] == 'Chemical Engineering BS'
             assert profile['plans'][1]['status'] == 'Discontinued'
+            assert profile['plans'][2]['description'] == 'Summer Domestic Visitor UG'
+            assert profile['plans'][2]['status'] == 'Discontinued'
 
         def test_completed_ugrd_active_grad(self, app):
             feed = {
@@ -508,6 +510,56 @@ def _discontinued_ugrd_academic_status():
                         'formalDescription': 'Cancelled',
                     },
                 },
+            },
+            {
+                'academicPlan': {
+                    'academicProgram': {
+                        'academicCareer': {
+                            'code': 'UGRD',
+                            'description': 'Undergrad',
+                            'formalDescription': 'Undergraduate',
+                        },
+                        'academicGroup': {
+                            'code': 'CCH',
+                            'description': 'Clg Chem',
+                            'formalDescription': 'College of Chemistry',
+                        },
+                        'program': {
+                            'code': 'UCCH',
+                            'description': 'UG Chem',
+                            'formalDescription': 'Undergrad Chemistry',
+                        },
+                    },
+                    'cipCode': '14.0701',
+                    'ownedBy': [
+                        {
+                            'organization': {
+                                'code': 'CHMENG',
+                                'description': 'Chem & Biomolecular Eng',
+                                'formalDescription': 'Chemical and Biomolecular Engineering',
+                            },
+                            'percentage': 100.0,
+                        },
+                    ],
+                    'plan': {
+                        'code': '10294U',
+                        'description': 'Chemical Engineering BS',
+                        'formalDescription': 'Chemical Engineering',
+                    },
+                    'targetDegree': {
+                        'type': {
+                            'code': 'BS',
+                            'description': 'Bachelor of Science',
+                            'formalDescription': 'Bachelor of Science',
+                        },
+                    },
+                    'type': {
+                        'code': 'MAJ',
+                        'description': 'Major - Regular Acad/Prfnl',
+                        'formalDescription': 'Major - Regular Acad/Prfnl',
+                    },
+                },
+                'primary': False,
             },
             {
                 'academicPlan': {
