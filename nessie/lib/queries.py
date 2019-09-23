@@ -60,6 +60,10 @@ def metadata_schema():
     return app.config['RDS_SCHEMA_METADATA']
 
 
+def sis_schema():
+    return app.config['REDSHIFT_SCHEMA_SIS']
+
+
 def student_schema():
     return app.config['REDSHIFT_SCHEMA_STUDENT']
 
@@ -256,23 +260,23 @@ def get_enrolled_primary_sections(term_id=None):
 
 
 def get_non_advisee_student_ids():
-    sql = f"""SELECT DISTINCT(en.sid)
-              FROM {intermediate_schema()}.sis_enrollments en
-              LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = en.sid
-              LEFT JOIN {coe_schema()}.students coe ON coe.sid = en.sid
-              LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = en.sid
+    sql = f"""SELECT DISTINCT(en.sis_id)
+              FROM {sis_schema()}.enrollments en
+              LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = en.sis_id
+              LEFT JOIN {coe_schema()}.students coe ON coe.sid = en.sis_id
+              LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = en.sis_id
               WHERE ascs.sid IS NULL AND coe.sid IS NULL AND ug.sid IS NULL
         """
     return redshift.fetch(sql)
 
 
 def get_non_advisee_unfetched_student_ids():
-    sql = f"""SELECT DISTINCT(en.sid)
-              FROM {intermediate_schema()}.sis_enrollments en
-              LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = en.sid
-              LEFT JOIN {coe_schema()}.students coe ON coe.sid = en.sid
-              LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = en.sid
-              LEFT JOIN {student_schema()}.sis_api_profiles_hist_enr hist ON hist.sid = en.sid
+    sql = f"""SELECT DISTINCT(en.sis_id)
+              FROM {sis_schema()}.enrollments en
+              LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = en.sis_id
+              LEFT JOIN {coe_schema()}.students coe ON coe.sid = en.sis_id
+              LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = en.sis_id
+              LEFT JOIN {student_schema()}.sis_api_profiles_hist_enr hist ON hist.sid = en.sis_id
               WHERE ascs.sid IS NULL AND coe.sid IS NULL AND ug.sid IS NULL AND hist.sid IS NULL
         """
     return redshift.fetch(sql)
