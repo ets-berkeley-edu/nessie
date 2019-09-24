@@ -260,7 +260,7 @@ def get_enrolled_primary_sections(term_id=None):
 
 
 def get_non_advisee_student_ids():
-    sql = f"""SELECT DISTINCT(en.sis_id)
+    sql = f"""SELECT DISTINCT(en.sis_id) AS sid
               FROM {sis_schema()}.enrollments en
               LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = en.sis_id
               LEFT JOIN {coe_schema()}.students coe ON coe.sid = en.sis_id
@@ -271,7 +271,7 @@ def get_non_advisee_student_ids():
 
 
 def get_non_advisee_unfetched_student_ids():
-    sql = f"""SELECT DISTINCT(en.sis_id)
+    sql = f"""SELECT DISTINCT(en.sis_id) AS sid
               FROM {sis_schema()}.enrollments en
               LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = en.sis_id
               LEFT JOIN {coe_schema()}.students coe ON coe.sid = en.sis_id
