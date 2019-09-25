@@ -165,6 +165,33 @@ def student_tables(app):
 
 
 @pytest.fixture()
+def sis_note_tables(app):
+    """Use Postgres to mock the Redshift SIS note schemas on local test runs."""
+    from nessie.externals import redshift
+    internal_schema = app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL']
+    redshift.execute(f'DROP SCHEMA IF EXISTS {internal_schema} CASCADE')
+    redshift.execute(f'CREATE SCHEMA {internal_schema}')
+    redshift.execute(f"""CREATE TABLE {internal_schema}.advising_note_attachments
+    (
+        advising_note_id character varying(513),
+        sid character varying(256),
+        student_note_nr character varying(256),
+        created_by character varying(256),
+        user_file_name character varying(256),
+        sis_file_name character varying(781)
+    )""")
+    redshift.execute(f"""INSERT INTO {internal_schema}.advising_note_attachments
+        (advising_note_id, sid, student_note_nr, created_by, user_file_name, sis_file_name)
+        VALUES
+        ('12345678-00012', '12345678', '00012', '123', 'Sp_19_French_1B.pdf', '12345678_00012_1.pdf'),
+        ('23456789-00003', '23456789', '00003', '123', 'Advising_Notes_test_attachment_document.png', '23456789_00003_1.png'),
+        ('34567890-00014', '34567890', '00014', '123', 'notes_notes_notes.xls', '34567890_00014_2.xls')
+    """)
+    yield
+    redshift.execute(f'DROP SCHEMA {internal_schema} CASCADE')
+
+
+@pytest.fixture()
 def cleanup_s3(app):
     yield
     from nessie.externals import s3

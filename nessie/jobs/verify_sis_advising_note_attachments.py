@@ -24,13 +24,11 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-from datetime import date, datetime, timedelta
-
-from dateutil.rrule import DAILY, rrule
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.metadata import most_recent_background_job_status
+from nessie.lib.util import get_s3_sis_attachment_current_paths, get_s3_sis_attachment_path
 
 
 """Logic for validating SIS advising note attachments."""
@@ -41,48 +39,34 @@ class VerifySisAdvisingNoteAttachments(BackgroundJob):
     def run(self, datestamp=None):
         s3_attachment_sync_failures = []
         missing_s3_attachments = []
-        app.logger.info(f'Starting SIS Advising Note attachments Validation job...')
+        app.logger.info(f'Starting SIS Advising Note attachments validation job...')
 
         dest_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH']
 
-        for path in self.source_paths(datestamp):
-            source_prefix = '/'.join([app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH'], path])
+        for source_prefix in self.source_paths(datestamp):
             app.logger.info(f'Will validate files from {source_prefix}.')
             s3_attachment_sync_failures.extend(self.verify_attachment_migration(source_prefix, dest_prefix))
 
         missing_s3_attachments = self.find_missing_notes_view_attachments(dest_prefix)
 
-        verification_results = {
-            'attachment_sync_failure_count': len(s3_attachment_sync_failures),
-            's3_attachment_sync_failures': s3_attachment_sync_failures,
-            'missing_s3_attachments_count': len(missing_s3_attachments),
-            'missing_s3_attachments': missing_s3_attachments,
-        }
-
         if s3_attachment_sync_failures or missing_s3_attachments:
-            raise BackgroundJobError(f'Attachments verification found missing attachments or sync failures:  {verification_results}')
+            verification_results = {
+                'attachment_sync_failure_count': len(s3_attachment_sync_failures),
+                'missing_s3_attachments_count': len(missing_s3_attachments),
+                'attachment_sync_failures': s3_attachment_sync_failures,
+                'missing_s3_attachments': missing_s3_attachments,
+            }
+            raise BackgroundJobError(f'Attachments verification found missing attachments or sync failures:  {verification_results}.')
         else:
             return f'Note attachment verification completed successfully. No missing attachments or sync failures found.'
 
     def source_paths(self, datestamp):
-        if datestamp == 'all':
-            return ['']
-        if datestamp == 'month':
-            return [date.today().strftime('%Y/%m')]
-        if datestamp == 'since_successful_run':
-            # Calculate a range of dates from the last successful run to yesterday.
-            # The files land in S3 in PDT, but we're running in UTC, so we subtract 1 day from start and end date.
-            last_successful_run = most_recent_background_job_status(self.__class__.__name__, 'succeeded')
-            if not last_successful_run:
-                return ['']
-            start_date = last_successful_run.get('updated_at') - timedelta(days=1)
-            yesterday = datetime.now() - timedelta(days=1)
+        if datestamp and datestamp != 'since_successful_run':
+            return get_s3_sis_attachment_path(datestamp)
 
-            return [d.strftime('%Y/%m/%d') for d in rrule(DAILY, dtstart=start_date, until=yesterday)]
-        if datestamp:
-            return ['/'.join(datestamp.split('-'))]
-        # If no datestamp param tracks and validates all files
-        return ['']
+        last_successful_run = most_recent_background_job_status('MigrateSisAdvisingNoteAttachments', 'succeeded')
+        begin_dt = last_successful_run.get('updated_at') if last_successful_run else None
+        return get_s3_sis_attachment_current_paths(begin_dt)
 
     def verify_attachment_migration(self, source_prefix, dest_prefix):
         s3_attachment_sync_failures = []
@@ -101,16 +85,16 @@ class VerifySisAdvisingNoteAttachments(BackgroundJob):
 
         if s3_attachment_sync_failures:
             app.logger.error(f'Total number of failed attachment syncs from {source_prefix} is {len(s3_attachment_sync_failures)} \
-              \n {s3_attachment_sync_failures}')
+              \n {s3_attachment_sync_failures}.')
         else:
-            app.logger.info(f'No attachment sync failures found from {source_prefix}')
+            app.logger.info(f'No attachment sync failures found from {source_prefix}.')
 
         return s3_attachment_sync_failures
 
     def get_all_notes_attachments(self):
-        advisor_schema_redshift = app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL']
+        schema = app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL']
         sis_notes_attachments = set(
-            [r['sis_file_name'] for r in redshift.fetch(f'SELECT DISTINCT sis_file_name FROM {advisor_schema_redshift}.advising_note_attachments')],
+            [r['sis_file_name'] for r in redshift.fetch(f'SELECT DISTINCT sis_file_name FROM {schema}.advising_note_attachments')],
         )
         return sis_notes_attachments
 
@@ -132,7 +116,7 @@ class VerifySisAdvisingNoteAttachments(BackgroundJob):
 
         if missing_s3_attachments:
             app.logger.error(f'Attachments missing on S3 when compared against SIS notes views: {len(missing_s3_attachments)} \
-             \n {missing_s3_attachments}')
+             \n {missing_s3_attachments}.')
         else:
             app.logger.info(f'No attachments missing on S3 when compared against the view.')
 
