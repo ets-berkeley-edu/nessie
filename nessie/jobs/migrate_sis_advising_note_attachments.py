@@ -24,13 +24,11 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-from datetime import datetime, timedelta
-
-from dateutil.rrule import DAILY, rrule
 from flask import current_app as app
 from nessie.externals import s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.metadata import most_recent_background_job_status
+from nessie.lib.util import get_s3_sis_attachment_current_paths, get_s3_sis_attachment_path
 
 
 """Logic for migrating SIS advising note attachments. Expects a full or partial datestamp parameter in the form YYYY-MM-DD."""
@@ -44,29 +42,20 @@ class MigrateSisAdvisingNoteAttachments(BackgroundJob):
         dest_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH']
 
         source_paths = self.source_paths(datestamp)
-        for path in source_paths:
-            source_prefix = '/'.join([app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH'], path])
-            app.logger.info(f'Will copy files from {source_prefix}.')
+        for source_prefix in source_paths:
+            app.logger.info(f'Will copy files from /{source_prefix}.')
             self.copy_to_destination(source_prefix, dest_prefix)
 
-        sources = 'all' if datestamp == 'all' else ','.join(source_paths)
-        return f'SIS advising note attachment migration complete for {sources} files.'
+        sources = ', '.join(source_paths) if len(source_paths) else 'all files'
+        return f'SIS advising note attachment migration complete for {sources}.'
 
     def source_paths(self, datestamp):
-        if datestamp == 'all':
-            return ['']
         if datestamp:
-            return ['/'.join(datestamp.split('-'))]
+            return get_s3_sis_attachment_path(datestamp)
 
-        # If no datestamp param, calculate a range of dates from the last successful run to yesterday.
-        # The files land in S3 in PDT, but we're running in UTC, so we subtract 1 day from start and end date.
         last_successful_run = most_recent_background_job_status(self.__class__.__name__, 'succeeded')
-        if not last_successful_run:
-            return ['']
-        start_date = last_successful_run.get('updated_at') - timedelta(days=1)
-        yesterday = datetime.now() - timedelta(days=1)
-
-        return [d.strftime('%Y/%m/%d') for d in rrule(DAILY, dtstart=start_date, until=yesterday)]
+        begin_dt = last_successful_run.get('updated_at') if last_successful_run else None
+        return get_s3_sis_attachment_current_paths(begin_dt)
 
     def copy_to_destination(self, source_prefix, dest_prefix):
         bucket = app.config['LOCH_S3_PROTECTED_BUCKET']

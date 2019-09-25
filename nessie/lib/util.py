@@ -28,6 +28,7 @@ import hashlib
 import inspect
 import re
 
+from dateutil.rrule import DAILY, rrule
 from flask import current_app as app
 from nessie.lib.berkeley import earliest_term_id
 import pytz
@@ -100,13 +101,32 @@ def get_s3_coe_daily_path(cutoff=None):
     return app.config['LOCH_S3_COE_DATA_PATH']
 
 
-def get_s3_sis_daily_path(cutoff=None):
-    return app.config['LOCH_S3_SIS_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
+def get_s3_sis_attachment_current_paths(begin_dt=None):
+    if not begin_dt:
+        paths = ['']
+    else:
+        # Calculate a range of dates between begin_dt (inclusive) and today (exclusive).
+        # Ensure both dates are in UTC before converting to local time.
+        start_date = localize_datetime(pytz.utc.localize(begin_dt))
+        today = localize_datetime(pytz.utc.localize(datetime.utcnow()))
+        paths = [d.strftime('%Y/%m/%d') for d in rrule(DAILY, dtstart=start_date, until=today)]
+    return ['/'.join([app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH'], path]) for path in paths]
+
+
+def get_s3_sis_attachment_path(datestamp):
+    if datestamp == 'all':
+        return [app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH']]
+    if datestamp:
+        return ['/'.join([app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH']] + datestamp.split('-'))]
 
 
 def get_s3_sis_api_daily_path(cutoff=None):
     # Path for stashed SIS API data that doesn't need to be queried by Redshift Spectrum.
     return app.config['LOCH_S3_SIS_API_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
+
+
+def get_s3_sis_daily_path(cutoff=None):
+    return app.config['LOCH_S3_SIS_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
 
 def get_s3_sis_sysadm_daily_path(cutoff=None):
