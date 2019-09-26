@@ -75,6 +75,14 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_profiles_hist_enr
 DISTKEY(sid)
 SORTKEY(sid);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_api_demographics
+(
+    sid VARCHAR NOT NULL,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY(sid)
+SORTKEY(sid);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_last_registrations
 (
     sid VARCHAR NOT NULL,
@@ -142,6 +150,32 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_majors
 )
 DISTKEY (major)
 SORTKEY (major);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.demographics
+(
+    sid VARCHAR NOT NULL,
+    gender VARCHAR,
+    minority BOOLEAN
+)
+DISTKEY (sid)
+SORTKEY (sid);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.ethnicities
+(
+    sid VARCHAR NOT NULL,
+    ethnicity VARCHAR
+)
+DISTKEY (sid)
+SORTKEY (sid, ethnicity);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.visas
+(
+    sid VARCHAR NOT NULL,
+    visa_status VARCHAR,
+    visa_type VARCHAR
+)
+DISTKEY (sid)
+SORTKEY (sid);
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_enrollment_terms
 (

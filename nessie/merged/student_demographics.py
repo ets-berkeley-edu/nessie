@@ -22,54 +22,123 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES,
 ENHANCEMENTS, OR MODIFICATIONS.
 """
-
 from collections import defaultdict
 
-from nessie.lib import queries
+from nessie.lib.util import encoded_tsv_row
 
 UNDERREPRESENTED_GROUPS = {'Black/African American', 'Hispanic/Latino', 'American Indian/Alaska Native'}
 
 
-def generate_demographics_data():
-    intermediate_rows = queries.get_advisee_sis_demographics()
-    parsed_rows = [parse_sis_demographic_data(row) for row in intermediate_rows]
-    return parsed_rows
+def add_demographics_rows(sid, feed, rows_map):
+    parsed = parse_sis_demographics_api(feed)
+    if parsed:
+        filtered_ethnicities = parsed.pop('filtered_ethnicities', [])
+        for ethn in filtered_ethnicities:
+            rows_map['ethnicities'].append(encoded_tsv_row([sid, ethn]))
+        rows_map['demographics'].append(encoded_tsv_row([sid, parsed.get('gender'), parsed.get('underrepresented', False)]))
+        visa = parsed.get('visa')
+        if visa:
+            rows_map['visas'].append(encoded_tsv_row([sid, visa.get('status'), visa.get('type')]))
+    return parsed
 
 
-def parse_sis_demographic_data(student_row):
-    sid = student_row['sid']
+def refresh_rds_demographics(rds_schema, rds_dblink_to_redshift, redshift_schema, transaction):
+    if not transaction.execute(f'TRUNCATE {rds_schema}.demographics'):
+        return False
+    sql = f"""INSERT INTO {rds_schema}.demographics (
+            SELECT *
+            FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+                SELECT sid, gender, minority
+                FROM {redshift_schema}.demographics
+              $REDSHIFT$)
+            AS redshift_demographics (
+                sid VARCHAR,
+                gender VARCHAR,
+                minority BOOLEAN
+            ));"""
+    if not transaction.execute(sql):
+        return False
+    if not transaction.execute(f'TRUNCATE {rds_schema}.ethnicities'):
+        return False
+    sql = f"""INSERT INTO {rds_schema}.ethnicities (
+            SELECT *
+            FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+                SELECT sid, ethnicity
+                FROM {redshift_schema}.ethnicities
+              $REDSHIFT$)
+            AS redshift_ethnicities (
+                sid VARCHAR,
+                ethnicity VARCHAR
+            ));"""
+    if not transaction.execute(sql):
+        return False
+    if not transaction.execute(f'TRUNCATE {rds_schema}.visas'):
+        return False
+    sql = f"""INSERT INTO {rds_schema}.visas (
+            SELECT *
+            FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+                SELECT sid, visa_status, visa_type
+                FROM {redshift_schema}.visas
+              $REDSHIFT$)
+            AS redshift_visas (
+                sid VARCHAR,
+                visa_status VARCHAR,
+                visa_type VARCHAR
+            ));"""
+    if not transaction.execute(sql):
+        return False
+    return True
+
+
+def parse_sis_demographics_api(feed):
+    if not feed:
+        return False
     return {
-        'sid': sid,
-        'feed': {
-            'gender': simplified_gender(student_row),
-            'underrepresented': underrepresented_minority(student_row),
-            'ethnicities': simplified_ethnicities(student_row),
-            'visa_types': student_row['visas'],
-            'nationalities': student_row['countries'] and student_row['countries'].split(' + '),
-        },
-        'filtered_ethnicities': ethnicity_filter_values(student_row),
+        'gender': simplified_gender(feed),
+        'underrepresented': underrepresented_minority(feed),
+        'ethnicities': simplified_ethnicities(feed),
+        'visa': simplified_visa(feed),
+        'nationalities': simplified_countries(feed),
+        'filtered_ethnicities': ethnicity_filter_values(feed),
     }
 
 
-def ethnicity_filter_values(row):
+def simplified_visa(feed):
+    visa_status = feed.get('usaCountry', {}).get('visa', {}).get('status')
+    if visa_status not in {'G', 'A'}:
+        return None
+    visa_type = feed['usaCountry']['visa'].get('type', {}).get('code')
+    return {
+        'status': visa_status,
+        'type': visa_type,
+    }
+
+
+def simplified_countries(feed):
+    return [c.get('description') for c in feed.get('foreignCountries', [])]
+
+
+def ethnicity_filter_values(feed):
     """Return ethnicities found by search filters.
 
     Most notably, a search for White should find White-only ethnicities rather than multi-ethnic values.
     """
-    values = simplified_ethnicities(row)
+    values = simplified_ethnicities(feed)
     if len(values) > 1 and 'White' in values:
         values.remove('White')
     return values
 
 
-def simplified_ethnicities(row):
+def simplified_ethnicities(feed):
     """Reduce SIS's 66 possible ethnicities to more or less the CoE list."""
     simpler_list = []
-    ethnicities = row['ethnicities']
+    ethnicities = feed.get('ethnicities')
     if not ethnicities:
         return ['Not Specified']
     ethnic_map = defaultdict(set)
-    for group, detail in [eth.split(' : ') for eth in ethnicities.split(' + ')]:
+    for eth in ethnicities:
+        group = eth.get('group', {}).get('description')
+        detail = eth.get('detail', {}).get('description')
         ethnic_map[group].add(detail)
     for group in ethnic_map.keys():
         merge_from_details(simpler_list, group, ethnic_map[group])
@@ -114,9 +183,12 @@ def merge_from_details(simpler_list, group, details):
         simpler_list += group_set
 
 
-def simplified_gender(row):
+def simplified_gender(feed):
     """Prefer gender_identity over gender_of_record. Do not display trans status."""
-    gender_identity = row['gender_identity']
+    gender_data = feed.get('gender')
+    if not gender_data:
+        return
+    gender_identity = gender_data.get('genderIdentity', {}).get('description')
     if gender_identity:
         if gender_identity.startswith('Trans Female'):
             return 'Female'
@@ -127,10 +199,10 @@ def simplified_gender(row):
             return gender_identity
     else:
         # 'Female', 'Male', or 'Decline to State'.
-        return row['gender_of_record']
+        return gender_data.get('genderOfRecord', {}).get('description')
 
 
-def underrepresented_minority(row):
+def underrepresented_minority(feed):
     """Check ethnic_group against the list of underrepresented groups.
 
     Official descriptions have some ambiguity, which is reflected in disagreements between our data sources.
@@ -138,8 +210,8 @@ def underrepresented_minority(row):
       'Mexican/Mexican American/Chicano'?
     - Should 'African-American / Black' students with a visa from an African country be included?
     """
-    ethnicities = row['ethnicities']
+    ethnicities = feed.get('ethnicities')
     if not ethnicities:
         return False
-    groups = {eth.split(' : ')[0] for eth in ethnicities.split(' + ')}
+    groups = {eth.get('group', {}).get('description') for eth in ethnicities}
     return not UNDERREPRESENTED_GROUPS.isdisjoint(groups)

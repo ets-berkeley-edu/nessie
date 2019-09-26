@@ -62,6 +62,13 @@ class TestImportRegistrations:
             assert feed['term']['id'] == '2172'
             assert feed['academicLevels'][0]['level']['description'] == 'Sophomore'
 
+            rows = redshift.fetch('SELECT * FROM student_test.student_api_demographics ORDER BY sid')
+            assert len(rows) == 2
+            assert rows[0]['sid'] == '11667051'
+            assert rows[1]['sid'] == '1234567890'
+            feed = json.loads(rows[1]['feed'], strict=False)
+            assert feed['gender']['genderOfRecord']['description'] == 'Female'
+
     def test_metadata_tracked(self, app, metadata_db, student_tables, caplog):
         from nessie.jobs.import_registrations import ImportRegistrations
         rows = rds.fetch('SELECT * FROM nessie_metadata_test.registration_import_status')

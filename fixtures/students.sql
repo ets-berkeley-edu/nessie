@@ -114,6 +114,12 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_status
     units DECIMAL (6,3)
 );
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_api_demographics
+(
+    sid VARCHAR NOT NULL,
+    feed TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_enrollment_terms
 (
     sid VARCHAR NOT NULL,
@@ -192,6 +198,12 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_academic_st
     level VARCHAR(2),
     gpa DECIMAL(4,3),
     units DECIMAL (6,3)
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_api_demographics
+(
+    sid VARCHAR NOT NULL,
+    feed TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_enrollment_terms

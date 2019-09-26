@@ -36,6 +36,7 @@ from nessie.lib.queries import get_advisee_student_profile_feeds
 from nessie.lib.util import encoded_tsv_row
 from nessie.merged.sis_profile import parse_merged_sis_profile
 from nessie.merged.sis_profile_v1 import parse_merged_sis_profile_v1
+from nessie.merged.student_demographics import add_demographics_rows, refresh_rds_demographics
 from nessie.merged.student_terms import upload_student_term_maps
 from nessie.models import student_schema
 
@@ -147,9 +148,14 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'student_academic_status': [],
             'student_majors': [],
             'student_holds': [],
+            'demographics': [],
+            'ethnicities': [],
+            'visas': [],
         }
-        tables = ['student_profiles', 'student_academic_status', 'student_majors', 'student_holds']
-
+        tables = [
+            'student_profiles', 'student_academic_status', 'student_majors', 'student_holds',
+            'demographics', 'ethnicities', 'visas',
+        ]
         for table in tables:
             student_schema.truncate_staging_table(table)
 
@@ -192,6 +198,9 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 feeds.get('last_registration_feed'),
             )
         demographics = feeds.get('demographics_feed') and json.loads(feeds.get('demographics_feed'))
+        if demographics:
+            demographics = add_demographics_rows(sid, demographics, rows)
+
         merged_profile = {
             'sid': sid,
             'uid': uid,
@@ -246,6 +255,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         if not self._delete_rds_rows('student_profiles', sids, transaction):
             return False
         if not self._refresh_rds_profiles(transaction):
+            return False
+        if not refresh_rds_demographics(self.rds_schema, self.rds_dblink_to_redshift, self.redshift_schema, transaction):
             return False
         return True
 

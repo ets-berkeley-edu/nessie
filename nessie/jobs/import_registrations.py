@@ -40,7 +40,7 @@ from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_
 def async_get_feed(app_obj, sid):
     with app_obj.app_context():
         app.logger.info(f'Fetching registration history for SID {sid}')
-        feed = sis_student_api.get_term_gpas_registration(sid)
+        feed = sis_student_api.get_term_gpas_registration_demog(sid)
         result = {
             'sid': sid,
             'feed': feed,
@@ -71,11 +71,12 @@ class ImportRegistrations(BackgroundJob):
         elif load_mode == 'all':
             sids = all_sids
 
-        app.logger.info(f'Starting registrations import job for {len(sids)} students...')
+        app.logger.info(f'Starting registrations/demographics import job for {len(sids)} students...')
 
         rows = {
             'term_gpas': [],
             'last_registrations': [],
+            'api_demographics': [],
         }
         successes, failures = self.load_concurrently(rows, sids)
         if load_mode != 'new' and (len(successes) == 0) and (len(failures) > 0):
@@ -127,13 +128,13 @@ class ImportRegistrations(BackgroundJob):
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
             for result in executor.map(async_get_feed, repeat(app_obj), sids):
                 sid = result['sid']
-                reg_feed = result['feed']
-                if reg_feed:
+                full_feed = result['feed']
+                if full_feed:
                     successes.append(sid)
                     rows['last_registrations'].append(
-                        encoded_tsv_row([sid, json.dumps(reg_feed.get('last_registration', {}))]),
+                        encoded_tsv_row([sid, json.dumps(full_feed.get('last_registration', {}))]),
                     )
-                    gpa_feed = reg_feed.get('term_gpas', {})
+                    gpa_feed = full_feed.get('term_gpas', {})
                     if gpa_feed:
                         for term_id, term_data in gpa_feed.items():
                             row = [
@@ -145,6 +146,11 @@ class ImportRegistrations(BackgroundJob):
                             rows['term_gpas'].append(encoded_tsv_row(row))
                     else:
                         app.logger.info(f'No past UGRD registrations found for SID {sid}.')
+                    demographics = full_feed.get('demographics', {})
+                    if demographics:
+                        rows['api_demographics'].append(
+                            encoded_tsv_row([sid, json.dumps(demographics)]),
+                        )
                 else:
                     failures.append(sid)
                     app.logger.error(f'Registration history import failed for SID {sid}.')
