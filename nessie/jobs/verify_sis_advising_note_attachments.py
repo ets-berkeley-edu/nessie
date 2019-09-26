@@ -27,8 +27,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.metadata import most_recent_background_job_status
-from nessie.lib.util import get_s3_sis_attachment_current_paths, get_s3_sis_attachment_path
+from nessie.lib.util import get_s3_sis_attachment_path
 
 
 """Logic for validating SIS advising note attachments."""
@@ -61,12 +60,9 @@ class VerifySisAdvisingNoteAttachments(BackgroundJob):
             return f'Note attachment verification completed successfully. No missing attachments or sync failures found.'
 
     def source_paths(self, datestamp):
-        if datestamp and datestamp != 'since_successful_run':
+        if datestamp:
             return get_s3_sis_attachment_path(datestamp)
-
-        last_successful_run = most_recent_background_job_status('MigrateSisAdvisingNoteAttachments', 'succeeded')
-        begin_dt = last_successful_run.get('updated_at') if last_successful_run else None
-        return get_s3_sis_attachment_current_paths(begin_dt)
+        return [app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH']]
 
     def verify_attachment_migration(self, source_prefix, dest_prefix):
         s3_attachment_sync_failures = []

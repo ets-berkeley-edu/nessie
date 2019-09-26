@@ -51,6 +51,13 @@ class TestUtil:
         assert paths[2] == f'{prefix}/2019/09/21'
         assert paths[3] == f'{prefix}/2019/09/22'
 
+        # Start date is 9/25 5am UTC (9/24 10pm PST). Today is 9/26 5am UTC (9/25 10pm PST).
+        mock_datetime.utcnow.return_value = datetime(year=2019, month=9, day=26, hour=5)
+        paths = util.get_s3_sis_attachment_current_paths(datetime(year=2019, month=9, day=25, hour=5))
+        assert len(paths) == 2
+        assert paths[0] == f'{prefix}/2019/09/24'
+        assert paths[1] == f'{prefix}/2019/09/25'
+
         # Start date is 9/20 5am UTC (9/19 10pm PST). Today is 9/20 5pm UTC (9/20 10am PST)
         mock_datetime.utcnow.return_value = datetime(year=2019, month=9, day=20, hour=17)
         paths = util.get_s3_sis_attachment_current_paths(datetime(year=2019, month=9, day=20, hour=5))
