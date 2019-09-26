@@ -25,10 +25,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 
 from contextlib import contextmanager
-from datetime import datetime
 import logging
 
-import mock
 from nessie.jobs.background_job import BackgroundJobError
 from nessie.jobs.verify_sis_advising_note_attachments import VerifySisAdvisingNoteAttachments
 import pytest
@@ -97,14 +95,14 @@ class TestVerifySisAdvisingNoteAttachments:
         """When no parameter is provided, validates all files."""
         with set_up_to_succeed(app, caplog):
             response = VerifySisAdvisingNoteAttachments().run()
-        assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files/.' in caplog.text
-        assert 'No attachment sync failures found from sis-data/sis-sftp/incremental/advising-notes/attachment-files/.' in caplog.text
+        assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files.' in caplog.text
+        assert 'No attachment sync failures found from sis-data/sis-sftp/incremental/advising-notes/attachment-files.' in caplog.text
         assert response == 'Note attachment verification completed successfully. No missing attachments or sync failures found.'
 
         with set_up_to_fail(app, caplog):
             response = VerifySisAdvisingNoteAttachments().run()
-        assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files/.' in caplog.text
-        assert 'Total number of failed attachment syncs from sis-data/sis-sftp/incremental/advising-notes/attachment-files/ is 1' in caplog.text
+        assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files.' in caplog.text
+        assert 'Total number of failed attachment syncs from sis-data/sis-sftp/incremental/advising-notes/attachment-files is 1' in caplog.text
 
     def test_run_with_all_param(self, app, caplog, sis_note_tables):
         """When 'all' is provided, validates all files."""
@@ -119,32 +117,6 @@ class TestVerifySisAdvisingNoteAttachments:
         assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files.' in caplog.text
         assert 'Total number of failed attachment syncs from sis-data/sis-sftp/incremental/advising-notes/attachment-files is 1' in caplog.text
 
-    @mock.patch('nessie.lib.util.datetime', autospec=True)
-    def test_run_with_last_run_param(self, mock_datetime, sis_note_tables, app, caplog, metadata_db, prior_job_status):
-        """When 'since_successful_run' is provided, validates files received since the last successful run of MigrateSisAdvisingNoteAttachments."""
-        mock_datetime.utcnow.return_value = datetime(year=2018, month=12, day=23, hour=5)
-
-        with set_up_to_succeed(app, caplog):
-            response = VerifySisAdvisingNoteAttachments().run(datestamp='since_successful_run')
-        assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/20.' in caplog.text
-        assert 'No attachment sync failures found from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/20.' in caplog.text
-        assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/21.' in caplog.text
-        assert 'No attachment sync failures found from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/21.' in caplog.text
-        assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/22.' in caplog.text
-        assert 'No attachment sync failures found from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/22.' in caplog.text
-        assert response == 'Note attachment verification completed successfully. No missing attachments or sync failures found.'
-
-        with set_up_to_fail(app, caplog):
-            response = VerifySisAdvisingNoteAttachments().run(datestamp='since_successful_run')
-        assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/20.' in caplog.text
-        assert 'No attachment sync failures found from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/20.' in caplog.text
-        assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/21.' in caplog.text
-        assert 'No attachment sync failures found from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/21.' in caplog.text
-        assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/22.' in caplog.text
-        assert (
-            'Total number of failed attachment syncs from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/22 is 1'
-        ) in caplog.text
-
     def test_run_with_datestamp_param(self, sis_note_tables, app, caplog, metadata_db):
         """When a datestamp is provided, validates files copied from the corresponding dated folder."""
         with set_up_to_succeed(app, caplog):
@@ -158,4 +130,19 @@ class TestVerifySisAdvisingNoteAttachments:
         assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/22.' in caplog.text
         assert (
             'Total number of failed attachment syncs from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/22 is 1'
+        ) in caplog.text
+
+    def test_run_with_partial_datestamp_param(self, sis_note_tables, app, caplog, metadata_db):
+        """When a partial datestamp is provided, validates files copied from the corresponding dated folder."""
+        with set_up_to_succeed(app, caplog):
+            response = VerifySisAdvisingNoteAttachments().run(datestamp='2018')
+        assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018.' in caplog.text
+        assert 'No attachment sync failures found from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018.' in caplog.text
+        assert response == 'Note attachment verification completed successfully. No missing attachments or sync failures found.'
+
+        with set_up_to_fail(app, caplog):
+            response = VerifySisAdvisingNoteAttachments().run(datestamp='2018')
+        assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018.' in caplog.text
+        assert (
+            'Total number of failed attachment syncs from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018 is 1'
         ) in caplog.text
