@@ -23,81 +23,330 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from nessie.merged.student_demographics import ethnicity_filter_values, simplified_ethnicities, simplified_gender, \
-    underrepresented_minority
+from nessie.externals.sis_student_api import get_term_gpas_registration_demog
+from nessie.merged.student_demographics import add_demographics_rows, ethnicity_filter_values,\
+    parse_sis_demographics_api, simplified_ethnicities, simplified_gender, underrepresented_minority
 
 
 class TestStudentDemographics:
 
+    def test_api_parsing(self, app):
+        raw_feed = get_term_gpas_registration_demog('11667051').get('demographics')
+        parsed = parse_sis_demographics_api(raw_feed)
+        assert parsed['ethnicities'] == ['White']
+        assert not parsed['underrepresented']
+        assert parsed['gender'] == 'Female'
+        assert not parsed['visa']
+        assert not parsed['nationalities']
+        assert parsed['filtered_ethnicities'] == ['White']
+
+    def test_api_visa_parsing(self, app):
+        raw_feed = get_term_gpas_registration_demog('1234567890').get('demographics')
+        parsed = parse_sis_demographics_api(raw_feed)
+        assert parsed['ethnicities'] == ['Korean / Korean-American', 'White']
+        assert parsed['visa']['status'] == 'G'
+        assert parsed['visa']['type'] == 'F1'
+        assert parsed['nationalities'] == ['Korea, Republic of']
+        assert parsed['filtered_ethnicities'] == ['Korean / Korean-American']
+
+    def test_add_demographics_rows(self, app):
+        rows_map = {
+            'demographics': [],
+            'ethnicities': [],
+            'visas': [],
+        }
+        raw_feed = get_term_gpas_registration_demog('1234567890').get('demographics')
+        parsed = add_demographics_rows('1234567890', raw_feed, rows_map)
+        assert not parsed.get('filtered_ethnicities')
+        assert parsed['ethnicities'] == ['Korean / Korean-American', 'White']
+        assert rows_map['demographics'] == [b'1234567890\tFemale\tFalse']
+        assert rows_map['ethnicities'] == [b'1234567890\tKorean / Korean-American']
+        assert rows_map['visas'] == [b'1234567890\tG\tF1']
+
     def test_simplified_ethnicities(self, app):
         assert ['African-American / Black'] == simplified_ethnicities({
-            'ethnicities':
-                'Black/African American : African + Not Specified : Not Specified + '
-                'Black/African American : African American/Black + '
-                'Black/African American : Caribbean + Black/African American : Other African American/Black',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'African'},
+                    'group': {'description': 'Black/African American'},
+                },
+                {
+                    'detail': {'description': 'Not Specified'},
+                    'group': {'description': 'Not Specified'},
+                },
+                {
+                    'detail': {'description': 'African American/Black'},
+                    'group': {'description': 'Black/African American'},
+                },
+                {
+                    'detail': {'description': 'Caribbean'},
+                    'group': {'description': 'Black/African American'},
+                },
+                {
+                    'detail': {'description': 'Other African American/Black'},
+                    'group': {'description': 'Black/African American'},
+                },
+            ],
         })
         assert ['American Indian / Alaska Native'] == simplified_ethnicities({
-            'ethnicities':
-                'American Indian/Alaska Native : American Indian/Alaskan Native + '
-                'American Indian/Alaska Native : Native American/Alaska Native IPEDS',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'American Indian/Alaskan Native'},
+                    'group': {'description': 'American Indian/Alaska Native'},
+                },
+                {
+                    'detail': {'description': 'Native American/Alaska Native IPEDS'},
+                    'group': {'description': 'American Indian/Alaska Native'},
+                },
+            ],
         })
         assert ['Pacific Islander'] == simplified_ethnicities({
-            'ethnicities':
-                'Native Hawaiian/Oth Pac Island : Fijian + '
-                'Native Hawaiian/Oth Pac Island : Native Hawaiian/Other Pacific Islander IPEDS + '
-                'Native Hawaiian/Oth Pac Island : Samoan + '
-                'Native Hawaiian/Oth Pac Island : Tongan + Native Hawaiian/Oth Pac Island : Guamanian/Chamorro',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Fijian'},
+                    'group': {'description': 'Native Hawaiian/Oth Pac Island'},
+                },
+                {
+                    'detail': {'description': 'Native Hawaiian/Other Pacific Islander IPEDS'},
+                    'group': {'description': 'Native Hawaiian/Oth Pac Island'},
+                },
+                {
+                    'detail': {'description': 'Samoan'},
+                    'group': {'description': 'Native Hawaiian/Oth Pac Island'},
+                },
+                {
+                    'detail': {'description': 'Tongan'},
+                    'group': {'description': 'Native Hawaiian/Oth Pac Island'},
+                },
+                {
+                    'detail': {'description': 'Guamanian/Chamorro'},
+                    'group': {'description': 'Native Hawaiian/Oth Pac Island'},
+                },
+            ],
         })
         assert ['Mexican / Mexican-American / Chicano'] == simplified_ethnicities({
-            'ethnicities':
-                'Hispanic/Latino : Mexican/Mexican American/Chicano + '
-                'Hispanic/Latino : Other Hispanic, Latin American or Spanish Origin + '
-                'Hispanic/Latino : Hispanic/Latino IPEDS',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Mexican/Mexican American/Chicano'},
+                    'group': {'description': 'Hispanic/Latino'},
+                },
+                {
+                    'detail': {'description': 'Other Hispanic, Latin American or Spanish Origin'},
+                    'group': {'description': 'Hispanic/Latino'},
+                },
+                {
+                    'detail': {'description': 'Hispanic/Latino IPEDS'},
+                    'group': {'description': 'Hispanic/Latino'},
+                },
+            ],
         })
         assert ['Puerto Rican'] == simplified_ethnicities({
-            'ethnicities':
-                'Hispanic/Latino : Other Hispanic, Latin American or Spanish Origin + Hispanic/Latino : Puerto Rican '
-                '+ Hispanic/Latino : Hispanic/Latino IPEDS',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Other Hispanic, Latin American or Spanish Origin'},
+                    'group': {'description': 'Hispanic/Latino'},
+                },
+                {
+                    'detail': {'description': 'Puerto Rican'},
+                    'group': {'description': 'Hispanic/Latino'},
+                },
+                {
+                    'detail': {'description': 'Hispanic/Latino IPEDS'},
+                    'group': {'description': 'Hispanic/Latino'},
+                },
+            ],
         })
         assert ['Other Spanish-American / Latino'] == simplified_ethnicities({
-            'ethnicities':
-                'Hispanic/Latino : Other Hispanic, Latin American or Spanish Origin +  Hispanic/Latino : Hispanic/Latino IPEDS',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Other Hispanic, Latin American or Spanish Origin'},
+                    'group': {'description': 'Hispanic/Latino'},
+                },
+                {
+                    'detail': {'description': 'Hispanic/Latino IPEDS'},
+                    'group': {'description': 'Hispanic/Latino'},
+                },
+            ],
         })
         assert ['Chinese / Chinese-American'] == simplified_ethnicities({
-            'ethnicities': 'Asian : Chinese + Asian : Asian IPEDS + Asian : Taiwanese',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Chinese'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Asian IPEDS'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Taiwanese'},
+                    'group': {'description': 'Asian'},
+                },
+            ],
         })
         assert ['East Indian / Pakistani'] == simplified_ethnicities({
-            'ethnicities':
-                'Asian : Asian Indian + Asian : Pakistani + Asian : Asian IPEDS + '
-                'Asian : Other Asian (not including Middle Eastern)',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Asian Indian'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Pakistani'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Asian IPEDS'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Other Asian (not including Middle Eastern)'},
+                    'group': {'description': 'Asian'},
+                },
+            ],
         })
         assert ['Filipino / Filipino-American'] == simplified_ethnicities({
-            'ethnicities': 'Asian : Filipino/Filipino American + Asian : Asian IPEDS',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Filipino/Filipino American'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Asian IPEDS'},
+                    'group': {'description': 'Asian'},
+                },
+            ],
         })
         assert ['Japanese / Japanese American'] == simplified_ethnicities({
-            'ethnicities': 'Asian : Japanese/Japanese American + Asian : Asian IPEDS + '
-                           'Asian : Other Asian (not including Middle Eastern)',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Japanese/Japanese American'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Asian IPEDS'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Other Asian (not including Middle Eastern)'},
+                    'group': {'description': 'Asian'},
+                },
+            ],
         })
         assert ['Korean / Korean-American'] == simplified_ethnicities({
-            'ethnicities': 'Asian : Korean + Not Specified : Not Specified + Asian : Asian IPEDS',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Korean'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Not Specified'},
+                    'group': {'description': 'Not Specified'},
+                },
+                {
+                    'detail': {'description': 'Asian IPEDS'},
+                    'group': {'description': 'Asian'},
+                },
+            ],
         })
         assert ['Thai'] == simplified_ethnicities({
-            'ethnicities': 'Asian : Thai + Asian : Asian IPEDS',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Thai'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Asian IPEDS'},
+                    'group': {'description': 'Asian'},
+                },
+            ],
         })
         assert ['Vietnamese'] == simplified_ethnicities({
-            'ethnicities': 'Asian : Vietnamese + Asian : Asian IPEDS',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Vietnamese'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Asian IPEDS'},
+                    'group': {'description': 'Asian'},
+                },
+            ],
         })
         assert ['Other Asian'] == simplified_ethnicities({
-            'ethnicities': 'Asian : Bangladeshi + Asian : Cambodian + Asian : Indonesian + Asian : Malaysian + Asian : Laotian',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Bangladeshi'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Cambodian'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Indonesian'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Malaysian'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Laotian'},
+                    'group': {'description': 'Asian'},
+                },
+            ],
         })
         assert ['White'] == simplified_ethnicities({
-            'ethnicities':
-                'White : Afghan + White : Egyptian + White : European/European descent + White : Iranian + '
-                'White : Israeli + White : Armenian + White : Assyrian/Chaldean + White : Georgian + '
-                'White : Turkish + White : White IPEDS',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Afghan'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'Egyptian'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'European/European descent'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'Iranian'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'Israeli'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'Armenian'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'Assyrian/Chaldean'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'Georgian'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'Turkish'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'White IPEDS'},
+                    'group': {'description': 'White'},
+                },
+            ],
         })
         assert ['Not Specified'] == simplified_ethnicities({
-            'ethnicities': 'Not Specified : Not Specified',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Not Specified'},
+                    'group': {'description': 'Not Specified'},
+                },
+            ],
         })
         assert ['Not Specified'] == simplified_ethnicities({
             'ethnicities': None,
@@ -106,16 +355,64 @@ class TestStudentDemographics:
             'African-American / Black', 'American Indian / Alaska Native', 'Japanese / Japanese American',
             'Mexican / Mexican-American / Chicano', 'White',
         ] == simplified_ethnicities({
-            'ethnicities':
-                'Black/African American : African American/Black IPEDS + '
-                'Black/African American : African + American Indian/Alaska Native : American Indian/Alaskan Native + '
-                'Black/African American : African American/Black + White : European/European descent + '
-                'Asian : Japanese/Japanese American + Asian : Asian IPEDS + Hispanic/Latino : Latin American/Latino + '
-                'Hispanic/Latino : Mexican/Mexican American/Chicano + '
-                'Black/African American : Other African American/Black + '
-                'White : Other White/Caucasian + '
-                'Hispanic/Latino : Hispanic/Latino IPEDS + '
-                'American Indian/Alaska Native : Native American/Alaska Native IPEDS + White : White IPEDS',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'African American/Black IPEDS'},
+                    'group': {'description': 'Black/African American'},
+                },
+                {
+                    'detail': {'description': 'African'},
+                    'group': {'description': 'Black/African American'},
+                },
+                {
+                    'detail': {'description': 'American Indian/Alaskan Native'},
+                    'group': {'description': 'American Indian/Alaska Native'},
+                },
+                {
+                    'detail': {'description': 'African American/Black'},
+                    'group': {'description': 'Black/African American'},
+                },
+                {
+                    'detail': {'description': 'European/European descent'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'Japanese/Japanese American'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Asian IPEDS'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Latin American/Latino'},
+                    'group': {'description': 'Hispanic/Latino'},
+                },
+                {
+                    'detail': {'description': 'Mexican/Mexican American/Chicano'},
+                    'group': {'description': 'Hispanic/Latino'},
+                },
+                {
+                    'detail': {'description': 'Other African American/Black'},
+                    'group': {'description': 'Black/African American'},
+                },
+                {
+                    'detail': {'description': 'Other White/Caucasian'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'Hispanic/Latino IPEDS'},
+                    'group': {'description': 'Hispanic/Latino'},
+                },
+                {
+                    'detail': {'description': 'Native American/Alaska Native IPEDS'},
+                    'group': {'description': 'American Indian/Alaska Native'},
+                },
+                {
+                    'detail': {'description': 'White IPEDS'},
+                    'group': {'description': 'White'},
+                },
+            ],
         })
 
     def test_ethnicity_filter_values(self, app):
@@ -123,63 +420,210 @@ class TestStudentDemographics:
             'African-American / Black', 'American Indian / Alaska Native', 'Japanese / Japanese American',
             'Mexican / Mexican-American / Chicano',
         ] == ethnicity_filter_values({
-            'ethnicities':
-                'Black/African American : African American/Black IPEDS + Black/African American : African + '
-                'American Indian/Alaska Native : American Indian/Alaskan Native + '
-                'Black/African American : African American/Black + '
-                'White : European/European descent + Asian : Japanese/Japanese American + '
-                'Asian : Asian IPEDS + Hispanic/Latino : Latin American/Latino + '
-                'Hispanic/Latino : Mexican/Mexican American/Chicano + '
-                'Black/African American : Other African American/Black + '
-                'White : Other White/Caucasian + Hispanic/Latino : Hispanic/Latino IPEDS + '
-                'American Indian/Alaska Native : Native American/Alaska Native IPEDS + White : White IPEDS',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'African American/Black IPEDS'},
+                    'group': {'description': 'Black/African American'},
+                },
+                {
+                    'detail': {'description': 'African'},
+                    'group': {'description': 'Black/African American'},
+                },
+                {
+                    'detail': {'description': 'American Indian/Alaskan Native'},
+                    'group': {'description': 'American Indian/Alaska Native'},
+                },
+                {
+                    'detail': {'description': 'African American/Black'},
+                    'group': {'description': 'Black/African American'},
+                },
+                {
+                    'detail': {'description': 'European/European descent'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'Japanese/Japanese American'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Asian IPEDS'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Latin American/Latino'},
+                    'group': {'description': 'Hispanic/Latino'},
+                },
+                {
+                    'detail': {'description': 'Mexican/Mexican American/Chicano'},
+                    'group': {'description': 'Hispanic/Latino'},
+                },
+                {
+                    'detail': {'description': 'Other African American/Black'},
+                    'group': {'description': 'Black/African American'},
+                },
+                {
+                    'detail': {'description': 'Other White/Caucasian'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'Hispanic/Latino IPEDS'},
+                    'group': {'description': 'Hispanic/Latino'},
+                },
+                {
+                    'detail': {'description': 'Native American/Alaska Native IPEDS'},
+                    'group': {'description': 'American Indian/Alaska Native'},
+                },
+                {
+                    'detail': {'description': 'White IPEDS'},
+                    'group': {'description': 'White'},
+                },
+            ],
         })
 
     def test_simplified_gender(self, app):
-        assert 'Female' == simplified_gender({'gender_of_record': 'Female', 'gender_identity': None})
-        assert 'Male' == simplified_gender({'gender_of_record': 'Male', 'gender_identity': None})
-        assert 'Decline to State' == simplified_gender(
-            {'gender_of_record': 'Decline to State', 'gender_identity': None},
-        )
+        assert 'Female' == simplified_gender({'gender': {'genderOfRecord': {'description': 'Female'}}})
+        assert 'Male' == simplified_gender({'gender': {'genderOfRecord': {'description': 'Male'}}})
+        assert 'Decline to State' == simplified_gender({'gender': {'genderOfRecord': {'description': 'Decline to State'}}})
 
-        assert 'Female' == simplified_gender({'gender_of_record': 'Female', 'gender_identity': 'Female'})
-        assert 'Female' == simplified_gender({'gender_of_record': 'Male', 'gender_identity': 'Female'})
         assert 'Female' == simplified_gender(
-            {'gender_of_record': 'Male', 'gender_identity': 'Trans Female/Trans Woman'},
+            {'gender': {'genderOfRecord': {'description': 'Female'}, 'genderIdentity': {'description': 'Female'}}},
         )
-        assert 'Female' == simplified_gender({'gender_of_record': 'Decline to State', 'gender_identity': 'Female'})
+        assert 'Female' == simplified_gender(
+            {'gender': {'genderOfRecord': {'description': 'Male'}, 'genderIdentity': {'description': 'Female'}}},
+        )
+        assert 'Female' == simplified_gender(
+            {'gender': {'genderOfRecord': {'description': 'Male'}, 'genderIdentity': {'description': 'Trans Female/Trans Woman'}}},
+        )
+        assert 'Female' == simplified_gender(
+            {'gender': {'genderOfRecord': {'description': 'Decline to State'}, 'genderIdentity': {'description': 'Female'}}},
+        )
 
-        assert 'Male' == simplified_gender({'gender_of_record': 'Male', 'gender_identity': 'Male'})
-        assert 'Male' == simplified_gender({'gender_of_record': 'Female', 'gender_identity': 'Male'})
-        assert 'Male' == simplified_gender({'gender_of_record': 'Female', 'gender_identity': 'Trans Male/Trans Man'})
-        assert 'Male' == simplified_gender({'gender_of_record': 'Decline to State', 'gender_identity': 'Male'})
+        assert 'Male' == simplified_gender(
+            {'gender': {'genderOfRecord': {'description': 'Male'}, 'genderIdentity': {'description': 'Male'}}},
+        )
+        assert 'Male' == simplified_gender(
+            {'gender': {'genderOfRecord': {'description': 'Female'}, 'genderIdentity': {'description': 'Male'}}},
+        )
+        assert 'Male' == simplified_gender(
+            {'gender': {'genderOfRecord': {'description': 'Female'}, 'genderIdentity': {'description': 'Trans Male/Trans Man'}}},
+        )
+        assert 'Male' == simplified_gender(
+            {'gender': {'genderOfRecord': {'description': 'Decline to State'}, 'genderIdentity': {'description': 'Male'}}},
+        )
 
-        assert 'Genderqueer/Gender Non-Conform' == simplified_gender(
-            {'gender_of_record': 'Female', 'gender_identity': 'Genderqueer/Gender Non-Conform'})
+        assert 'Genderqueer/Gender Non-Conform' == simplified_gender({
+            'gender': {
+                'genderOfRecord': {'description': 'Female'},
+                'genderIdentity': {'description': 'Genderqueer/Gender Non-Conform'},
+            },
+        })
         assert 'Different Identity' == simplified_gender(
-            {'gender_of_record': 'Male', 'gender_identity': 'Different Identity'})
+            {'gender': {'genderOfRecord': {'description': 'Male'}, 'genderIdentity': {'description': 'Different Identity'}}},
+        )
 
     def test_underrepresented_minority(self, app):
         assert underrepresented_minority({
-            'ethnicities':
-                'White : European/European descent + American Indian/Alaska Native : American Indian/Alaskan Native + '
-                'Asian : Chinese',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'European/European descent'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'American Indian/Alaskan Native'},
+                    'group': {'description': 'American Indian/Alaska Native'},
+                },
+                {
+                    'detail': {'description': 'Chinese'},
+                    'group': {'description': 'Asian'},
+                },
+            ],
         })
         assert underrepresented_minority({
-            'ethnicities':
-                'Asian : Asian Indian + Black/African American : Caribbean + White : European/European descent',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Asian Indian'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Caribbean'},
+                    'group': {'description': 'Black/African American'},
+                },
+                {
+                    'detail': {'description': 'European/European descent'},
+                    'group': {'description': 'White'},
+                },
+            ],
         })
-        assert underrepresented_minority({'ethnicities': 'Asian : Chinese + Hispanic/Latino : Cuban/Cuban American'})
-        assert not underrepresented_minority(
-            {'ethnicities': 'Asian : Japanese/Japanese American + Asian : Pakistani + Asian : Asian IPEDS'},
-        )
-        assert not underrepresented_minority({
-            'ethnicities':
-                'White : Armenian + Asian : Chinese + White : European/European descent + Asian : Indonesian + '
-                'Asian : Asian IPEDS + White : White IPEDS',
+        assert underrepresented_minority({
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Chinese'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Cuban/Cuban American'},
+                    'group': {'description': 'Hispanic/Latino'},
+                },
+            ],
         })
         assert not underrepresented_minority({
-            'ethnicities':
-                'White : European/European descent + Native Hawaiian/Oth Pac Island : Guamanian/Chamorro + White : Iraqi',
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Japanese/Japanese American'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Pakistani'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Asian IPEDS'},
+                    'group': {'description': 'Asian'},
+                },
+            ],
+        })
+        assert not underrepresented_minority({
+            'ethnicities': [
+                {
+                    'detail': {'description': 'Armenian'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'Chinese'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'European/European descent'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'Indonesian'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'Asian IPEDS'},
+                    'group': {'description': 'Asian'},
+                },
+                {
+                    'detail': {'description': 'White IPEDS'},
+                    'group': {'description': 'White'},
+                },
+            ],
+        })
+        assert not underrepresented_minority({
+            'ethnicities': [
+                {
+                    'detail': {'description': 'European/European descent'},
+                    'group': {'description': 'White'},
+                },
+                {
+                    'detail': {'description': 'Guamanian/Chamorro'},
+                    'group': {'description': 'Native Hawaiian/Oth Pac Island'},
+                },
+                {
+                    'detail': {'description': 'Iraqi'},
+                    'group': {'description': 'White'},
+                },
+            ],
         })
         assert not underrepresented_minority({'ethnicities': None})

@@ -105,7 +105,7 @@ def get_advisee_student_profile_feeds():
                 ON sis.sid = ldap.sid
               LEFT JOIN {student_schema()}.sis_api_degree_progress deg
                 ON deg.sid = ldap.sid
-              LEFT JOIN {boac_schema()}.student_demographics demog
+              LEFT JOIN {student_schema()}.student_api_demographics demog
                 ON demog.sid = ldap.sid
               LEFT JOIN {student_schema()}.student_last_registrations reg
                 ON reg.sid = ldap.sid
@@ -136,15 +136,6 @@ def get_advisee_sids_with_photos():
         FROM {metadata_schema()}.photo_import_status
         WHERE status = 'success'"""
     return rds.fetch(sql)
-
-
-@fixture('query_advisee_sis_demographics.csv')
-def get_advisee_sis_demographics():
-    sql = f"""SELECT d.sid, d.gender_of_record, d.gender_identity, d.visas, d.ethnicities, d.countries
-              FROM {intermediate_schema()}.advisee_sis_demographics d
-              ORDER BY d.sid
-    """
-    return redshift.fetch(sql)
 
 
 @fixture('query_advisee_submissions_comparisons_{term_id}.csv')

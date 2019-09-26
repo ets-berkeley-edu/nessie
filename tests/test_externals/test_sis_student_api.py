@@ -35,27 +35,6 @@ TEST_SID_LIST = ['11667051', '1234567890', '2345678901']
 class TestSisStudentApi:
     """SIS student API query."""
 
-    def test_get_student(self, app):
-        """Returns unwrapped data."""
-        results = student_api.get_sis_students_list(TEST_SID_LIST)
-        students = results['all_feeds']
-        assert len(students) == len(TEST_SID_LIST)
-        student = students[0]
-        assert len(student['academicStatuses']) == 2
-        assert student['academicStatuses'][0]['studentCareer']['academicCareer']['code'] == 'UCBX'
-        assert student['academicStatuses'][1]['studentCareer']['academicCareer']['code'] == 'UGRD'
-        assert student['academicStatuses'][1]['cumulativeGPA']['average'] == pytest.approx(3.8, 0.01)
-        assert student['academicStatuses'][1]['studentPlans'][0]['academicPlan']['plan']['description'] == 'English BA'
-        assert student['academicStatuses'][1]['termsInAttendance'] == 5
-        assert student['registrations'][0]['academicLevels'][0]['type']['code'] == 'BOT'
-        assert student['registrations'][0]['academicLevels'][0]['level']['description'] == 'Junior'
-        assert student['registrations'][0]['athlete'] is True
-        assert student['registrations'][0]['termUnits'][0]['unitsMax'] == 24
-        assert student['registrations'][0]['termUnits'][0]['unitsMin'] == 15
-        assert student['emails'][0]['emailAddress'] == 'oski@berkeley.edu'
-        assert len(results['missing_sids']) == 0
-        assert results['ucbx_only_sids'] == ['1234567890']
-
     def test_inner_get_students(self, app):
         """Returns fixture data."""
         oski_response = student_api._get_v2_by_sids_list(
@@ -70,8 +49,8 @@ class TestSisStudentApi:
         students = oski_response.json()['apiResponse']['response']['students']
         assert len(students) == 3
 
-    def test_get_term_gpas_registration(self, app):
-        reg_feed = student_api.get_term_gpas_registration(11667051)
+    def test_get_term_gpas_registration_demog(self, app):
+        reg_feed = student_api.get_term_gpas_registration_demog(11667051)
         gpas = reg_feed['term_gpas']
         assert len(gpas) == 7
         assert gpas['2148']['gpa'] == 3.3
@@ -90,18 +69,46 @@ class TestSisStudentApi:
         assert len(last_registration['termUnits']) == 3
         assert last_registration['termGPA']['average'] == 3.3
 
-    def test_inner_get_registrations(self, app):
-        oski_response = student_api._get_v2_registrations(11667051)
+    def test_get_demog_data(self, app):
+        demog_feed = student_api.get_term_gpas_registration_demog(1234567890)['demographics']
+        ethn = demog_feed['ethnicities']
+        assert len(ethn) == 2
+        assert ethn[0]['group']['description'] == 'White'
+        assert ethn[1]['detail']['description'] == 'Korean'
+        assert ethn[1]['group']['description'] == 'Asian'
+        foreign = demog_feed['foreignCountries']
+        assert len(foreign) == 1
+        assert foreign[0]['code'] == 'KOR'
+        assert foreign[0]['description'] == 'Korea, Republic of'
+        gender = demog_feed['gender']
+        assert gender['genderOfRecord']['description'] == 'Female'
+        assert gender['sexAtBirth']['description'] == 'Female'
+        assert demog_feed['residency']['official']['description'] == 'Non-Resident'
+        assert demog_feed['usaCountry']['citizenshipStatus']['description'] == 'Alien Temporary'
+        visa = demog_feed['usaCountry']['visa']
+        assert visa['status'] == 'G'
+        assert visa['type']['code'] == 'F1'
+        assert visa['type']['description'] == 'Student in Academic Program'
+
+    def test_inner_get_registrations_demog(self, app):
+        oski_response = student_api._get_v2_registrations_demog(11667051)
         assert oski_response
         assert oski_response.status_code == 200
-        registrations = oski_response.json()['apiResponse']['response']['registrations']
-        assert len(registrations) == 10
+        feed = oski_response.json()['apiResponse']['response']
+        assert len(feed['registrations']) == 10
+        assert len(feed['ethnicities']) == 2
+        assert feed['gender']['sexAtBirth']['code'] == 'M'
+        assert feed['gender']['genderOfRecord']['code'] == 'F'
+        assert feed['gender']['genderIdentity']['code'] == 'TF'
+        assert feed['residency']['official']['code'] == 'RES'
+        assert feed['usaCountry']['citizenshipStatus']['description'] == 'Native'
+        assert not feed['usaCountry']['visa']
 
     def test_server_error(self, app, caplog):
         """Logs unexpected server errors and returns informative message."""
         api_error = MockResponse(500, {}, '{"message": "Internal server error."}')
-        with register_mock(student_api._get_v2_registrations, api_error):
-            response = student_api._get_v2_registrations(11667051)
+        with register_mock(student_api._get_v2_registrations_demog, api_error):
+            response = student_api._get_v2_registrations_demog(11667051)
             assert '500 Server Error' in caplog.text
             assert not response
             assert response.raw_response.status_code == 500
