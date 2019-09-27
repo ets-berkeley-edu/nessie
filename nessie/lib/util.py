@@ -107,8 +107,8 @@ def get_s3_sis_attachment_current_paths(begin_dt=None):
     else:
         # Calculate a range of dates between begin_dt (inclusive) and today (exclusive).
         # Ensure both dates are in UTC before converting to local time.
-        start_date = localize_datetime(pytz.utc.localize(begin_dt))
-        today = localize_datetime(pytz.utc.localize(datetime.utcnow()))
+        start_date = localize_datetime(pytz.utc.localize(begin_dt)).date()
+        today = localize_datetime(pytz.utc.localize(datetime.utcnow())).date()
         paths = [d.strftime('%Y/%m/%d') for d in rrule(DAILY, dtstart=start_date, until=today)]
     return ['/'.join([app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH'], path]) for path in paths]
 

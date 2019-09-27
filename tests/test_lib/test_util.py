@@ -43,8 +43,8 @@ class TestUtil:
         assert util.get_s3_sis_attachment_current_paths() == [f'{prefix}/']
 
         # Start date is 9/20 5am UTC (9/19 10pm PST). Today is 9/23 5am UTC (9/22 10pm PST).
-        mock_datetime.utcnow.return_value = datetime(year=2019, month=9, day=23, hour=5)
-        paths = util.get_s3_sis_attachment_current_paths(datetime(year=2019, month=9, day=20, hour=5))
+        mock_datetime.utcnow.return_value = datetime(year=2019, month=9, day=23, hour=5, minute=21)
+        paths = util.get_s3_sis_attachment_current_paths(datetime(year=2019, month=9, day=20, hour=5, minute=22))
         assert len(paths) == 4
         assert paths[0] == f'{prefix}/2019/09/19'
         assert paths[1] == f'{prefix}/2019/09/20'
@@ -52,32 +52,34 @@ class TestUtil:
         assert paths[3] == f'{prefix}/2019/09/22'
 
         # Start date is 9/25 5am UTC (9/24 10pm PST). Today is 9/26 5am UTC (9/25 10pm PST).
-        mock_datetime.utcnow.return_value = datetime(year=2019, month=9, day=26, hour=5)
-        paths = util.get_s3_sis_attachment_current_paths(datetime(year=2019, month=9, day=25, hour=5))
+        mock_datetime.utcnow.return_value = datetime(year=2019, month=9, day=26, hour=5, minute=21)
+        paths = util.get_s3_sis_attachment_current_paths(datetime(year=2019, month=9, day=25, hour=5, minute=22))
         assert len(paths) == 2
         assert paths[0] == f'{prefix}/2019/09/24'
         assert paths[1] == f'{prefix}/2019/09/25'
 
         # Start date is 9/20 5am UTC (9/19 10pm PST). Today is 9/20 5pm UTC (9/20 10am PST)
-        mock_datetime.utcnow.return_value = datetime(year=2019, month=9, day=20, hour=17)
-        paths = util.get_s3_sis_attachment_current_paths(datetime(year=2019, month=9, day=20, hour=5))
-        assert len(paths) == 1
+        mock_datetime.utcnow.return_value = datetime(year=2019, month=9, day=20, hour=17, minute=21)
+        paths = util.get_s3_sis_attachment_current_paths(datetime(year=2019, month=9, day=20, hour=5, minute=22))
+        assert len(paths) == 2
         assert paths[0] == f'{prefix}/2019/09/19'
+        assert paths[1] == f'{prefix}/2019/09/20'
 
         # Start date is 9/20 5pm UTC (9/20 10am PST). Today is 9/21 5am UTC (9/20 10pm PST)
-        mock_datetime.utcnow.return_value = datetime(year=2019, month=9, day=21, hour=5)
-        paths = util.get_s3_sis_attachment_current_paths(datetime(year=2019, month=9, day=20, hour=17))
+        mock_datetime.utcnow.return_value = datetime(year=2019, month=9, day=21, hour=5, minute=21)
+        paths = util.get_s3_sis_attachment_current_paths(datetime(year=2019, month=9, day=20, hour=17, minute=22))
         assert len(paths) == 1
         assert paths[0] == f'{prefix}/2019/09/20'
 
         # Start date is 9/20 5pm UTC (9/20 10am PST). Today is 9/21 6am UTC (9/20 11pm PST)
-        mock_datetime.utcnow.return_value = datetime(year=2019, month=9, day=21, hour=6)
-        paths = util.get_s3_sis_attachment_current_paths(datetime(year=2019, month=9, day=20, hour=17))
+        mock_datetime.utcnow.return_value = datetime(year=2019, month=9, day=21, hour=6, minute=21)
+        paths = util.get_s3_sis_attachment_current_paths(datetime(year=2019, month=9, day=20, hour=17, minute=22))
         assert len(paths) == 1
         assert paths[0] == f'{prefix}/2019/09/20'
 
         # Start date is 9/20 5pm UTC (9/20 10am PST). Today is 9/21 7am UTC (9/21 12am PST)
-        mock_datetime.utcnow.return_value = datetime(year=2019, month=9, day=21, hour=7)
-        paths = util.get_s3_sis_attachment_current_paths(datetime(year=2019, month=9, day=20, hour=17))
-        assert len(paths) == 1
+        mock_datetime.utcnow.return_value = datetime(year=2019, month=9, day=21, hour=7, minute=21)
+        paths = util.get_s3_sis_attachment_current_paths(datetime(year=2019, month=9, day=20, hour=17, minute=22))
+        assert len(paths) == 2
         assert paths[0] == f'{prefix}/2019/09/20'
+        assert paths[1] == f'{prefix}/2019/09/21'

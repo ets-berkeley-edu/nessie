@@ -40,7 +40,7 @@ def prior_job_status(app):
     rds_schema = app.config['RDS_SCHEMA_METADATA']
     rds.execute(f"""INSERT INTO {rds_schema}.background_job_status
                 (job_id, status, instance_id, created_at, updated_at)
-                VALUES ('MigrateSisAdvisingNoteAttachments_123', 'succeeded', 'abc', '2019-08-27 00:00:00', '2019-08-27 00:00:00')""")
+                VALUES ('MigrateSisAdvisingNoteAttachments_123', 'succeeded', 'abc', '2019-08-27 05:21:00', '2019-08-27 05:22:00')""")
 
 
 def object_exists(m3, bucket, key):
@@ -65,7 +65,7 @@ class TestMigrateSisAdvisingNoteAttachments:
     def test_first_time_run_with_no_param(self, mock_datetime, app, caplog, metadata_db):
         """When no parameter is provided and there is no prior successful run, copies all files."""
         (bucket, source_prefix, dest_prefix) = get_s3_refs(app)
-        mock_datetime.utcnow.return_value = datetime(year=2019, month=8, day=29, hour=5)
+        mock_datetime.utcnow.return_value = datetime(year=2019, month=8, day=29, hour=5, minute=21)
 
         caplog.set_level(logging.INFO)
         with capture_app_logs(app):
@@ -89,7 +89,7 @@ class TestMigrateSisAdvisingNoteAttachments:
     def test_run_with_no_param(self, mock_datetime, app, caplog, metadata_db, prior_job_status):
         """When no parameter is provided, copies new files since the last succesful run."""
         (bucket, source_prefix, dest_prefix) = get_s3_refs(app)
-        mock_datetime.utcnow.return_value = datetime(year=2019, month=8, day=29, hour=5)
+        mock_datetime.utcnow.return_value = datetime(year=2019, month=8, day=29, hour=5, minute=21)
 
         caplog.set_level(logging.INFO)
         with capture_app_logs(app):
