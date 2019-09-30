@@ -90,7 +90,13 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
             if profile_count:
                 student_schema.truncate_staging_table(table_name)
                 student_schema.write_file_to_staging(table_name, feed_file, profile_count)
-        student_schema.refresh_all_from_staging([table_name])
+                with redshift.transaction() as transaction:
+                    student_schema.refresh_from_staging(
+                        table_name,
+                        None,
+                        unmerged_sids,
+                        transaction,
+                    )
         app.logger.info('Non-advisee profile generation complete.')
         return profile_count
 
@@ -147,7 +153,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
                     student_schema.refresh_from_staging(
                         table_name,
                         term_id,
-                        None,
+                        unmerged_sids,
                         transaction,
                     )
                 total_count += term_count
