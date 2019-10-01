@@ -57,6 +57,7 @@ from nessie.jobs.import_degree_progress import ImportDegreeProgress
 from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
 from nessie.jobs.import_non_current_students import ImportNonCurrentStudents
 from nessie.jobs.import_registrations import ImportRegistrations
+from nessie.jobs.import_registrations_hist_enr import ImportRegistrationsHistEnr
 from nessie.jobs.import_sis_student_api import ImportSisStudentApi
 from nessie.jobs.import_sis_student_api_hist_enr import ImportSisStudentApiHistEnr
 from nessie.jobs.import_student_photos import ImportStudentPhotos
@@ -351,6 +352,15 @@ def import_registrations(load_mode):
     if load_mode not in ['all', 'batch', 'new']:
         raise BadRequestError('Unrecognized mode for registrations import.')
     job_started = ImportRegistrations(load_mode=load_mode).run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/import_registrations_hist_enr/<load_mode>', methods=['POST'])
+@auth_required
+def import_registrations_hist_enr(load_mode):
+    if load_mode not in ['batch', 'new']:
+        raise BadRequestError('Unrecognized mode for non-advisee registrations import.')
+    job_started = ImportRegistrationsHistEnr(load_mode=load_mode).run_async()
     return respond_with_status(job_started)
 
 

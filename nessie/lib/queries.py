@@ -250,18 +250,18 @@ def get_enrolled_primary_sections(term_id=None):
     return redshift.fetch(sql)
 
 
-def get_non_advisee_student_ids():
-    sql = f"""SELECT DISTINCT(en.sis_id) AS sid
-              FROM {sis_schema()}.enrollments en
-              LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = en.sis_id
-              LEFT JOIN {coe_schema()}.students coe ON coe.sid = en.sis_id
-              LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = en.sis_id
+def get_fetched_non_advisees():
+    sql = f"""SELECT DISTINCT(hist.sid) AS sid
+              FROM {student_schema()}.sis_api_profiles_hist_enr hist
+              LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = hist.sid
+              LEFT JOIN {coe_schema()}.students coe ON coe.sid = hist.sid
+              LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = hist.sid
               WHERE ascs.sid IS NULL AND coe.sid IS NULL AND ug.sid IS NULL
         """
     return redshift.fetch(sql)
 
 
-def get_non_advisee_unfetched_student_ids():
+def get_unfetched_non_advisees():
     sql = f"""SELECT DISTINCT(en.sis_id) AS sid
               FROM {sis_schema()}.enrollments en
               LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = en.sis_id
@@ -273,18 +273,25 @@ def get_non_advisee_unfetched_student_ids():
     return redshift.fetch(sql)
 
 
-def get_non_advisee_unmerged_student_ids():
-    sql = f"""SELECT DISTINCT(api.sid)
-              FROM {student_schema()}.sis_api_profiles_hist_enr api
-              LEFT JOIN {student_schema()}.student_profiles_hist_enr merged ON api.sid = merged.sid
-              WHERE merged.sid IS NULL
+def get_non_advisees_without_registration_imports():
+    sql = f"""SELECT DISTINCT(en.sis_id) AS sid
+              FROM {sis_schema()}.enrollments en
+              LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = en.sis_id
+              LEFT JOIN {coe_schema()}.students coe ON coe.sid = en.sis_id
+              LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = en.sis_id
+              LEFT JOIN {student_schema()}.hist_enr_last_registrations hist ON hist.sid = en.sis_id
+              WHERE ascs.sid IS NULL AND coe.sid IS NULL AND ug.sid IS NULL AND hist.sid IS NULL
         """
     return redshift.fetch(sql)
 
 
 def get_non_advisee_api_feeds(sids):
-    sql = f"""SELECT DISTINCT sis.sid, sis.uid, sis.feed
+    sql = f"""SELECT DISTINCT sis.sid, sis.uid,
+                sis.feed AS sis_feed,
+                reg.feed AS last_registration_feed
               FROM {student_schema()}.sis_api_profiles_hist_enr sis
+              LEFT JOIN {student_schema()}.hist_enr_last_registrations reg
+                ON reg.sid = sis.sid
               WHERE sis.sid=ANY(%s)
               ORDER BY sis.sid
         """
@@ -301,6 +308,26 @@ def get_non_advisee_sis_enrollments(sids, term_id):
               WHERE enr.sid=ANY(%s)
                 AND enr.sis_term_id='{term_id}'
               ORDER BY enr.sis_term_id DESC, enr.sid, enr.sis_course_name, enr.sis_primary DESC, enr.sis_instruction_format, enr.sis_section_num
+        """
+    return redshift.fetch(sql, params=(sids,))
+
+
+def get_non_advisee_enrollment_drops(sids, term_id):
+    sql = f"""SELECT dr.*
+              FROM {intermediate_schema()}.sis_dropped_classes AS dr
+              WHERE dr.sid = ANY(%s)
+                AND dr.sis_term_id = '{term_id}'
+              ORDER BY dr.sid, dr.sis_course_name
+        """
+    return redshift.fetch(sql, params=(sids,))
+
+
+def get_non_advisee_term_gpas(sids, term_id):
+    sql = f"""SELECT gp.sid, gp.term_id, gp.gpa, gp.units_taken_for_gpa
+              FROM {student_schema()}.hist_enr_term_gpas gp
+              WHERE gp.sid = ANY(%s)
+                AND gp.term_id = '{term_id}'
+              ORDER BY gp.sid
         """
     return redshift.fetch(sql, params=(sids,))
 

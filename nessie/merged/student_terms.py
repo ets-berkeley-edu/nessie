@@ -70,12 +70,13 @@ def map_sis_enrollments(sis_enrollments):
     return student_enrollments_map
 
 
-def merge_dropped_classes(all_advisees_terms_map):
-    all_drops = queries.get_all_advisee_enrollment_drops()
+def merge_dropped_classes(student_enrollments_map, all_drops=None):
+    if all_drops is None:
+        all_drops = queries.get_all_advisee_enrollment_drops() or []
     for key, sids_grp in groupby(all_drops, key=operator.itemgetter('sis_term_id')):
         term_id = str(key)
         for sid, enrs_grp in groupby(sids_grp, operator.itemgetter('sid')):
-            student_term = all_advisees_terms_map.get(term_id, {}).get(sid)
+            student_term = student_enrollments_map.get(term_id, {}).get(sid)
             # When a student has begun enrolling for classes but then decides not to attend (or to withdraw),
             # the SIS DB will contain nothing but "dropped" sections. CalCentral does not show such terms
             # as part of the student's academic history.
@@ -89,22 +90,23 @@ def merge_dropped_classes(all_advisees_terms_map):
                         'withdrawAfterDeadline': (row['grade'] == 'W'),
                     })
                 student_term['droppedSections'] = drops
-    return all_advisees_terms_map
+    return student_enrollments_map
 
 
-def merge_term_gpas(all_advisees_terms_map):
-    all_gpas = queries.get_all_advisee_term_gpas() or []
+def merge_term_gpas(student_enrollments_map, all_gpas=None):
+    if all_gpas is None:
+        all_gpas = queries.get_all_advisee_term_gpas() or []
     for key, term_gpa_rows in groupby(all_gpas, operator.itemgetter('term_id')):
         term_id = str(key)
         for term_gpa_row in term_gpa_rows:
             sid = term_gpa_row['sid']
-            student_term = all_advisees_terms_map.get(term_id, {}).get(sid)
+            student_term = student_enrollments_map.get(term_id, {}).get(sid)
             if student_term:
                 student_term['termGpa'] = {
                     'gpa': float(term_gpa_row['gpa']),
                     'unitsTakenForGpa': float(term_gpa_row['units_taken_for_gpa']),
                 }
-    return all_advisees_terms_map
+    return student_enrollments_map
 
 
 def get_canvas_site_maps():
