@@ -122,8 +122,12 @@ def _get_v2_single_student(sid, term_id=None, as_of=None):
     return authorized_request_v2(url)
 
 
-def get_term_gpas_registration_demog(sid):
-    feed = get_registrations_demog(sid)
+def get_term_gpas_registration_demog(sid, with_demog=True):
+    # Unlike the V1 Students API, V2 will not returns 'registrations' data for the upcoming term unless
+    # we request an 'as-of-date' in the future.
+    near_future = (datetime.now() + timedelta(days=60)).strftime('%Y-%m-%d')
+    response = _get_v2_registrations_demog(sid, as_of=near_future, with_demog=with_demog)
+    feed = response and hasattr(response, 'json') and response.json().get('apiResponse', {}).get('response', {})
     if not feed:
         return
     registrations = feed.get('registrations')
@@ -178,41 +182,28 @@ def get_term_gpas_registration_demog(sid):
                     'unitsTakenForGpa': units_taken_for_gpa,
                 }
     summary = {
-        'demographics': feed.get('demographics'),
         'last_registration': last_registration,
         'term_gpas': term_gpas,
     }
+    if with_demog:
+        demographics = {k: feed[k] for k in feed.keys() & {'ethnicities', 'foreignCountries', 'gender', 'residency', 'usaCountry'}}
+        summary['demographics'] = demographics
     return summary
 
 
-def get_registrations_demog(sid):
-    # Unlike the V1 Students API, V2 will not returns 'registrations' data for the upcoming term unless
-    # we request an 'as-of-date' in the future.
-    near_future = (datetime.now() + timedelta(days=60)).strftime('%Y-%m-%d')
-    response = _get_v2_registrations_demog(sid, as_of=near_future)
-    if response and hasattr(response, 'json'):
-        feed = response.json().get('apiResponse', {}).get('response', {})
-        registrations = feed.get('registrations', [])
-        demog = {k: feed[k] for k in feed.keys() & {'ethnicities', 'foreignCountries', 'gender', 'residency', 'usaCountry'}}
-        return {
-            'registrations': registrations,
-            'demographics': demog,
-        }
-    else:
-        return
-
-
 @fixture('sis_student_registrations_demog_api_{sid}')
-def _get_v2_registrations_demog(sid, as_of=None, mock=None):
+def _get_v2_registrations_demog(sid, as_of=None, with_demog=True, mock=None):
     params = {
         'affiliation-status': 'ALL',
-        'inc-dmgr': True,
-        'inc-gndr': True,
         'inc-regs': True,
     }
     if as_of:
         params['as-of-date'] = as_of
-
+    if with_demog:
+        params.update({
+            'inc-dmgr': True,
+            'inc-gndr': True,
+        })
     url = http.build_url(app.config['STUDENT_API_URL'] + f'/{sid}', params)
     with mock(url):
         return authorized_request_v2(url)

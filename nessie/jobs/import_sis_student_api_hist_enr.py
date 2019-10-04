@@ -32,11 +32,11 @@ from flask import current_app as app
 from nessie.externals import redshift
 from nessie.externals.sis_student_api import get_v2_by_sids_list
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.queries import get_non_advisee_unfetched_student_ids
+from nessie.lib.queries import get_unfetched_non_advisees
 from nessie.lib.util import encoded_tsv_row, resolve_sql_template_string
 from nessie.models import student_schema
 
-"""Logic for SIS student API import job."""
+"""Logic for SIS student API import job for non-advisees."""
 
 
 def async_get_feeds(app_obj, up_to_100_sids):
@@ -56,7 +56,7 @@ class ImportSisStudentApiHistEnr(BackgroundJob):
 
     def run(self, sids=None):
         if not sids:
-            sids = [row['sid'] for row in get_non_advisee_unfetched_student_ids()]
+            sids = [row['sid'] for row in get_unfetched_non_advisees()]
         app.logger.info(f'Starting SIS student API import job for {len(sids)} non-advisees...')
 
         with tempfile.TemporaryFile() as feed_file:

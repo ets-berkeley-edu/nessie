@@ -101,6 +101,24 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_term_gpas
 DISTKEY (sid)
 SORTKEY (sid, term_id);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.hist_enr_last_registrations
+(
+    sid VARCHAR NOT NULL,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY(sid)
+SORTKEY(sid);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.hist_enr_term_gpas
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    gpa DECIMAL(4,3),
+    units_taken_for_gpa DECIMAL(4,1)
+)
+DISTKEY (sid)
+SORTKEY (sid, term_id);
+
 -- The following are derivative tables generated from previously stored data.
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles

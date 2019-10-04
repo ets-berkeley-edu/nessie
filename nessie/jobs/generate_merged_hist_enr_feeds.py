@@ -33,7 +33,7 @@ from nessie.lib import queries
 from nessie.lib.berkeley import reverse_term_ids
 from nessie.lib.util import encoded_tsv_row, resolve_sql_template
 from nessie.merged.sis_profile import parse_merged_sis_profile
-from nessie.merged.student_terms import map_sis_enrollments
+from nessie.merged.student_terms import map_sis_enrollments, merge_dropped_classes, merge_term_gpas
 from nessie.models import student_schema
 
 """Logic to generate client-friendly merge of available data on non-current students."""
@@ -60,13 +60,11 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         return status
 
     def generate_feeds(self):
+        non_advisee_sids = queries.get_fetched_non_advisees()
+        non_advisee_sids = [r['sid'] for r in non_advisee_sids]
 
-        # Process all unprocessed SIDS which have SIS Students API data.
-        unmerged_sids = queries.get_non_advisee_unmerged_student_ids()
-        unmerged_sids = [r['sid'] for r in unmerged_sids]
-
-        profile_count = self.generate_student_profile_table(unmerged_sids)
-        enrollment_count = self.generate_student_enrollments_table(unmerged_sids)
+        profile_count = self.generate_student_profile_table(non_advisee_sids)
+        enrollment_count = self.generate_student_enrollments_table(non_advisee_sids)
 
         if profile_count and enrollment_count:
             resolved_ddl_rds = resolve_sql_template('update_rds_indexes_hist_enr.template.sql')
@@ -79,24 +77,18 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
 
         return f'Generated {profile_count} non-advisee profiles, {enrollment_count} enrollments.'
 
-    def generate_student_profile_table(self, unmerged_sids):
+    def generate_student_profile_table(self, non_advisee_sids):
         profile_count = 0
         table_name = 'student_profiles_hist_enr'
         with tempfile.TemporaryFile() as feed_file:
             # Work in batches so as not to overload memory.
-            for i in range(0, len(unmerged_sids), BATCH_QUERY_MAXIMUM):
-                sids = unmerged_sids[i:i + BATCH_QUERY_MAXIMUM]
+            for i in range(0, len(non_advisee_sids), BATCH_QUERY_MAXIMUM):
+                sids = non_advisee_sids[i:i + BATCH_QUERY_MAXIMUM]
                 profile_count += self.collect_merged_profiles(sids, feed_file)
             if profile_count:
                 student_schema.truncate_staging_table(table_name)
                 student_schema.write_file_to_staging(table_name, feed_file, profile_count)
-                with redshift.transaction() as transaction:
-                    student_schema.refresh_from_staging(
-                        table_name,
-                        None,
-                        unmerged_sids,
-                        transaction,
-                    )
+                student_schema.refresh_all_from_staging([table_name])
         app.logger.info('Non-advisee profile generation complete.')
         return profile_count
 
@@ -106,8 +98,8 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         for row in sis_profile_feeds:
             sid = row['sid']
             uid = row['uid']
-            sis_api_feed = row['feed']
-            sis_profile = parse_merged_sis_profile(sis_api_feed, None, None)
+            sis_api_feed = row['sis_feed']
+            sis_profile = parse_merged_sis_profile(sis_api_feed, None, row['last_registration_feed'])
             merged_profile = {
                 'sid': sid,
                 'uid': uid,
@@ -131,7 +123,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         else:
             app.logger.debug(f'No name parsed in {api_json}')
 
-    def generate_student_enrollments_table(self, unmerged_sids):
+    def generate_student_enrollments_table(self, non_advisee_sids):
         # Split all S3/Redshift operations by term in hope of not overloading memory or other resources.
         # (Using finer-grained batches of SIDs would probably involve replacing the staging table by a Spectrum
         # external table.)
@@ -140,7 +132,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         student_schema.truncate_staging_table(table_name)
         for term_id in reverse_term_ids(include_future_terms=True, include_legacy_terms=True):
             with tempfile.TemporaryFile() as feed_file:
-                term_count = self.collect_merged_enrollments(unmerged_sids, term_id, feed_file)
+                term_count = self.collect_merged_enrollments(non_advisee_sids, term_id, feed_file)
                 if term_count:
                     student_schema.write_file_to_staging(
                         table_name,
@@ -153,7 +145,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
                     student_schema.refresh_from_staging(
                         table_name,
                         term_id,
-                        unmerged_sids,
+                        None,
                         transaction,
                     )
                 total_count += term_count
@@ -161,8 +153,10 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         return total_count
 
     def collect_merged_enrollments(self, sids, term_id, feed_file):
-        sis_enrollments = queries.get_non_advisee_sis_enrollments(sids, term_id)
-        enrollments_by_student = map_sis_enrollments(sis_enrollments)
+        rows = queries.get_non_advisee_sis_enrollments(sids, term_id)
+        enrollments_by_student = map_sis_enrollments(rows)
+        merge_dropped_classes(enrollments_by_student, queries.get_non_advisee_enrollment_drops(sids, term_id))
+        merge_term_gpas(enrollments_by_student, queries.get_non_advisee_term_gpas(sids, term_id))
         enrollments_by_student = enrollments_by_student.get(term_id, {})
         for (sid, enrollments_feed) in enrollments_by_student.items():
             feed_file.write(encoded_tsv_row([sid, term_id, json.dumps(enrollments_feed)]) + b'\n')
