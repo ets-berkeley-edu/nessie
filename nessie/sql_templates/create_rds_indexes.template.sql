@@ -95,6 +95,8 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_academic_status
     gpa DECIMAL(5,3),
     units DECIMAL (6,3),
     transfer BOOLEAN,
+    email_address VARCHAR,
+    entering_term VARCHAR(4),
     expected_grad_term VARCHAR(4),
     PRIMARY KEY (sid)
 );
@@ -105,6 +107,8 @@ CREATE INDEX IF NOT EXISTS students_academic_status_level_idx ON {rds_schema_stu
 CREATE INDEX IF NOT EXISTS students_academic_status_gpa_idx ON {rds_schema_student}.student_academic_status (gpa);
 CREATE INDEX IF NOT EXISTS students_academic_status_units_idx ON {rds_schema_student}.student_academic_status (units);
 CREATE INDEX IF NOT EXISTS students_academic_status_transfer_idx ON {rds_schema_student}.student_academic_status (transfer);
+CREATE INDEX IF NOT EXISTS students_academic_status_email_address_idx ON {rds_schema_student}.student_academic_status (email_address);
+CREATE INDEX IF NOT EXISTS students_academic_status_entering_term_idx ON {rds_schema_student}.student_academic_status (entering_term);
 CREATE INDEX IF NOT EXISTS students_academic_status_grad_term_idx ON {rds_schema_student}.student_academic_status (expected_grad_term);
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_names
@@ -122,11 +126,15 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_enrollment_terms
     term_id VARCHAR(4) NOT NULL,
     enrollment_term TEXT NOT NULL,
     midpoint_deficient_grade BOOLEAN NOT NULL,
+    enrolled_units DECIMAL (3,1) NOT NULL DEFAULT 0,
     PRIMARY KEY (sid, term_id)
 );
 
 CREATE INDEX IF NOT EXISTS students_enrollment_terms_midpoint_deficient_grade
 ON {rds_schema_student}.student_enrollment_terms (midpoint_deficient_grade);
+
+CREATE INDEX IF NOT EXISTS students_enrollment_terms_enrolled_units
+ON {rds_schema_student}.student_enrollment_terms (enrolled_units);
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_majors
 (
