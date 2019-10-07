@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_term_gpas
 (
     sid VARCHAR NOT NULL,
     term_id VARCHAR(4) NOT NULL,
-    gpa DECIMAL(4,3),
+    gpa DECIMAL(5,3),
     units_taken_for_gpa DECIMAL(4,1)
 )
 DISTKEY (sid)
@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.hist_enr_term_gpas
 (
     sid VARCHAR NOT NULL,
     term_id VARCHAR(4) NOT NULL,
-    gpa DECIMAL(4,3),
+    gpa DECIMAL(5,3),
     units_taken_for_gpa DECIMAL(4,1)
 )
 DISTKEY (sid)
@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_status
     first_name VARCHAR,
     last_name VARCHAR,
     level VARCHAR(2),
-    gpa DECIMAL(4,3),
+    gpa DECIMAL(5,3),
     units DECIMAL (6,3),
     transfer BOOLEAN,
     expected_grad_term VARCHAR(4)
