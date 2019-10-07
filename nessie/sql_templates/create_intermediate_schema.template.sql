@@ -120,7 +120,7 @@ DISTKEY (sid)
 SORTKEY (sid)
 AS (
     SELECT sid,
-    CAST((SUM(gpa * units_taken_for_gpa) / SUM(units_taken_for_gpa)) AS DECIMAL(4,3)) AS cumulative_gpa
+    CAST((SUM(gpa * units_taken_for_gpa) / SUM(units_taken_for_gpa)) AS DECIMAL(5,3)) AS cumulative_gpa
     FROM {redshift_schema_intermediate}.term_gpa
     GROUP BY sid
 );
