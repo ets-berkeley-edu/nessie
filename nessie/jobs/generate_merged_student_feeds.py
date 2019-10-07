@@ -236,36 +236,31 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         return merged_profile
 
     def refresh_rds_indexes(self, sids, transaction):
-        if not self._delete_rds_rows('student_academic_status', sids, transaction):
-            return False
-        if not self._refresh_rds_academic_status(transaction):
-            return False
-        if not self._delete_rds_rows('student_holds', sids, transaction):
-            return False
-        if not self._refresh_rds_holds(transaction):
-            return False
-        if not self._delete_rds_rows('student_names', sids, transaction):
-            return False
-        if not self._refresh_rds_names(transaction):
-            return False
-        if not self._delete_rds_rows('student_majors', sids, transaction):
-            return False
-        if not self._refresh_rds_majors(transaction):
-            return False
-        if not self._delete_rds_rows('student_profiles', sids, transaction):
-            return False
-        if not self._refresh_rds_profiles(transaction):
-            return False
-        if not refresh_rds_demographics(self.rds_schema, self.rds_dblink_to_redshift, self.redshift_schema, transaction):
+        if not (
+            self._delete_rds_rows('student_academic_status', sids, transaction)
+            and self._refresh_rds_academic_status(transaction)
+            and self._delete_rds_rows('student_holds', sids, transaction)
+            and self._refresh_rds_holds(transaction)
+            and self._delete_rds_rows('student_names', sids, transaction)
+            and self._refresh_rds_names(transaction)
+            and self._delete_rds_rows('student_majors', sids, transaction)
+            and self._refresh_rds_majors(transaction)
+            and self._delete_rds_rows('student_profiles', sids, transaction)
+            and self._refresh_rds_profiles(transaction)
+            and self._index_rds_email_address(transaction)
+            and self._index_rds_entering_term(transaction)
+            and refresh_rds_demographics(self.rds_schema, self.rds_dblink_to_redshift, self.redshift_schema, transaction)
+        ):
             return False
         return True
 
     def refresh_rds_enrollment_terms(self, sids, transaction):
-        if not self._delete_rds_rows('student_enrollment_terms', sids, transaction):
-            return False
-        if not self._refresh_rds_enrollment_terms(transaction):
-            return False
-        if not self._index_rds_midpoint_deficient_grades(transaction):
+        if not (
+            self._delete_rds_rows('student_enrollment_terms', sids, transaction)
+            and self._refresh_rds_enrollment_terms(transaction)
+            and self._index_rds_midpoint_deficient_grades(transaction)
+            and self._index_rds_enrolled_units(transaction)
+        ):
             return False
         return True
 
@@ -297,6 +292,30 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 transfer BOOLEAN,
                 expected_grad_term VARCHAR
             ));""",
+        )
+
+    def _index_rds_email_address(self, transaction):
+        return transaction.execute(
+            f"""UPDATE {self.rds_schema}.student_academic_status sas
+            SET email_address = p.profile::json->'sisProfile'->>'emailAddress'
+            FROM {self.rds_schema}.student_profiles p
+            WHERE sas.sid = p.sid;""",
+        )
+
+    def _index_rds_entering_term(self, transaction):
+        return transaction.execute(
+            # Equivalent to lib.berkeley.sis_term_id_for_name.
+            f"""UPDATE {self.rds_schema}.student_academic_status sas
+            SET entering_term =
+            substr(split_part(p.profile::json->'sisProfile'->>'matriculation', ' ', 2), 1, 1)
+            ||
+            substr(split_part(p.profile::json->'sisProfile'->>'matriculation', ' ', 2), 3, 2)
+            ||
+            CASE split_part(p.profile::json->'sisProfile'->>'matriculation', ' ', 1)
+            WHEN 'Winter' THEN 0 WHEN 'Spring' THEN 2 WHEN 'Summer' THEN 5 WHEN 'Fall' THEN 8 END
+            FROM {self.rds_schema}.student_profiles p
+            WHERE p.sid = sas.sid
+            AND p.profile::json->'sisProfile'->>'matriculation' IS NOT NULL;""",
         )
 
     def _refresh_rds_holds(self, transaction):
@@ -379,4 +398,11 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             WHERE t1.sid = t2.sid
             AND t1.term_id = t2.term_id
             AND enr->>'midtermGrade' IS NOT NULL;""",
+        )
+
+    def _index_rds_enrolled_units(self, transaction):
+        return transaction.execute(
+            f"""UPDATE {self.rds_schema}.student_enrollment_terms
+            SET enrolled_units = (enrollment_term::json->>'enrolledUnits')::numeric
+            WHERE enrollment_term::json->>'enrolledUnits' IS NOT NULL;""",
         )
