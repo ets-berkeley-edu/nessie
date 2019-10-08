@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_status
     first_name VARCHAR NOT NULL,
     last_name VARCHAR NOT NULL,
     level VARCHAR(2),
-    gpa DECIMAL(4,3),
+    gpa DECIMAL(5,3),
     units DECIMAL (6,3)
 );
 
@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_term_gpas
 (
     sid VARCHAR NOT NULL,
     term_id VARCHAR(4) NOT NULL,
-    gpa DECIMAL(4,3),
+    gpa DECIMAL(5,3),
     units_taken_for_gpa DECIMAL(4,1)
 );
 
@@ -196,7 +196,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_academic_st
     first_name VARCHAR NOT NULL,
     last_name VARCHAR NOT NULL,
     level VARCHAR(2),
-    gpa DECIMAL(4,3),
+    gpa DECIMAL(5,3),
     units DECIMAL (6,3)
 );
 
@@ -242,7 +242,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_term_gpas
 (
     sid VARCHAR NOT NULL,
     term_id VARCHAR(4) NOT NULL,
-    gpa DECIMAL(4,3),
+    gpa DECIMAL(5,3),
     units_taken_for_gpa DECIMAL(4,1)
 );
 
