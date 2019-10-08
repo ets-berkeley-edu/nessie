@@ -7,7 +7,7 @@ CREATE INDEX students_academic_status_email_address_idx ON student.student_acade
 CREATE INDEX students_academic_status_entering_term_idx ON student.student_academic_status (entering_term);
 
 UPDATE student.student_academic_status sas
-  SET email_address = p.profile::json->'sisProfile'->>'emailAddress'
+  SET email_address = lower(p.profile::json->'sisProfile'->>'emailAddress')
   FROM student.student_profiles p
   WHERE sas.sid = p.sid;
 

@@ -297,7 +297,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     def _index_rds_email_address(self, transaction):
         return transaction.execute(
             f"""UPDATE {self.rds_schema}.student_academic_status sas
-            SET email_address = p.profile::json->'sisProfile'->>'emailAddress'
+            SET email_address = lower(p.profile::json->'sisProfile'->>'emailAddress')
             FROM {self.rds_schema}.student_profiles p
             WHERE sas.sid = p.sid;""",
         )
