@@ -217,7 +217,18 @@ def authorized_request_v2(url):
         'app_key': app.config['STUDENT_API_KEY'],
         'Accept': 'application/json',
     }
-    return http.request(url, auth_headers)
+    response = http.request(url, auth_headers)
+    # We are occasionally receiving bad JSON payloads from the API and would like to know why.
+    try:
+        response and hasattr(response, 'json') and response.json()
+    except ValueError as e:
+        if hasattr(response, 'content'):
+            desc = response.content
+        else:
+            desc = response
+        app.logger.error(f'Error on API call {url}, response={desc}, error={e}')
+        return
+    return response
 
 
 def authorized_request_v1(url):
