@@ -44,6 +44,7 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_IMPORT_ADVISORS': 1800,
     'JOB_IMPORT_STUDENT_POPULATION': 2000,
     'JOB_IMPORT_DEGREE_PROGRESS': 2500,
+    'JOB_IMPORT_HIST_ENR': 2600,
     'JOB_IMPORT_SIS_STUDENTS': 2700,
     'JOB_IMPORT_REGISTRATIONS': 2800,
     'JOB_IMPORT_CANVAS_ENROLLMENTS': 2900,
@@ -83,12 +84,15 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
     from nessie.jobs.generate_canvas_caliper_analytics import GenerateCanvasCaliperAnalytics
     from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
+    from nessie.jobs.generate_merged_hist_enr_feeds import GenerateMergedHistEnrFeeds
     from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
     from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
     from nessie.jobs.import_degree_progress import ImportDegreeProgress
     from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
     from nessie.jobs.import_sis_student_api import ImportSisStudentApi
+    from nessie.jobs.import_sis_student_api_hist_enr import ImportSisStudentApiHistEnr
     from nessie.jobs.import_registrations import ImportRegistrations
+    from nessie.jobs.import_registrations_hist_enr import ImportRegistrationsHistEnr
     from nessie.jobs.index_advising_notes import IndexAdvisingNotes
     from nessie.jobs.index_enrollments import IndexEnrollments
     from nessie.jobs.migrate_lrs_incrementals import MigrateLrsIncrementals
@@ -105,6 +109,16 @@ def schedule_all_jobs(force=False):
     schedule_job(sched, 'JOB_IMPORT_ADVISORS', CreateAdvisorSchema, force)
     schedule_job(sched, 'JOB_IMPORT_STUDENT_POPULATION', ChainedImportStudentPopulation, force)
     schedule_job(sched, 'JOB_IMPORT_DEGREE_PROGRESS', ImportDegreeProgress, force)
+    schedule_chained_job(
+        sched,
+        'JOB_IMPORT_HIST_ENR',
+        [
+            ImportSisStudentApiHistEnr,
+            ImportRegistrationsHistEnr,
+            GenerateMergedHistEnrFeeds,
+        ],
+        force,
+    )
     schedule_job(sched, 'JOB_IMPORT_SIS_STUDENTS', ImportSisStudentApi, force)
     schedule_job(sched, 'JOB_IMPORT_REGISTRATIONS', ImportRegistrations, force, load_mode='batch')
     schedule_job(sched, 'JOB_IMPORT_CANVAS_ENROLLMENTS', ImportCanvasEnrollmentsApi, force)
