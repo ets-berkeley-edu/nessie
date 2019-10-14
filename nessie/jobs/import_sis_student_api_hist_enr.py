@@ -81,7 +81,6 @@ class ImportSisStudentApiHistEnr(BackgroundJob):
         return f'SIS student API non-advisee import job completed: {len(saved_sids)} succeeded, {failure_count} failed.'
 
     def load_concurrently(self, all_sids, feed_file):
-
         chunked_sids = [all_sids[i:i + 100] for i in range(0, len(all_sids), 100)]
         saved_sids = []
         failure_count = 0
@@ -96,12 +95,6 @@ class ImportSisStudentApiHistEnr(BackgroundJob):
                     for feed in feeds:
                         sid = next(id['id'] for id in feed['identifiers'] if id['type'] == 'student-id')
                         uid = next(id['id'] for id in feed['identifiers'] if id['type'] == 'campus-uid')
-
-                        # An extremely crude defense against SISRP-48296.
-                        for ac_stat in feed.get('academicStatuses', []):
-                            for ac_plan in ac_stat.get('studentPlans', []):
-                                ac_plan['academicSubPlans'] = []
-
                         feed_file.write(encoded_tsv_row([sid, uid, json.dumps(feed)]) + b'\n')
                         remaining_sids.discard(sid)
                         saved_sids.append(sid)
