@@ -81,24 +81,7 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
         return
     career_code = academic_status['studentCareer']['academicCareer']['code']
     sis_profile['academicCareer'] = career_code
-
-    # Try to derive a coherent career-status from the SIS affiliations.
-    career_to_affiliation = {
-        'UGRD': 'UNDERGRAD',
-        'UCBX': 'EXTENSION',
-        'GRAD': 'GRADUATE',
-    }
-    career_status = None
-    for affiliation in sis_student_api_feed.get('affiliations', []):
-        if affiliation.get('type', {}).get('code') == career_to_affiliation.get(career_code):
-            career_status = affiliation.get('status', {}).get('description')
-            if affiliation.get('detail') == 'Completed':
-                career_status = 'Completed'
-            break
-    if not career_status:
-        app.logger.warning(f'Conflict between affiliations and academicStatuses in SIS feed: {sis_student_api_feed}')
-    else:
-        sis_profile['academicCareerStatus'] = career_status
+    sis_profile['academicCareerStatus'] = parse_career_status(career_code, sis_student_api_feed)
 
     merge_degrees(sis_student_api_feed, sis_profile, academic_status)
 
@@ -124,6 +107,28 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
 
     merge_sis_profile_matriculation(academic_status, sis_profile)
     merge_sis_profile_plans(academic_status, sis_profile)
+
+
+def parse_career_status(career_code, sis_student_api_feed):
+    # Try to derive a coherent career-status from the SIS affiliations.
+    career_to_affiliation = {
+        'UGRD': 'UNDERGRAD',
+        'UCBX': 'EXTENSION',
+        'GRAD': 'GRADUATE',
+    }
+    career_status = None
+    for affiliation in sis_student_api_feed.get('affiliations', []):
+        if affiliation.get('type', {}).get('code') == career_to_affiliation.get(career_code):
+            if affiliation.get('detail') == 'Completed':
+                career_status = 'Completed'
+            else:
+                career_status = affiliation.get('status', {}).get('description')
+                if career_status == 'Error':
+                    career_status = affiliation.get('status', {}).get('formalDescription')
+            break
+    if not career_status:
+        app.logger.warning(f'Conflict between affiliations and academicStatuses in SIS feed: {sis_student_api_feed}')
+    return career_status
 
 
 def merge_degrees(sis_student_api_feed, sis_profile, academic_status):
