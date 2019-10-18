@@ -32,8 +32,10 @@ import boto3
 from botocore.exceptions import ClientError, ConnectionError
 from botocore.vendored.requests.packages.urllib3.exceptions import TimeoutError
 from flask import current_app as app
+from nessie.lib import metadata
 import requests
 import smart_open
+
 
 """Client code to run file operations against S3."""
 
@@ -72,6 +74,28 @@ def delete_objects(keys, bucket=None):
         return True
     except (ClientError, ConnectionError, ValueError) as e:
         app.logger.error(f'Error on S3 object deletion: bucket={bucket}, keys={keys}, error={e}')
+        return False
+
+
+def delete_objects_with_prefix(prefix, whitelist=[]):
+    keys_to_delete = []
+    existing_keys = get_keys_with_prefix(prefix)
+    if existing_keys is None:
+        app.logger.error('Error listing keys, aborting job.')
+        return False
+    for key in existing_keys:
+        filename = key.split('/')[-1]
+        if filename not in whitelist:
+            keys_to_delete.append(key)
+    app.logger.info(
+        f'Found {len(existing_keys)} key(s) matching prefix "{prefix}", {len(existing_keys) - len(keys_to_delete)} '
+        f'key(s) in whitelist, will delete {len(keys_to_delete)} object(s)')
+    if not keys_to_delete:
+        return True
+    if delete_objects(keys_to_delete):
+        metadata.delete_canvas_snapshots(keys_to_delete)
+        return True
+    else:
         return False
 
 

@@ -23,7 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-import re
 import time
 
 from flask import current_app as app
@@ -31,16 +30,15 @@ from nessie.externals import canvas_data, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib import metadata
 from nessie.lib.dispatcher import dispatch
-from nessie.lib.util import get_s3_canvas_daily_path
 
 """Logic for Canvas snapshot sync job."""
 
 
-class SyncCanvasSnapshots(BackgroundJob):
+class SyncCanvasRequestsSnapshots(BackgroundJob):
 
     @classmethod
     def generate_job_id(cls):
-        return 'sync_' + str(int(time.time()))
+        return 'sync_canvas_requests_' + str(int(time.time()))
 
     def run(self, cleanup=True):
         job_id = self.generate_job_id()
@@ -52,12 +50,7 @@ class SyncCanvasSnapshots(BackgroundJob):
         snapshots = snapshot_response.get('files', [])
 
         def should_sync(snapshot):
-            # For tables other than requests, sync all snapshots.
-            # For the requests table, sync snapshots that are partial or later than the configured cutoff date.
-            def after_cutoff_date(url):
-                match = re.search('requests/(20\d{6})', url)
-                return match is not None and (match[1] >= app.config['LOCH_CANVAS_DATA_REQUESTS_CUTOFF_DATE'])
-            return snapshot['table'] != 'requests' or snapshot['partial'] is True or after_cutoff_date(snapshot['url'])
+            return snapshot['table'] == 'requests' and snapshot['partial'] is False
 
         snapshots_to_sync = [s for s in snapshots if should_sync(s)]
         app.logger.info(f'Will sync {len(snapshots_to_sync)} of {len(snapshots)} available files from Canvas Data.')
@@ -72,10 +65,8 @@ class SyncCanvasSnapshots(BackgroundJob):
                 canvas_table=snapshot['table'],
                 source_url=snapshot['url'],
             )
-            if snapshot['table'] == 'requests':
-                key_components = [app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'], snapshot['table'], snapshot['filename']]
-            else:
-                key_components = [get_s3_canvas_daily_path(), snapshot['table'], snapshot['filename']]
+
+            key_components = [app.config['LOCH_S3_CANVAS_DATA_PATH_HISTORICAL'], snapshot['table'], snapshot['filename']]
 
             key = '/'.join(key_components)
             response = dispatch('sync_file_to_s3', data={'canvas_sync_job_id': job_id, 'url': snapshot['url'], 'key': key})
@@ -91,7 +82,7 @@ class SyncCanvasSnapshots(BackgroundJob):
         if cleanup:
             app.logger.info('Will remove obsolete snapshots from S3.')
             current_snapshot_filenames = [s['filename'] for s in snapshots_to_sync]
-            requests_prefix = app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'] + '/requests'
+            requests_prefix = app.config['LOCH_S3_CANVAS_DATA_PATH_HISTORICAL'] + '/requests'
             delete_result = s3.delete_objects_with_prefix(requests_prefix, whitelist=current_snapshot_filenames)
             if not delete_result:
                 app.logger.error('Cleanup of obsolete snapshots failed.')

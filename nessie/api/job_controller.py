@@ -69,6 +69,7 @@ from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
 from nessie.jobs.restore_rds_user_privileges import RestoreRdsUserPrivileges
 from nessie.jobs.restore_redshift_user_privileges import RestoreRedshiftUserPrivileges
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
+from nessie.jobs.sync_canvas_requests_snapshots import SyncCanvasRequestsSnapshots
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
 from nessie.jobs.transform_lrs_incrementals import TransformLrsIncrementals
@@ -403,6 +404,13 @@ def restore_redshift_user_privileges():
 @auth_required
 def resync_canvas_snapshots():
     job_started = ResyncCanvasSnapshots().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/sync_canvas_requests_snapshots', methods=['POST'])
+@auth_required
+def sync_canvas_requests_snapshots():
+    job_started = SyncCanvasRequestsSnapshots().run_async()
     return respond_with_status(job_started)
 
 
