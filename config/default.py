@@ -80,7 +80,10 @@ CANVAS_DATA_HOST = 'foo.instructure.com'
 CANVAS_HTTP_URL = 'https://wottsamatta.instructure.com'
 CANVAS_HTTP_TOKEN = 'yet another secret'
 
+# If set to 'auto', the next three items will use defaults based on SIS term definitions.
 CURRENT_TERM = 'Fall 2017'
+FUTURE_TERM = 'Spring 2018'
+LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM = 'canvas/path/to/current/term'
 
 CYCLICAL_API_IMPORT_BATCH_SIZE = 5000
 HIST_ENR_REGISTRATIONS_IMPORT_BATCH_SIZE = 20000
@@ -95,8 +98,6 @@ EARLIEST_TERM = 'Fall 2016'
 ENROLLMENTS_API_ID = 'secretid'
 ENROLLMENTS_API_KEY = 'secretkey'
 ENROLLMENTS_API_URL = 'https://secreturl.berkeley.edu/enrollments'
-
-FUTURE_TERM = 'Spring 2018'
 
 # True on master node, false on worker nodes.
 # Override by embedding "master" or "worker" in the EB_ENVIRONMENT environment variable.
@@ -159,7 +160,7 @@ LOCH_S3_PROTECTED_BUCKET = 'protected_bucket_name'
 LOCH_S3_PUBLIC_BUCKET = 'public_bucket_name'
 LOCH_S3_REGION = 'us-west-2'
 
-LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM = 'canvas/path/to/current/term'
+LOCH_S3_CANVAS_DATA_PATH = 'canvas-data'
 LOCH_S3_CANVAS_DATA_PATH_DAILY = 'canvas/path/to/daily'
 LOCH_S3_CANVAS_DATA_PATH_HISTORICAL = 'canvas/path/to/historical'
 
