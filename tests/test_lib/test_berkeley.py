@@ -23,7 +23,47 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from datetime import datetime
+
+import mock
+from nessie.externals import rds
 from nessie.lib import berkeley
+from nessie.lib.util import resolve_sql_template
+import pytest
+
+
+@pytest.fixture
+def auto_terms(app):
+    current_term_name = app.config['CURRENT_TERM']
+    future_term_name = app.config['FUTURE_TERM']
+    s3_canvas_data_path_current_term = app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM']
+    app.config['CURRENT_TERM'] = 'auto'
+    app.config['FUTURE_TERM'] = 'auto'
+    app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'] = 'auto'
+    berkeley.cache_thread.config_terms = None
+    rds_schema = app.config['RDS_SCHEMA_SIS_INTERNAL']
+    rds.execute(f'DROP SCHEMA {rds_schema} CASCADE')
+    rds.execute(resolve_sql_template('create_rds_indexes.template.sql'))
+    rds.execute(f"""INSERT INTO {rds_schema}.term_definitions
+        (term_id, term_name, term_begins, term_ends)
+        VALUES
+        ('2172', 'Spring 2017', '2017-01-10', '2017-05-12'),
+        ('2175', 'Summer 2017', '2017-05-22', '2017-08-11'),
+        ('2178', 'Fall 2017', '2017-08-16', '2017-12-15'),
+        ('2182', 'Spring 2018', '2018-01-09', '2018-05-11'),
+        ('2185', 'Summer 2018', '2018-05-21', '2018-08-10'),
+        ('2188', 'Fall 2018', '2018-08-15', '2018-12-14'),
+        ('2192', 'Spring 2019', '2019-01-15', '2019-05-17'),
+        ('2195', 'Summer 2019', '2019-05-28', '2019-08-16'),
+        ('2198', 'Fall 2019', '2019-08-21', '2019-12-20'),
+        ('2202', 'Spring 2020', '2020-01-14', '2020-05-15'),
+        ('2205', 'Summer 2020', '2020-05-26', '2020-08-14'),
+        ('2208', 'Fall 2020', '2020-08-19', '2020-12-18')
+    """)
+    yield
+    app.config['CURRENT_TERM'] = current_term_name
+    app.config['FUTURE_TERM'] = future_term_name
+    app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'] = s3_canvas_data_path_current_term
 
 
 class TestBerkeleySisTermIdForName:
@@ -93,3 +133,13 @@ class TestBerkeley:
         assert legacy_term_ids.isdisjoint(canvas_integrated_term_ids)
         assert legacy_term_ids < all_term_ids
         assert berkeley.earliest_legacy_term_id() in berkeley.legacy_term_ids()
+
+    @mock.patch('nessie.lib.berkeley.datetime', autospec=True)
+    def test_auto_terms(self, mock_datetime, app, auto_terms):
+        mock_datetime.now.return_value = datetime(year=2018, month=5, day=1, hour=5, minute=21)
+        all_term_ids = set(berkeley.reverse_term_ids(include_future_terms=True, include_legacy_terms=True))
+        canvas_integrated_term_ids = set(berkeley.reverse_term_ids())
+        assert canvas_integrated_term_ids < all_term_ids
+        assert berkeley.current_term_id() == '2182'
+        assert berkeley.future_term_id() == '2188'
+        assert berkeley.s3_canvas_data_path_current_term() == 'canvas-data/term/spring-2018'

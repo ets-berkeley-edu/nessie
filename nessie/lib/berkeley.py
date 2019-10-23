@@ -23,10 +23,13 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from datetime import datetime, timedelta
 import re
+import threading
 
 from flask import current_app as app
-
+from nessie.externals import rds
+import pytz
 
 """A utility module collecting logic specific to the Berkeley campus."""
 
@@ -156,6 +159,9 @@ ACADEMIC_PLAN_TO_DEGREE_PROGRAM_PAGE = {
 }
 
 
+cache_thread = threading.local()
+
+
 def canvas_terms():
     sis_term_ids = reverse_term_ids()
     return [term_name_for_sis_id(sid_id) for sid_id in sis_term_ids]
@@ -167,6 +173,16 @@ def future_term_ids():
 
 def legacy_term_ids():
     return _collect_terms(start_term_id=earliest_term_id(), stop_term_id=earliest_legacy_term_id(), include_start=False)
+
+
+def next_term_id(term_id):
+    if term_id[3] == '8':
+        next_id = term_id[:1] + str(int(term_id[1:3]) + 1).zfill(2) + '2'
+    elif term_id[3] == '5':
+        next_id = term_id[:3] + '8'
+    elif term_id[3] == '2':
+        next_id = term_id[:3] + '5'
+    return next_id
 
 
 def previous_term_id(term_id):
@@ -223,14 +239,79 @@ def degree_program_url_for_major(plan_description):
         return None
 
 
+def get_config_terms():
+    config_terms = getattr(cache_thread, 'config_terms', None)
+    if not config_terms:
+        current_term_name = app.config['CURRENT_TERM']
+        future_term_name = app.config['FUTURE_TERM']
+        s3_canvas_data_path_current_term = app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM']
+        if 'auto' in [current_term_name, future_term_name, s3_canvas_data_path_current_term]:
+            default_terms = get_default_terms()
+        if current_term_name == 'auto':
+            current_term_name = default_terms['current_term_name']
+            current_term_id = default_terms['current_term_id']
+        else:
+            current_term_id = sis_term_id_for_name(current_term_name)
+        if future_term_name == 'auto':
+            future_term_name = default_terms['future_term_name']
+            future_term_id = default_terms['future_term_id']
+        else:
+            future_term_id = sis_term_id_for_name(future_term_name)
+        if s3_canvas_data_path_current_term == 'auto':
+            s3_canvas_data_path_current_term = default_terms['s3_canvas_data_path_current_term']
+        config_terms = {
+            'current_term_name': current_term_name,
+            'current_term_id': current_term_id,
+            'future_term_name': future_term_name,
+            'future_term_id': future_term_id,
+            's3_canvas_data_path_current_term': s3_canvas_data_path_current_term,
+        }
+        cache_thread.config_terms = config_terms
+    return config_terms
+
+
+def get_default_terms(today=None):
+    if not today:
+        today = datetime.now(pytz.utc).astimezone(pytz.timezone(app.config['TIMEZONE'])).date()
+    current_term = get_sis_current_term(today)
+    current_term_id = current_term['term_id']
+
+    # If today is one month or less before the end of the current term, or if the current term is summer,
+    # include the next term.
+    if current_term_id[3] == '5' or (current_term['term_ends'] - timedelta(weeks=4)) < today:
+        future_term_id = next_term_id(current_term['term_id'])
+        # ... and if the upcoming term is Summer, include the next Fall term as well.
+        if future_term_id[3] == '5':
+            future_term_id = next_term_id(future_term_id)
+    else:
+        future_term_id = current_term_id
+    canvas_data_current_term = '/term/' + current_term['term_name'].lower().replace(' ', '-')
+    return {
+        'current_term_name': current_term['term_name'],
+        'current_term_id': current_term_id,
+        'future_term_name': term_name_for_sis_id(future_term_id),
+        'future_term_id': future_term_id,
+        's3_canvas_data_path_current_term': app.config['LOCH_S3_CANVAS_DATA_PATH'] + canvas_data_current_term,
+    }
+
+
+def get_sis_current_term(for_date):
+    sis_rds_schema = app.config['RDS_SCHEMA_SIS_INTERNAL']
+    sql = f"SELECT * FROM {sis_rds_schema}.term_definitions WHERE term_ends > '{for_date}' ORDER BY term_id ASC LIMIT 1"
+    rows = rds.fetch(sql)
+    return rows and rows[0]
+
+
 def current_term_id():
-    term_name = app.config['CURRENT_TERM']
-    return sis_term_id_for_name(term_name)
+    return get_config_terms()['current_term_id']
 
 
 def future_term_id():
-    term_name = app.config['FUTURE_TERM']
-    return sis_term_id_for_name(term_name)
+    return get_config_terms()['future_term_id']
+
+
+def s3_canvas_data_path_current_term():
+    return get_config_terms()['s3_canvas_data_path_current_term']
 
 
 def earliest_term_id():
