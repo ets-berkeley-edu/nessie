@@ -306,6 +306,10 @@ def current_term_id():
     return get_config_terms()['current_term_id']
 
 
+def current_term_name():
+    return get_config_terms()['current_term_name']
+
+
 def future_term_id():
     return get_config_terms()['future_term_id']
 

@@ -29,6 +29,7 @@ from datetime import datetime, timedelta
 from flask import current_app as app
 from nessie.externals import canvas_data, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
+from nessie.lib import berkeley
 from nessie.lib.util import get_s3_canvas_daily_path
 import pandas as pd
 
@@ -108,7 +109,7 @@ class RefreshCanvasDataCatalog(BackgroundJob):
         canvas_path = self.generate_canvas_path()
         canvas_tables = schema_df.table_name.unique()
         s3_canvas_data_url = 's3://' + app.config['LOCH_S3_BUCKET'] + '/' + canvas_path
-        s3_requests_url = 's3://{}/{}'.format(app.config['LOCH_S3_BUCKET'], app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'])
+        s3_requests_url = 's3://{}/{}'.format(app.config['LOCH_S3_BUCKET'], berkeley.s3_canvas_data_path_current_term())
         external_table_ddl = ''
 
         for table in canvas_tables:
