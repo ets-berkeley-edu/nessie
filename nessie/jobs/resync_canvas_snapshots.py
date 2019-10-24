@@ -28,7 +28,7 @@ import time
 from flask import current_app as app
 from nessie.externals import s3
 from nessie.jobs.background_job import BackgroundJob
-from nessie.lib import metadata
+from nessie.lib import berkeley, metadata
 from nessie.lib.dispatcher import dispatch
 from nessie.lib.util import get_s3_canvas_daily_path
 
@@ -70,7 +70,7 @@ class ResyncCanvasSnapshots(BackgroundJob):
 
             # Regenerate the S3 key, since the failed job may not have progressed far enough to store a destination URL in its metadata.
             if failure['canvas_table'] == 'requests':
-                key_components = [app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'], failure['canvas_table'], failure['filename']]
+                key_components = [berkeley.s3_canvas_data_path_current_term(), failure['canvas_table'], failure['filename']]
             else:
                 key_components = [get_s3_canvas_daily_path(), failure['canvas_table'], failure['filename']]
             key = '/'.join(key_components)

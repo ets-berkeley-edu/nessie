@@ -28,6 +28,7 @@ from datetime import datetime, timedelta
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
+from nessie.lib import berkeley
 from nessie.lib.util import get_s3_canvas_daily_path, resolve_sql_template
 
 """Logic for Canvas schema creation job."""
@@ -47,10 +48,16 @@ class CreateCanvasSchema(BackgroundJob):
                 app.logger.info(f'Falling back to yesterday\'s Canvas data')
 
         external_schema = app.config['REDSHIFT_SCHEMA_CANVAS']
-        s3_canvas_data_url = 's3://' + app.config['LOCH_S3_BUCKET'] + '/' + canvas_path
+        s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
+        s3_canvas_data_url = s3_prefix + canvas_path
+        s3_canvas_data_path_current_term = s3_prefix + berkeley.s3_canvas_data_path_current_term()
 
         redshift.drop_external_schema(external_schema)
-        resolved_ddl = resolve_sql_template('create_canvas_schema.template.sql', loch_s3_canvas_data_path_today=s3_canvas_data_url)
+        resolved_ddl = resolve_sql_template(
+            'create_canvas_schema.template.sql',
+            loch_s3_canvas_data_path_today=s3_canvas_data_url,
+            loch_s3_canvas_data_path_current_term=s3_canvas_data_path_current_term,
+        )
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(external_schema, resolved_ddl)
             return 'Canvas schema creation job completed.'

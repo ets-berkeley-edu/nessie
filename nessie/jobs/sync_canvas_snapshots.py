@@ -29,7 +29,7 @@ import time
 from flask import current_app as app
 from nessie.externals import canvas_data, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib import metadata
+from nessie.lib import berkeley, metadata
 from nessie.lib.dispatcher import dispatch
 from nessie.lib.util import get_s3_canvas_daily_path
 
@@ -95,7 +95,7 @@ class SyncCanvasSnapshots(BackgroundJob):
                 source_url=snapshot['url'],
             )
             if snapshot['table'] == 'requests':
-                key_components = [app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'], snapshot['table'], snapshot['filename']]
+                key_components = [berkeley.s3_canvas_data_path_current_term(), snapshot['table'], snapshot['filename']]
             else:
                 key_components = [get_s3_canvas_daily_path(), snapshot['table'], snapshot['filename']]
 
@@ -113,7 +113,7 @@ class SyncCanvasSnapshots(BackgroundJob):
         if cleanup:
             app.logger.info('Will remove obsolete snapshots from S3.')
             current_snapshot_filenames = [s['filename'] for s in snapshots_to_sync]
-            requests_prefix = app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'] + '/requests'
+            requests_prefix = berkeley.s3_canvas_data_path_current_term() + '/requests'
             delete_result = delete_objects_with_prefix(requests_prefix, whitelist=current_snapshot_filenames)
             if not delete_result:
                 app.logger.error('Cleanup of obsolete snapshots failed.')
