@@ -26,7 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import logging
 
 from nessie.externals import rds, s3
-from nessie.jobs.sync_canvas_snapshots import delete_objects_with_prefix, SyncCanvasSnapshots
+from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 import pytest
 from tests.util import assert_background_job_status, capture_app_logs, mock_s3
 
@@ -79,7 +79,7 @@ class TestSyncCanvasSnapshots:
             assert s3.upload_from_url('http://shakespeare.mit.edu/Poetry/sonnet.XLV.html', prefix2 + '/xlv/sonnet-xlv.html')
 
             whitelist = ['sonnet-xxi.html', 'sonnet-xxii.html']
-            assert delete_objects_with_prefix(prefix1, whitelist) is True
+            assert s3.delete_objects_with_prefix(prefix1, whitelist) is True
 
             assert f'3 key(s) matching prefix "{prefix1}"' in caplog.text
             assert '2 key(s) in whitelist' in caplog.text
