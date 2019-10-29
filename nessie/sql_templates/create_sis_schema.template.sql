@@ -91,6 +91,17 @@ WITH SERDEPROPERTIES (
 STORED AS TEXTFILE
 LOCATION '{loch_s3_sis_data_path}/manifests/enrollments.json';
 
+-- intended majors
+CREATE EXTERNAL TABLE {redshift_schema_sis}.intended_majors
+(
+    sid VARCHAR,
+    plan_code VARCHAR
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+STORED AS TEXTFILE
+LOCATION '{loch_s3_sis_data_path}/advisees/intended_majors';
+
 -- term gpa
 CREATE EXTERNAL TABLE {redshift_schema_sis}.term_gpa
 (

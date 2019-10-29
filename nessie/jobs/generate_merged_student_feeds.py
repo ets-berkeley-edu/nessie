@@ -32,7 +32,7 @@ from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.jobs.generate_merged_enrollment_term import GenerateMergedEnrollmentTerm
 from nessie.lib.berkeley import current_term_id, future_term_id, future_term_ids, legacy_term_ids, reverse_term_ids
 from nessie.lib.metadata import get_merged_enrollment_term_job_status, queue_merged_enrollment_term_jobs
-from nessie.lib.queries import get_advisee_student_profile_feeds
+from nessie.lib.queries import get_advisee_student_profile_elements
 from nessie.lib.util import encoded_tsv_row
 from nessie.merged.sis_profile import parse_merged_sis_profile
 from nessie.merged.sis_profile_v1 import parse_merged_sis_profile_v1
@@ -159,19 +159,19 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         for table in tables:
             student_schema.truncate_staging_table(table)
 
-        all_student_feeds = get_advisee_student_profile_feeds()
-        if not all_student_feeds:
+        all_student_feed_elements = get_advisee_student_profile_elements()
+        if not all_student_feed_elements:
             app.logger.error(f'No profile feeds returned, aborting job.')
             return False
-        count = len(all_student_feeds)
+        count = len(all_student_feed_elements)
         app.logger.info(f'Will generate feeds for {count} students.')
-        for index, student_feeds in enumerate(all_student_feeds):
-            sid = student_feeds['sid']
-            merged_profile = self.generate_student_profile_from_feeds(student_feeds, rows)
+        for index, feed_elements in enumerate(all_student_feed_elements):
+            sid = feed_elements['sid']
+            merged_profile = self.generate_student_profile_feed(feed_elements, rows)
             if merged_profile:
-                canvas_user_id = student_feeds['canvas_user_id']
+                canvas_user_id = feed_elements['canvas_user_id']
                 if canvas_user_id:
-                    advisees_by_canvas_id[canvas_user_id] = {'sid': sid, 'uid': student_feeds['ldap_uid']}
+                    advisees_by_canvas_id[canvas_user_id] = {'sid': sid, 'uid': feed_elements['ldap_uid']}
                     advisees_by_sid[sid] = {'canvas_user_id': canvas_user_id}
                 self.successes.append(sid)
             else:
@@ -181,34 +181,27 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 student_schema.write_to_staging(table, rows[table])
         return tables
 
-    def generate_student_profile_from_feeds(self, feeds, rows):
-        sid = feeds['sid']
-        uid = feeds['ldap_uid']
+    def generate_student_profile_feed(self, feed_elements, rows):
+        sid = feed_elements['sid']
+        uid = feed_elements['ldap_uid']
         if not uid:
             return
         if app.config['STUDENT_V1_API_PREFERRED']:
-            sis_profile = parse_merged_sis_profile_v1(
-                feeds.get('sis_profile_feed'),
-                feeds.get('degree_progress_feed'),
-            )
+            sis_profile = parse_merged_sis_profile_v1(feed_elements)
         else:
-            sis_profile = parse_merged_sis_profile(
-                feeds.get('sis_profile_feed'),
-                feeds.get('degree_progress_feed'),
-                feeds.get('last_registration_feed'),
-            )
-        demographics = feeds.get('demographics_feed') and json.loads(feeds.get('demographics_feed'))
+            sis_profile = parse_merged_sis_profile(feed_elements)
+        demographics = feed_elements.get('demographics_feed') and json.loads(feed_elements.get('demographics_feed'))
         if demographics:
             demographics = add_demographics_rows(sid, demographics, rows)
 
         merged_profile = {
             'sid': sid,
             'uid': uid,
-            'firstName': feeds.get('first_name'),
-            'lastName': feeds.get('last_name'),
-            'name': ' '.join([feeds.get('first_name'), feeds.get('last_name')]),
-            'canvasUserId': feeds.get('canvas_user_id'),
-            'canvasUserName': feeds.get('canvas_user_name'),
+            'firstName': feed_elements.get('first_name'),
+            'lastName': feed_elements.get('last_name'),
+            'name': ' '.join([feed_elements.get('first_name'), feed_elements.get('last_name')]),
+            'canvasUserId': feed_elements.get('canvas_user_id'),
+            'canvasUserName': feed_elements.get('canvas_user_name'),
             'sisProfile': sis_profile,
             'demographics': demographics,
         }

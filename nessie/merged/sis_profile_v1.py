@@ -31,7 +31,14 @@ from nessie.lib.berkeley import degree_program_url_for_major, term_name_for_sis_
 from nessie.lib.util import vacuum_whitespace
 
 
-def parse_merged_sis_profile_v1(sis_student_api_feed, degree_progress_api_feed):
+def parse_merged_sis_profile_v1(feed_elements):
+    sis_student_api_feed = feed_elements.get('sis_profile_feed')
+    degree_progress_api_feed = feed_elements.get('degree_progress_feed')
+    intended_major_feed = {
+        'code': feed_elements.get('intended_major_code'),
+        'description': feed_elements.get('intended_major_description'),
+    }
+
     sis_student_api_feed = sis_student_api_feed and json.loads(sis_student_api_feed)
     if not sis_student_api_feed:
         return False
@@ -56,6 +63,8 @@ def parse_merged_sis_profile_v1(sis_student_api_feed, degree_progress_api_feed):
 
     if sis_profile.get('academicCareer') == 'UGRD':
         sis_profile['degreeProgress'] = degree_progress_api_feed and json.loads(degree_progress_api_feed)
+    if intended_major_feed['code']:
+        sis_profile['intendedMajor'] = intended_major_feed
 
     return sis_profile
 
