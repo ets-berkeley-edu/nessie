@@ -46,7 +46,10 @@ def sis_api_degree_progress(app, student_tables):
 def merged_profile(sid, profile_rows, degree_progress_rows):
     profile_feed = next((r['feed'] for r in profile_rows if r['sid'] == sid), None)
     progress_feed = next((r['feed'] for r in degree_progress_rows if r['sid'] == sid), None)
-    return parse_merged_sis_profile_v1(profile_feed, progress_feed)
+    return parse_merged_sis_profile_v1({
+        'sis_profile_feed': profile_feed,
+        'degree_progress_feed': progress_feed,
+    })
 
 
 class TestMergedSisProfile:

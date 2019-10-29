@@ -36,6 +36,10 @@ def advisee_schema():
     return app.config['REDSHIFT_SCHEMA_ADVISEE']
 
 
+def advisor_schema():
+    return app.config['REDSHIFT_SCHEMA_ADVISOR']
+
+
 def asc_schema():
     return app.config['REDSHIFT_SCHEMA_ASC']
 
@@ -90,14 +94,16 @@ def get_advisee_ids(csids=None):
 
 
 @fixture('query_advisee_student_profile_feeds.csv')
-def get_advisee_student_profile_feeds():
+def get_advisee_student_profile_elements():
     sis_api_profile_table = 'sis_api_profiles_v1' if app.config['STUDENT_V1_API_PREFERRED'] else 'sis_api_profiles'
     sql = f"""SELECT DISTINCT ldap.ldap_uid, ldap.sid, ldap.first_name, ldap.last_name,
                 us.canvas_id AS canvas_user_id, us.name AS canvas_user_name,
                 sis.feed AS sis_profile_feed,
                 deg.feed AS degree_progress_feed,
                 demog.feed AS demographics_feed,
-                reg.feed AS last_registration_feed
+                reg.feed AS last_registration_feed,
+                im.plan_code AS intended_major_code,
+                apo.acadplan_descr AS intended_major_description
               FROM {calnet_schema()}.persons ldap
               LEFT JOIN {intermediate_schema()}.users us
                 ON us.uid = ldap.ldap_uid
@@ -109,6 +115,10 @@ def get_advisee_student_profile_feeds():
                 ON demog.sid = ldap.sid
               LEFT JOIN {student_schema()}.student_last_registrations reg
                 ON reg.sid = ldap.sid
+              LEFT JOIN {sis_schema()}.intended_majors im
+                ON im.sid = ldap.sid
+              LEFT JOIN {advisor_schema()}.academic_plan_owners apo
+                ON im.plan_code = apo.acadplan_code
               ORDER BY ldap.sid
         """
     return redshift.fetch(sql)

@@ -65,11 +65,17 @@ def sis_api_last_registrations(app, metadata_db, student_tables):
     return redshift.fetch(sql)
 
 
-def merged_profile(sid, profile_rows, degree_progress_rows, last_registration_rows):
+def merged_profile(sid, profile_rows, degree_progress_rows, last_registration_rows, intended_major_code=None, intended_major_description=None):
     profile_feed = next((r['feed'] for r in profile_rows if r['sid'] == sid), None)
     progress_feed = next((r['feed'] for r in degree_progress_rows if r['sid'] == sid), None)
     last_registration_feed = next((r['feed'] for r in last_registration_rows if r['sid'] == sid), None)
-    return parse_merged_sis_profile(profile_feed, progress_feed, last_registration_feed)
+    return parse_merged_sis_profile({
+        'sis_profile_feed': profile_feed,
+        'degree_progress_feed': progress_feed,
+        'last_registration_feed': last_registration_feed,
+        'intended_major_code': intended_major_code,
+        'intended_major_description': intended_major_description,
+    })
 
 
 @pytest.mark.usefixtures('force_sis_profile_v2')
@@ -98,6 +104,22 @@ class TestMergedSisProfile:
         assert profile['withdrawalCancel']['reason'] == 'Personal'
         assert profile['withdrawalCancel']['date'] == '2017-10-31'
         assert profile['withdrawalCancel']['termId'] == '2178'
+
+    def test_intended_major_ignored_if_empty(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
+        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+        assert 'intendedMajor' not in profile
+
+    def test_intended_major_included_if_present(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
+        profile = merged_profile(
+            '11667051',
+            sis_api_profiles,
+            sis_api_degree_progress,
+            sis_api_last_registrations,
+            '252A1U',
+            'Dance & Perf Studies BA',
+        )
+        assert profile['intendedMajor']['code'] == '252A1U'
+        assert profile['intendedMajor']['description'] == 'Dance & Perf Studies BA'
 
     def test_degree_progress(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)

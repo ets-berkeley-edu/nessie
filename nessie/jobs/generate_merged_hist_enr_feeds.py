@@ -99,7 +99,10 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
             sid = row['sid']
             uid = row['uid']
             sis_api_feed = row['sis_feed']
-            sis_profile = parse_merged_sis_profile(sis_api_feed, None, row['last_registration_feed'])
+            sis_profile = parse_merged_sis_profile({
+                'sis_profile_feed': sis_api_feed,
+                'last_registration_feed': row['last_registration_feed'],
+            })
             merged_profile = {
                 'sid': sid,
                 'uid': uid,
