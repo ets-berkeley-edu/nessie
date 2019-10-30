@@ -72,6 +72,8 @@ class ImportSisStudentApi(BackgroundJob):
         app.logger.info(f'Starting SIS student API import job for {len(csids)} students...')
 
         rows, failure_count = self.load_concurrently(csids)
+        if (len(rows) == 0) and (failure_count > 0):
+            raise BackgroundJobError('Failed to import SIS student API feeds: aborting job.')
 
         s3_key = f'{get_s3_sis_api_daily_path()}/profiles.tsv'
         app.logger.info(f'Will stash {len(rows)} feeds in S3: {s3_key}')
@@ -117,7 +119,7 @@ class ImportSisStudentApi(BackgroundJob):
                         remaining_sids.discard(sid)
                         rows.append(encoded_tsv_row([sid, json.dumps(feed)]))
                 if remaining_sids:
-                    failure_count = len(remaining_sids)
+                    failure_count += len(remaining_sids)
                     app.logger.error(f'SIS student API import failed for SIDs {remaining_sids}.')
         app.logger.info(f'Wanted {len(all_sids)} students; got {len(rows)} in {timer() - start_loop} secs')
         return rows, failure_count

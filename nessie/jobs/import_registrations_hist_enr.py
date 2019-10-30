@@ -75,33 +75,30 @@ class ImportRegistrationsHistEnr(BackgroundJob):
             'last_registrations': [],
         }
         successes, failures = self.load_concurrently(rows, sids)
-        if load_mode != 'new' and (len(successes) == 0) and (len(failures) > 0):
-            raise BackgroundJobError('Failed to import registration histories: aborting job.')
-
-        for key in rows.keys():
-            s3_key = f'{get_s3_sis_api_daily_path()}/{key}.tsv'
-            app.logger.info(f'Will stash {len(successes)} feeds in S3: {s3_key}')
-            if not s3.upload_tsv_rows(rows[key], s3_key):
-                raise BackgroundJobError('Error on S3 upload: aborting job.')
-            app.logger.info('Will copy S3 feeds into Redshift...')
-            if not redshift.execute(f'TRUNCATE {self.redshift_schema}_staging.hist_enr_{key}'):
-                raise BackgroundJobError('Error truncating old staging rows: aborting job.')
-            if not redshift.copy_tsv_from_s3(f'{self.redshift_schema}_staging.hist_enr_{key}', s3_key):
-                raise BackgroundJobError('Error on Redshift copy: aborting job.')
-            staging_to_destination_query = resolve_sql_template_string(
-                """
-                DELETE FROM {redshift_schema_student}.hist_enr_{table_key}
-                    WHERE sid IN
-                    (SELECT sid FROM {redshift_schema_student}_staging.hist_enr_{table_key});
-                INSERT INTO {redshift_schema_student}.hist_enr_{table_key}
-                    (SELECT * FROM {redshift_schema_student}_staging.hist_enr_{table_key});
-                TRUNCATE TABLE {redshift_schema_student}_staging.hist_enr_{table_key};
-                """,
-                table_key=key,
-            )
-            if not redshift.execute(staging_to_destination_query):
-                raise BackgroundJobError('Error inserting staging entries into destination: aborting job.')
-
+        if len(successes) > 0:
+            for key in rows.keys():
+                s3_key = f'{get_s3_sis_api_daily_path()}/{key}.tsv'
+                app.logger.info(f'Will stash {len(successes)} feeds in S3: {s3_key}')
+                if not s3.upload_tsv_rows(rows[key], s3_key):
+                    raise BackgroundJobError('Error on S3 upload: aborting job.')
+                app.logger.info('Will copy S3 feeds into Redshift...')
+                if not redshift.execute(f'TRUNCATE {self.redshift_schema}_staging.hist_enr_{key}'):
+                    raise BackgroundJobError('Error truncating old staging rows: aborting job.')
+                if not redshift.copy_tsv_from_s3(f'{self.redshift_schema}_staging.hist_enr_{key}', s3_key):
+                    raise BackgroundJobError('Error on Redshift copy: aborting job.')
+                staging_to_destination_query = resolve_sql_template_string(
+                    """
+                    DELETE FROM {redshift_schema_student}.hist_enr_{table_key}
+                        WHERE sid IN
+                        (SELECT sid FROM {redshift_schema_student}_staging.hist_enr_{table_key});
+                    INSERT INTO {redshift_schema_student}.hist_enr_{table_key}
+                        (SELECT * FROM {redshift_schema_student}_staging.hist_enr_{table_key});
+                    TRUNCATE TABLE {redshift_schema_student}_staging.hist_enr_{table_key};
+                    """,
+                    table_key=key,
+                )
+                if not redshift.execute(staging_to_destination_query):
+                    raise BackgroundJobError('Error inserting staging entries into destination: aborting job.')
         return (
             f'Registrations import completed: {len(successes)} succeeded, {len(failures)} failed.'
         )
