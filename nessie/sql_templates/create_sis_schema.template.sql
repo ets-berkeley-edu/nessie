@@ -98,7 +98,7 @@ CREATE EXTERNAL TABLE {redshift_schema_sis}.intended_majors
     plan_code VARCHAR
 )
 ROW FORMAT DELIMITED
-FIELDS TERMINATED BY '\t'
+FIELDS TERMINATED BY ','
 STORED AS TEXTFILE
 LOCATION '{loch_s3_sis_data_path}/advisees/intended_majors';
 
