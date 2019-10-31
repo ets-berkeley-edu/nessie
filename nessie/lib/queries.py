@@ -102,8 +102,12 @@ def get_advisee_student_profile_elements():
                 deg.feed AS degree_progress_feed,
                 demog.feed AS demographics_feed,
                 reg.feed AS last_registration_feed,
-                im.plan_code AS intended_major_code,
-                apo.acadplan_descr AS intended_major_description
+                (
+                  SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(apo.acadplan_descr, ''), ' + ')
+                  FROM {sis_schema()}.intended_majors im
+                  LEFT JOIN {advisor_schema()}.academic_plan_owners apo ON im.plan_code = apo.acadplan_code
+                  WHERE im.sid = ldap.sid
+                ) AS intended_majors
               FROM {calnet_schema()}.persons ldap
               LEFT JOIN {intermediate_schema()}.users us
                 ON us.uid = ldap.ldap_uid
@@ -115,10 +119,6 @@ def get_advisee_student_profile_elements():
                 ON demog.sid = ldap.sid
               LEFT JOIN {student_schema()}.student_last_registrations reg
                 ON reg.sid = ldap.sid
-              LEFT JOIN {sis_schema()}.intended_majors im
-                ON im.sid = ldap.sid
-              LEFT JOIN {advisor_schema()}.academic_plan_owners apo
-                ON im.plan_code = apo.acadplan_code
               ORDER BY ldap.sid
         """
     return redshift.fetch(sql)

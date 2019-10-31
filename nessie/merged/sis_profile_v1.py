@@ -34,10 +34,7 @@ from nessie.lib.util import vacuum_whitespace
 def parse_merged_sis_profile_v1(feed_elements):
     sis_student_api_feed = feed_elements.get('sis_profile_feed')
     degree_progress_api_feed = feed_elements.get('degree_progress_feed')
-    intended_major_feed = {
-        'code': feed_elements.get('intended_major_code'),
-        'description': feed_elements.get('intended_major_description'),
-    }
+    intended_majors_feed = feed_elements.get('intended_majors')
 
     sis_student_api_feed = sis_student_api_feed and json.loads(sis_student_api_feed)
     if not sis_student_api_feed:
@@ -63,8 +60,7 @@ def parse_merged_sis_profile_v1(feed_elements):
 
     if sis_profile.get('academicCareer') == 'UGRD':
         sis_profile['degreeProgress'] = degree_progress_api_feed and json.loads(degree_progress_api_feed)
-    if intended_major_feed['code']:
-        sis_profile['intendedMajor'] = intended_major_feed
+    merge_intended_majors(intended_majors_feed, sis_profile)
 
     return sis_profile
 
@@ -205,3 +201,13 @@ def merge_sis_profile_withdrawal_cancel(academic_status, sis_profile):
         'reason': withdrawal_cancel.get('reason', {}).get('code'),
         'date': withdrawal_cancel.get('date'),
     }
+
+
+def merge_intended_majors(intended_majors_feed, sis_profile):
+    if intended_majors_feed:
+        sis_profile['intendedMajors'] = [
+            {
+                'code': im.split(' :: ')[0],
+                'description': im.split(' :: ')[1],
+            } for im in intended_majors_feed.split(' + ')
+        ]
