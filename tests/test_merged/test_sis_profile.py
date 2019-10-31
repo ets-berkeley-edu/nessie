@@ -65,7 +65,7 @@ def sis_api_last_registrations(app, metadata_db, student_tables):
     return redshift.fetch(sql)
 
 
-def merged_profile(sid, profile_rows, degree_progress_rows, last_registration_rows, intended_major_code=None, intended_major_description=None):
+def merged_profile(sid, profile_rows, degree_progress_rows, last_registration_rows, intended_majors=None):
     profile_feed = next((r['feed'] for r in profile_rows if r['sid'] == sid), None)
     progress_feed = next((r['feed'] for r in degree_progress_rows if r['sid'] == sid), None)
     last_registration_feed = next((r['feed'] for r in last_registration_rows if r['sid'] == sid), None)
@@ -73,8 +73,7 @@ def merged_profile(sid, profile_rows, degree_progress_rows, last_registration_ro
         'sis_profile_feed': profile_feed,
         'degree_progress_feed': progress_feed,
         'last_registration_feed': last_registration_feed,
-        'intended_major_code': intended_major_code,
-        'intended_major_description': intended_major_description,
+        'intended_majors': intended_majors,
     })
 
 
@@ -107,7 +106,7 @@ class TestMergedSisProfile:
 
     def test_intended_major_ignored_if_empty(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
-        assert 'intendedMajor' not in profile
+        assert 'intendedMajors' not in profile
 
     def test_intended_major_included_if_present(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile(
@@ -115,11 +114,23 @@ class TestMergedSisProfile:
             sis_api_profiles,
             sis_api_degree_progress,
             sis_api_last_registrations,
-            '252A1U',
-            'Dance & Perf Studies BA',
+            '252A1U :: Dance & Perf Studies BA',
         )
-        assert profile['intendedMajor']['code'] == '252A1U'
-        assert profile['intendedMajor']['description'] == 'Dance & Perf Studies BA'
+        assert profile['intendedMajors'][0]['code'] == '252A1U'
+        assert profile['intendedMajors'][0]['description'] == 'Dance & Perf Studies BA'
+
+    def test_multiple_intended_majors_included(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
+        profile = merged_profile(
+            '11667051',
+            sis_api_profiles,
+            sis_api_degree_progress,
+            sis_api_last_registrations,
+            '252A1U :: Dance & Perf Studies BA + 25968U :: MCB-Immunology BA',
+        )
+        assert profile['intendedMajors'][0]['code'] == '252A1U'
+        assert profile['intendedMajors'][0]['description'] == 'Dance & Perf Studies BA'
+        assert profile['intendedMajors'][1]['code'] == '25968U'
+        assert profile['intendedMajors'][1]['description'] == 'MCB-Immunology BA'
 
     def test_degree_progress(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)

@@ -35,10 +35,7 @@ def parse_merged_sis_profile(feed_elements):
     sis_student_api_feed = feed_elements.get('sis_profile_feed')
     degree_progress_api_feed = feed_elements.get('degree_progress_feed')
     last_registration_feed = feed_elements.get('last_registration_feed')
-    intended_major_feed = {
-        'code': feed_elements.get('intended_major_code'),
-        'description': feed_elements.get('intended_major_description'),
-    }
+    intended_majors_feed = feed_elements.get('intended_majors')
 
     sis_student_api_feed = sis_student_api_feed and json.loads(sis_student_api_feed, strict=False)
     if not sis_student_api_feed:
@@ -65,8 +62,7 @@ def parse_merged_sis_profile(feed_elements):
     merge_registration(sis_student_api_feed, last_registration_feed, sis_profile)
     if sis_profile.get('academicCareer') == 'UGRD':
         sis_profile['degreeProgress'] = degree_progress_api_feed and json.loads(degree_progress_api_feed)
-    if intended_major_feed['code']:
-        sis_profile['intendedMajor'] = intended_major_feed
+    merge_intended_majors(intended_majors_feed, sis_profile)
 
     return sis_profile
 
@@ -320,3 +316,13 @@ def merge_sis_profile_plans(academic_status, sis_profile):
         # Add plan unless it's a duplicate.
         if not next((p for p in sis_profile['plans'] if p.get('description') == plan_feed.get('description')), None):
             sis_profile['plans'].append(plan_feed)
+
+
+def merge_intended_majors(intended_majors_feed, sis_profile):
+    if intended_majors_feed:
+        sis_profile['intendedMajors'] = [
+            {
+                'code': im.split(' :: ')[0],
+                'description': im.split(' :: ')[1],
+            } for im in intended_majors_feed.split(' + ')
+        ]
