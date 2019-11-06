@@ -253,6 +253,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             and self._refresh_rds_enrollment_terms(transaction)
             and self._index_rds_midpoint_deficient_grades(transaction)
             and self._index_rds_enrolled_units(transaction)
+            and self._index_rds_term_gpa(transaction)
         ):
             return False
         return True
@@ -398,4 +399,11 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             f"""UPDATE {self.rds_schema}.student_enrollment_terms
             SET enrolled_units = (enrollment_term::json->>'enrolledUnits')::numeric
             WHERE enrollment_term::json->>'enrolledUnits' IS NOT NULL;""",
+        )
+
+    def _index_rds_term_gpa(self, transaction):
+        return transaction.execute(
+            f"""UPDATE {self.rds_schema}.student_enrollment_terms
+            SET term_gpa = (enrollment_term::json->'termGpa'->>'gpa')::numeric
+            WHERE (enrollment_term::json->'termGpa'->>'unitsTakenForGpa')::numeric > 0;""",
         )
