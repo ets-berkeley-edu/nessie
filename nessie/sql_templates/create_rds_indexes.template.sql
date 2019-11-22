@@ -242,3 +242,11 @@ CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.term_definitions
 
 CREATE INDEX IF NOT EXISTS term_definitions_term_id_idx
 ON {rds_schema_sis_internal}.term_definitions (term_id);
+
+CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.current_term_index
+(
+    current_term_id VARCHAR(4) NOT NULL,
+    current_term_name VARCHAR NOT NULL,
+    future_term_id VARCHAR(4) NOT NULL,
+    future_term_name VARCHAR NOT NULL
+);
