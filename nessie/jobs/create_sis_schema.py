@@ -30,8 +30,9 @@ import re
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
-from nessie.lib.berkeley import reverse_term_ids
+from nessie.lib.berkeley import next_term_id, reverse_term_ids, term_name_for_sis_id
 from nessie.lib.util import get_s3_sis_daily_path, resolve_sql_template
+import pytz
 
 """Logic for SIS schema creation job."""
 
@@ -43,6 +44,8 @@ class CreateSisSchema(BackgroundJob):
 
     def run(self):
         app.logger.info(f'Starting SIS schema creation job...')
+        self.refresh_sis_term_definitions()
+        self.refresh_current_term_index()
         if not self.update_manifests():
             app.logger.info('Error updating manifests, will not execute schema creation SQL')
             return False
@@ -54,7 +57,6 @@ class CreateSisSchema(BackgroundJob):
             verify_external_schema(external_schema, resolved_ddl)
         else:
             raise BackgroundJobError(f'SIS schema creation job failed.')
-        self.refresh_sis_term_definitions()
         return 'SIS schema creation job completed.'
 
     def update_manifests(self):
@@ -116,7 +118,7 @@ class CreateSisSchema(BackgroundJob):
                     app.logger.info('Refreshed RDS indexes.')
                 else:
                     transaction.rollback()
-                    raise BackgroundJobError('Error refreshing RDS indexes.')
+                    raise BackgroundJobError('Error refreshing RDS term definitions.')
 
     def refresh_rds(self, rows, transaction):
         result = transaction.execute(f'TRUNCATE {rds_schema}.term_definitions')
@@ -130,3 +132,35 @@ class CreateSisSchema(BackgroundJob):
         if not result:
             return False
         return True
+
+    def refresh_current_term_index(self):
+        today = datetime.now(pytz.utc).astimezone(pytz.timezone(app.config['TIMEZONE'])).date()
+        current_term = self.get_sis_current_term(today)
+
+        if current_term:
+            current_term_id = current_term['term_id']
+
+            # If today is one month or less before the end of the current term, or if the current term is summer,
+            # include the next term.
+            if current_term_id[3] == '5' or (current_term['term_ends'] - timedelta(weeks=4)) < today:
+                future_term_id = next_term_id(current_term['term_id'])
+                # ... and if the upcoming term is Summer, include the next Fall term as well.
+                if future_term_id[3] == '5':
+                    future_term_id = next_term_id(future_term_id)
+            else:
+                future_term_id = current_term_id
+
+            with rds.transaction() as transaction:
+                transaction.execute(f'TRUNCATE {rds_schema}.current_term_index')
+                columns = ['current_term_id', 'current_term_name', 'future_term_id', 'future_term_name']
+                values = tuple([current_term_id, current_term['term_name'], future_term_id, term_name_for_sis_id(future_term_id)])
+                if transaction.execute(f'INSERT INTO {rds_schema}.current_term_index ({", ".join(columns)}) VALUES {values} '):
+                    transaction.commit()
+                else:
+                    transaction.rollback()
+                    raise BackgroundJobError('Error refreshing RDS current term index.')
+
+    def get_sis_current_term(self, for_date):
+        sql = f"SELECT * FROM {rds_schema}.term_definitions WHERE term_ends > '{for_date}' ORDER BY term_id ASC LIMIT 1"
+        rows = rds.fetch(sql)
+        return rows and rows[0]

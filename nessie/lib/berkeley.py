@@ -23,13 +23,11 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from datetime import datetime, timedelta
 import re
 import threading
 
 from flask import current_app as app
 from nessie.externals import rds
-import pytz
 
 """A utility module collecting logic specific to the Berkeley campus."""
 
@@ -270,34 +268,16 @@ def get_config_terms():
     return config_terms
 
 
-def get_default_terms(today=None):
-    if not today:
-        today = datetime.now(pytz.utc).astimezone(pytz.timezone(app.config['TIMEZONE'])).date()
-    current_term = get_sis_current_term(today)
-    current_term_id = current_term['term_id']
-
-    # If today is one month or less before the end of the current term, or if the current term is summer,
-    # include the next term.
-    if current_term_id[3] == '5' or (current_term['term_ends'] - timedelta(weeks=4)) < today:
-        future_term_id = next_term_id(current_term['term_id'])
-        # ... and if the upcoming term is Summer, include the next Fall term as well.
-        if future_term_id[3] == '5':
-            future_term_id = next_term_id(future_term_id)
-    else:
-        future_term_id = current_term_id
-    canvas_data_current_term = '/term/' + current_term['term_name'].lower().replace(' ', '-')
-    return {
-        'current_term_name': current_term['term_name'],
-        'current_term_id': current_term_id,
-        'future_term_name': term_name_for_sis_id(future_term_id),
-        'future_term_id': future_term_id,
-        's3_canvas_data_path_current_term': app.config['LOCH_S3_CANVAS_DATA_PATH'] + canvas_data_current_term,
-    }
+def get_default_terms():
+    current_term_index = get_current_term_index()
+    canvas_data_current_term = '/term/' + current_term_index['current_term_name'].lower().replace(' ', '-')
+    current_term_index['s3_canvas_data_path_current_term'] = app.config['LOCH_S3_CANVAS_DATA_PATH'] + canvas_data_current_term
+    return current_term_index
 
 
-def get_sis_current_term(for_date):
+def get_current_term_index():
     sis_rds_schema = app.config['RDS_SCHEMA_SIS_INTERNAL']
-    sql = f"SELECT * FROM {sis_rds_schema}.term_definitions WHERE term_ends > '{for_date}' ORDER BY term_id ASC LIMIT 1"
+    sql = f'SELECT * FROM {sis_rds_schema}.current_term_index LIMIT 1'
     rows = rds.fetch(sql)
     return rows and rows[0]
 

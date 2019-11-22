@@ -25,8 +25,8 @@
         <li>
           Build
           <ul>
-            <li>Artifact: {{ version.build.artifact || '--' }}</li>
-            <li>Git commit: {{ version.build.gitCommit || '--' }}</li>
+            <li>Artifact: {{ version.build && version.build.artifact ? version.build.artifact : '--' }}</li>
+            <li>Git commit: {{ version.build && version.build.gitCommit ? version.build.gitCommit : '--' }}</li>
           </ul>
         </li>
       </ul>
