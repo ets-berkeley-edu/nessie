@@ -169,7 +169,6 @@ def generate_all_tables():
     chained_job = ChainedBackgroundJob(
         steps=[
             RefreshCanvasDataCatalog(),
-            CreateSisSchema(),
             GenerateIntermediateTables(),
             IndexEnrollments(),
             GenerateBoacAnalytics(),
