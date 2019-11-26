@@ -121,6 +121,7 @@ def schedule_all_jobs(force=False):
     )
     schedule_job(sched, 'JOB_IMPORT_SIS_STUDENTS', ImportSisStudentApi, force)
     schedule_job(sched, 'JOB_IMPORT_REGISTRATIONS', ImportRegistrations, force, load_mode='batch')
+    schedule_job(sched, 'JOB_IMPORT_SIS_DATA', CreateSisSchema, force)
     schedule_job(sched, 'JOB_IMPORT_CANVAS_ENROLLMENTS', ImportCanvasEnrollmentsApi, force)
     schedule_chained_job(
         sched,
@@ -138,7 +139,6 @@ def schedule_all_jobs(force=False):
         'JOB_GENERATE_ALL_TABLES',
         [
             RefreshCanvasDataCatalog,
-            CreateSisSchema,
             GenerateIntermediateTables,
             IndexEnrollments,
             GenerateBoacAnalytics,
