@@ -101,9 +101,7 @@ class TestCreateSisSchema:
         rds_schema = app.config['RDS_SCHEMA_SIS_INTERNAL']
         rows = rds.fetch(f'SELECT * FROM {rds_schema}.current_term_index')
         assert len(rows) == 1
-        assert rows[0]['current_term_id'] == '2182'
         assert rows[0]['current_term_name'] == 'Spring 2018'
-        assert rows[0]['future_term_id'] == '2188'
         assert rows[0]['future_term_name'] == 'Fall 2018'
 
     def _upload_data_to_s3(self, daily_path, historical_path):

@@ -42,8 +42,8 @@ def current_term_index(app):
     rds.execute(f'DROP SCHEMA {rds_schema} CASCADE')
     rds.execute(resolve_sql_template('create_rds_indexes.template.sql'))
     rds.execute(f"""INSERT INTO {rds_schema}.current_term_index
-        (current_term_id, current_term_name, future_term_id, future_term_name)
-        VALUES ('2182', 'Spring 2018', '2188', 'Fall 2018')
+        (current_term_name, future_term_name)
+        VALUES ('Spring 2018', 'Fall 2018')
     """)
     yield
     app.config['CURRENT_TERM'] = current_term_name
