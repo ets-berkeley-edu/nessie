@@ -152,8 +152,8 @@ class CreateSisSchema(BackgroundJob):
 
             with rds.transaction() as transaction:
                 transaction.execute(f'TRUNCATE {rds_schema}.current_term_index')
-                columns = ['current_term_id', 'current_term_name', 'future_term_id', 'future_term_name']
-                values = tuple([current_term_id, current_term['term_name'], future_term_id, term_name_for_sis_id(future_term_id)])
+                columns = ['current_term_name', 'future_term_name']
+                values = tuple([current_term['term_name'], term_name_for_sis_id(future_term_id)])
                 if transaction.execute(f'INSERT INTO {rds_schema}.current_term_index ({", ".join(columns)}) VALUES {values} '):
                     transaction.commit()
                 else:

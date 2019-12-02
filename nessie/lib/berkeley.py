@@ -247,14 +247,10 @@ def get_config_terms():
             default_terms = get_default_terms()
         if current_term_name == 'auto':
             current_term_name = default_terms['current_term_name']
-            current_term_id = default_terms['current_term_id']
-        else:
-            current_term_id = sis_term_id_for_name(current_term_name)
+        current_term_id = sis_term_id_for_name(current_term_name)
         if future_term_name == 'auto':
             future_term_name = default_terms['future_term_name']
-            future_term_id = default_terms['future_term_id']
-        else:
-            future_term_id = sis_term_id_for_name(future_term_name)
+        future_term_id = sis_term_id_for_name(future_term_name)
         if s3_canvas_data_path_current_term == 'auto':
             s3_canvas_data_path_current_term = default_terms['s3_canvas_data_path_current_term']
         config_terms = {
