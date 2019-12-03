@@ -54,11 +54,13 @@ def generate_student_term_maps(advisees_by_sid):
 
 
 def get_sis_enrollments():
+    app.logger.debug('*AL* get_sis_enrollments')
     sis_enrollments = queries.get_all_advisee_sis_enrollments()
     return map_sis_enrollments(sis_enrollments)
 
 
 def map_sis_enrollments(sis_enrollments):
+    app.logger.debug('*AL* map_sis_enrollments')
     student_enrollments_map = {}
     for key, all_sids_grp in groupby(sis_enrollments, operator.itemgetter('sis_term_id')):
         term_id = str(key)
@@ -71,6 +73,7 @@ def map_sis_enrollments(sis_enrollments):
 
 
 def merge_dropped_classes(student_enrollments_map, all_drops=None):
+    app.logger.debug('*AL* merge_dropped_classes')
     if all_drops is None:
         all_drops = queries.get_all_advisee_enrollment_drops() or []
     for key, sids_grp in groupby(all_drops, key=operator.itemgetter('sis_term_id')):
@@ -94,6 +97,7 @@ def merge_dropped_classes(student_enrollments_map, all_drops=None):
 
 
 def merge_term_gpas(student_enrollments_map, all_gpas=None):
+    app.logger.debug('*AL* merge_term_gpas')
     if all_gpas is None:
         all_gpas = queries.get_all_advisee_term_gpas() or []
     for key, term_gpa_rows in groupby(all_gpas, operator.itemgetter('term_id')):
