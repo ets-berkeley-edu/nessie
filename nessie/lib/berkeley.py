@@ -194,9 +194,11 @@ def previous_term_id(term_id):
 
 
 def reverse_term_ids(include_future_terms=False, include_legacy_terms=False):
+    app.logger.debug('*AL* reverse_term_ids')
     stop_term_id = sis_term_id_for_name(app.config['EARLIEST_LEGACY_TERM']) if include_legacy_terms \
         else sis_term_id_for_name(app.config['EARLIEST_TERM'])
     start_term_id = future_term_id() if include_future_terms else current_term_id()
+    app.logger.debug(f'*AL* start_term_id = {start_term_id}')
     return _collect_terms(start_term_id, stop_term_id)
 
 
@@ -238,8 +240,10 @@ def degree_program_url_for_major(plan_description):
 
 
 def get_config_terms():
+    app.logger.debug('*AL* get_config_terms')
     config_terms = getattr(cache_thread, 'config_terms', None)
     if not config_terms:
+        app.logger.debug('*AL* term configs not found in cache')
         current_term_name = app.config['CURRENT_TERM']
         future_term_name = app.config['FUTURE_TERM']
         s3_canvas_data_path_current_term = app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM']
@@ -261,11 +265,16 @@ def get_config_terms():
             's3_canvas_data_path_current_term': s3_canvas_data_path_current_term,
         }
         cache_thread.config_terms = config_terms
+        app.logger.debug(f'*AL* cached the term configs: {cache_thread.config_terms}')
+    else:
+        app.logger.debug(f'*AL* found cached term configs: {cache_thread.config_terms}')
     return config_terms
 
 
 def get_default_terms():
+    app.logger.debug('*AL* get_default_terms')
     current_term_index = get_current_term_index()
+    app.logger.debug(f'*AL* current_term_index = {current_term_index}')
     canvas_data_current_term = '/term/' + current_term_index['current_term_name'].lower().replace(' ', '-')
     current_term_index['s3_canvas_data_path_current_term'] = app.config['LOCH_S3_CANVAS_DATA_PATH'] + canvas_data_current_term
     return current_term_index
@@ -279,18 +288,22 @@ def get_current_term_index():
 
 
 def current_term_id():
+    app.logger.debug('*AL* current_term_id')
     return get_config_terms()['current_term_id']
 
 
 def current_term_name():
+    app.logger.debug('*AL* current_term_name')
     return get_config_terms()['current_term_name']
 
 
 def future_term_id():
+    app.logger.debug('*AL* future_term_id')
     return get_config_terms()['future_term_id']
 
 
 def s3_canvas_data_path_current_term():
+    app.logger.debug('*AL* s3_canvas_data_path_current_term')
     return get_config_terms()['s3_canvas_data_path_current_term']
 
 

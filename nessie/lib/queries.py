@@ -185,6 +185,7 @@ def get_all_enrollments_in_advisee_canvas_sites():
 @fixture('query_advisee_sis_enrollments.csv')
 def get_all_advisee_sis_enrollments():
     # The calnet persons table is used as a convenient union of all BOA advisees,
+    app.logger.debug('*AL* get_all_advisee_sis_enrollments')
     sql = f"""SELECT
                   enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id,
                   enr.ldap_uid, enr.sid,
@@ -201,6 +202,7 @@ def get_all_advisee_sis_enrollments():
 
 @fixture('query_advisee_enrollment_drops.csv')
 def get_all_advisee_enrollment_drops():
+    app.logger.debug('*AL* get_all_advisee_enrollment_drops')
     sql = f"""SELECT dr.*
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
               JOIN {calnet_schema()}.persons ldap
@@ -212,6 +214,7 @@ def get_all_advisee_enrollment_drops():
 
 
 def get_all_advisee_term_gpas():
+    app.logger.debug('*AL* get_all_advisee_term_gpas')
     sql = f"""SELECT gp.sid, gp.term_id, gp.gpa, gp.units_taken_for_gpa
               FROM {student_schema()}.student_term_gpas gp
               JOIN {calnet_schema()}.persons ldap
