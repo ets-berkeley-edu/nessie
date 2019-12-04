@@ -23,10 +23,12 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from contextlib import contextmanager
+
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3
 from nessie.lib.berkeley import canvas_terms, reverse_term_ids, term_name_for_sis_id
-from nessie.lib.mockingdata import fixture
+from nessie.lib.mockingdata import _environment_supports_mocks, fixture, response_from_fixture
 
 # Lazy init to support testing.
 data_loch_db = None
@@ -182,8 +184,13 @@ def get_all_enrollments_in_advisee_canvas_sites():
     return redshift.fetch(sql)
 
 
-@fixture('query_advisee_sis_enrollments.csv')
+@contextmanager
 def get_all_advisee_sis_enrollments():
+    # TODO figure out some more elegant way to set up mock fixtures as context managers.
+    if _environment_supports_mocks():
+        yield response_from_fixture('query_advisee_sis_enrollments.csv')()
+        return
+
     # The calnet persons table is used as a convenient union of all BOA advisees,
     sql = f"""SELECT
                   enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id,
@@ -196,7 +203,8 @@ def get_all_advisee_sis_enrollments():
               WHERE enr.sis_term_id=ANY('{{{','.join(reverse_term_ids(include_future_terms=True, include_legacy_terms=True))}}}')
               ORDER BY enr.sis_term_id DESC, ldap.sid, enr.sis_course_name, enr.sis_primary DESC, enr.sis_instruction_format, enr.sis_section_num
         """
-    return redshift.fetch(sql)
+    with redshift.fetch_iterator(sql) as iterator:
+        yield iterator
 
 
 @fixture('query_advisee_enrollment_drops.csv')
@@ -308,6 +316,7 @@ def get_non_advisee_api_feeds(sids):
     return redshift.fetch(sql, params=(sids,))
 
 
+@contextmanager
 def get_non_advisee_sis_enrollments(sids, term_id):
     sql = f"""SELECT
                   enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id,
@@ -319,7 +328,8 @@ def get_non_advisee_sis_enrollments(sids, term_id):
                 AND enr.sis_term_id='{term_id}'
               ORDER BY enr.sis_term_id DESC, enr.sid, enr.sis_course_name, enr.sis_primary DESC, enr.sis_instruction_format, enr.sis_section_num
         """
-    return redshift.fetch(sql, params=(sids,))
+    with redshift.fetch_iterator(sql) as iterator:
+        yield iterator
 
 
 def get_non_advisee_enrollment_drops(sids, term_id):
