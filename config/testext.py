@@ -57,6 +57,7 @@ REDSHIFT_SCHEMA_SIS = 'testext_mynamehere_sis'
 REDSHIFT_SCHEMA_SIS_ADVISING_NOTES = 'testext_mynamehere_sis_advising_notes_external'
 REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL = 'testext_mynamehere_sis_advising_notes'
 REDSHIFT_SCHEMA_SIS_INTERNAL = 'testext_mynamehere_sis_internal'
+REDSHIFT_SCHEMA_SIS_TERMS = 'testext_mynamehere_sis_terms'
 REDSHIFT_SCHEMA_STUDENT = 'testext_mynamehere_student'
 
 # S3 key prefix. Since the testext bucket is shared between users, choose something unique.
