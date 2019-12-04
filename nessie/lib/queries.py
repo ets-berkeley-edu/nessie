@@ -221,12 +221,12 @@ def get_all_advisee_enrollment_drops(term_id):
 
 
 def get_all_advisee_term_gpas(term_id):
-    sql = f"""SELECT gp.sid, gp.term_id, gp.gpa, gp.units_taken_for_gpa
+    sql = f"""SELECT gp.sid, gp.gpa, gp.units_taken_for_gpa
               FROM {student_schema()}.student_term_gpas gp
               JOIN {calnet_schema()}.persons ldap
                 ON gp.sid = ldap.sid
-              WHERE dr.sis_term_id='{term_id}'
-              ORDER BY gp.term_id, gp.sid DESC
+              WHERE gp.term_id='{term_id}'
+              ORDER BY gp.sid DESC
         """
     return redshift.fetch(sql)
 
