@@ -27,7 +27,7 @@ from contextlib import contextmanager
 
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3
-from nessie.lib.berkeley import canvas_terms, reverse_term_ids, term_name_for_sis_id
+from nessie.lib.berkeley import reverse_term_ids, term_name_for_sis_id
 from nessie.lib.mockingdata import _environment_supports_mocks, fixture, response_from_fixture
 
 # Lazy init to support testing.
@@ -139,7 +139,7 @@ def get_advisee_enrolled_canvas_sites(term_id):
           ON cs.canvas_course_id = enr.canvas_course_id
         WHERE enr.canvas_course_term='{term_name}'
         GROUP BY enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code
-        ORDER BY enr.canvas_course_term, enr.canvas_course_id
+        ORDER BY enr.canvas_course_id
         """
     return redshift.fetch(sql)
 
@@ -169,9 +169,7 @@ def get_all_enrollments_in_advisee_canvas_sites(term_id):
                 EXTRACT(EPOCH FROM mem.last_activity_at) AS last_activity_at,
                 mem.sis_enrollment_status
               FROM {boac_schema()}.course_enrollments mem
-              WHERE
-                mem.canvas_course_term = '{term_name}'
-              AND EXISTS (
+              WHERE EXISTS (
                 SELECT 1 FROM {boac_schema()}.course_enrollments memsub
                   JOIN {calnet_schema()}.persons ldap
                     ON memsub.uid = ldap.ldap_uid
@@ -180,7 +178,7 @@ def get_all_enrollments_in_advisee_canvas_sites(term_id):
               AND EXISTS (
                 SELECT 1 FROM {intermediate_schema()}.course_sections cs
                 WHERE cs.canvas_course_id = mem.course_id
-                  AND cs.canvas_course_term=ANY('{{{','.join(canvas_terms())}}}')
+                  AND cs.canvas_course_term='{term_name}'
               )
               ORDER BY mem.course_id, mem.canvas_user_id
         """
