@@ -272,7 +272,7 @@ def get_default_terms():
 
 
 def get_current_term_index():
-    sis_rds_schema = app.config['RDS_SCHEMA_SIS_INTERNAL']
+    sis_rds_schema = app.config['RDS_SCHEMA_SIS_TERMS']
     sql = f'SELECT * FROM {sis_rds_schema}.current_term_index LIMIT 1'
     rows = rds.fetch(sql)
     return rows and rows[0]
