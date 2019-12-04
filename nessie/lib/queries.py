@@ -126,9 +126,10 @@ def get_advisee_student_profile_elements():
     return redshift.fetch(sql)
 
 
-@fixture('query_advisee_enrolled_canvas_sites.csv')
-def get_advisee_enrolled_canvas_sites():
-    sql = f"""SELECT enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code, enr.canvas_course_term,
+@fixture('query_advisee_enrolled_canvas_sites_{term_id}.csv')
+def get_advisee_enrolled_canvas_sites(term_id):
+    term_name = term_name_for_sis_id(term_id)
+    sql = f"""SELECT enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code,
           LISTAGG(DISTINCT ldap.sid, ',') AS advisee_sids,
           LISTAGG(DISTINCT cs.sis_section_id, ',') AS sis_section_ids
         FROM {intermediate_schema()}.active_student_enrollments enr
@@ -136,8 +137,8 @@ def get_advisee_enrolled_canvas_sites():
           ON enr.uid = ldap.ldap_uid
         JOIN {intermediate_schema()}.course_sections cs
           ON cs.canvas_course_id = enr.canvas_course_id
-        WHERE enr.canvas_course_term=ANY('{{{','.join(canvas_terms())}}}')
-        GROUP BY enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code, enr.canvas_course_term
+        WHERE enr.canvas_course_term='{term_name}'
+        GROUP BY enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code
         ORDER BY enr.canvas_course_term, enr.canvas_course_id
         """
     return redshift.fetch(sql)
@@ -157,18 +158,20 @@ def get_advisee_submissions_sorted(term_id):
     return s3.get_retriable_csv_stream(columns, key, retries=3)
 
 
-@fixture('query_enrollments_in_advisee_canvas_sites.csv')
-def get_all_enrollments_in_advisee_canvas_sites():
+@fixture('query_enrollments_in_advisee_canvas_sites_{term_id}.csv')
+def get_all_enrollments_in_advisee_canvas_sites(term_id):
+    term_name = term_name_for_sis_id(term_id)
     sql = f"""SELECT
                 mem.course_id as canvas_course_id,
-                mem.course_term as canvas_course_term,
                 mem.uid,
                 mem.canvas_user_id,
                 mem.current_score,
                 EXTRACT(EPOCH FROM mem.last_activity_at) AS last_activity_at,
                 mem.sis_enrollment_status
               FROM {boac_schema()}.course_enrollments mem
-              WHERE EXISTS (
+              WHERE
+                mem.canvas_course_term = '{term_name}'
+              AND EXISTS (
                 SELECT 1 FROM {boac_schema()}.course_enrollments memsub
                   JOIN {calnet_schema()}.persons ldap
                     ON memsub.uid = ldap.ldap_uid
