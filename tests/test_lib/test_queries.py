@@ -32,7 +32,7 @@ from nessie.lib.mockingdata import MockRows, register_mock
 class TestQueries:
 
     def test_canvas_course_scores_fixture(self, app):
-        results = queries.get_all_enrollments_in_advisee_canvas_sites()
+        results = queries.get_all_enrollments_in_advisee_canvas_sites(2178)
         assert len(results) > 0
         assert {
             'canvas_course_id': 7654321, 'canvas_course_term': 'Fall 2017', 'uid': '9000100',
@@ -41,7 +41,7 @@ class TestQueries:
         } in results
 
     def test_sis_sections_in_canvas_course(self, app):
-        sections = queries.get_advisee_enrolled_canvas_sites()
+        sections = queries.get_advisee_enrolled_canvas_sites(2178)
 
         burmese_sections = next(s['sis_section_ids'] for s in sections if s['canvas_course_id'] == 7654320)
         assert burmese_sections == '90100,90101'
@@ -99,7 +99,7 @@ class TestQueries:
         assert enrollments[8]['grade'] == 'P'
 
     def test_student_canvas_courses(self, app):
-        courses = queries.get_advisee_enrolled_canvas_sites()
+        courses = queries.get_advisee_enrolled_canvas_sites(2178)
         assert len(courses) == 6
         # Canvas sites should be sorted by term, then by Course ID number
         assert courses[1]['canvas_course_id'] == 7654320
@@ -137,7 +137,7 @@ class TestQueries:
     def test_override_fixture(self, app):
         mr = MockRows(io.StringIO('course_id,uid,canvas_user_id,current_score,last_activity_at,sis_enrollment_status\n1,2,3,4,5,F'))
         with register_mock(queries.get_all_enrollments_in_advisee_canvas_sites, mr):
-            data = queries.get_all_enrollments_in_advisee_canvas_sites()
+            data = queries.get_all_enrollments_in_advisee_canvas_sites(2178)
         assert len(data) == 1
         assert {
             'course_id': 1, 'uid': '2', 'canvas_user_id': 3, 'current_score': 4, 'last_activity_at': 5,
