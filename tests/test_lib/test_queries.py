@@ -57,7 +57,8 @@ class TestQueries:
         assert project_site_sections is None
 
     def test_sis_enrollments(self, app):
-        enrollments = queries.get_all_advisee_sis_enrollments()
+        with queries.get_all_advisee_sis_enrollments() as rows:
+            enrollments = [r for r in rows]
         assert len(enrollments) == 10
 
         for enr in enrollments:

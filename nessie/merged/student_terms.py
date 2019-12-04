@@ -54,12 +54,13 @@ def generate_student_term_maps(advisees_by_sid):
 
 
 def get_sis_enrollments():
-    sis_enrollments = queries.get_all_advisee_sis_enrollments()
-    return map_sis_enrollments(sis_enrollments)
+    enrollments_map = {}
+    with queries.get_all_advisee_sis_enrollments() as sis_enrollments:
+        map_sis_enrollments(sis_enrollments, enrollments_map)
+    return enrollments_map
 
 
-def map_sis_enrollments(sis_enrollments):
-    student_enrollments_map = {}
+def map_sis_enrollments(sis_enrollments, student_enrollments_map):
     for key, all_sids_grp in groupby(sis_enrollments, operator.itemgetter('sis_term_id')):
         term_id = str(key)
         term_name = berkeley.term_name_for_sis_id(term_id)
@@ -67,7 +68,6 @@ def map_sis_enrollments(sis_enrollments):
         for sid, all_enrs_grp in groupby(all_sids_grp, operator.itemgetter('sid')):
             term_enrollments = merge_enrollment(all_enrs_grp, term_id, term_name)
             student_enrollments_map[term_id][sid] = term_enrollments
-    return student_enrollments_map
 
 
 def merge_dropped_classes(student_enrollments_map, all_drops=None):

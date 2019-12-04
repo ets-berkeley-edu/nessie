@@ -156,8 +156,9 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         return total_count
 
     def collect_merged_enrollments(self, sids, term_id, feed_file):
-        rows = queries.get_non_advisee_sis_enrollments(sids, term_id)
-        enrollments_by_student = map_sis_enrollments(rows)
+        enrollments_by_student = {}
+        with queries.get_non_advisee_sis_enrollments(sids, term_id) as rows:
+            map_sis_enrollments(rows, enrollments_by_student)
         merge_dropped_classes(enrollments_by_student, queries.get_non_advisee_enrollment_drops(sids, term_id))
         merge_term_gpas(enrollments_by_student, queries.get_non_advisee_term_gpas(sids, term_id))
         enrollments_by_student = enrollments_by_student.get(term_id, {})
