@@ -208,24 +208,24 @@ def get_all_advisee_sis_enrollments():
         yield iterator
 
 
-@fixture('query_advisee_enrollment_drops.csv')
-def get_all_advisee_enrollment_drops():
+@fixture('query_advisee_enrollment_drops_{term_id}.csv')
+def get_all_advisee_enrollment_drops(term_id):
     sql = f"""SELECT dr.*
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
               JOIN {calnet_schema()}.persons ldap
                 ON dr.sid = ldap.sid
-              WHERE dr.sis_term_id=ANY('{{{','.join(reverse_term_ids(include_legacy_terms=True))}}}')
-              ORDER BY dr.sis_term_id DESC, dr.sid, dr.sis_course_name
+              WHERE dr.sis_term_id='{term_id}'
+              ORDER BY dr.sid, dr.sis_course_name
             """
     return redshift.fetch(sql)
 
 
-def get_all_advisee_term_gpas():
+def get_all_advisee_term_gpas(term_id):
     sql = f"""SELECT gp.sid, gp.term_id, gp.gpa, gp.units_taken_for_gpa
               FROM {student_schema()}.student_term_gpas gp
               JOIN {calnet_schema()}.persons ldap
                 ON gp.sid = ldap.sid
-              WHERE gp.term_id=ANY('{{{','.join(reverse_term_ids(include_legacy_terms=True))}}}')
+              WHERE dr.sis_term_id='{term_id}'
               ORDER BY gp.term_id, gp.sid DESC
         """
     return redshift.fetch(sql)

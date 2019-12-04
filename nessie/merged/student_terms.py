@@ -43,72 +43,59 @@ def upload_student_term_maps(advisees_by_sid):
 def generate_student_term_maps(advisees_by_sid):
     # For each enrollment term in scope, our mission is to produce 1) a dictionary of enrollments indexed by sid;
     # 2) a dictionary of Canvas sites indexed by Canvas course id.
-    enrollment_terms_map = get_sis_enrollments()
-    merge_dropped_classes(enrollment_terms_map)
-    merge_term_gpas(enrollment_terms_map)
-
-    for term_id, enrollment_term_map in enrollment_terms_map.items():
-        # Track the results of course-site-level queries to avoid requerying.
-        (canvas_site_map, advisee_site_map) = get_canvas_site_maps(term_id)
-        merge_memberships_into_site_map(canvas_site_map, term_id)
-        merge_canvas_data(term_id, canvas_site_map, advisee_site_map, enrollment_term_map, advisees_by_sid)
-        yield term_id, enrollment_term_map, canvas_site_map
-
-
-def get_sis_enrollments():
-    enrollments_map = {}
     with queries.get_all_advisee_sis_enrollments() as sis_enrollments:
-        map_sis_enrollments(sis_enrollments, enrollments_map)
-    return enrollments_map
+        for term_id, enrollment_term_map in map_sis_enrollments(sis_enrollments):
+            merge_dropped_classes(enrollment_term_map, term_id)
+            merge_term_gpas(enrollment_term_map, term_id)
+            # Track the results of course-site-level queries to avoid requerying.
+            (canvas_site_map, advisee_site_map) = get_canvas_site_maps(term_id)
+            merge_memberships_into_site_map(canvas_site_map, term_id)
+            merge_canvas_data(term_id, canvas_site_map, advisee_site_map, enrollment_term_map, advisees_by_sid)
+            yield term_id, enrollment_term_map, canvas_site_map
 
 
-def map_sis_enrollments(sis_enrollments, student_enrollments_map):
+def map_sis_enrollments(sis_enrollments):
     for key, all_sids_grp in groupby(sis_enrollments, operator.itemgetter('sis_term_id')):
         term_id = str(key)
         term_name = berkeley.term_name_for_sis_id(term_id)
-        student_enrollments_map[term_id] = {}
+        student_enrollment_map = {}
         for sid, all_enrs_grp in groupby(all_sids_grp, operator.itemgetter('sid')):
             term_enrollments = merge_enrollment(all_enrs_grp, term_id, term_name)
-            student_enrollments_map[term_id][sid] = term_enrollments
+            student_enrollment_map[sid] = term_enrollments
+        yield term_id, student_enrollment_map
 
 
-def merge_dropped_classes(student_enrollments_map, all_drops=None):
+def merge_dropped_classes(enrollment_term_map, term_id, all_drops=None):
     if all_drops is None:
-        all_drops = queries.get_all_advisee_enrollment_drops() or []
-    for key, sids_grp in groupby(all_drops, key=operator.itemgetter('sis_term_id')):
-        term_id = str(key)
-        for sid, enrs_grp in groupby(sids_grp, operator.itemgetter('sid')):
-            student_term = student_enrollments_map.get(term_id, {}).get(sid)
-            # When a student has begun enrolling for classes but then decides not to attend (or to withdraw),
-            # the SIS DB will contain nothing but "dropped" sections. CalCentral does not show such terms
-            # as part of the student's academic history.
-            if student_term:
-                drops = []
-                for row in list(enrs_grp):
-                    drops.append({
-                        'displayName': row['sis_course_name'],
-                        'component': row['sis_instruction_format'],
-                        'sectionNumber': row['sis_section_num'],
-                        'withdrawAfterDeadline': (row['grade'] == 'W'),
-                    })
-                student_term['droppedSections'] = drops
-    return student_enrollments_map
+        all_drops = queries.get_all_advisee_enrollment_drops(term_id) or []
+    for sid, enrs_grp in groupby(all_drops, operator.itemgetter('sid')):
+        student_term = enrollment_term_map.get(sid)
+        # When a student has begun enrolling for classes but then decides not to attend (or to withdraw),
+        # the SIS DB will contain nothing but "dropped" sections. CalCentral does not show such terms
+        # as part of the student's academic history.
+        if student_term:
+            drops = []
+            for row in list(enrs_grp):
+                drops.append({
+                    'displayName': row['sis_course_name'],
+                    'component': row['sis_instruction_format'],
+                    'sectionNumber': row['sis_section_num'],
+                    'withdrawAfterDeadline': (row['grade'] == 'W'),
+                })
+            student_term['droppedSections'] = drops
 
 
-def merge_term_gpas(student_enrollments_map, all_gpas=None):
+def merge_term_gpas(enrollment_term_map, term_id, all_gpas=None):
     if all_gpas is None:
-        all_gpas = queries.get_all_advisee_term_gpas() or []
-    for key, term_gpa_rows in groupby(all_gpas, operator.itemgetter('term_id')):
-        term_id = str(key)
-        for term_gpa_row in term_gpa_rows:
-            sid = term_gpa_row['sid']
-            student_term = student_enrollments_map.get(term_id, {}).get(sid)
-            if student_term:
-                student_term['termGpa'] = {
-                    'gpa': float(term_gpa_row['gpa']),
-                    'unitsTakenForGpa': float(term_gpa_row['units_taken_for_gpa']),
-                }
-    return student_enrollments_map
+        all_gpas = queries.get_all_advisee_term_gpas(term_id) or []
+    for term_gpa_row in all_gpas:
+        sid = term_gpa_row['sid']
+        student_term = enrollment_term_map.get(sid)
+        if student_term:
+            student_term['termGpa'] = {
+                'gpa': float(term_gpa_row['gpa']),
+                'unitsTakenForGpa': float(term_gpa_row['units_taken_for_gpa']),
+            }
 
 
 def get_canvas_site_maps(term_id):
