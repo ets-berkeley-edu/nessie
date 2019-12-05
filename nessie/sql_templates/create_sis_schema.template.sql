@@ -116,23 +116,6 @@ FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
 LOCATION '{loch_s3_sis_data_path}/historical/gpa';
 
--- SIS Term Definitions
-CREATE EXTERNAL TABLE {redshift_schema_sis}.term_definitions
-(
-    term_id VARCHAR(4),
-    term_name VARCHAR,
-    term_begins DATE,
-    term_ends DATE
-)
-ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
-WITH SERDEPROPERTIES (
-  'separatorChar' = ',',
-  'quoteChar' = '\"',
-  'escapeChar' = '\\'
-)
-STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_data_path}/term_definitions/';
-
 
 --------------------------------------------------------------------
 -- Internal schema
