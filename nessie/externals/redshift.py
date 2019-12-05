@@ -148,23 +148,12 @@ def fetch(sql, **kwargs):
     with _get_cursor(operation='read') as cursor:
         if not cursor:
             return None
-        result = _execute(sql, 'read', cursor, **kwargs)
-        if result is None:
+        rows = _execute(sql, 'read', cursor, **kwargs)
+        if rows is None:
             return None
         else:
             # For Pandas compatibility, copy psycopg's list-like object of dict-like objects to a real list of dicts.
-            return [r.copy() for r in result]
-
-
-@contextmanager
-def fetch_iterator(sql, **kwargs):
-    """Execute SQL read operation and return an iterator from which client code can fetch rows."""
-    with _get_cursor(operation='read') as cursor:
-        if not cursor:
-            return None
-        result = _execute(sql, 'read', cursor, iterator=True, **kwargs)
-        if result is not None:
-            yield result
+            return [r.copy() for r in rows]
 
 
 class Transaction():
@@ -209,16 +198,6 @@ def _get_cursor(autocommit=True, operation='write'):
         yield None
 
 
-def _result_iterator(cursor):
-    while True:
-        result = cursor.fetchmany(app.config['ITERABLE_RESULT_BATCH_SIZE'])
-        if result:
-            for row in result:
-                yield row
-        else:
-            break
-
-
 def _execute(sql, operation, cursor, **kwargs):
     """Execute SQL string with optional keyword arguments for formatting.
 
@@ -227,23 +206,18 @@ def _execute(sql, operation, cursor, **kwargs):
     """
     result = None
     try:
-        params = kwargs and kwargs.pop('params', None)
-        iterator = kwargs and kwargs.pop('iterator', False)
+        params = None
         if kwargs:
+            params = kwargs.pop('params', None)
             sql = psycopg2.sql.SQL(sql).format(**kwargs)
         # Don't log sensitive credentials in the SQL.
         sql_for_log = re.sub(r"CREDENTIALS '[^']+'", "CREDENTIALS '<credentials>'", str(sql))
         ts = datetime.now().timestamp()
         cursor.execute(sql, params)
         if operation == 'read':
-            if iterator:
-                result = _result_iterator(cursor)
-                query_time = datetime.now().timestamp() - ts
-                app.logger.debug(f'Redshift query completed in {query_time} seconds, returning results as iterator:\n{sql_for_log}\n{params or ""}')
-            else:
-                result = [row for row in cursor]
-                query_time = datetime.now().timestamp() - ts
-                app.logger.debug(f'Redshift query returned {len(result)} rows in {query_time} seconds:\n{sql_for_log}\n{params or ""}')
+            result = [row for row in cursor]
+            query_time = datetime.now().timestamp() - ts
+            app.logger.debug(f'Redshift query returned {len(result)} rows in {query_time} seconds:\n{sql_for_log}\n{params or ""}')
         else:
             result = cursor.statusmessage
             query_time = datetime.now().timestamp() - ts

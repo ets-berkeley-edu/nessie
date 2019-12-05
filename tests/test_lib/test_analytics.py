@@ -139,7 +139,7 @@ class TestStudentAnalytics:
     sis_term_id = '2178'
 
     def digest_for_user(self, canvas_user_id, canvas_site_map):
-        course = canvas_site_map[self.canvas_course_id]
+        course = canvas_site_map[self.sis_term_id][self.canvas_course_id]
         course['adviseeEnrollments'] = [canvas_user_id]
         enrollment_term_map = mock_enrollment_term_map(self.user_sid, self.canvas_course_id)
         advisees_by_canvas_id = mock_advisee_id_map(canvas_user_id, self.user_sid)
@@ -147,8 +147,8 @@ class TestStudentAnalytics:
         return enrollment_term_map[self.user_sid]['enrollments'][0]['canvasSites'][0]['analytics']
 
     def canvas_site_map(self, app):
-        (canvas_site_map, advisee_site_map) = get_canvas_site_maps(self.sis_term_id)
-        merge_memberships_into_site_map(canvas_site_map, self.sis_term_id)
+        (canvas_site_map, advisee_site_map) = get_canvas_site_maps()
+        merge_memberships_into_site_map(canvas_site_map)
         return canvas_site_map
 
     def test_from_fixture(self, app):
@@ -198,7 +198,7 @@ class TestStudentAnalytics:
         enrollments[1]['last_activity_at'] = 1535340480
         enrollments[2]['last_activity_at'] = 1535340481
         enrollments[3]['last_activity_at'] = 1535340482
-        site_map[7654321]['enrollments'] = enrollments
+        site_map['2178'][7654321]['enrollments'] = enrollments
         digested = self.digest_for_user(9000071, site_map)
         low_student_score = digested['lastActivity']['student']
         assert(low_student_score['raw']) == 0
@@ -225,7 +225,7 @@ class TestStudentAnalytics:
         enrollments[1]['last_activity_at'] = 1535340480
         enrollments[2]['last_activity_at'] = 1535340481
         enrollments[3]['last_activity_at'] = 1535340482
-        site_map[7654321]['enrollments'] = enrollments
+        site_map['2178'][7654321]['enrollments'] = enrollments
         digested = self.digest_for_user(9000071, site_map)
         mean = digested['lastActivity']['courseMean']
         assert mean['raw'] < 1535340481

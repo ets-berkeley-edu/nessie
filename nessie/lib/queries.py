@@ -23,12 +23,10 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from contextlib import contextmanager
-
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3
-from nessie.lib.berkeley import reverse_term_ids, term_name_for_sis_id
-from nessie.lib.mockingdata import _environment_supports_mocks, fixture, response_from_fixture
+from nessie.lib.berkeley import canvas_terms, reverse_term_ids, term_name_for_sis_id
+from nessie.lib.mockingdata import fixture
 
 # Lazy init to support testing.
 data_loch_db = None
@@ -126,10 +124,9 @@ def get_advisee_student_profile_elements():
     return redshift.fetch(sql)
 
 
-@fixture('query_advisee_enrolled_canvas_sites_{term_id}.csv')
-def get_advisee_enrolled_canvas_sites(term_id):
-    term_name = term_name_for_sis_id(term_id)
-    sql = f"""SELECT enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code,
+@fixture('query_advisee_enrolled_canvas_sites.csv')
+def get_advisee_enrolled_canvas_sites():
+    sql = f"""SELECT enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code, enr.canvas_course_term,
           LISTAGG(DISTINCT ldap.sid, ',') AS advisee_sids,
           LISTAGG(DISTINCT cs.sis_section_id, ',') AS sis_section_ids
         FROM {intermediate_schema()}.active_student_enrollments enr
@@ -137,9 +134,9 @@ def get_advisee_enrolled_canvas_sites(term_id):
           ON enr.uid = ldap.ldap_uid
         JOIN {intermediate_schema()}.course_sections cs
           ON cs.canvas_course_id = enr.canvas_course_id
-        WHERE enr.canvas_course_term='{term_name}'
-        GROUP BY enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code
-        ORDER BY enr.canvas_course_id
+        WHERE enr.canvas_course_term=ANY('{{{','.join(canvas_terms())}}}')
+        GROUP BY enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code, enr.canvas_course_term
+        ORDER BY enr.canvas_course_term, enr.canvas_course_id
         """
     return redshift.fetch(sql)
 
@@ -158,11 +155,11 @@ def get_advisee_submissions_sorted(term_id):
     return s3.get_retriable_csv_stream(columns, key, retries=3)
 
 
-@fixture('query_enrollments_in_advisee_canvas_sites_{term_id}.csv')
-def get_all_enrollments_in_advisee_canvas_sites(term_id):
-    term_name = term_name_for_sis_id(term_id)
+@fixture('query_enrollments_in_advisee_canvas_sites.csv')
+def get_all_enrollments_in_advisee_canvas_sites():
     sql = f"""SELECT
                 mem.course_id as canvas_course_id,
+                mem.course_term as canvas_course_term,
                 mem.uid,
                 mem.canvas_user_id,
                 mem.current_score,
@@ -178,20 +175,15 @@ def get_all_enrollments_in_advisee_canvas_sites(term_id):
               AND EXISTS (
                 SELECT 1 FROM {intermediate_schema()}.course_sections cs
                 WHERE cs.canvas_course_id = mem.course_id
-                  AND cs.canvas_course_term='{term_name}'
+                  AND cs.canvas_course_term=ANY('{{{','.join(canvas_terms())}}}')
               )
               ORDER BY mem.course_id, mem.canvas_user_id
         """
     return redshift.fetch(sql)
 
 
-@contextmanager
+@fixture('query_advisee_sis_enrollments.csv')
 def get_all_advisee_sis_enrollments():
-    # TODO figure out some more elegant way to set up mock fixtures as context managers.
-    if _environment_supports_mocks():
-        yield response_from_fixture('query_advisee_sis_enrollments.csv')()
-        return
-
     # The calnet persons table is used as a convenient union of all BOA advisees,
     sql = f"""SELECT
                   enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id,
@@ -204,29 +196,28 @@ def get_all_advisee_sis_enrollments():
               WHERE enr.sis_term_id=ANY('{{{','.join(reverse_term_ids(include_future_terms=True, include_legacy_terms=True))}}}')
               ORDER BY enr.sis_term_id DESC, ldap.sid, enr.sis_course_name, enr.sis_primary DESC, enr.sis_instruction_format, enr.sis_section_num
         """
-    with redshift.fetch_iterator(sql) as iterator:
-        yield iterator
+    return redshift.fetch(sql)
 
 
-@fixture('query_advisee_enrollment_drops_{term_id}.csv')
-def get_all_advisee_enrollment_drops(term_id):
+@fixture('query_advisee_enrollment_drops.csv')
+def get_all_advisee_enrollment_drops():
     sql = f"""SELECT dr.*
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
               JOIN {calnet_schema()}.persons ldap
                 ON dr.sid = ldap.sid
-              WHERE dr.sis_term_id='{term_id}'
-              ORDER BY dr.sid, dr.sis_course_name
+              WHERE dr.sis_term_id=ANY('{{{','.join(reverse_term_ids(include_legacy_terms=True))}}}')
+              ORDER BY dr.sis_term_id DESC, dr.sid, dr.sis_course_name
             """
     return redshift.fetch(sql)
 
 
-def get_all_advisee_term_gpas(term_id):
-    sql = f"""SELECT gp.sid, gp.gpa, gp.units_taken_for_gpa
+def get_all_advisee_term_gpas():
+    sql = f"""SELECT gp.sid, gp.term_id, gp.gpa, gp.units_taken_for_gpa
               FROM {student_schema()}.student_term_gpas gp
               JOIN {calnet_schema()}.persons ldap
                 ON gp.sid = ldap.sid
-              WHERE gp.term_id='{term_id}'
-              ORDER BY gp.sid DESC
+              WHERE gp.term_id=ANY('{{{','.join(reverse_term_ids(include_legacy_terms=True))}}}')
+              ORDER BY gp.term_id, gp.sid DESC
         """
     return redshift.fetch(sql)
 
@@ -317,7 +308,6 @@ def get_non_advisee_api_feeds(sids):
     return redshift.fetch(sql, params=(sids,))
 
 
-@contextmanager
 def get_non_advisee_sis_enrollments(sids, term_id):
     sql = f"""SELECT
                   enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id,
@@ -329,8 +319,7 @@ def get_non_advisee_sis_enrollments(sids, term_id):
                 AND enr.sis_term_id='{term_id}'
               ORDER BY enr.sis_term_id DESC, enr.sid, enr.sis_course_name, enr.sis_primary DESC, enr.sis_instruction_format, enr.sis_section_num
         """
-    with redshift.fetch_iterator(sql) as iterator:
-        yield iterator
+    return redshift.fetch(sql, params=(sids,))
 
 
 def get_non_advisee_enrollment_drops(sids, term_id):

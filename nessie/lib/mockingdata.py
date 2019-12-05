@@ -47,7 +47,7 @@ class MockRows:
 
     def __call__(self, *args):
         if self.csv_in is None:
-            return []
+            return None
         # Unless otherwise instructed, `pandas` will interpret numeric strings as numbers instead of strings.
         df = pandas.read_csv(
             self.csv_in, escapechar='\\',
