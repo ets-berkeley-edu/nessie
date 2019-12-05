@@ -48,9 +48,9 @@ def create_app():
 
         # See https://stackoverflow.com/questions/9449101/how-to-stop-flask-from-initialising-twice-in-debug-mode
         if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            run_startup_jobs(app)
             initialize_job_schedules(app)
             initialize_job_queue(app)
-            run_startup_jobs(app)
 
     return app
 
