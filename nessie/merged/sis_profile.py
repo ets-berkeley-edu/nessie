@@ -239,10 +239,11 @@ def merge_sis_profile_emails(sis_student_api_feed, sis_profile):
     for email in sis_student_api_feed.get('emails', []):
         if email.get('primary'):
             primary_email = email.get('emailAddress')
-            break
         elif email.get('type', {}).get('code') == 'CAMP':
             campus_email = email.get('emailAddress')
-    sis_profile['emailAddress'] = primary_email or campus_email
+    sis_profile['emailAddress'] = campus_email or primary_email
+    if primary_email and campus_email and primary_email != campus_email:
+        sis_profile['emailAddressAlternate'] = primary_email
 
 
 def merge_sis_profile_matriculation(academic_status, sis_profile):

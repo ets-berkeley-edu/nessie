@@ -138,6 +138,11 @@ class TestMergedSisProfile:
         assert len(profile['degreeProgress']['requirements']) == 4
         assert profile['degreeProgress']['requirements'][0] == {'entryLevelWriting': {'status': 'Satisfied'}}
 
+    def test_email_addresses(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
+        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+        assert profile['emailAddress'] == 'oski@berkeley.edu'
+        assert profile['emailAddressAlternate'] == 'ursa.minor.beta@example.com'
+
     def test_no_holds(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
         assert profile['holds'] == []
