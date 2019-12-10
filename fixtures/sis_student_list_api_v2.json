@@ -206,11 +206,24 @@
                 "description": "Campus"
               },
               "emailAddress": "oski@berkeley.edu",
-              "primary": true,
+              "primary": false,
               "disclose": false,
               "uiControl": {
                 "code": "D",
                 "description": "Display Only"
+              }
+            },
+            {
+              "type": {
+                "code": "OTHR",
+                "description": "Other"
+              },
+              "emailAddress": "ursa.minor.beta@example.com",
+              "primary": true,
+              "disclose": false,
+              "uiControl": {
+                "code": "F",
+                "description": "Full Edit"
               }
             }
           ],
