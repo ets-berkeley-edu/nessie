@@ -104,6 +104,13 @@ class TestMergedSisProfile:
         assert profile['withdrawalCancel']['date'] == '2017-10-31'
         assert profile['withdrawalCancel']['termId'] == '2178'
 
+    def test_major_minor_plans(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
+        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+        assert len(profile['plans']) == 2
+        assert [p['description'] for p in profile['plans']] == ['English BA', 'Astrophysics BS']
+        assert len(profile['plansMinor']) == 1
+        assert [p['description'] for p in profile['plansMinor']] == ['Art History']
+
     def test_intended_major_ignored_if_empty(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
         assert 'intendedMajors' not in profile

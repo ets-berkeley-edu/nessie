@@ -521,6 +521,25 @@
                     "type": {
                       "code": "MIN"
                     }
+                  },
+                  "expectedGraduationTerm": {
+                    "id": "2192",
+                    "name": "2019 Spring"
+                  },
+                  "primary": false,
+                  "statusInPlan": {
+                    "action": {
+                      "code": "PLNC",
+                      "description": "Plan Change"
+                    },
+                    "reason": {
+                      "code": "SREQ",
+                      "description": "Student Request"
+                    },
+                    "status": {
+                      "code": "AC",
+                      "description": "Active in Program"
+                    }
                   }
                 }
               ],
