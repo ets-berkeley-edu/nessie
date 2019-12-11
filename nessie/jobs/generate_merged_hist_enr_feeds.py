@@ -79,20 +79,24 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
 
     def generate_student_profile_table(self, non_advisee_sids):
         profile_count = 0
-        table_name = 'student_profiles_hist_enr'
-        with tempfile.TemporaryFile() as feed_file:
+        with tempfile.TemporaryFile() as feed_file, tempfile.TemporaryFile() as names_file:
+            tables = {
+                'student_profiles_hist_enr': feed_file,
+                'student_names_hist_enr': names_file,
+            }
             # Work in batches so as not to overload memory.
             for i in range(0, len(non_advisee_sids), BATCH_QUERY_MAXIMUM):
                 sids = non_advisee_sids[i:i + BATCH_QUERY_MAXIMUM]
-                profile_count += self.collect_merged_profiles(sids, feed_file)
+                profile_count += self.collect_merged_profiles(sids, feed_file, names_file)
             if profile_count:
-                student_schema.truncate_staging_table(table_name)
-                student_schema.write_file_to_staging(table_name, feed_file, profile_count)
-                student_schema.refresh_all_from_staging([table_name])
+                for table_name, data in tables.items():
+                    student_schema.truncate_staging_table(table_name)
+                    student_schema.write_file_to_staging(table_name, data, profile_count)
+                    student_schema.refresh_all_from_staging([table_name])
         app.logger.info('Non-advisee profile generation complete.')
         return profile_count
 
-    def collect_merged_profiles(self, sids, feed_file):
+    def collect_merged_profiles(self, sids, feed_file, names_file):
         successes = []
         sis_profile_feeds = queries.get_non_advisee_api_feeds(sids)
         for row in sis_profile_feeds:
@@ -110,6 +114,14 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
             }
             self.fill_names_from_sis_profile(sis_api_feed, merged_profile)
             feed_file.write(encoded_tsv_row([sid, uid, json.dumps(merged_profile)]) + b'\n')
+            names_file.write(
+                encoded_tsv_row([
+                    sid,
+                    merged_profile.get('uid'),
+                    merged_profile.get('firstName'),
+                    merged_profile.get('lastName'),
+                ]) + b'\n',
+            )
             successes.append(sid)
         return len(successes)
 

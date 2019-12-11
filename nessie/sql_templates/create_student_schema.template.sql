@@ -129,6 +129,16 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles
 DISTKEY (sid)
 SORTKEY (sid);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_names_hist_enr
+(
+    sid VARCHAR NOT NULL,
+    uid VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    last_name VARCHAR NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles_hist_enr
 (
     sid VARCHAR NOT NULL,
