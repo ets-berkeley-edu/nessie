@@ -68,4 +68,4 @@ def _put_calnet_data_to_s3(sids):
             'ldap_uid': a['uid'],
             'sid': sid,
         }) + '\n'
-    s3.upload_data(serialized_data, f'{get_s3_calnet_daily_path()}/persons.json')
+    s3.upload_data(serialized_data, f'{get_s3_calnet_daily_path()}/advisees/advisees.json')

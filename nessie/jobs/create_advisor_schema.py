@@ -26,9 +26,9 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from datetime import datetime, timedelta
 
 from flask import current_app as app
-from nessie.externals import rds, redshift, s3
+from nessie.externals import calnet, rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
-from nessie.lib.util import get_s3_sis_sysadm_daily_path, resolve_sql_template
+from nessie.lib.util import encoded_tsv_row, get_s3_calnet_daily_path, get_s3_sis_sysadm_daily_path, resolve_sql_template, resolve_sql_template_string
 
 """Logic for Advisor schema creation job."""
 
@@ -40,6 +40,8 @@ class CreateAdvisorSchema(BackgroundJob):
         app.logger.info(f'Executing SQL...')
         self.create_schema()
         app.logger.info('Redshift schema created.')
+        self.import_advisor_attributes()
+        app.logger.info('Advisor attributes imported.')
         self.create_rds_indexes()
 
         return 'Advisor schema creation job completed.'
@@ -56,6 +58,54 @@ class CreateAdvisorSchema(BackgroundJob):
             verify_external_schema(external_schema, resolved_ddl)
         else:
             raise BackgroundJobError('Advisor schema creation job failed.')
+
+    def import_advisor_attributes(self):
+        csid_results = redshift.fetch(
+            resolve_sql_template_string('SELECT DISTINCT advisor_sid FROM {redshift_schema_advisor_internal}.advisor_students'),
+        )
+        csids = [r['advisor_sid'] for r in csid_results]
+        all_attributes = calnet.client(app).search_csids(csids)
+        if len(csids) != len(all_attributes):
+            ldap_csids = [l['csid'] for l in all_attributes]
+            missing = set(csids) - set(ldap_csids)
+            app.logger.warning(f'Looked for {len(csids)} advisor CSIDs but only found {len(all_attributes)} : missing {missing}')
+
+        advisor_rows = []
+        total_count = len(all_attributes)
+        for index, a in enumerate(all_attributes):
+            sid = a['csid']
+            app.logger.info(f'CalNet import: Fetch attributes of advisor {sid} ({index + 1} of {total_count})')
+            first_name, last_name = calnet.split_sortable_name(a)
+            data = [
+                a['uid'],
+                sid,
+                first_name,
+                last_name,
+                a['title'],
+                calnet.get_dept_code(a),
+                a['email'],
+                a['campus_email'],
+            ]
+            advisor_rows.append(encoded_tsv_row(data))
+
+        s3_key = f'{get_s3_calnet_daily_path()}/advisors/advisors.tsv'
+        app.logger.info(f'Will stash {len(advisor_rows)} feeds in S3: {s3_key}')
+        if not s3.upload_tsv_rows(advisor_rows, s3_key):
+            raise BackgroundJobError('Error on S3 upload: aborting job.')
+
+        app.logger.info('Will copy S3 feeds into Redshift...')
+        query = resolve_sql_template_string(
+            """
+            TRUNCATE {redshift_schema_advisor_internal}.advisor_attributes;
+            COPY {redshift_schema_advisor_internal}.advisor_attributes
+                FROM '{loch_s3_calnet_data_path}/advisors/advisors.tsv'
+                IAM_ROLE '{redshift_iam_role}'
+                DELIMITER '\\t';
+            """,
+        )
+        if not redshift.execute(query):
+            app.logger.error('Error on Redshift copy: aborting job.')
+            return False
 
     def create_rds_indexes(self):
         resolved_ddl = resolve_sql_template('index_advisors.template.sql')

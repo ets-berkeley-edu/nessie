@@ -197,3 +197,15 @@ AS (
         S.ACADEMIC_PLAN_DESCR AS academic_plan
     FROM {redshift_schema_advisor}.student_advisor S
 );
+
+CREATE TABLE {redshift_schema_advisor_internal}.advisor_attributes(
+    ldap_uid VARCHAR,
+    csid VARCHAR,
+    first_name VARCHAR,
+    last_name VARCHAR,
+    title VARCHAR,
+    dept_code VARCHAR,
+    email VARCHAR,
+    campus_email VARCHAR
+)
+SORTKEY (ldap_uid);
