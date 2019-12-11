@@ -279,16 +279,17 @@ def merge_sis_profile_phones(sis_student_api_feed, sis_profile):
 
 def merge_sis_profile_plans(academic_status, sis_profile):
     sis_profile['plans'] = []
+    sis_profile['plansMinor'] = []
     for student_plan in academic_status.get('studentPlans', []):
         academic_plan = student_plan.get('academicPlan', {})
-        # SIS majors come in five flavors.
-        if academic_plan.get('type', {}).get('code') not in ['MAJ', 'SS', 'SP', 'HS', 'CRT']:
+        # SIS majors come in five flavors, plus a sixth for minors.
+        if academic_plan.get('type', {}).get('code') not in ['MAJ', 'SS', 'SP', 'HS', 'CRT', 'MIN']:
             continue
         plan = academic_plan.get('plan', {})
-        major = plan.get('description')
+        description = plan.get('description')
         plan_feed = {
-            'degreeProgramUrl': degree_program_url_for_major(major),
-            'description': major,
+            'degreeProgramUrl': degree_program_url_for_major(description),
+            'description': description,
         }
         # Find the latest expected graduation term from any plan.
         expected_graduation_term = student_plan.get('expectedGraduationTerm', {}).get('id')
@@ -314,8 +315,12 @@ def merge_sis_profile_plans(academic_status, sis_profile):
             plan_feed['status'] = 'Discontinued'
 
         # Add plan unless it's a duplicate.
-        if not next((p for p in sis_profile['plans'] if p.get('description') == plan_feed.get('description')), None):
-            sis_profile['plans'].append(plan_feed)
+        if academic_plan.get('type', {}).get('code') == 'MIN':
+            plan_collection = sis_profile['plansMinor']
+        else:
+            plan_collection = sis_profile['plans']
+        if not next((p for p in plan_collection if p.get('description') == plan_feed.get('description')), None):
+            plan_collection.append(plan_feed)
 
 
 def merge_intended_majors(intended_majors_feed, sis_profile):
