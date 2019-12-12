@@ -1,5 +1,5 @@
 /**
- * Copyright ©2019. The Regents of the University of California (Regents). ALL Rights Reserved.
+ * Copyright ©2020. The Regents of the University of California (Regents). ALL Rights Reserved.
  *
  * PermissiON TO use, copy, modify, and distribute this software and its documentatiON
  * for educatiONal, research, and not-for-profit purposes, without fee and without a

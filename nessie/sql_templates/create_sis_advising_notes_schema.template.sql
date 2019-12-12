@@ -1,5 +1,5 @@
 /**
- * Copyright ©2019. The Regents of the University of California (Regents). All Rights Reserved.
+ * Copyright ©2020. The Regents of the University of California (Regents). All Rights Reserved.
  *
  * Permission to use, copy, modify, and distribute this software and its documentation
  * for educational, research, and not-for-profit purposes, without fee and without a
@@ -160,7 +160,7 @@ AS (
     		SELECT MAX(note_seq_nr) as max_seq_nr, sid, institution, note_id
             FROM {redshift_schema_sis_advising_notes}.advising_note_details
 			GROUP BY sid, institution, note_id
-	) AS M(max_seq_nr, sid, institution, note_id) 
+	) AS M(max_seq_nr, sid, institution, note_id)
     ON M.sid = N.sid
     AND M.institution = N.institution
     AND M.note_id = N.note_id
