@@ -37,7 +37,12 @@ import pytz
 
 
 def encoded_tsv_row(elements):
-    return '\t'.join([str(e) for e in elements]).encode()
+    def _to_tsv_string(e):
+        if e is None:
+            return ''
+        else:
+            return str(e)
+    return '\t'.join([_to_tsv_string(e) for e in elements]).encode()
 
 
 def fill_pattern_from_args(pattern, func, *args, **kw):

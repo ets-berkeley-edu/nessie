@@ -34,11 +34,16 @@ SCHEMA_DICT = {
     'berkeleyEduAffiliations': 'affiliations',
     'berkeleyEduCSID': 'csid',
     'berkeleyEduOfficialEmail': 'campus_email',
+    'berkeleyEduPrimaryDeptUnit': 'primary_dept_code',
+    'berkeleyEduUnitCalNetDeptName': 'calnet_dept_code',
+    'berkeleyEduDeptUnitHierarchyString': 'dept_unit_hierarchy',
     'cn': 'sortable_name',
+    'departmentNumber': 'dept_code',
     'displayName': 'name',
     'mail': 'email',
     'givenName': 'first_name',
     'sn': 'last_name',
+    'title': 'title',
     'uid': 'uid',
 }
 
@@ -125,6 +130,25 @@ class MockClient(Client):
         conn = ldap3.Connection(self.server, user=self.bind, password=self.password, client_strategy=ldap3.MOCK_SYNC)
         conn.strategy.entries_from_json(_fixture_path('search_entries'))
         return conn
+
+
+def get_attribute(p, key):
+    if not p:
+        return None
+    elif isinstance(p[key], list):
+        return p[key][0]
+    else:
+        return p[key]
+
+
+def get_dept_code(p):
+    def dept_code_fallback():
+        dept_hierarchy = get_attribute(p, 'dept_unit_hierarchy')
+        if dept_hierarchy:
+            return dept_hierarchy.rsplit('-', 1)[-1]
+        else:
+            return None
+    return p and (p['primary_dept_code'] or p['dept_code'] or p['calnet_dept_code'] or dept_code_fallback())
 
 
 def split_sortable_name(entry):

@@ -40,6 +40,10 @@ def advisor_schema():
     return app.config['REDSHIFT_SCHEMA_ADVISOR']
 
 
+def advisor_schema_internal():
+    return app.config['REDSHIFT_SCHEMA_ADVISOR_INTERNAL']
+
+
 def asc_schema():
     return app.config['REDSHIFT_SCHEMA_ASC']
 
@@ -91,6 +95,27 @@ def get_advisee_ids(csids=None):
               {csid_filter}
               ORDER BY sid"""
     return redshift.fetch(sql, params=(csids,))
+
+
+def get_advisee_advisor_mappings():
+    sql = f"""SELECT DISTINCT
+            advs.student_sid AS student_sid,
+            advs.advisor_type AS advisor_role,
+            advs.academic_program AS program,
+            advs.academic_plan AS plan,
+            aa.ldap_uid AS advisor_uid,
+            aa.first_name AS advisor_first_name,
+            aa.last_name AS advisor_last_name,
+            aa.campus_email AS advisor_campus_email,
+            aa.email AS advisor_email
+        FROM {calnet_schema()}.persons ldap
+        JOIN {advisor_schema_internal()}.advisor_students advs
+          ON ldap.sid = advs.student_sid
+        LEFT JOIN {advisor_schema_internal()}.advisor_attributes aa
+          ON advs.advisor_sid = aa.csid
+        ORDER BY advs.student_sid, advs.advisor_type
+        """
+    return redshift.fetch(sql)
 
 
 @fixture('query_advisee_student_profile_feeds.csv')

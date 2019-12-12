@@ -23,7 +23,9 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from itertools import groupby
 import json
+import operator
 from time import sleep
 
 from flask import current_app as app
@@ -32,7 +34,7 @@ from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.jobs.generate_merged_enrollment_term import GenerateMergedEnrollmentTerm
 from nessie.lib.berkeley import current_term_id, future_term_id, future_term_ids, legacy_term_ids, reverse_term_ids
 from nessie.lib.metadata import get_merged_enrollment_term_job_status, queue_merged_enrollment_term_jobs
-from nessie.lib.queries import get_advisee_student_profile_elements
+from nessie.lib.queries import get_advisee_advisor_mappings, get_advisee_student_profile_elements
 from nessie.lib.util import encoded_tsv_row
 from nessie.merged.sis_profile import parse_merged_sis_profile
 from nessie.merged.sis_profile_v1 import parse_merged_sis_profile_v1
@@ -160,6 +162,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             student_schema.truncate_staging_table(table)
 
         all_student_feed_elements = get_advisee_student_profile_elements()
+        all_student_advisor_mappings = self.map_advisors_to_students()
         if not all_student_feed_elements:
             app.logger.error(f'No profile feeds returned, aborting job.')
             return False
@@ -167,7 +170,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         app.logger.info(f'Will generate feeds for {count} students.')
         for index, feed_elements in enumerate(all_student_feed_elements):
             sid = feed_elements['sid']
-            merged_profile = self.generate_student_profile_feed(feed_elements, rows)
+            merged_profile = self.generate_student_profile_feed(feed_elements, rows, all_student_advisor_mappings[sid])
             if merged_profile:
                 canvas_user_id = feed_elements['canvas_user_id']
                 if canvas_user_id:
@@ -181,7 +184,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 student_schema.write_to_staging(table, rows[table])
         return tables
 
-    def generate_student_profile_feed(self, feed_elements, rows):
+    def generate_student_profile_feed(self, feed_elements, rows, advisors):
         sid = feed_elements['sid']
         uid = feed_elements['ldap_uid']
         if not uid:
@@ -207,6 +210,19 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         }
         rows['student_profiles'].append(encoded_tsv_row([sid, json.dumps(merged_profile)]))
 
+        if advisors:
+            merged_profile['advisors'] = []
+            for a in advisors:
+                merged_profile['advisors'].append({
+                    'uid': a['advisor_uid'],
+                    'firstName': a['advisor_first_name'],
+                    'lastName': a['advisor_last_name'],
+                    'email': (a['advisor_campus_email'] or a['advisor_email']),
+                    'role': a['advisor_role'],
+                    'program': a['program'],
+                    'plan': a['plan'],
+                })
+
         if sis_profile:
             first_name = merged_profile['firstName'] or ''
             last_name = merged_profile['lastName'] or ''
@@ -227,6 +243,12 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 rows['student_holds'].append(encoded_tsv_row([sid, json.dumps(hold)]))
 
         return merged_profile
+
+    def map_advisors_to_students(self):
+        advisors_by_student_id = {}
+        for sid, rows in groupby(get_advisee_advisor_mappings(), operator.itemgetter('student_sid')):
+            advisors_by_student_id[sid] = rows
+        return advisors_by_student_id
 
     def refresh_rds_indexes(self, sids, transaction):
         if not (
