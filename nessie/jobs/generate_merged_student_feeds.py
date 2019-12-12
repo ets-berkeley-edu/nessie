@@ -170,7 +170,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         app.logger.info(f'Will generate feeds for {count} students.')
         for index, feed_elements in enumerate(all_student_feed_elements):
             sid = feed_elements['sid']
-            merged_profile = self.generate_student_profile_feed(feed_elements, rows, all_student_advisor_mappings[sid])
+            merged_profile = self.generate_student_profile_feed(feed_elements, rows, all_student_advisor_mappings.get(sid, []))
             if merged_profile:
                 canvas_user_id = feed_elements['canvas_user_id']
                 if canvas_user_id:
