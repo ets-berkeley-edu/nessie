@@ -197,6 +197,18 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         if demographics:
             demographics = add_demographics_rows(sid, demographics, rows)
 
+        advisor_feed = []
+        for a in advisors:
+            advisor_feed.append({
+                'uid': a['advisor_uid'],
+                'firstName': a['advisor_first_name'],
+                'lastName': a['advisor_last_name'],
+                'email': (a['advisor_campus_email'] or a['advisor_email']),
+                'role': a['advisor_role'],
+                'program': a['program'],
+                'plan': a['plan'],
+            })
+
         merged_profile = {
             'sid': sid,
             'uid': uid,
@@ -207,21 +219,9 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'canvasUserName': feed_elements.get('canvas_user_name'),
             'sisProfile': sis_profile,
             'demographics': demographics,
+            'advisors': advisor_feed,
         }
         rows['student_profiles'].append(encoded_tsv_row([sid, json.dumps(merged_profile)]))
-
-        if advisors:
-            merged_profile['advisors'] = []
-            for a in advisors:
-                merged_profile['advisors'].append({
-                    'uid': a['advisor_uid'],
-                    'firstName': a['advisor_first_name'],
-                    'lastName': a['advisor_last_name'],
-                    'email': (a['advisor_campus_email'] or a['advisor_email']),
-                    'role': a['advisor_role'],
-                    'program': a['program'],
-                    'plan': a['plan'],
-                })
 
         if sis_profile:
             first_name = merged_profile['firstName'] or ''
@@ -247,7 +247,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     def map_advisors_to_students(self):
         advisors_by_student_id = {}
         for sid, rows in groupby(get_advisee_advisor_mappings(), operator.itemgetter('student_sid')):
-            advisors_by_student_id[sid] = rows
+            advisors_by_student_id[sid] = list(rows)
         return advisors_by_student_id
 
     def refresh_rds_indexes(self, sids, transaction):
