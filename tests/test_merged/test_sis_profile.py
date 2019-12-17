@@ -107,7 +107,7 @@ class TestMergedSisProfile:
     def test_major_minor_plans(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
         assert len(profile['plans']) == 2
-        assert [p['description'] for p in profile['plans']] == ['English BA', 'Astrophysics BS']
+        assert [p['description'] for p in profile['plans']] == ['Astrophysics BS', 'English BA']
         assert len(profile['plansMinor']) == 1
         assert [p['description'] for p in profile['plansMinor']] == ['Art History']
 
@@ -228,10 +228,10 @@ class TestMergedSisProfile:
             merge_sis_profile_academic_status(feed, profile)
             assert profile['academicCareer'] == 'UGRD'
             assert profile['academicCareerStatus'] == 'Inactive'
-            assert profile['plans'][0]['description'] == 'Interdisciplinary Studies BA'
-            assert profile['plans'][0]['status'] == 'Cancelled'
-            assert profile['plans'][1]['description'] == 'Chemical Engineering BS'
-            assert profile['plans'][1]['status'] == 'Discontinued'
+            assert profile['plans'][0]['description'] == 'Chemical Engineering BS'
+            assert profile['plans'][0]['status'] == 'Discontinued'
+            assert profile['plans'][1]['description'] == 'Interdisciplinary Studies BA'
+            assert profile['plans'][1]['status'] == 'Cancelled'
             assert profile['plans'][2]['description'] == 'Summer Domestic Visitor UG'
             assert profile['plans'][2]['status'] == 'Discontinued'
 
