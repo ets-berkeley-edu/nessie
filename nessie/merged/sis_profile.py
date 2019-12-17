@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import json
+from operator import itemgetter
 import re
 
 from flask import current_app as app
@@ -279,8 +280,8 @@ def merge_sis_profile_phones(sis_student_api_feed, sis_profile):
 
 
 def merge_sis_profile_plans(academic_status, sis_profile):
-    sis_profile['plans'] = []
-    sis_profile['plansMinor'] = []
+    plans = []
+    plans_minor = []
     for student_plan in academic_status.get('studentPlans', []):
         academic_plan = student_plan.get('academicPlan', {})
         # SIS majors come in five flavors, plus a sixth for minors.
@@ -317,19 +318,22 @@ def merge_sis_profile_plans(academic_status, sis_profile):
 
         # Add plan unless it's a duplicate.
         if academic_plan.get('type', {}).get('code') == 'MIN':
-            plan_collection = sis_profile['plansMinor']
+            plan_collection = plans_minor
         else:
-            plan_collection = sis_profile['plans']
+            plan_collection = plans
         if not next((p for p in plan_collection if p.get('description') == plan_feed.get('description')), None):
             plan_collection.append(plan_feed)
+    sis_profile['plans'] = sorted(plans, key=itemgetter('description'))
+    sis_profile['plansMinor'] = sorted(plans_minor, key=itemgetter('description'))
 
 
 def merge_intended_majors(intended_majors_feed, sis_profile):
     if intended_majors_feed:
-        sis_profile['intendedMajors'] = [
+        intended_majors = [
             {
                 'code': im.split(' :: ')[0],
                 'description': im.split(' :: ')[1],
                 'degreeProgramUrl': degree_program_url_for_major(im.split(' :: ')[1]),
             } for im in intended_majors_feed.split(' + ')
         ]
+        sis_profile['intendedMajors'] = sorted(intended_majors, key=itemgetter('description'))
