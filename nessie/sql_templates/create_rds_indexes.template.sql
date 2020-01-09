@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_academic_status
     email_address VARCHAR,
     entering_term VARCHAR(4),
     expected_grad_term VARCHAR(4),
+    terms_in_attendance INT,
     PRIMARY KEY (sid)
 );
 
@@ -110,6 +111,7 @@ CREATE INDEX IF NOT EXISTS students_academic_status_transfer_idx ON {rds_schema_
 CREATE INDEX IF NOT EXISTS students_academic_status_email_address_idx ON {rds_schema_student}.student_academic_status (email_address);
 CREATE INDEX IF NOT EXISTS students_academic_status_entering_term_idx ON {rds_schema_student}.student_academic_status (entering_term);
 CREATE INDEX IF NOT EXISTS students_academic_status_grad_term_idx ON {rds_schema_student}.student_academic_status (expected_grad_term);
+CREATE INDEX IF NOT EXISTS students_academic_status_terms_in_attendance_idx ON {rds_schema_student}.student_academic_status (terms_in_attendance);
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_names
 (
