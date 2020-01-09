@@ -231,9 +231,10 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             units = str(sis_profile.get('cumulativeUnits') or '')
             transfer = str(sis_profile.get('transfer') or False)
             expected_grad_term = str(sis_profile.get('expectedGraduationTerm', {}).get('id') or '')
+            terms_in_attendance = str(sis_profile.get('termsInAttendance', {}) or '')
 
             rows['student_academic_status'].append(
-                encoded_tsv_row([sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term]),
+                encoded_tsv_row([sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance]),
             )
 
             for plan in sis_profile.get('plans', []):
@@ -294,7 +295,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             f"""INSERT INTO {self.rds_schema}.student_academic_status (
             SELECT *
             FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
-                SELECT DISTINCT sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term
+                SELECT DISTINCT sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance
                 FROM {self.redshift_schema}.student_academic_status
               $REDSHIFT$)
             AS redshift_academic_status (
@@ -306,7 +307,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 gpa NUMERIC,
                 units NUMERIC,
                 transfer BOOLEAN,
-                expected_grad_term VARCHAR
+                expected_grad_term VARCHAR,
+                terms_in_attendance INT
             ));""",
         )
 
