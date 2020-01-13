@@ -95,10 +95,10 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_academic_status
     gpa DECIMAL(5,3),
     units DECIMAL (6,3),
     transfer BOOLEAN,
-    email_address VARCHAR,
-    entering_term VARCHAR(4),
     expected_grad_term VARCHAR(4),
     terms_in_attendance INT,
+    email_address VARCHAR,
+    entering_term VARCHAR(4),
     PRIMARY KEY (sid)
 );
 
