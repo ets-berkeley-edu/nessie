@@ -16,7 +16,9 @@ CREATE TABLE IF NOT EXISTS student.student_academic_status_new
     entering_term VARCHAR(4)
 );
 
-INSERT INTO student.student_academic_status_new (SELECT * FROM student.student_academic_status);
+INSERT INTO student.student_academic_status_new (
+    SELECT sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, NULL, email_address, entering_term FROM student.student_academic_status
+);
 
 DROP TABLE student.student_academic_status;
 
