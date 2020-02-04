@@ -175,10 +175,11 @@ SORTKEY (sid);
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_majors
 (
     sid VARCHAR NOT NULL,
-    major VARCHAR NOT NULL
+    major VARCHAR NOT NULL,
+    college VARCHAR NOT NULL
 )
-DISTKEY (major)
-SORTKEY (major);
+DISTKEY (sid)
+SORTKEY (college, major);
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.demographics
 (

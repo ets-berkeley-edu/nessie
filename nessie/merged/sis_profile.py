@@ -300,10 +300,9 @@ def merge_sis_profile_plans(academic_status, sis_profile):
                 'id': expected_graduation_term,
                 'name': term_name_for_sis_id(expected_graduation_term),
             }
-        # Add program unless plan code indicates undeclared.
-        if plan.get('code') != '25000U':
-            program = student_plan.get('academicPlan', {}).get('academicProgram', {}).get('program', {})
-            plan_feed['program'] = program.get('formalDescription') or program.get('description')
+
+        program = student_plan.get('academicPlan', {}).get('academicProgram', {}).get('program', {})
+        plan_feed['program'] = program.get('formalDescription') or program.get('description')
 
         # Add plan status.
         plan_status = student_plan.get('statusInPlan', {}).get('status')
