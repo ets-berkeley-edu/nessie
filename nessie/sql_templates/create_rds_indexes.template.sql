@@ -145,12 +145,14 @@ ON {rds_schema_student}.student_enrollment_terms (term_gpa);
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_majors
 (
     sid VARCHAR NOT NULL,
+    college VARCHAR NOT NULL,
     major VARCHAR NOT NULL,
-    PRIMARY KEY (sid, major)
+    PRIMARY KEY (sid, college, major)
 );
 
-CREATE INDEX IF NOT EXISTS students_major_sid_idx ON {rds_schema_student}.student_majors (sid);
-CREATE INDEX IF NOT EXISTS students_major_major_idx ON {rds_schema_student}.student_majors (major);
+CREATE INDEX IF NOT EXISTS student_majors_sid_idx ON {rds_schema_student}.student_majors (sid);
+CREATE INDEX IF NOT EXISTS student_majors_college_idx ON {rds_schema_student}.student_majors (college);
+CREATE INDEX IF NOT EXISTS student_majors_major_idx ON {rds_schema_student}.student_majors (major);
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.demographics
 (

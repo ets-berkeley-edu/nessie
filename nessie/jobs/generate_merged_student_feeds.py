@@ -239,7 +239,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
             for plan in sis_profile.get('plans', []):
                 if plan.get('status') == 'Active':
-                    rows['student_majors'].append(encoded_tsv_row([sid, plan['description']]))
+                    rows['student_majors'].append(encoded_tsv_row([sid, plan['program'], plan['description']]))
             for hold in sis_profile.get('holds', []):
                 rows['student_holds'].append(encoded_tsv_row([sid, json.dumps(hold)]))
 
@@ -370,11 +370,12 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             f"""INSERT INTO {self.rds_schema}.student_majors (
             SELECT *
             FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
-                SELECT DISTINCT sid, major
+                SELECT DISTINCT sid, college, major
                 FROM {self.redshift_schema}.student_majors
               $REDSHIFT$)
             AS redshift_majors (
                 sid VARCHAR,
+                college VARCHAR,
                 major VARCHAR
             ));""",
         )

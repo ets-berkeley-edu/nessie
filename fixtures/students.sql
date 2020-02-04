@@ -142,8 +142,9 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_last_registrations
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_majors
 (
     sid VARCHAR NOT NULL,
+    college VARCHAR NOT NULL,
     major VARCHAR NOT NULL,
-    PRIMARY KEY (sid, major)
+    PRIMARY KEY (sid, college, major)
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles
@@ -228,8 +229,9 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_last_regist
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_majors
 (
     sid VARCHAR NOT NULL,
+    college VARCHAR NOT NULL,
     major VARCHAR NOT NULL,
-    PRIMARY KEY (sid, major)
+    PRIMARY KEY (sid, college, major)
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_profiles
