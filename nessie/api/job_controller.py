@@ -40,6 +40,7 @@ from nessie.jobs.create_e_i_advising_notes_schema import CreateEIAdvisingNotesSc
 from nessie.jobs.create_edw_schema import CreateEdwSchema
 from nessie.jobs.create_gradescope_schema import CreateGradescopeSchema
 from nessie.jobs.create_lrs_glue_jobs import CreateLrsGlueJobs
+from nessie.jobs.create_oua_schema import CreateOUASchema
 from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
 from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.jobs.create_sis_terms_schema import CreateSisTermsSchema
@@ -140,6 +141,13 @@ def create_edw_schema():
 @auth_required
 def create_gradescope_schema():
     job_started = CreateGradescopeSchema().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/create_oua_schema', methods=['POST'])
+@auth_required
+def create_oua_schema():
+    job_started = CreateOUASchema().run_async()
     return respond_with_status(job_started)
 
 
