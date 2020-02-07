@@ -156,6 +156,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'rds_schema_boac': app.config['RDS_SCHEMA_BOAC'],
         'rds_schema_coe': app.config['RDS_SCHEMA_COE'],
         'rds_schema_e_i': app.config['RDS_SCHEMA_E_I'],
+        'rds_schema_oua': app.config['RDS_SCHEMA_OUA'],
         'rds_schema_metadata': app.config['RDS_SCHEMA_METADATA'],
         'rds_schema_sis_advising_notes': app.config['RDS_SCHEMA_SIS_ADVISING_NOTES'],
         'rds_schema_sis_internal': app.config['RDS_SCHEMA_SIS_INTERNAL'],

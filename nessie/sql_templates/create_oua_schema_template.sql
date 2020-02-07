@@ -38,8 +38,8 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 -- Office of Ungergraduate Admissions data for CE3
 CREATE EXTERNAL TABLE {redshift_schema_oua}.admissions
 (
-    applyuc_cpid BIGINT,
-    cs_empl_id BIGINT,
+    applyuc_cpid VARCHAR,
+    cs_empl_id VARCHAR,
     freshman_or_transfer VARCHAR,
     admit_status VARCHAR,
     current_sir VARCHAR,
@@ -102,3 +102,7 @@ LOCATION '{loch_s3_oua_data_path}/admissions'
 TABLE PROPERTIES (
     'skip.header.line.count'='1'
 );
+
+-- Provisions DB Link group with permissions to query OUA external schema and associated tables
+GRANT USAGE ON SCHEMA {redshift_schema_oua} TO GROUP {redshift_dblink_group};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_oua} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
