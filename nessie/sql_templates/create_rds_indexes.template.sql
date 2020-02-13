@@ -1,5 +1,6 @@
 CREATE SCHEMA IF NOT EXISTS {rds_schema_asc};
 GRANT USAGE ON SCHEMA {rds_schema_asc} TO {rds_app_boa_user};
+GRANT SELECT ON ALL TABLES IN SCHEMA {rds_schema_asc} TO {rds_app_boa_user};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_asc} GRANT SELECT ON TABLES TO {rds_app_boa_user};
 
 CREATE TABLE IF NOT EXISTS {rds_schema_asc}.students
@@ -28,6 +29,7 @@ CREATE TABLE IF NOT EXISTS {rds_schema_asc}.student_profiles
 
 CREATE SCHEMA IF NOT EXISTS {rds_schema_coe};
 GRANT USAGE ON SCHEMA {rds_schema_coe} TO {rds_app_boa_user};
+GRANT SELECT ON ALL TABLES IN SCHEMA {rds_schema_coe} TO {rds_app_boa_user};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_coe} GRANT SELECT ON TABLES TO {rds_app_boa_user};
 
 CREATE TABLE IF NOT EXISTS {rds_schema_coe}.students
@@ -65,6 +67,7 @@ CREATE TABLE IF NOT EXISTS {rds_schema_coe}.student_profiles
 
 CREATE SCHEMA IF NOT EXISTS {rds_schema_undergrads};
 GRANT USAGE ON SCHEMA {rds_schema_undergrads} TO {rds_app_boa_user};
+GRANT SELECT ON ALL TABLES IN SCHEMA {rds_schema_undergrads} TO {rds_app_boa_user};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_undergrads} GRANT SELECT ON TABLES TO {rds_app_boa_user};
 
 CREATE TABLE IF NOT EXISTS {rds_schema_undergrads}.students
@@ -83,6 +86,7 @@ CREATE INDEX IF NOT EXISTS students_undergrads_sid_idx ON {rds_schema_undergrads
 
 CREATE SCHEMA IF NOT EXISTS {rds_schema_student};
 GRANT USAGE ON SCHEMA {rds_schema_student} TO {rds_app_boa_user};
+GRANT SELECT ON ALL TABLES IN SCHEMA {rds_schema_student} TO {rds_app_boa_user};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_student} GRANT SELECT ON TABLES TO {rds_app_boa_user};
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_academic_status
@@ -213,6 +217,7 @@ CREATE INDEX IF NOT EXISTS students_term_gpa_units_idx ON {rds_schema_student}.s
 
 CREATE SCHEMA IF NOT EXISTS {rds_schema_sis_internal};
 GRANT USAGE ON SCHEMA {rds_schema_sis_internal} TO {rds_app_boa_user};
+GRANT SELECT ON ALL TABLES IN SCHEMA {rds_schema_sis_internal} TO {rds_app_boa_user};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_sis_internal} GRANT SELECT ON TABLES TO {rds_app_boa_user};
 
 CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.enrolled_primary_sections
@@ -238,6 +243,7 @@ ON {rds_schema_sis_internal}.enrolled_primary_sections (sis_catalog_id);
 
 CREATE SCHEMA IF NOT EXISTS {rds_schema_sis_terms};
 GRANT USAGE ON SCHEMA {rds_schema_sis_terms} TO {rds_app_boa_user};
+GRANT SELECT ON ALL TABLES IN SCHEMA {rds_schema_sis_terms} TO {rds_app_boa_user};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_sis_terms} GRANT SELECT ON TABLES TO {rds_app_boa_user};
 
 CREATE TABLE IF NOT EXISTS {rds_schema_sis_terms}.term_definitions
