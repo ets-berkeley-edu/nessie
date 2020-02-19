@@ -49,8 +49,9 @@ class CreateOUASchema(BackgroundJob):
             raise BackgroundJobError(f'OUA Slate schema creation job failed.')
 
     def migrate_oua_sftp_data(self):
-        # File name is hardcoded. Switch with date parser logic to pick correct filename once actual sftp integration is in place from la-transfer
-        filename = 'faker_admissions_dataset.csv'
+        # File name is hardcoded in configs.
+        # Switch with date parser logic to pick correct filename once actual sftp integration is in place from la-transfer
+        filename = app.config['ADMISSION_DATASET']
         s3_protected_bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
         oua_slate_sftp_path = app.config['LOCH_S3_SLATE_DATA_SFTP_PATH'] + '/' + filename
         oua_daily_path = get_s3_oua_daily_path() + '/admissions/admissions.csv'

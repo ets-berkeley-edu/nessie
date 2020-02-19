@@ -40,16 +40,20 @@ CREATE EXTERNAL TABLE {redshift_schema_oua}.admissions
 (
     applyuc_cpid VARCHAR,
     cs_empl_id VARCHAR,
+    residency_category VARCHAR,
     freshman_or_transfer VARCHAR,
+    admit_term VARCHAR,
     admit_status VARCHAR,
     current_sir VARCHAR,
     college VARCHAR,
     first_name VARCHAR,
+    middle_name VARCHAR,
     last_name VARCHAR,
     birthdate VARCHAR,
-    email VARCHAR,
-    daytime VARCHAR,
+    daytime_phone VARCHAR,
     mobile VARCHAR,
+    email VARCHAR,
+    campus_email_1 VARCHAR,
     permanent_street_1 VARCHAR,
     permanent_street_2 VARCHAR,
     permanent_city VARCHAR,
@@ -68,11 +72,11 @@ CREATE EXTERNAL TABLE {redshift_schema_oua}.admissions
     hs_unweighted_gpa VARCHAR,
     hs_weighted_gpa VARCHAR,
     transfer_gpa VARCHAR,
-    act_composite DOUBLE PRECISION,
-    act_math DOUBLE PRECISION,
-    act_english DOUBLE PRECISION,
-    act_reading DOUBLE PRECISION,
-    act_writing DOUBLE PRECISION,
+    act_composite INTEGER,
+    act_math INTEGER,
+    act_english INTEGER,
+    act_reading INTEGER,
+    act_writing INTEGER,
     sat_total INTEGER,
     sat_r_evidence_based_rw_section INTEGER,
     sat_r_math_section INTEGER,
@@ -95,8 +99,12 @@ CREATE EXTERNAL TABLE {redshift_schema_oua}.admissions
     last_school_lcff_plus_flag VARCHAR,
     special_program_cep VARCHAR
 )
-ROW FORMAT DELIMITED
-FIELDS TERMINATED BY ','
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
+WITH SERDEPROPERTIES (
+  'separatorChar' = ',',
+  'quoteChar' = '\"',
+  'escapeChar' = '\\'
+)
 STORED AS TEXTFILE
 LOCATION '{loch_s3_oua_data_path}/admissions'
 TABLE PROPERTIES (
