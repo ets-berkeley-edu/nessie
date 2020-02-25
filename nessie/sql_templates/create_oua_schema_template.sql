@@ -69,6 +69,7 @@ CREATE EXTERNAL TABLE {redshift_schema_oua}.admissions
     first_generation_college VARCHAR,
     parent_1_education_level VARCHAR,
     parent_2_education_level VARCHAR,
+    highest_parent_education_level VARCHAR,
     hs_unweighted_gpa VARCHAR,
     hs_weighted_gpa VARCHAR,
     transfer_gpa VARCHAR,
@@ -97,7 +98,14 @@ CREATE EXTERNAL TABLE {redshift_schema_oua}.admissions
     athlete_status VARCHAR,
     summer_bridge_status VARCHAR,
     last_school_lcff_plus_flag VARCHAR,
-    special_program_cep VARCHAR
+    special_program_cep VARCHAR,
+    us_citizenship_status VARCHAR,
+    us_non_citizen_status VARCHAR,
+    citizenship_country VARCHAR,
+    permanent_residence_country VARCHAR,
+    non_immigrant_visa_current VARCHAR,
+    non_immigrant_visa_planned VARCHAR,
+    uid VARCHAR
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
 WITH SERDEPROPERTIES (

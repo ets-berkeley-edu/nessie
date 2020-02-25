@@ -23,6 +23,8 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from datetime import datetime, timedelta
+
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
@@ -49,14 +51,21 @@ class CreateOUASchema(BackgroundJob):
             raise BackgroundJobError(f'OUA Slate schema creation job failed.')
 
     def migrate_oua_sftp_data(self):
-        # File name is hardcoded in configs.
-        # Switch with date parser logic to pick correct filename once actual sftp integration is in place from la-transfer
-        filename = app.config['ADMISSION_DATASET']
         s3_protected_bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
-        oua_slate_sftp_path = app.config['LOCH_S3_SLATE_DATA_SFTP_PATH'] + '/' + filename
-        oua_daily_path = get_s3_oua_daily_path() + '/admissions/admissions.csv'
-        if not s3.copy(s3_protected_bucket, oua_slate_sftp_path, s3_protected_bucket, oua_daily_path):
-            raise BackgroundJobError(f'S3 Copy from Slate OUA source {oua_slate_sftp_path} to daily destination {oua_daily_path} failed.')
+        oua_slate_sftp_path = app.config['LOCH_S3_SLATE_DATA_SFTP_PATH'] + '/' + self.get_sftp_date_offset() + '/'
+        oua_daily_dest_path = get_s3_oua_daily_path() + '/admissions/'
+
+        # Gets list of keys under SFTP prefix and looks for csv files to migrate to OUA daily location
+        keys = s3.get_keys_with_prefix(oua_slate_sftp_path, full_objects=False, bucket=s3_protected_bucket)
+
+        if len(keys) > 0:
+            for source_key in keys:
+                if source_key.endswith('.csv'):
+                    destination_key = source_key.replace(oua_slate_sftp_path, oua_daily_dest_path)
+                    if not s3.copy(s3_protected_bucket, source_key, s3_protected_bucket, destination_key):
+                        raise BackgroundJobError(f'Copy from SFTP location {source_key} to daily OUA destination {destination_key} failed.')
+        else:
+            raise BackgroundJobError(f'No OUA files found in SFTP location today. Skipping OUA data refresh')
 
     def create_rds_tables_and_indexes(self):
         resolved_ddl = resolve_sql_template('index_oua_admissions.template.sql')
@@ -64,3 +73,8 @@ class CreateOUASchema(BackgroundJob):
             app.logger.info('Created OUA Slate RDS tables and indexes successfully')
         else:
             raise BackgroundJobError('OUA Slate schema creation job failed to create rds tables and indexes.')
+
+    def get_sftp_date_offset(self):
+        current_date = datetime.now() - timedelta(days=1)
+        date_part = current_date.strftime('%Y/%m/%d')
+        return date_part

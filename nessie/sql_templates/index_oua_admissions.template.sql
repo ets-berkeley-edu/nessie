@@ -63,6 +63,7 @@ CREATE TABLE {rds_schema_oua}.student_admits (
   first_generation_college VARCHAR,
   parent_1_education_level VARCHAR,
   parent_2_education_level VARCHAR,
+  highest_parent_education_level VARCHAR,
   hs_unweighted_gpa VARCHAR,
   hs_weighted_gpa VARCHAR,
   transfer_gpa VARCHAR,
@@ -91,11 +92,21 @@ CREATE TABLE {rds_schema_oua}.student_admits (
   athlete_status VARCHAR,
   summer_bridge_status VARCHAR,
   last_school_lcff_plus_flag VARCHAR,
-  special_program_cep VARCHAR
+  special_program_cep VARCHAR,
+  us_citizenship_status VARCHAR,
+  us_non_citizen_status VARCHAR,
+  citizenship_country VARCHAR,
+  permanent_residence_country VARCHAR,
+  non_immigrant_visa_current VARCHAR,
+  non_immigrant_visa_planned VARCHAR,
+  uid VARCHAR,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
 INSERT INTO {rds_schema_oua}.student_admits (
-  SELECT *
+  SELECT
+    *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT DISTINCT
       applyuc_cpid,
@@ -129,6 +140,7 @@ INSERT INTO {rds_schema_oua}.student_admits (
       first_generation_college,
       parent_1_education_level,
       parent_2_education_level,
+      highest_parent_education_level,
       hs_unweighted_gpa,
       hs_weighted_gpa,
       transfer_gpa,
@@ -157,7 +169,16 @@ INSERT INTO {rds_schema_oua}.student_admits (
       athlete_status,
       summer_bridge_status,
       last_school_lcff_plus_flag,
-      special_program_cep
+      special_program_cep,
+      us_citizenship_status,
+      us_non_citizen_status,
+      citizenship_country,
+      permanent_residence_country,
+      non_immigrant_visa_current,
+      non_immigrant_visa_planned,
+      uid,
+      ((current_timestamp at time zone 'UTC') at time zone 'UTC') AS created_at,
+      ((current_timestamp at time zone 'UTC') at time zone 'UTC') AS updated_at
     FROM {redshift_schema_oua}.admissions
     ORDER BY cs_empl_id
   $REDSHIFT$)
@@ -193,6 +214,7 @@ INSERT INTO {rds_schema_oua}.student_admits (
     first_generation_college VARCHAR,
     parent_1_education_level VARCHAR,
     parent_2_education_level VARCHAR,
+    highest_parent_education_level VARCHAR,
     hs_unweighted_gpa VARCHAR,
     hs_weighted_gpa VARCHAR,
     transfer_gpa VARCHAR,
@@ -221,18 +243,30 @@ INSERT INTO {rds_schema_oua}.student_admits (
     athlete_status VARCHAR,
     summer_bridge_status VARCHAR,
     last_school_lcff_plus_flag VARCHAR,
-    special_program_cep VARCHAR
+    special_program_cep VARCHAR,
+    us_citizenship_status VARCHAR,
+    us_non_citizen_status VARCHAR,
+    citizenship_country VARCHAR,
+    permanent_residence_country VARCHAR,
+    non_immigrant_visa_current VARCHAR,
+    non_immigrant_visa_planned VARCHAR,
+    uid VARCHAR,
+    created_at TIMESTAMP WITH TIME ZONE,
+    updated_at TIMESTAMP WITH TIME ZONE
   )
 );
 
 CREATE INDEX idx_oua_student_admits_cs_empl_id ON {rds_schema_oua}.student_admits(cs_empl_id);
 CREATE INDEX idx_oua_student_admits_slate_id ON {rds_schema_oua}.student_admits(applyuc_cpid);
 CREATE INDEX idx_oua_student_admits_names ON {rds_schema_oua}.student_admits(first_name, last_name);
-CREATE INDEX idx_oua_student_admits_hispanic ON {rds_schema_oua}.student_admits(gender_identity);
+CREATE INDEX idx_oua_student_admits_hispanic ON {rds_schema_oua}.student_admits(hispanic);
+CREATE INDEX idx_oua_student_admits_sex ON {rds_schema_oua}.student_admits(sex);
 CREATE INDEX idx_oua_student_admits_xethnic ON {rds_schema_oua}.student_admits(xethnic);
 CREATE INDEX idx_oua_student_admits_urem ON {rds_schema_oua}.student_admits(urem);
 CREATE INDEX idx_oua_student_admits_current_sir ON {rds_schema_oua}.student_admits(current_sir);
 CREATE INDEX idx_oua_student_admits_admit_status ON {rds_schema_oua}.student_admits(admit_status);
+CREATE INDEX idx_oua_student_admits_family_dependents_num ON {rds_schema_oua}.student_admits(family_dependents_num);
+CREATE INDEX idx_oua_student_admits_student_dependents_num ON {rds_schema_oua}.student_admits(student_dependents_num);
 CREATE INDEX idx_oua_student_admits_freshman ON {rds_schema_oua}.student_admits(freshman_or_transfer);
 CREATE INDEX idx_oua_student_admits_college ON {rds_schema_oua}.student_admits(college);
 CREATE INDEX idx_oua_student_admits_transfer_gpa ON {rds_schema_oua}.student_admits(transfer_gpa);
@@ -240,5 +274,8 @@ CREATE INDEX idx_oua_student_admits_parent_education_level ON {rds_schema_oua}.s
 CREATE INDEX idx_oua_student_admits_student_single_parent ON {rds_schema_oua}.student_admits(student_is_single_parent);
 CREATE INDEX idx_oua_student_admits_family_single_parent ON {rds_schema_oua}.student_admits(family_is_single_parent);
 CREATE INDEX idx_oua_student_admits_family_income ON {rds_schema_oua}.student_admits(family_income);
+CREATE INDEX idx_oua_student_admits_lcff ON {rds_schema_oua}.student_admits(last_school_lcff_plus_flag);
+CREATE INDEX idx_oua_student_admits_residency_category ON {rds_schema_oua}.student_admits(residency_category);
+CREATE INDEX idx_oua_student_admits_military_status ON {rds_schema_oua}.student_admits(military_status);
 
 COMMIT TRANSACTION;
