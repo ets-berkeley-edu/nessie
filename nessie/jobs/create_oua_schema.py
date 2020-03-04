@@ -23,7 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3
@@ -75,6 +75,6 @@ class CreateOUASchema(BackgroundJob):
             raise BackgroundJobError('OUA Slate schema creation job failed to create rds tables and indexes.')
 
     def get_sftp_date_offset(self):
-        current_date = datetime.now() - timedelta(days=1)
+        current_date = datetime.now()
         date_part = current_date.strftime('%Y/%m/%d')
         return date_part

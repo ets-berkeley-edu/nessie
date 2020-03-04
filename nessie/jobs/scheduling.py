@@ -42,6 +42,7 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_SYNC_CANVAS_SNAPSHOTS': 1000,
     'JOB_RESYNC_CANVAS_SNAPSHOTS': 1500,
     'JOB_IMPORT_ADVISORS': 1800,
+    'JOB_IMPORT_ADMISSIONS': 1850,
     'JOB_IMPORT_SIS_DATA': 1900,
     'JOB_IMPORT_STUDENT_POPULATION': 2000,
     'JOB_IMPORT_DEGREE_PROGRESS': 2500,
@@ -80,6 +81,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
     from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
     from nessie.jobs.create_e_i_advising_notes_schema import CreateEIAdvisingNotesSchema
+    from nessie.jobs.create_oua_schema import CreateOUASchema
     from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
     from nessie.jobs.create_sis_schema import CreateSisSchema
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
@@ -108,6 +110,7 @@ def schedule_all_jobs(force=False):
     schedule_job(sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots, force)
     schedule_job(sched, 'JOB_RESYNC_CANVAS_SNAPSHOTS', ResyncCanvasSnapshots, force)
     schedule_job(sched, 'JOB_IMPORT_ADVISORS', CreateAdvisorSchema, force)
+    schedule_job(sched, 'JOB_IMPORT_ADMISSIONS', CreateOUASchema, force)
     schedule_job(sched, 'JOB_IMPORT_STUDENT_POPULATION', ChainedImportStudentPopulation, force)
     schedule_job(sched, 'JOB_IMPORT_DEGREE_PROGRESS', ImportDegreeProgress, force)
     schedule_chained_job(

@@ -65,7 +65,6 @@ CREATE EXTERNAL TABLE {redshift_schema_oua}.admissions
     xethnic VARCHAR,
     hispanic VARCHAR,
     urem VARCHAR,
-    first_generation_student VARCHAR,
     first_generation_college VARCHAR,
     parent_1_education_level VARCHAR,
     parent_2_education_level VARCHAR,
