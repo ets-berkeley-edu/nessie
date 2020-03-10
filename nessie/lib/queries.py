@@ -91,7 +91,7 @@ def get_all_student_ids():
 def get_advisee_ids(csids=None):
     csid_filter = 'WHERE sid = ANY(%s)' if csids is not None else ''
     sql = f"""SELECT ldap_uid, sid
-              FROM {calnet_schema()}.persons
+              FROM {calnet_schema()}.advisees
               {csid_filter}
               ORDER BY sid"""
     return redshift.fetch(sql, params=(csids,))
@@ -108,7 +108,7 @@ def get_advisee_advisor_mappings():
             aa.last_name AS advisor_last_name,
             aa.campus_email AS advisor_campus_email,
             aa.email AS advisor_email
-        FROM {calnet_schema()}.persons ldap
+        FROM {calnet_schema()}.advisees ldap
         JOIN {advisor_schema_internal()}.advisor_students advs
           ON ldap.sid = advs.student_sid
         JOIN {advisor_schema_internal()}.advisor_attributes aa
@@ -133,7 +133,7 @@ def get_advisee_student_profile_elements():
                   LEFT JOIN {advisor_schema()}.academic_plan_owners apo ON im.plan_code = apo.acadplan_code
                   WHERE im.sid = ldap.sid
                 ) AS intended_majors
-              FROM {calnet_schema()}.persons ldap
+              FROM {calnet_schema()}.advisees ldap
               LEFT JOIN {intermediate_schema()}.users us
                 ON us.uid = ldap.ldap_uid
               LEFT JOIN {student_schema()}.{sis_api_profile_table} sis
@@ -155,7 +155,7 @@ def get_advisee_enrolled_canvas_sites():
           LISTAGG(DISTINCT ldap.sid, ',') AS advisee_sids,
           LISTAGG(DISTINCT cs.sis_section_id, ',') AS sis_section_ids
         FROM {intermediate_schema()}.active_student_enrollments enr
-        JOIN {calnet_schema()}.persons ldap
+        JOIN {calnet_schema()}.advisees ldap
           ON enr.uid = ldap.ldap_uid
         JOIN {intermediate_schema()}.course_sections cs
           ON cs.canvas_course_id = enr.canvas_course_id
@@ -193,7 +193,7 @@ def get_all_enrollments_in_advisee_canvas_sites():
               FROM {boac_schema()}.course_enrollments mem
               WHERE EXISTS (
                 SELECT 1 FROM {boac_schema()}.course_enrollments memsub
-                  JOIN {calnet_schema()}.persons ldap
+                  JOIN {calnet_schema()}.advisees ldap
                     ON memsub.uid = ldap.ldap_uid
                   WHERE memsub.course_id = mem.course_id
               )
@@ -209,14 +209,14 @@ def get_all_enrollments_in_advisee_canvas_sites():
 
 @fixture('query_advisee_sis_enrollments.csv')
 def get_all_advisee_sis_enrollments():
-    # The calnet persons table is used as a convenient union of all BOA advisees,
+    # The calnet advisees table is used as a convenient union of all BOA advisees,
     sql = f"""SELECT
                   enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id,
                   enr.ldap_uid, enr.sid,
                   enr.sis_course_title, enr.sis_course_name,
                   enr.sis_section_id, enr.sis_primary, enr.sis_instruction_format, enr.sis_section_num
               FROM {intermediate_schema()}.sis_enrollments enr
-              JOIN {calnet_schema()}.persons ldap
+              JOIN {calnet_schema()}.advisees ldap
                 ON enr.ldap_uid = ldap.ldap_uid
               WHERE enr.sis_term_id=ANY('{{{','.join(reverse_term_ids(include_future_terms=True, include_legacy_terms=True))}}}')
               ORDER BY enr.sis_term_id DESC, ldap.sid, enr.sis_course_name, enr.sis_primary DESC, enr.sis_instruction_format, enr.sis_section_num
@@ -228,7 +228,7 @@ def get_all_advisee_sis_enrollments():
 def get_all_advisee_enrollment_drops():
     sql = f"""SELECT dr.*
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
-              JOIN {calnet_schema()}.persons ldap
+              JOIN {calnet_schema()}.advisees ldap
                 ON dr.sid = ldap.sid
               WHERE dr.sis_term_id=ANY('{{{','.join(reverse_term_ids(include_legacy_terms=True))}}}')
               ORDER BY dr.sis_term_id DESC, dr.sid, dr.sis_course_name
@@ -239,10 +239,18 @@ def get_all_advisee_enrollment_drops():
 def get_all_advisee_term_gpas():
     sql = f"""SELECT gp.sid, gp.term_id, gp.gpa, gp.units_taken_for_gpa
               FROM {student_schema()}.student_term_gpas gp
-              JOIN {calnet_schema()}.persons ldap
+              JOIN {calnet_schema()}.advisees ldap
                 ON gp.sid = ldap.sid
               WHERE gp.term_id=ANY('{{{','.join(reverse_term_ids(include_legacy_terms=True))}}}')
               ORDER BY gp.term_id, gp.sid DESC
+        """
+    return redshift.fetch(sql)
+
+
+def get_all_instructor_uids():
+    sql = f"""SELECT DISTINCT instructor_uid
+              FROM {sis_schema()}.courses
+              WHERE instructor_uid IS NOT NULL AND instructor_uid != ''
         """
     return redshift.fetch(sql)
 

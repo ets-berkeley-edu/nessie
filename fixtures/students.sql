@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_asc}.student_profiles
 
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_calnet};
 
-CREATE TABLE {redshift_schema_calnet}.persons
+CREATE TABLE {redshift_schema_calnet}.advisees
 (
     sid VARCHAR,
     ldap_uid VARCHAR,
@@ -271,7 +271,7 @@ VALUES
 ('890127492', TRUE, FALSE, 'Trouble', 'WFH', 'Women''s Field Hockey', 'FHW', 'Women''s Field Hockey'),
 ('890127492', TRUE, FALSE, 'Trouble', 'WTE', 'Women''s Tennis', 'TNW', 'Women''s Tennis');
 
-INSERT INTO {redshift_schema_calnet}.persons
+INSERT INTO {redshift_schema_calnet}.advisees
 (sid, ldap_uid, first_name, last_name, campus_email, email, affiliations)
 VALUES
 ('11667051', '61889', 'Deborah', 'Davies', 'dd1@berkeley.edu', 'dd1@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
