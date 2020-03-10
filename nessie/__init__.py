@@ -25,6 +25,6 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask_sqlalchemy import SQLAlchemy
 
-__version__ = '4.4'
+__version__ = '4.5'
 
 db = SQLAlchemy()
