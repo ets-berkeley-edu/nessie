@@ -37,8 +37,8 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 -- External Tables
 --------------------------------------------------------------------
 
--- persons
-CREATE EXTERNAL TABLE {redshift_schema_calnet}.persons(
+-- advisees
+CREATE EXTERNAL TABLE {redshift_schema_calnet}.advisees(
     sid VARCHAR,
     ldap_uid VARCHAR,
     first_name VARCHAR,
@@ -51,10 +51,10 @@ ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
 WITH SERDEPROPERTIES ('paths'='sid, ldap_uid, first_name, last_name, campus_email, email, affiliations')
 LOCATION '{loch_s3_calnet_data_path}/advisees';
 
--- Output our full SID list to S3 for use by clients with S3-only access such as Junction.
+-- Output our full advisee SID list to S3 for use by clients with S3-only access such as Junction.
 UNLOAD (
     'SELECT sid
-    FROM {redshift_schema_calnet}.persons'
+    FROM {redshift_schema_calnet}.advisees'
 )
 TO '{sid_snapshot_path}/snapshot'
 IAM_ROLE '{redshift_iam_role}'
@@ -63,3 +63,19 @@ NULL AS ''
 DELIMITER AS '\t'
 PARALLEL OFF
 ALLOWOVERWRITE;
+
+-- instructors
+CREATE EXTERNAL TABLE {redshift_schema_calnet}.instructors(
+    ldap_uid VARCHAR,
+    csid VARCHAR,
+    first_name VARCHAR,
+    last_name VARCHAR,
+    campus_email VARCHAR,
+    email VARCHAR,
+    affiliations VARCHAR,
+    title VARCHAR,
+    dept_code VARCHAR
+)
+ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
+WITH SERDEPROPERTIES ('paths'='ldap_uid, csid, first_name, last_name, campus_email, email, affiliations, title, dept_code')
+LOCATION '{loch_s3_calnet_data_path}/instructors';

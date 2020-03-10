@@ -38,7 +38,7 @@ UNLOAD (
         ) AS submissions_turned_in
     FROM {redshift_schema_boac}.assignment_submissions_scores ac1
     JOIN {redshift_schema_boac}.assignment_submissions_scores ac2
-        ON ac1.uid IN (SELECT ldap_uid FROM {redshift_schema_calnet}.persons)
+        ON ac1.uid IN (SELECT ldap_uid FROM {redshift_schema_calnet}.advisees)
         AND ac1.term_name = \'{term_name}\'
         AND ac1.assignment_id = ac2.assignment_id
         AND ac1.course_id = ac2.course_id

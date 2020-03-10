@@ -93,7 +93,8 @@ class Client:
                     all_out += expired_users
                     for p in expired_users:
                         ids_not_found.remove(p[id_key_in_ldap_result])
-                    self.app.logger.warn(f'Did not find: {ids_not_found}')
+                    if ids_not_found:
+                        self.app.logger.warn(f'Did not find: {ids_not_found}')
         return all_out
 
     @classmethod
