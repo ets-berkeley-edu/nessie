@@ -164,6 +164,22 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_status
 DISTKEY (units)
 INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index_hist_enr
+(
+    sid VARCHAR NOT NULL,
+    uid VARCHAR NOT NULL,
+    first_name VARCHAR,
+    last_name VARCHAR,
+    level VARCHAR(3),
+    gpa DECIMAL(5,3),
+    units DECIMAL (6,3),
+    transfer BOOLEAN,
+    expected_grad_term VARCHAR(4),
+    terms_in_attendance INT
+)
+DISTKEY (units)
+INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_holds
 (
     sid VARCHAR NOT NULL,

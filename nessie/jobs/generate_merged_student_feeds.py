@@ -265,6 +265,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             and self._refresh_rds_profiles(transaction)
             and self._index_rds_email_address(transaction)
             and self._index_rds_entering_term(transaction)
+            and self._index_rds_academic_career_status(transaction)
             and refresh_rds_demographics(self.rds_schema, self.rds_dblink_to_redshift, self.redshift_schema, transaction)
         ):
             return False
@@ -334,6 +335,14 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             FROM {self.rds_schema}.student_profiles p
             WHERE p.sid = sas.sid
             AND p.profile::json->'sisProfile'->>'matriculation' IS NOT NULL;""",
+        )
+
+    def _index_rds_academic_career_status(self, transaction):
+        return transaction.execute(
+            f"""UPDATE {self.rds_schema}.student_academic_status sas
+            SET academic_career_status = lower(p.profile::json->'sisProfile'->>'academicCareerStatus')
+            FROM {self.rds_schema}.student_profiles p
+            WHERE sas.sid = p.sid;""",
         )
 
     def _refresh_rds_holds(self, transaction):
