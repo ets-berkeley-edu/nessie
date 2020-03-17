@@ -67,7 +67,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         enrollment_count = self.generate_student_enrollments_table(non_advisee_sids)
 
         if profile_count and enrollment_count:
-            resolved_ddl_rds = resolve_sql_template('update_rds_indexes_hist_enr.template.sql')
+            resolved_ddl_rds = resolve_sql_template('update_rds_indexes_student_profiles_hist_enr.template.sql')
             if rds.execute(resolved_ddl_rds):
                 app.logger.info('RDS indexes updated.')
             else:
