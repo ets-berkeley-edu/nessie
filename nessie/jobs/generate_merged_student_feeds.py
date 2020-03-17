@@ -146,11 +146,12 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'student_holds': [],
             'demographics': [],
             'ethnicities': [],
+            'intended_majors': [],
             'visas': [],
         }
         tables = [
             'student_profiles', 'student_academic_status', 'student_majors', 'student_holds',
-            'demographics', 'ethnicities', 'visas',
+            'demographics', 'ethnicities', 'intended_majors', 'visas',
         ]
         for table in tables:
             student_schema.truncate_staging_table(table)
@@ -236,6 +237,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                     rows['student_majors'].append(encoded_tsv_row([sid, plan.get('program', None), plan.get('description', None)]))
             for hold in sis_profile.get('holds', []):
                 rows['student_holds'].append(encoded_tsv_row([sid, json.dumps(hold)]))
+            for intended_major in sis_profile.get('intendedMajors', []):
+                rows['intended_majors'].append(encoded_tsv_row([sid, intended_major.get('description', None)]))
 
         return merged_profile
 
@@ -272,6 +275,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             and self._refresh_rds_majors(transaction)
             and self._delete_rds_rows('student_profiles', sids, transaction)
             and self._refresh_rds_profiles(transaction)
+            and self._delete_rds_rows('intended_majors', sids, transaction)
+            and self._refresh_rds_intended_majors(transaction)
             and self._index_rds_email_address(transaction)
             and self._index_rds_entering_term(transaction)
             and self._index_rds_academic_career_status(transaction)
@@ -409,6 +414,20 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             AS redshift_profiles (
                 sid VARCHAR,
                 profile TEXT
+            ));""",
+        )
+
+    def _refresh_rds_intended_majors(self, transaction):
+        return transaction.execute(
+            f"""INSERT INTO {self.rds_schema}.intended_majors (
+            SELECT DISTINCT *
+                FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
+                    SELECT sid, major
+                    FROM {self.redshift_schema}.intended_majors
+              $REDSHIFT$)
+            AS redshift_intended_majors (
+                sid VARCHAR,
+                major VARCHAR
             ));""",
         )
 
