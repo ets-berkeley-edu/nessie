@@ -95,6 +95,27 @@ UPDATE {rds_schema_student}.student_profile_index spidx
   WHERE spidx.sid = p.sid
   AND spidx.hist_enr IS TRUE;
 
+DELETE FROM {rds_schema_student}.student_degrees WHERE hist_enr IS TRUE;
+
+INSERT INTO {rds_schema_student}.student_degrees
+SELECT sid, plan, date_awarded,
+CASE substr(date_awarded, 6, 2)
+  WHEN '05' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '2'
+  WHEN '08' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '5'
+  WHEN '12' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '8'
+  END AS term_id,
+  TRUE AS hist_enr
+FROM (
+  SELECT
+    sid,
+    p.profile::json->'sisProfile'->'degree'->>'dateAwarded' AS date_awarded,
+    plans.*
+  FROM
+    {rds_schema_student}.student_profiles_hist_enr p,
+    json_to_recordset(p.profile::json->'sisProfile'->'degree'->'plans') AS plans(plan varchar)
+) degrees
+ON CONFLICT (sid, plan) DO NOTHING;
+
 DROP TABLE IF EXISTS {rds_schema_student}.student_enrollment_terms_hist_enr CASCADE;
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_enrollment_terms_hist_enr
 (
