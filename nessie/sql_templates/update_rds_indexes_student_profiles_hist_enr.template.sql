@@ -44,34 +44,39 @@ INSERT INTO {rds_schema_student}.student_profiles_hist_enr (
   )
 );
 
-TRUNCATE TABLE {rds_schema_student}.student_profile_index_hist_enr;
+DELETE FROM {rds_schema_student}.student_profile_index WHERE hist_enr IS TRUE;
 
-INSERT INTO {rds_schema_student}.student_profile_index_hist_enr (
+INSERT INTO {rds_schema_student}.student_profile_index
+  (sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance,
+   hist_enr)
+SELECT
+  sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance,
+  TRUE
+FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
   SELECT *
-  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT *
-    FROM {redshift_schema_student}.student_profile_index_hist_enr
-  $REDSHIFT$)
-  AS redshift_profile_index (
-    sid VARCHAR,
-    uid VARCHAR,
-    first_name VARCHAR,
-    last_name VARCHAR,
-    level VARCHAR,
-    gpa NUMERIC,
-    units NUMERIC,
-    transfer BOOLEAN,
-    expected_grad_term VARCHAR,
-    terms_in_attendance INT
-  )
-);
+  FROM {redshift_schema_student}.student_profile_index_hist_enr
+$REDSHIFT$)
+AS redshift_profile_index_hist_enr (
+  sid VARCHAR,
+  uid VARCHAR,
+  first_name VARCHAR,
+  last_name VARCHAR,
+  level VARCHAR,
+  gpa NUMERIC,
+  units NUMERIC,
+  transfer BOOLEAN,
+  expected_grad_term VARCHAR,
+  terms_in_attendance INT
+)
+ON CONFLICT (sid) DO NOTHING;
 
-UPDATE {rds_schema_student}.student_profile_index_hist_enr spidx
+UPDATE {rds_schema_student}.student_profile_index spidx
   SET email_address = lower(p.profile::json->'sisProfile'->>'emailAddress')
   FROM {rds_schema_student}.student_profiles_hist_enr p
-  WHERE spidx.sid = p.sid;
+  WHERE spidx.sid = p.sid
+  AND spidx.hist_enr IS TRUE;
 
-UPDATE {rds_schema_student}.student_profile_index_hist_enr spidx
+UPDATE {rds_schema_student}.student_profile_index spidx
   SET entering_term =
   substr(split_part(p.profile::json->'sisProfile'->>'matriculation', ' ', 2), 1, 1)
   ||
@@ -81,12 +86,14 @@ UPDATE {rds_schema_student}.student_profile_index_hist_enr spidx
   WHEN 'Winter' THEN 0 WHEN 'Spring' THEN 2 WHEN 'Summer' THEN 5 WHEN 'Fall' THEN 8 END
   FROM {rds_schema_student}.student_profiles_hist_enr p
   WHERE p.sid = spidx.sid
-  AND p.profile::json->'sisProfile'->>'matriculation' IS NOT NULL;
+  AND p.profile::json->'sisProfile'->>'matriculation' IS NOT NULL
+  AND spidx.hist_enr IS TRUE;
 
-UPDATE {rds_schema_student}.student_profile_index_hist_enr spidx
+UPDATE {rds_schema_student}.student_profile_index spidx
   SET academic_career_status = lower(p.profile::json->'sisProfile'->>'academicCareerStatus')
   FROM {rds_schema_student}.student_profiles_hist_enr p
-  WHERE spidx.sid = p.sid;
+  WHERE spidx.sid = p.sid
+  AND spidx.hist_enr IS TRUE;
 
 DROP TABLE IF EXISTS {rds_schema_student}.student_enrollment_terms_hist_enr CASCADE;
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_enrollment_terms_hist_enr

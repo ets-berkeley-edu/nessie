@@ -35,7 +35,7 @@ from nessie.jobs.generate_merged_enrollment_term import GenerateMergedEnrollment
 from nessie.lib.berkeley import current_term_id, future_term_id, future_term_ids, legacy_term_ids, reverse_term_ids
 from nessie.lib.metadata import get_merged_enrollment_term_job_status, queue_merged_enrollment_term_jobs
 from nessie.lib.queries import get_advisee_advisor_mappings, get_advisee_student_profile_elements
-from nessie.lib.util import encoded_tsv_row
+from nessie.lib.util import encoded_tsv_row, resolve_sql_template
 from nessie.merged.sis_profile import parse_merged_sis_profile
 from nessie.merged.sis_profile_v1 import parse_merged_sis_profile_v1
 from nessie.merged.student_demographics import add_demographics_rows, refresh_rds_demographics
@@ -98,13 +98,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             raise BackgroundJobError('Failed to queue enrollment term jobs.')
 
         student_schema.refresh_all_from_staging(profile_tables)
-        with rds.transaction() as transaction:
-            if self.refresh_rds_indexes(None, transaction):
-                transaction.commit()
-                app.logger.info('Refreshed RDS indexes.')
-            else:
-                transaction.rollback()
-                raise BackgroundJobError('Failed to refresh RDS indexes.')
+        self.update_rds_profile_indexes()
 
         app.logger.info('Profile generation complete; waiting for enrollment term generation to finish.')
 
@@ -250,6 +244,21 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         for sid, rows in groupby(get_advisee_advisor_mappings(), operator.itemgetter('student_sid')):
             advisors_by_student_id[sid] = list(rows)
         return advisors_by_student_id
+
+    def update_rds_profile_indexes(self):
+        with rds.transaction() as transaction:
+            if self.refresh_rds_indexes(None, transaction):
+                transaction.commit()
+                app.logger.info('Refreshed RDS indexes.')
+            else:
+                transaction.rollback()
+                raise BackgroundJobError('Failed to refresh RDS indexes.')
+
+        resolved_ddl_rds = resolve_sql_template('update_rds_indexes_student_profiles.template.sql')
+        if rds.execute(resolved_ddl_rds):
+            app.logger.info('RDS student profile indexes updated.')
+        else:
+            raise BackgroundJobError('Failed to update RDS student profile indexes.')
 
     def refresh_rds_indexes(self, sids, transaction):
         if not (
