@@ -79,15 +79,16 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
 
     def generate_student_profile_table(self, non_advisee_sids):
         profile_count = 0
-        with tempfile.TemporaryFile() as feed_file, tempfile.TemporaryFile() as names_file:
+        with tempfile.TemporaryFile() as feed_file, tempfile.TemporaryFile() as index_file, tempfile.TemporaryFile() as names_file:
             tables = {
                 'student_profiles_hist_enr': feed_file,
+                'student_profile_index_hist_enr': index_file,
                 'student_names_hist_enr': names_file,
             }
             # Work in batches so as not to overload memory.
             for i in range(0, len(non_advisee_sids), BATCH_QUERY_MAXIMUM):
                 sids = non_advisee_sids[i:i + BATCH_QUERY_MAXIMUM]
-                profile_count += self.collect_merged_profiles(sids, feed_file, names_file)
+                profile_count += self.collect_merged_profiles(sids, feed_file, index_file, names_file)
             if profile_count:
                 for table_name, data in tables.items():
                     student_schema.truncate_staging_table(table_name)
@@ -96,7 +97,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         app.logger.info('Non-advisee profile generation complete.')
         return profile_count
 
-    def collect_merged_profiles(self, sids, feed_file, names_file):
+    def collect_merged_profiles(self, sids, feed_file, index_file, names_file):
         successes = []
         sis_profile_feeds = queries.get_non_advisee_api_feeds(sids)
         for row in sis_profile_feeds:
@@ -114,6 +115,19 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
             }
             self.fill_names_from_sis_profile(sis_api_feed, merged_profile)
             feed_file.write(encoded_tsv_row([sid, uid, json.dumps(merged_profile)]) + b'\n')
+
+            first_name = merged_profile.get('firstName', '')
+            last_name = merged_profile.get('lastName', '')
+            level = str(sis_profile.get('level', {}).get('code') or '')
+            gpa = str(sis_profile.get('cumulativeGPA') or '')
+            units = str(sis_profile.get('cumulativeUnits') or '')
+            transfer = str(sis_profile.get('transfer') or False)
+            expected_grad_term = str(sis_profile.get('expectedGraduationTerm', {}).get('id') or '')
+            terms_in_attendance = str(sis_profile.get('termsInAttendance', {}) or '')
+            index_file.write(
+                encoded_tsv_row([sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance]) + b'\n',
+            )
+
             names_file.write(
                 encoded_tsv_row([
                     sid,

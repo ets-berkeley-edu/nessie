@@ -93,8 +93,8 @@ class ImportSisStudentApiHistEnr(BackgroundJob):
                 feeds = result['feeds']
                 if feeds:
                     for feed in feeds:
-                        sid = next(id['id'] for id in feed['identifiers'] if id['type'] == 'student-id')
-                        uid = next(id['id'] for id in feed['identifiers'] if id['type'] == 'campus-uid')
+                        sid = next(_id['id'] for _id in feed['identifiers'] if _id['type'] == 'student-id')
+                        uid = next(_id['id'] for _id in feed['identifiers'] if _id['type'] == 'campus-uid')
                         feed_file.write(encoded_tsv_row([sid, uid, json.dumps(feed)]) + b'\n')
                         remaining_sids.discard(sid)
                         saved_sids.append(sid)
