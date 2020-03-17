@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles_hist_enr
 DISTKEY (sid)
 SORTKEY (sid);
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_status
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index
 (
     sid VARCHAR NOT NULL,
     uid VARCHAR NOT NULL,
