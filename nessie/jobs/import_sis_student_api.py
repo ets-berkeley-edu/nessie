@@ -115,7 +115,7 @@ class ImportSisStudentApi(BackgroundJob):
                 feeds = result['feeds']
                 if feeds:
                     for feed in feeds:
-                        sid = next(id['id'] for id in feed['identifiers'] if id['type'] == 'student-id')
+                        sid = next(_id['id'] for _id in feed['identifiers'] if _id['type'] == 'student-id')
                         remaining_sids.discard(sid)
                         rows.append(encoded_tsv_row([sid, json.dumps(feed)]))
                 if remaining_sids:
