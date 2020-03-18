@@ -33,7 +33,7 @@ SELECT
   FALSE
 FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
   SELECT *
-  FROM {redshift_schema_student}.student_academic_status
+  FROM {redshift_schema_student}.student_profile_index
 $REDSHIFT$)
 AS redshift_profile_index (
   sid VARCHAR,

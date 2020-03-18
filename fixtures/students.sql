@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_profiles_v1
     feed TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_status
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index
 (
     sid VARCHAR NOT NULL,
     uid VARCHAR NOT NULL,
@@ -111,7 +111,10 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_status
     last_name VARCHAR NOT NULL,
     level VARCHAR(2),
     gpa DECIMAL(5,3),
-    units DECIMAL (6,3)
+    units DECIMAL (6,3),
+    transfer BOOLEAN,
+    expected_grad_term VARCHAR(4),
+    terms_in_attendance INT
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index_hist_enr
@@ -201,7 +204,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.sis_api_profiles_v1
     feed TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_academic_status
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_profile_index
 (
     sid VARCHAR NOT NULL,
     uid VARCHAR NOT NULL,
@@ -220,7 +223,10 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_profile_ind
     last_name VARCHAR NOT NULL,
     level VARCHAR(3),
     gpa DECIMAL(5,3),
-    units DECIMAL (6,3)
+    units DECIMAL (6,3),
+    transfer BOOLEAN,
+    expected_grad_term VARCHAR(4),
+    terms_in_attendance INT
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_api_demographics

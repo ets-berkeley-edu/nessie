@@ -261,7 +261,7 @@ def get_enrolled_canvas_sites_for_term(term_id):
               JOIN {intermediate_schema()}.course_sections cs
                 ON cs.canvas_course_id = enr.canvas_course_id
                 AND cs.canvas_course_term = '{term_name_for_sis_id(term_id)}'
-                AND enr.uid IN (SELECT uid FROM {student_schema()}.student_academic_status)
+                AND enr.uid IN (SELECT uid FROM {student_schema()}.student_profile_index)
               ORDER BY canvas_course_id
         """
     return redshift.fetch(sql)
@@ -284,7 +284,7 @@ def get_enrolled_primary_sections(term_id=None):
                 {term_clause}
                 AND sec.is_primary = TRUE
                 AND enr.sis_section_id = sec.sis_section_id
-                AND enr.ldap_uid IN (SELECT uid FROM {student_schema()}.student_academic_status)
+                AND enr.ldap_uid IN (SELECT uid FROM {student_schema()}.student_profile_index)
               GROUP BY
                 sec.sis_term_id, sec.sis_section_id, sec.sis_course_name,
                 sec.sis_course_title, sec.sis_instruction_format, sec.sis_section_num

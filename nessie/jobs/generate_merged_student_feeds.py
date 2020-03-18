@@ -141,7 +141,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         # TODO: store in Redis or filesystem to free up memory
         rows = {
             'student_profiles': [],
-            'student_academic_status': [],
+            'student_profile_index': [],
             'student_majors': [],
             'student_holds': [],
             'demographics': [],
@@ -150,7 +150,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'visas': [],
         }
         tables = [
-            'student_profiles', 'student_academic_status', 'student_majors', 'student_holds',
+            'student_profiles', 'student_profile_index', 'student_majors', 'student_holds',
             'demographics', 'ethnicities', 'intended_majors', 'visas',
         ]
         for table in tables:
@@ -228,7 +228,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             expected_grad_term = str(sis_profile.get('expectedGraduationTerm', {}).get('id') or '')
             terms_in_attendance = str(sis_profile.get('termsInAttendance', {}) or '')
 
-            rows['student_academic_status'].append(
+            rows['student_profile_index'].append(
                 encoded_tsv_row([sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance]),
             )
 
@@ -279,7 +279,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             and self._refresh_rds_intended_majors(transaction)
             and self._index_rds_email_address(transaction)
             and self._index_rds_entering_term(transaction)
-            and self._index_rds_academic_career_status(transaction)
             and refresh_rds_demographics(self.rds_schema, self.rds_dblink_to_redshift, self.redshift_schema, transaction)
         ):
             return False
@@ -311,9 +310,9 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             SELECT *
             FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                 SELECT DISTINCT sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance
-                FROM {self.redshift_schema}.student_academic_status
+                FROM {self.redshift_schema}.student_profile_index
               $REDSHIFT$)
-            AS redshift_academic_status (
+            AS redshift_profile_index (
                 sid VARCHAR,
                 uid VARCHAR,
                 first_name VARCHAR,
@@ -349,14 +348,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             FROM {self.rds_schema}.student_profiles p
             WHERE p.sid = sas.sid
             AND p.profile::json->'sisProfile'->>'matriculation' IS NOT NULL;""",
-        )
-
-    def _index_rds_academic_career_status(self, transaction):
-        return transaction.execute(
-            f"""UPDATE {self.rds_schema}.student_academic_status sas
-            SET academic_career_status = lower(p.profile::json->'sisProfile'->>'academicCareerStatus')
-            FROM {self.rds_schema}.student_profiles p
-            WHERE sas.sid = p.sid;""",
         )
 
     def _refresh_rds_holds(self, transaction):
