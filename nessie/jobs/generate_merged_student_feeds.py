@@ -196,6 +196,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         for a in advisors:
             advisor_feed.append({
                 'uid': a['advisor_uid'],
+                'sid': a['advisor_sid'],
                 'firstName': a['advisor_first_name'],
                 'lastName': a['advisor_last_name'],
                 'email': (a['advisor_campus_email'] or a['advisor_email']),
