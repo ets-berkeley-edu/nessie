@@ -103,6 +103,7 @@ def get_advisee_advisor_mappings():
             advs.advisor_type AS advisor_role,
             advs.academic_program AS program,
             advs.academic_plan AS plan,
+            advs.advisor_sid,
             aa.ldap_uid AS advisor_uid,
             aa.first_name AS advisor_first_name,
             aa.last_name AS advisor_last_name,
@@ -111,7 +112,7 @@ def get_advisee_advisor_mappings():
         FROM {calnet_schema()}.advisees ldap
         JOIN {advisor_schema_internal()}.advisor_students advs
           ON ldap.sid = advs.student_sid
-        JOIN {advisor_schema_internal()}.advisor_attributes aa
+        LEFT JOIN {advisor_schema_internal()}.advisor_attributes aa
           ON advs.advisor_sid = aa.csid
         ORDER BY advs.student_sid, advs.advisor_type, advs.academic_plan, aa.first_name, aa.last_name
         """
