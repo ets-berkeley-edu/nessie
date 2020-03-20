@@ -222,6 +222,14 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.intended_majors
 DISTKEY (sid)
 SORTKEY (sid, major);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.minors
+(
+    sid VARCHAR NOT NULL,
+    minor VARCHAR NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid, minor);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.visas
 (
     sid VARCHAR NOT NULL,

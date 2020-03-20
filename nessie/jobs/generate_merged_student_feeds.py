@@ -147,11 +147,12 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'demographics': [],
             'ethnicities': [],
             'intended_majors': [],
+            'minors': [],
             'visas': [],
         }
         tables = [
             'student_profiles', 'student_profile_index', 'student_majors', 'student_holds',
-            'demographics', 'ethnicities', 'intended_majors', 'visas',
+            'demographics', 'ethnicities', 'intended_majors', 'minors', 'visas',
         ]
         for table in tables:
             student_schema.truncate_staging_table(table)
@@ -240,6 +241,9 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 rows['student_holds'].append(encoded_tsv_row([sid, json.dumps(hold)]))
             for intended_major in sis_profile.get('intendedMajors', []):
                 rows['intended_majors'].append(encoded_tsv_row([sid, intended_major.get('description', None)]))
+            for plan in sis_profile.get('plansMinor', []):
+                if plan.get('status') == 'Active':
+                    rows['minors'].append(encoded_tsv_row([sid, plan.get('description', None)]))
 
         return merged_profile
 
@@ -278,6 +282,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             and self._refresh_rds_profiles(transaction)
             and self._delete_rds_rows('intended_majors', sids, transaction)
             and self._refresh_rds_intended_majors(transaction)
+            and self._delete_rds_rows('minors', sids, transaction)
+            and self._refresh_rds_minors(transaction)
             and self._index_rds_email_address(transaction)
             and self._index_rds_entering_term(transaction)
             and refresh_rds_demographics(self.rds_schema, self.rds_dblink_to_redshift, self.redshift_schema, transaction)
@@ -420,6 +426,20 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             AS redshift_intended_majors (
                 sid VARCHAR,
                 major VARCHAR
+            ));""",
+        )
+
+    def _refresh_rds_minors(self, transaction):
+        return transaction.execute(
+            f"""INSERT INTO {self.rds_schema}.minors (
+            SELECT DISTINCT *
+                FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
+                    SELECT sid, minor
+                    FROM {self.redshift_schema}.minors
+              $REDSHIFT$)
+            AS redshift_minors (
+                sid VARCHAR,
+                minor VARCHAR
             ));""",
         )
 
