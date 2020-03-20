@@ -234,6 +234,16 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.intended_majors
 CREATE INDEX IF NOT EXISTS student_intended_majors_sid_idx ON {rds_schema_student}.intended_majors (sid);
 CREATE INDEX IF NOT EXISTS student_intended_majors_major_idx ON {rds_schema_student}.intended_majors (major);
 
+CREATE TABLE IF NOT EXISTS {rds_schema_student}.minors
+(
+    sid VARCHAR NOT NULL,
+    minor VARCHAR NOT NULL,
+    PRIMARY KEY (sid, minor)
+);
+
+CREATE INDEX IF NOT EXISTS student_minors_sid_idx ON {rds_schema_student}.minors (sid);
+CREATE INDEX IF NOT EXISTS student_minors_minor_idx ON {rds_schema_student}.minors (minor);
+
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.visas
 (
     sid VARCHAR NOT NULL,
