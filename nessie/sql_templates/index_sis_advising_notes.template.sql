@@ -223,4 +223,18 @@ CREATE INDEX idx_advising_appointments_ft_search
 ON {rds_schema_sis_advising_notes}.advising_appointments_search_index
 USING gin(fts_index);
 
+DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_appointment_advisors CASCADE;
+
+CREATE TABLE {rds_schema_sis_advising_notes}.advising_appointment_advisors
+(
+    uid VARCHAR NOT NULL,
+    sid VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    last_name VARCHAR NOT NULL,
+    PRIMARY KEY (uid)
+);
+
+CREATE INDEX IF NOT EXISTS advising_appointment_advisors_sid_idx
+ON {rds_schema_sis_advising_notes}.advising_appointment_advisors (sid);
+
 COMMIT TRANSACTION;
