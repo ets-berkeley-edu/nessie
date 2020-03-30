@@ -307,6 +307,7 @@ def earliest_legacy_term_id():
 def translate_grading_basis(code):
     bases = {
         'CNC': 'C/NC',
+        'DPN': 'DPN',
         'EPN': 'EPN',
         'ESU': 'ESU',
         'GRD': 'Letter',
