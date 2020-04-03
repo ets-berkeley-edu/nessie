@@ -217,8 +217,9 @@ REDSHIFT_IAM_ROLE = 'iam role'
 RDS_APP_BOA_USER = 'boa rds username'
 REDSHIFT_APP_BOA_USER = 'boa redshift username'
 
-# Redshift-side readonly role for dblink user mapping
+# Redshift-side readonly roles for dblink user mapping
 REDSHIFT_DBLINK_GROUP = 'nessie_dblink_group'
+REDSHIFT_DBLINK_GROUP_DIABLO = 'diablo_dblink_group'
 
 # The following internal schemas are consistent across environments and do not need to be overridden locally.
 REDSHIFT_SCHEMA_ADVISEE = 'boac_advisee'
