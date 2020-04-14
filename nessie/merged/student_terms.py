@@ -101,7 +101,7 @@ def merge_term_gpas(student_enrollments_map, all_gpas=None):
         for term_gpa_row in term_gpa_rows:
             sid = term_gpa_row['sid']
             student_term = student_enrollments_map.get(term_id, {}).get(sid)
-            if student_term:
+            if student_term and student_term.get('enrolledUnits'):
                 student_term['termGpa'] = {
                     'gpa': float(term_gpa_row['gpa']),
                     'unitsTakenForGpa': float(term_gpa_row['units_taken_for_gpa']),
