@@ -53,7 +53,6 @@ INSERT INTO {rds_schema_sis_advising_notes}.advising_notes (
     SELECT id, sid, student_note_nr, advisor_sid, appointment_id, note_category, note_subcategory, note_body,
            created_by, updated_by, created_at, updated_at
     FROM {redshift_schema_sis_advising_notes_internal}.advising_notes
-    WHERE note_category <> 'Appointment Type'
     ORDER BY updated_at DESC
   $REDSHIFT$)
   AS redshift_notes (
@@ -140,55 +139,6 @@ CREATE INDEX idx_sis_advising_note_topics_note_id ON {rds_schema_sis_advising_no
 CREATE INDEX idx_sis_advising_note_topics_sid ON {rds_schema_sis_advising_notes}.advising_note_topics(sid);
 CREATE INDEX idx_sis_advising_note_topics_topic ON {rds_schema_sis_advising_notes}.advising_note_topics(note_topic);
 
-DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_appointments CASCADE;
-
-CREATE TABLE {rds_schema_sis_advising_notes}.advising_appointments (
-  id VARCHAR NOT NULL,
-  sid VARCHAR NOT NULL,
-  student_note_nr INTEGER NOT NULL,
-  advisor_sid VARCHAR NOT NULL,
-  appointment_id VARCHAR,
-  note_category VARCHAR,
-  note_subcategory VARCHAR,
-  note_body TEXT,
-  created_by VARCHAR,
-  updated_by VARCHAR,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  PRIMARY KEY (id)
-);
-
-INSERT INTO {rds_schema_sis_advising_notes}.advising_appointments (
-  SELECT *
-  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT id, sid, student_note_nr, advisor_sid, appointment_id, note_category, note_subcategory, note_body,
-           created_by, updated_by, created_at, updated_at
-    FROM {redshift_schema_sis_advising_notes_internal}.advising_notes
-    WHERE note_category = 'Appointment Type'
-    ORDER BY updated_at DESC
-  $REDSHIFT$)
-  AS redshift_appointments (
-    id VARCHAR,
-    sid VARCHAR,
-    student_note_nr INTEGER,
-    advisor_sid VARCHAR,
-    appointment_id VARCHAR,
-    note_category VARCHAR,
-    note_subcategory VARCHAR,
-    note_body TEXT,
-    created_by VARCHAR,
-    updated_by VARCHAR,
-    created_at TIMESTAMP WITH TIME ZONE,
-    updated_at TIMESTAMP WITH TIME ZONE
-  )
-);
-
-CREATE INDEX idx_sis_advising_appointments_advisor_sid ON {rds_schema_sis_advising_notes}.advising_appointments(advisor_sid);
-CREATE INDEX idx_sis_advising_appointments_created_at ON {rds_schema_sis_advising_notes}.advising_appointments(created_at);
-CREATE INDEX idx_sis_advising_appointments_created_by ON {rds_schema_sis_advising_notes}.advising_appointments(created_by);
-CREATE INDEX idx_sis_advising_appointments_sid ON {rds_schema_sis_advising_notes}.advising_appointments(sid);
-CREATE INDEX idx_sis_advising_appointments_updated_at ON {rds_schema_sis_advising_notes}.advising_appointments(updated_at);
-
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.advising_notes_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.advising_notes_search_index AS (
@@ -207,34 +157,8 @@ CREATE INDEX idx_advising_notes_ft_search
 ON {rds_schema_sis_advising_notes}.advising_notes_search_index
 USING gin(fts_index);
 
-CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.advising_appointments_search_index AS (
-  SELECT id, to_tsvector(
-    'english',
-    CASE
-      WHEN note_body IS NOT NULL and TRIM(note_body) != '' THEN note_body
-      WHEN note_subcategory IS NOT NULL THEN note_category || ' ' || note_subcategory
-      ELSE note_category
-    END
-  ) AS fts_index
-  FROM {rds_schema_sis_advising_notes}.advising_appointments
-);
-
-CREATE INDEX idx_advising_appointments_ft_search
-ON {rds_schema_sis_advising_notes}.advising_appointments_search_index
-USING gin(fts_index);
-
-DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_appointment_advisors CASCADE;
-
-CREATE TABLE {rds_schema_sis_advising_notes}.advising_appointment_advisors
-(
-    uid VARCHAR NOT NULL,
-    sid VARCHAR NOT NULL,
-    first_name VARCHAR NOT NULL,
-    last_name VARCHAR NOT NULL,
-    PRIMARY KEY (uid)
-);
-
-CREATE INDEX IF NOT EXISTS advising_appointment_advisors_sid_idx
-ON {rds_schema_sis_advising_notes}.advising_appointment_advisors (sid);
+TRUNCATE TABLE {rds_schema_sis_advising_notes}.advising_appointment_advisors;
+TRUNCATE TABLE {rds_schema_sis_advising_notes}.advising_appointment_advisor_names;
+TRUNCATE TABLE {rds_schema_sis_advising_notes}.advising_appointments;
 
 COMMIT TRANSACTION;
