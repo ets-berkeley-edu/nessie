@@ -30,16 +30,19 @@ from nessie.lib.berkeley import current_term_id
 from nessie.lib.queries import get_enrolled_canvas_sites_for_term
 from nessie.lib.util import get_s3_canvas_api_daily_path
 
-"""Logic for Canvas gradebook API import job."""
+"""Logic for Canvas gradebook history API import job."""
 
 
-class ImportCanvasGradebookApi(BackgroundJob):
+class ImportCanvasGradebookHistoryApi(BackgroundJob):
 
     def run(self, term_id=None):
         if not term_id:
             term_id = current_term_id()
-        canvas_course_ids = [row['canvas_course_id'] for row in get_enrolled_canvas_sites_for_term(term_id)]
-        app.logger.info(f'Starting Canvas gradebook API import job for term {term_id}, {len(canvas_course_ids)} course sites...')
+        if app.config['TEST_CANVAS_COURSE_IDS']:
+            canvas_course_ids = app.config['TEST_CANVAS_COURSE_IDS']
+        else:
+            canvas_course_ids = [row['canvas_course_id'] for row in get_enrolled_canvas_sites_for_term(term_id)]
+        app.logger.info(f'Starting Canvas gradebook history API import job for term {term_id}, {len(canvas_course_ids)} course sites...')
 
         rows = []
         success_count = 0
