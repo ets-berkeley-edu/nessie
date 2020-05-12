@@ -43,14 +43,14 @@ rds_schema = app.config['RDS_SCHEMA_UNDERGRADS']
 class CreateUndergradsSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting Undergrads schema creation job...')
+        app.logger.info('Starting Undergrads schema creation job...')
         redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template('create_undergrads_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
-            app.logger.info(f'Undergrads external schema created.')
+            app.logger.info('Undergrads external schema created.')
             verify_external_schema(external_schema, resolved_ddl)
         else:
-            raise BackgroundJobError(f'Undergrads external schema creation failed.')
+            raise BackgroundJobError('Undergrads external schema creation failed.')
         undergrads_rows = redshift.fetch(f'SELECT * FROM {external_schema}.students ORDER by sid')
 
         with rds.transaction() as transaction:

@@ -76,7 +76,7 @@ class TestMigrateSisAdvisingNoteAttachments:
 
                 response = MigrateSisAdvisingNoteAttachments().run()
 
-                assert f'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files/.' in caplog.text
+                assert 'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files/.' in caplog.text
                 assert 'Copied 3 attachments to the destination folder.' in caplog.text
                 assert response == (
                     'SIS advising note attachment migration complete for sis-data/sis-sftp/incremental/advising-notes/attachment-files/.'
@@ -101,11 +101,11 @@ class TestMigrateSisAdvisingNoteAttachments:
 
                 response = MigrateSisAdvisingNoteAttachments().run()
 
-                assert f'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/25.' not in caplog.text
-                assert f'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/26.' in caplog.text
-                assert f'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/27.' in caplog.text
-                assert f'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/28.' in caplog.text
-                assert f'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/29.' not in caplog.text
+                assert 'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/25.' not in caplog.text
+                assert 'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/26.' in caplog.text
+                assert 'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/27.' in caplog.text
+                assert 'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/28.' in caplog.text
+                assert 'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/29.' not in caplog.text
                 assert 'Copied 1 attachments to the destination folder.' in caplog.text
                 assert 'Copied 0 attachments to the destination folder.' in caplog.text
                 assert response == (
@@ -132,7 +132,7 @@ sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/28.'
 
                 response = MigrateSisAdvisingNoteAttachments().run(datestamp=datestamp)
 
-                assert f'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/28.' in caplog.text
+                assert 'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/28.' in caplog.text
                 assert 'Copied 2 attachments to the destination folder.' in caplog.text
                 assert response == (
                     'SIS advising note attachment migration complete for sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/28.'
@@ -155,7 +155,7 @@ sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/28.'
 
                 response = MigrateSisAdvisingNoteAttachments().run(datestamp=datestamp)
 
-                assert f'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files.' in caplog.text
+                assert 'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files.' in caplog.text
                 assert 'Copied 3 attachments to the destination folder.' in caplog.text
                 assert response == (
                     'SIS advising note attachment migration complete for sis-data/sis-sftp/incremental/advising-notes/attachment-files.'
@@ -176,7 +176,7 @@ sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/28.'
 
                 response = MigrateSisAdvisingNoteAttachments().run(datestamp=datestamp)
 
-                assert f'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files/wrong!#$&.' in caplog.text
+                assert 'Will copy files from /sis-data/sis-sftp/incremental/advising-notes/attachment-files/wrong!#$&.' in caplog.text
                 assert 'Copied 0 attachments to the destination folder.' in caplog.text
                 assert response == (
                     'SIS advising note attachment migration complete for sis-data/sis-sftp/incremental/advising-notes/attachment-files/wrong!#$&.'

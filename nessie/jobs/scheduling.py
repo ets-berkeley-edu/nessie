@@ -211,7 +211,7 @@ def start_background_job(job_class, job_id, job_opts={}):
 def start_chained_job(job_components, job_id, job_opts={}):
     from nessie.jobs.background_job import ChainedBackgroundJob
     job_opts['lock_id'] = PG_ADVISORY_LOCK_IDS[job_id]
-    app.logger.info(f'Starting chained background job: ' + ', '.join([c.__name__ for c in job_components]))
+    app.logger.info('Starting chained background job: ' + ', '.join([c.__name__ for c in job_components]))
     with app.app_context():
         initialized_components = [c() for c in job_components]
         ChainedBackgroundJob(steps=initialized_components).run_async(**job_opts)
@@ -246,7 +246,7 @@ def listen_for_merged_enrollment_term_jobs(_app):
     from nessie.jobs.generate_merged_enrollment_term import GenerateMergedEnrollmentTerm
     from nessie.lib.metadata import poll_merged_enrollment_term_job_queue, update_merged_enrollment_term_job_status
     with _app.app_context():
-        _app.logger.info(f'Listening for merged enrollment term jobs.')
+        _app.logger.info('Listening for merged enrollment term jobs.')
         while True:
             sleep(5)
             args = poll_merged_enrollment_term_job_queue()

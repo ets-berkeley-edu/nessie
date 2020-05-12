@@ -37,7 +37,7 @@ from nessie.lib.util import get_s3_canvas_daily_path, resolve_sql_template
 class CreateCanvasSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting Canvas schema creation job...')
+        app.logger.info('Starting Canvas schema creation job...')
 
         canvas_path = get_s3_canvas_daily_path()
         if not s3.get_keys_with_prefix(canvas_path):
@@ -45,7 +45,7 @@ class CreateCanvasSchema(BackgroundJob):
             if not s3.get_keys_with_prefix(canvas_path):
                 raise BackgroundJobError('No timely Canvas data found, aborting')
             else:
-                app.logger.info(f'Falling back to yesterday\'s Canvas data')
+                app.logger.info('Falling back to yesterday\'s Canvas data')
 
         external_schema = app.config['REDSHIFT_SCHEMA_CANVAS']
         s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
@@ -62,4 +62,4 @@ class CreateCanvasSchema(BackgroundJob):
             verify_external_schema(external_schema, resolved_ddl)
             return 'Canvas schema creation job completed.'
         else:
-            raise BackgroundJobError(f'Canvas schema creation job failed.')
+            raise BackgroundJobError('Canvas schema creation job failed.')

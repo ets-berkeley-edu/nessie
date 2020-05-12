@@ -97,10 +97,10 @@ class RefreshCanvasDataCatalog(BackgroundJob):
         redshift.create_external_schema(external_schema, redshift_iam_role)
 
         if redshift.execute_ddl_script(canvas_external_catalog_ddl):
-            app.logger.info(f'Canvas schema creation job completed.')
+            app.logger.info('Canvas schema creation job completed.')
         else:
-            app.logger.error(f'Canvas schema creation job failed.')
-            raise BackgroundJobError(f'Canvas schema creation job failed.')
+            app.logger.error('Canvas schema creation job failed.')
+            raise BackgroundJobError('Canvas schema creation job failed.')
 
         self.verify_external_data_catalog()
         return 'Canvas external schema created and verified.'
@@ -197,5 +197,5 @@ class RefreshCanvasDataCatalog(BackgroundJob):
             if not s3.get_keys_with_prefix(canvas_path):
                 raise BackgroundJobError('No timely Canvas data found, aborting')
             else:
-                app.logger.info(f'Falling back to yesterday\'s Canvas data')
+                app.logger.info('Falling back to yesterday\'s Canvas data')
         return canvas_path

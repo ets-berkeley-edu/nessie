@@ -76,7 +76,7 @@ AMBIGUOUS_GROUP_CODES = [
 class ImportAscAthletes(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'ASC import: Fetch team and student athlete data from ASC API')
+        app.logger.info('ASC import: Fetch team and student athlete data from ASC API')
         api_results = get_asc_feed()
         if 'error' in api_results:
             raise BackgroundJobError('ASC import: Error from external API: {}'.format(api_results['error']))

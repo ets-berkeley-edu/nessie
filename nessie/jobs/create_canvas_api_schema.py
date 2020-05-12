@@ -36,14 +36,14 @@ from nessie.lib.util import get_s3_canvas_api_daily_path, resolve_sql_template
 class CreateCanvasApiSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting Canvas API schema creation job...')
+        app.logger.info('Starting Canvas API schema creation job...')
         canvas_api_path = get_s3_canvas_api_daily_path()
         if not s3.get_keys_with_prefix(canvas_api_path):
             canvas_api_path = get_s3_canvas_api_daily_path(datetime.now() - timedelta(days=1))
             if not s3.get_keys_with_prefix(canvas_api_path):
                 raise BackgroundJobError('No timely Canvas API data found, aborting')
             else:
-                app.logger.info(f'Falling back to yesterday\'s Canvas API data')
+                app.logger.info('Falling back to yesterday\'s Canvas API data')
 
         external_schema = app.config['REDSHIFT_SCHEMA_CANVAS_API']
         s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
@@ -58,4 +58,4 @@ class CreateCanvasApiSchema(BackgroundJob):
             verify_external_schema(external_schema, resolved_ddl)
             return 'Canvas API schema creation job completed.'
         else:
-            raise BackgroundJobError(f'Canvas API schema creation job failed.')
+            raise BackgroundJobError('Canvas API schema creation job failed.')

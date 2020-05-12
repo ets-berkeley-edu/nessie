@@ -46,7 +46,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
     redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
 
     def run(self):
-        app.logger.info(f'Starting merged non-advisee profile generation job.')
+        app.logger.info('Starting merged non-advisee profile generation job.')
 
         app.logger.info('Cleaning up old data...')
         redshift.execute('VACUUM; ANALYZE;')
@@ -55,7 +55,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
 
         # Clean up the workbench.
         redshift.execute('VACUUM; ANALYZE;')
-        app.logger.info(f'Vacuumed and analyzed.')
+        app.logger.info('Vacuumed and analyzed.')
 
         return status
 

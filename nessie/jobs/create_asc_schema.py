@@ -34,11 +34,11 @@ from nessie.lib.util import resolve_sql_template
 class CreateAscSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting ASC schema creation job...')
-        app.logger.info(f'Executing SQL...')
+        app.logger.info('Starting ASC schema creation job...')
+        app.logger.info('Executing SQL...')
         resolved_ddl = resolve_sql_template('create_asc_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
             app.logger.info(f"Schema '{app.config['REDSHIFT_SCHEMA_ASC']}' found or created.")
         else:
-            raise BackgroundJobError(f'ASC schema creation failed.')
+            raise BackgroundJobError('ASC schema creation failed.')
         return True

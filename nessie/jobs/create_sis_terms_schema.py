@@ -40,20 +40,20 @@ rds_schema = app.config['RDS_SCHEMA_SIS_TERMS']
 
 class CreateSisTermsSchema(BackgroundJob):
     def run(self):
-        app.logger.info(f'Starting SIS terms schema creation job...')
+        app.logger.info('Starting SIS terms schema creation job...')
         self.create_schema()
         self.refresh_sis_term_definitions()
         self.refresh_current_term_index()
         return 'SIS terms schema creation job completed.'
 
     def create_schema(self):
-        app.logger.info(f'Executing SQL...')
+        app.logger.info('Executing SQL...')
         redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template('create_sis_terms_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(external_schema, resolved_ddl)
         else:
-            raise BackgroundJobError(f'SIS terms schema creation job failed.')
+            raise BackgroundJobError('SIS terms schema creation job failed.')
 
     def refresh_sis_term_definitions(self):
         rows = redshift.fetch(f'SELECT * FROM {external_schema}.term_definitions')

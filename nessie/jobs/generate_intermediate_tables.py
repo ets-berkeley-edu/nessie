@@ -35,7 +35,7 @@ from nessie.lib.util import resolve_sql_template
 class GenerateIntermediateTables(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting intermediate table generation job...')
+        app.logger.info('Starting intermediate table generation job...')
 
         resolved_ddl_redshift = resolve_sql_template(
             'create_intermediate_schema.template.sql',
@@ -44,7 +44,7 @@ class GenerateIntermediateTables(BackgroundJob):
         if redshift.execute_ddl_script(resolved_ddl_redshift):
             app.logger.info('Redshift tables generated.')
         else:
-            raise BackgroundJobError(f'Intermediate table creation job failed.')
+            raise BackgroundJobError('Intermediate table creation job failed.')
 
         resolved_ddl_rds = resolve_sql_template('update_rds_indexes_sis.template.sql')
         if rds.execute(resolved_ddl_rds):

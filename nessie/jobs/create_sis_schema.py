@@ -42,22 +42,22 @@ rds_schema = app.config['RDS_SCHEMA_SIS_INTERNAL']
 class CreateSisSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting SIS schema creation job...')
+        app.logger.info('Starting SIS schema creation job...')
         if not self.update_manifests():
             app.logger.info('Error updating manifests, will not execute schema creation SQL')
             return False
-        app.logger.info(f'Executing SQL...')
+        app.logger.info('Executing SQL...')
         external_schema = app.config['REDSHIFT_SCHEMA_SIS']
         redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template('create_sis_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(external_schema, resolved_ddl)
         else:
-            raise BackgroundJobError(f'SIS schema creation job failed.')
+            raise BackgroundJobError('SIS schema creation job failed.')
         return 'SIS schema creation job completed.'
 
     def update_manifests(self):
-        app.logger.info(f'Updating manifests...')
+        app.logger.info('Updating manifests...')
 
         # Because the SIS S3 copy is managed by a different application running on a different schedule,
         # it may have been made before midnight by Nessie-time.
@@ -65,9 +65,9 @@ class CreateSisSchema(BackgroundJob):
         if not s3.get_keys_with_prefix(s3_sis_daily):
             s3_sis_daily = get_s3_sis_daily_path(datetime.now() - timedelta(days=1))
             if not s3.get_keys_with_prefix(s3_sis_daily):
-                raise BackgroundJobError(f'No timely SIS S3 data found')
+                raise BackgroundJobError('No timely SIS S3 data found')
             else:
-                app.logger.info(f'Falling back to SIS S3 daily data for yesterday')
+                app.logger.info('Falling back to SIS S3 daily data for yesterday')
 
         courses_daily = s3.get_keys_with_prefix(s3_sis_daily + '/courses', full_objects=True)
         courses_historical = s3.get_keys_with_prefix(app.config['LOCH_S3_SIS_DATA_PATH'] + '/historical/courses', full_objects=True)

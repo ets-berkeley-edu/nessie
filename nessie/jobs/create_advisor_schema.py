@@ -36,8 +36,8 @@ from nessie.lib.util import encoded_tsv_row, get_s3_calnet_daily_path, get_s3_si
 class CreateAdvisorSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting Advisor schema creation job...')
-        app.logger.info(f'Executing SQL...')
+        app.logger.info('Starting Advisor schema creation job...')
+        app.logger.info('Executing SQL...')
         self.create_schema()
         app.logger.info('Redshift schema created.')
         self.import_advisor_attributes()
@@ -66,7 +66,7 @@ class CreateAdvisorSchema(BackgroundJob):
         csids = [r['advisor_sid'] for r in csid_results]
         all_attributes = calnet.client(app).search_csids(csids)
         if len(csids) != len(all_attributes):
-            ldap_csids = [l['csid'] for l in all_attributes]
+            ldap_csids = [person['csid'] for person in all_attributes]
             missing = set(csids) - set(ldap_csids)
             app.logger.warning(f'Looked for {len(csids)} advisor CSIDs but only found {len(all_attributes)} : missing {missing}')
 
@@ -119,9 +119,9 @@ class CreateAdvisorSchema(BackgroundJob):
         if not s3.get_keys_with_prefix(s3_sis_daily):
             s3_sis_daily = get_s3_sis_sysadm_daily_path(datetime.now() - timedelta(days=1))
             if not s3.get_keys_with_prefix(s3_sis_daily):
-                raise BackgroundJobError(f'No timely SIS S3 advisor data found')
+                raise BackgroundJobError('No timely SIS S3 advisor data found')
             else:
-                app.logger.info(f'Falling back to SIS S3 daily advisor data for yesterday')
+                app.logger.info('Falling back to SIS S3 daily advisor data for yesterday')
 
         return '/'.join([
             f"s3://{app.config['LOCH_S3_BUCKET']}",

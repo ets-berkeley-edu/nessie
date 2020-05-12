@@ -41,7 +41,7 @@ class MigrateLrsIncrementals(BackgroundJob):
         self.transient_bucket = app.config['LRS_CANVAS_INCREMENTAL_TRANSIENT_BUCKET']
         self.get_pre_transform_statement_count()
         if not self.pre_transform_statement_count:
-            raise BackgroundJobError(f'Failed to retrieve pre-transform statement count.')
+            raise BackgroundJobError('Failed to retrieve pre-transform statement count.')
 
         self.source_output_path = app.config['LRS_CANVAS_CALIPER_EXPLODE_OUTPUT_PATH']
         if self.source_output_path.endswith('/'):

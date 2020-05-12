@@ -36,8 +36,8 @@ from nessie.lib.util import get_s3_oua_daily_path, resolve_sql_template
 class CreateOUASchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting OUA Slate schema creation job...')
-        app.logger.info(f'Executing SQL...')
+        app.logger.info('Starting OUA Slate schema creation job...')
+        app.logger.info('Executing SQL...')
         self.migrate_oua_sftp_data()
         external_schema = app.config['REDSHIFT_SCHEMA_OUA']
         redshift.drop_external_schema(external_schema)
@@ -45,10 +45,10 @@ class CreateOUASchema(BackgroundJob):
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(external_schema, resolved_ddl)
             self.create_rds_tables_and_indexes()
-            app.logger.info(f'OUA Slate RDS indexes created.')
+            app.logger.info('OUA Slate RDS indexes created.')
             return 'OUA schema creation job completed.'
         else:
-            raise BackgroundJobError(f'OUA Slate schema creation job failed.')
+            raise BackgroundJobError('OUA Slate schema creation job failed.')
 
     def migrate_oua_sftp_data(self):
         s3_protected_bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
@@ -65,7 +65,7 @@ class CreateOUASchema(BackgroundJob):
                     if not s3.copy(s3_protected_bucket, source_key, s3_protected_bucket, destination_key):
                         raise BackgroundJobError(f'Copy from SFTP location {source_key} to daily OUA destination {destination_key} failed.')
         else:
-            raise BackgroundJobError(f'No OUA files found in SFTP location today. Skipping OUA data refresh')
+            raise BackgroundJobError('No OUA files found in SFTP location today. Skipping OUA data refresh')
 
     def create_rds_tables_and_indexes(self):
         resolved_ddl = resolve_sql_template('index_oua_admissions.template.sql')

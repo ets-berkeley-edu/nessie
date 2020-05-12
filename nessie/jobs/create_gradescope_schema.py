@@ -34,8 +34,8 @@ from nessie.lib.util import resolve_sql_template
 class CreateGradescopeSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting Gradescope schema creation job...')
-        app.logger.info(f'Executing SQL...')
+        app.logger.info('Starting Gradescope schema creation job...')
+        app.logger.info('Executing SQL...')
         # Add frequency of ingest and dynamic path creation logic once ingest mechanisms are confirmed
         # For now adding a top level hierarchy to catalog bulk snapshot.
         external_schema = app.config['REDSHIFT_SCHEMA_GRADESCOPE']
@@ -45,4 +45,4 @@ class CreateGradescopeSchema(BackgroundJob):
             verify_external_schema(external_schema, resolved_ddl)
             return 'Gradescope schema creation job completed.'
         else:
-            raise BackgroundJobError(f'Gradescope schema creation job failed.')
+            raise BackgroundJobError('Gradescope schema creation job failed.')

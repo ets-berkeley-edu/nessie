@@ -96,7 +96,7 @@ def update_scheduled_job_args(job_id):
     except Exception as e:
         raise BadRequestError(str(e))
     if not args:
-        raise BadRequestError(f'Could not parse args from request')
+        raise BadRequestError('Could not parse args from request')
     sched = get_scheduler()
     job_id = job_id.upper()
     job = sched.get_job(job_id)
@@ -123,5 +123,5 @@ def reload_job_schedules():
     if not app.config['JOB_SCHEDULING_ENABLED']:
         raise BadRequestError('Job scheduling is not enabled')
     schedule_all_jobs(force=True)
-    app.logger.info(f'Overwrote current jobs schedule with configured values')
+    app.logger.info('Overwrote current jobs schedule with configured values')
     return get_job_schedule()
