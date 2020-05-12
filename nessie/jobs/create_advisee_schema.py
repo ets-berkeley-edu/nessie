@@ -34,11 +34,11 @@ from nessie.lib.util import resolve_sql_template
 class CreateAdviseeSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting Advisee schema creation job...')
-        app.logger.info(f'Executing SQL...')
+        app.logger.info('Starting Advisee schema creation job...')
+        app.logger.info('Executing SQL...')
         resolved_ddl = resolve_sql_template('create_advisee_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
             app.logger.info(f"Schema '{app.config['REDSHIFT_SCHEMA_ADVISEE']}' found or created.")
         else:
-            raise BackgroundJobError(f'Advisee schema creation failed.')
+            raise BackgroundJobError('Advisee schema creation failed.')
         return True

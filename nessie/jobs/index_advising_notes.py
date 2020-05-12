@@ -34,8 +34,8 @@ from nessie.lib.util import resolve_sql_template
 class IndexAdvisingNotes(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting advising note index job...')
-        app.logger.info(f'Executing SQL...')
+        app.logger.info('Starting advising note index job...')
+        app.logger.info('Executing SQL...')
         self.create_advising_note_authors()
         self.import_note_authors()
         self.index_advising_notes()

@@ -76,7 +76,7 @@ class CreateBerkeleyxSchema(BackgroundJob):
                 failure += 1
 
         if failure > 0:
-            raise BackgroundJobError(f'Berkeleyx Schema creation jobs failed')
+            raise BackgroundJobError('Berkeleyx Schema creation jobs failed')
         else:
-            app.logger.info(f'Bekreleyx schema creation jobs completed successfully')
+            app.logger.info('Bekreleyx schema creation jobs completed successfully')
             return True

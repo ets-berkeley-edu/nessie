@@ -42,7 +42,7 @@ class IndexEnrollments(BackgroundJob):
         if not term_id:
             term_id = current_term_id()
         if term_id == 'all':
-            app.logger.info(f'Starting enrollments index job for all terms...')
+            app.logger.info('Starting enrollments index job for all terms...')
         else:
             app.logger.info(f'Starting enrollments index job for term {term_id}...')
 

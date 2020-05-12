@@ -109,7 +109,7 @@ def most_recent_background_job_status(job_id_prefix, status=None):
     sql = f'SELECT * FROM {_rds_schema()}.background_job_status WHERE job_id LIKE %s'
     params = [f'{job_id_prefix}%']
     if status:
-        sql += f' AND status = %s'
+        sql += ' AND status = %s'
         params += [status]
     sql += ' ORDER BY updated_at DESC LIMIT 1'
     result = rds.fetch(

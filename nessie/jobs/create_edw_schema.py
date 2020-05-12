@@ -34,8 +34,8 @@ from nessie.lib.util import resolve_sql_template
 class CreateEdwSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting EDW schema creation job...')
-        app.logger.info(f'Executing SQL...')
+        app.logger.info('Starting EDW schema creation job...')
+        app.logger.info('Executing SQL...')
         external_schema = app.config['REDSHIFT_SCHEMA_EDW']
         redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template('create_edw_schema.template.sql')
@@ -43,4 +43,4 @@ class CreateEdwSchema(BackgroundJob):
             verify_external_schema(external_schema, resolved_ddl)
             return 'EDW schema creation job completed.'
         else:
-            raise BackgroundJobError(f'EDW schema creation job failed.')
+            raise BackgroundJobError('EDW schema creation job failed.')

@@ -44,14 +44,14 @@ def sis_api_profiles(app, student_tables):
     from nessie.jobs.import_sis_student_api import ImportSisStudentApi
     with mock_s3(app):
         ImportSisStudentApi().run_wrapped()
-    sql = f"""SELECT sid, feed FROM student_test.sis_api_profiles"""
+    sql = """SELECT sid, feed FROM student_test.sis_api_profiles"""
     return redshift.fetch(sql)
 
 
 @pytest.fixture()
 def sis_api_degree_progress(app, student_tables):
     from nessie.externals import redshift
-    sql = f"""SELECT sid, feed FROM student_test.sis_api_degree_progress"""
+    sql = """SELECT sid, feed FROM student_test.sis_api_degree_progress"""
     return redshift.fetch(sql)
 
 
@@ -61,7 +61,7 @@ def sis_api_last_registrations(app, metadata_db, student_tables):
     from nessie.jobs.import_registrations import ImportRegistrations
     with mock_s3(app):
         ImportRegistrations().run_wrapped()
-    sql = f"""SELECT sid, feed FROM student_test.student_last_registrations"""
+    sql = """SELECT sid, feed FROM student_test.student_last_registrations"""
     return redshift.fetch(sql)
 
 

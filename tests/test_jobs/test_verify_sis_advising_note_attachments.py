@@ -53,7 +53,7 @@ def set_up_to_succeed(app, caplog):
             m3.Object(bucket, f'{dest_prefix}/23456789/23456789_00003_1.png').put(Body=b'another note attachment')
             m3.Object(bucket, f'{dest_prefix}/34567890/34567890_00014_2.xls').put(Body=b'yet another note attachment')
             yield
-    assert f'No attachments missing on S3 when compared against the view.' in caplog.text
+    assert 'No attachments missing on S3 when compared against the view.' in caplog.text
 
 
 @contextmanager

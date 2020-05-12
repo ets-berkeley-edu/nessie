@@ -32,14 +32,14 @@ import pytest
 @pytest.fixture()
 def sis_api_profiles(app, student_tables):
     from nessie.externals import redshift
-    sql = f"""SELECT sid, feed FROM student_test.sis_api_profiles_v1"""
+    sql = """SELECT sid, feed FROM student_test.sis_api_profiles_v1"""
     return redshift.fetch(sql)
 
 
 @pytest.fixture()
 def sis_api_degree_progress(app, student_tables):
     from nessie.externals import redshift
-    sql = f"""SELECT sid, feed FROM student_test.sis_api_degree_progress"""
+    sql = """SELECT sid, feed FROM student_test.sis_api_degree_progress"""
     return redshift.fetch(sql)
 
 

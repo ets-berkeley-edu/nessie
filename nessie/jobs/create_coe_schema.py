@@ -47,17 +47,17 @@ rds_dblink_to_redshift = app.config['REDSHIFT_DATABASE'] + '_redshift'
 class CreateCoeSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting COE schema creation job...')
+        app.logger.info('Starting COE schema creation job...')
         redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template('create_coe_schema.template.sql')
         # TODO This DDL drops and recreates the internal schema before the external schema is verified. We
         # ought to set up proper staging in conjunction with verification. It's also possible that a persistent
         # external schema isn't needed.
         if redshift.execute_ddl_script(resolved_ddl):
-            app.logger.info(f'COE external schema created.')
+            app.logger.info('COE external schema created.')
             verify_external_schema(external_schema, resolved_ddl)
         else:
-            raise BackgroundJobError(f'COE external schema creation failed.')
+            raise BackgroundJobError('COE external schema creation failed.')
         coe_rows = redshift.fetch(
             'SELECT * FROM {schema}.students ORDER by sid',
             schema=internal_schema_identifier,

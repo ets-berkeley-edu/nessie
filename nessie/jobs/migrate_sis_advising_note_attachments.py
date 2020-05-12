@@ -37,7 +37,7 @@ from nessie.lib.util import get_s3_sis_attachment_current_paths, get_s3_sis_atta
 class MigrateSisAdvisingNoteAttachments(BackgroundJob):
 
     def run(self, datestamp=None):
-        app.logger.info(f'Starting SIS Advising Note attachments migration job...')
+        app.logger.info('Starting SIS Advising Note attachments migration job...')
 
         dest_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH']
 

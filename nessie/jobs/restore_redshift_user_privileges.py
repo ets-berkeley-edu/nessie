@@ -34,12 +34,12 @@ from nessie.lib.util import resolve_sql_template
 class RestoreRedshiftUserPrivileges(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting Redshift user privileges job...')
-        app.logger.info(f'Executing SQL...')
+        app.logger.info('Starting Redshift user privileges job...')
+        app.logger.info('Executing SQL...')
         resolved_ddl = resolve_sql_template('restore_redshift_user_privileges.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
-            app.logger.info(f'Restored Redshift user privileges successfully.')
+            app.logger.info('Restored Redshift user privileges successfully.')
         else:
-            raise BackgroundJobError(f'Redshift user privilege restoration failed.')
+            raise BackgroundJobError('Redshift user privilege restoration failed.')
             return False
         return True

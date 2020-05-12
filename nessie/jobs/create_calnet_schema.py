@@ -34,7 +34,7 @@ from nessie.lib.util import resolve_sql_template
 class CreateCalNetSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting CalNet schema creation job...')
+        app.logger.info('Starting CalNet schema creation job...')
         external_schema = app.config['REDSHIFT_SCHEMA_CALNET']
         redshift.drop_external_schema(external_schema)
         sid_snapshot_path = '/'.join([
@@ -51,4 +51,4 @@ class CreateCalNetSchema(BackgroundJob):
             verify_external_schema(external_schema, resolved_ddl)
             return 'CalNet schema creation job completed.'
         else:
-            raise BackgroundJobError(f'CalNet schema creation job failed.')
+            raise BackgroundJobError('CalNet schema creation job failed.')

@@ -33,7 +33,7 @@ from nessie.lib.util import get_s3_boa_api_daily_path, resolve_sql_template_stri
 class ImportNonCurrentStudents(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting BOA manually added advisees import job...')
+        app.logger.info('Starting BOA manually added advisees import job...')
         feed = get_manually_added_advisees()
 
         if feed.get('error'):

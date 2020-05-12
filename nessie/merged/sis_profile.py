@@ -206,10 +206,10 @@ def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile
         # as it was expected to be at the End-of-Term.
         is_pending = (not total_units.get('unitsTaken')) and total_units.get('unitsEnrolled')
         level_type = 'BOT' if is_pending else 'EOT'
-        for l in levels:
+        for level in levels:
             # For Summer Session visitors, the SIS V2 Students API may return a data-free 'academicLevels' element.
-            if l.get('level') and l.get('type', {}).get('code') == level_type:
-                sis_profile['level'] = l['level']
+            if level.get('level') and level.get('type', {}).get('code') == level_type:
+                sis_profile['level'] = level['level']
                 break
 
     if total_units:

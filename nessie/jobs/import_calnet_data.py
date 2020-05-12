@@ -49,7 +49,7 @@ def _put_advisee_data_to_s3(sids):
     app.logger.info(f'Starting CalNet import job for {len(sids)} advisees...')
     all_attributes = calnet.client(app).search_csids(sids)
     if len(sids) != len(all_attributes):
-        ldap_sids = [l['csid'] for l in all_attributes]
+        ldap_sids = [person['csid'] for person in all_attributes]
         missing = set(sids) - set(ldap_sids)
         app.logger.warning(f'Looked for {len(sids)} advisee SIDs but only found {len(all_attributes)} : missing {missing}')
 
@@ -76,7 +76,7 @@ def _put_instructor_data_to_s3(uids):
     app.logger.info(f'Starting CalNet import job for {len(uids)} instructors...')
     all_attributes = calnet.client(app).search_uids(uids)
     if len(uids) != len(all_attributes):
-        ldap_uids = [l['uid'] for l in all_attributes]
+        ldap_uids = [person['uid'] for person in all_attributes]
         missing = set(uids) - set(ldap_uids)
         app.logger.warning(f'Looked for {len(uids)} instructor UIDs but only found {len(all_attributes)} : missing {missing}')
 

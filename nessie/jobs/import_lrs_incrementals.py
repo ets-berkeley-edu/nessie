@@ -64,7 +64,7 @@ class ImportLrsIncrementals(BackgroundJob):
         if lrs_response:
             self.lrs_statement_count = lrs_response[0][0]
         else:
-            raise BackgroundJobError(f'Failed to retrieve LRS statements for comparison.')
+            raise BackgroundJobError('Failed to retrieve LRS statements for comparison.')
 
         transient_keys = s3.get_keys_with_prefix(self.transient_path, bucket=self.transient_bucket)
         if not transient_keys:

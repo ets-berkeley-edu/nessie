@@ -34,8 +34,8 @@ from nessie.lib.util import resolve_sql_template
 class CreateEIAdvisingNotesSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting E&I Advising Notes schema creation job...')
-        app.logger.info(f'Executing SQL...')
+        app.logger.info('Starting E&I Advising Notes schema creation job...')
+        app.logger.info('Executing SQL...')
         self.create_schema()
         app.logger.info('Redshift schema created. Creating RDS indexes...')
         self.create_indexes()

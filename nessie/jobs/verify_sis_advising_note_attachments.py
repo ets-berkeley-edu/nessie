@@ -38,7 +38,7 @@ class VerifySisAdvisingNoteAttachments(BackgroundJob):
     def run(self, datestamp=None):
         s3_attachment_sync_failures = []
         missing_s3_attachments = []
-        app.logger.info(f'Starting SIS Advising Note attachments validation job...')
+        app.logger.info('Starting SIS Advising Note attachments validation job...')
 
         dest_prefix = app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH']
 
@@ -57,7 +57,7 @@ class VerifySisAdvisingNoteAttachments(BackgroundJob):
             }
             raise BackgroundJobError(f'Attachments verification found missing attachments or sync failures:  {verification_results}.')
         else:
-            return f'Note attachment verification completed successfully. No missing attachments or sync failures found.'
+            return 'Note attachment verification completed successfully. No missing attachments or sync failures found.'
 
     def source_paths(self, datestamp):
         if datestamp:
@@ -114,6 +114,6 @@ class VerifySisAdvisingNoteAttachments(BackgroundJob):
             app.logger.error(f'Attachments missing on S3 when compared against SIS notes views: {len(missing_s3_attachments)} \
              \n {missing_s3_attachments}.')
         else:
-            app.logger.info(f'No attachments missing on S3 when compared against the view.')
+            app.logger.info('No attachments missing on S3 when compared against the view.')
 
         return missing_s3_attachments

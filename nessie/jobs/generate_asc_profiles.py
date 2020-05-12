@@ -46,7 +46,7 @@ rds_dblink_to_redshift = app.config['REDSHIFT_DATABASE'] + '_redshift'
 class GenerateAscProfiles(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting ASC profile generation job...')
+        app.logger.info('Starting ASC profile generation job...')
         asc_rows = redshift.fetch(
             'SELECT * FROM {schema}.students ORDER by sid, UPPER(team_name)',
             schema=asc_schema_identifier,

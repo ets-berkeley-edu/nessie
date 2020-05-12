@@ -55,9 +55,9 @@ class GenerateCanvasCaliperAnalytics(BackgroundJob):
         if not s3.get_keys_with_prefix(s3_caliper_daily_path):
             s3_caliper_daily_path = get_s3_daily_canvas_caliper_explode_path(datetime.now() - timedelta(days=1))
             if not s3.get_keys_with_prefix(s3_caliper_daily_path):
-                raise BackgroundJobError(f'No timely S3 Caliper extracts found')
+                raise BackgroundJobError('No timely S3 Caliper extracts found')
             else:
-                app.logger.info(f'Falling back S3 Caliper extracts for yesterday')
+                app.logger.info('Falling back S3 Caliper extracts for yesterday')
         s3_caliper_daily_url = s3.build_s3_url(s3_caliper_daily_path)
 
         resolved_ddl_caliper_explode = resolve_sql_template(

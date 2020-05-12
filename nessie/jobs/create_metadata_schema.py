@@ -34,14 +34,14 @@ from nessie.lib.util import resolve_sql_template
 class CreateMetadataSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info(f'Starting metadata schema creation job...')
-        app.logger.info(f'Executing SQL...')
+        app.logger.info('Starting metadata schema creation job...')
+        app.logger.info('Executing SQL...')
 
         resolved_ddl_rds = resolve_sql_template('create_metadata_schema_rds.template.sql')
         if rds.execute(resolved_ddl_rds):
             app.logger.info(f"Schema '{app.config['RDS_SCHEMA_METADATA']}' found or created.")
         else:
-            raise BackgroundJobError(f'RDS metadata schema creation failed.')
+            raise BackgroundJobError('RDS metadata schema creation failed.')
             return False
 
         return True

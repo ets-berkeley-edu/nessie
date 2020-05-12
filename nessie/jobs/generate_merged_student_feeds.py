@@ -52,7 +52,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
 
     def run(self, term_id=None):
-        app.logger.info(f'Starting merged profile generation job.')
+        app.logger.info('Starting merged profile generation job.')
 
         # This version of the code will always generate feeds for all-terms and all-advisees, but we
         # expect support for term-specific or backfill-specific feed generation will return soon.
@@ -66,7 +66,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
         # Clean up the workbench.
         redshift.execute('VACUUM; ANALYZE;')
-        app.logger.info(f'Vacuumed and analyzed.')
+        app.logger.info('Vacuumed and analyzed.')
 
         return status
 
@@ -160,7 +160,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         all_student_feed_elements = get_advisee_student_profile_elements()
         all_student_advisor_mappings = self.map_advisors_to_students()
         if not all_student_feed_elements:
-            app.logger.error(f'No profile feeds returned, aborting job.')
+            app.logger.error('No profile feeds returned, aborting job.')
             return False
         count = len(all_student_feed_elements)
         app.logger.info(f'Will generate feeds for {count} students.')

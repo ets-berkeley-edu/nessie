@@ -107,7 +107,7 @@ def get_replication_tasks(identifier=None):
         if response and response.get('ReplicationTasks'):
             return response['ReplicationTasks']
         else:
-            app.logger.error(f'Failed to get DMS replication tasks')
+            app.logger.error('Failed to get DMS replication tasks')
             return None
     except (ClientError, ConnectionError) as e:
         app.logger.error(f'Error retrieving DMS replication tasks (error={e})')
@@ -121,7 +121,7 @@ def list_endpoints():
         if response and response.get('Endpoints'):
             return response['Endpoints']
         else:
-            app.logger.error(f'Failed to get DMS endpoints')
+            app.logger.error('Failed to get DMS endpoints')
             return None
     except (ClientError, ConnectionError) as e:
         app.logger.error(f'Error retrieving DMS endpoints (error={e})')

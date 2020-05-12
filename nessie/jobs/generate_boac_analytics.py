@@ -36,7 +36,7 @@ class GenerateBoacAnalytics(BackgroundJob):
     s3_boa_path = f"s3://{app.config['LOCH_S3_BUCKET']}/" + app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH']
 
     def run(self):
-        app.logger.info(f'Starting BOAC analytics job...')
+        app.logger.info('Starting BOAC analytics job...')
 
         term_id_series = reverse_term_ids()
         boac_snapshot_daily_path = f'{self.s3_boa_path}/term/{term_id_series[0]}/daily/{hashed_datestamp()}'
@@ -48,7 +48,7 @@ class GenerateBoacAnalytics(BackgroundJob):
             previous_term_id=term_id_series[2],
         )
         if not redshift.execute_ddl_script(resolved_ddl):
-            raise BackgroundJobError(f'BOAC analytics creation job failed.')
+            raise BackgroundJobError('BOAC analytics creation job failed.')
 
         boac_assignments_path = f'{self.s3_boa_path}/assignment_submissions_relative'
         for term_id in term_id_series:
