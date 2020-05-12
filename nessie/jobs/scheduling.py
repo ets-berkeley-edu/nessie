@@ -55,6 +55,7 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_GENERATE_CURRENT_TERM_FEEDS': 3500,
     'JOB_LOAD_LRS_INCREMENTALS': 3800,
     'JOB_LOAD_ADVISING_NOTES': 4000,
+    'JOB_IMPORT_CANVAS_API': 5000,
 }
 
 
@@ -80,6 +81,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.chained_import_student_population import ChainedImportStudentPopulation
     from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
     from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
+    from nessie.jobs.create_canvas_api_schema import CreateCanvasApiSchema
     from nessie.jobs.create_e_i_advising_notes_schema import CreateEIAdvisingNotesSchema
     from nessie.jobs.create_oua_schema import CreateOUASchema
     from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
@@ -90,6 +92,8 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.generate_merged_hist_enr_feeds import GenerateMergedHistEnrFeeds
     from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
     from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
+    from nessie.jobs.import_canvas_grade_change_log_api import ImportCanvasGradeChangeLogApi
+    from nessie.jobs.import_canvas_gradebook_history_api import ImportCanvasGradebookHistoryApi
     from nessie.jobs.import_degree_progress import ImportDegreeProgress
     from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
     from nessie.jobs.import_sis_student_api import ImportSisStudentApi
@@ -169,6 +173,16 @@ def schedule_all_jobs(force=False):
             IndexAdvisingNotes,
             MigrateSisAdvisingNoteAttachments,
             VerifySisAdvisingNoteAttachments,
+        ],
+        force,
+    )
+    schedule_chained_job(
+        sched,
+        'JOB_IMPORT_CANVAS_API',
+        [
+            ImportCanvasGradebookHistoryApi,
+            ImportCanvasGradeChangeLogApi,
+            CreateCanvasApiSchema,
         ],
         force,
     )
