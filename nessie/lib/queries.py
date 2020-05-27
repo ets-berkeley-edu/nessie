@@ -129,7 +129,7 @@ def get_advisee_student_profile_elements():
                 demog.feed AS demographics_feed,
                 reg.feed AS last_registration_feed,
                 (
-                  SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(apo.acadplan_descr, ''), ' + ')
+                  SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(apo.acadplan_descr, ''), ' || ')
                   FROM {sis_schema()}.intended_majors im
                   LEFT JOIN {advisor_schema()}.academic_plan_owners apo ON im.plan_code = apo.acadplan_code
                   WHERE im.sid = ldap.sid
