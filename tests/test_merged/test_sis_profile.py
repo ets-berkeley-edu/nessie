@@ -121,10 +121,10 @@ class TestMergedSisProfile:
             sis_api_profiles,
             sis_api_degree_progress,
             sis_api_last_registrations,
-            '252A1U :: Dance & Perf Studies BA',
+            '16A19U :: MatSci Eng + BusAdm MET Pgm UG',
         )
-        assert profile['intendedMajors'][0]['code'] == '252A1U'
-        assert profile['intendedMajors'][0]['description'] == 'Dance & Perf Studies BA'
+        assert profile['intendedMajors'][0]['code'] == '16A19U'
+        assert profile['intendedMajors'][0]['description'] == 'MatSci Eng + BusAdm MET Pgm UG'
 
     def test_multiple_intended_majors_included(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile(
@@ -132,7 +132,7 @@ class TestMergedSisProfile:
             sis_api_profiles,
             sis_api_degree_progress,
             sis_api_last_registrations,
-            '252A1U :: Dance & Perf Studies BA + 25968U :: MCB-Immunology BA',
+            '252A1U :: Dance & Perf Studies BA || 25968U :: MCB-Immunology BA',
         )
         assert profile['intendedMajors'][0]['code'] == '252A1U'
         assert profile['intendedMajors'][0]['description'] == 'Dance & Perf Studies BA'

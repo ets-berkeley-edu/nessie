@@ -209,5 +209,5 @@ def merge_intended_majors(intended_majors_feed, sis_profile):
             {
                 'code': im.split(' :: ')[0],
                 'description': im.split(' :: ')[1],
-            } for im in intended_majors_feed.split(' + ')
+            } for im in intended_majors_feed.split(' || ')
         ]
