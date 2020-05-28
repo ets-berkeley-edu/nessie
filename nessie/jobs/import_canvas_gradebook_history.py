@@ -23,53 +23,72 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import time
+
 from flask import current_app as app
-from nessie.externals import canvas_api, s3
-from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
+from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.berkeley import current_term_id
+from nessie.lib.dispatcher import dispatch
+from nessie.lib.metadata import create_canvas_api_import_status, update_canvas_api_import_status
 from nessie.lib.queries import get_enrolled_canvas_sites_for_term
 from nessie.lib.util import get_s3_canvas_api_daily_path
 
-"""Logic for Canvas grade change log API import job."""
+"""Canvas gradebook history import job."""
 
 
-class ImportCanvasGradeChangeLogApi(BackgroundJob):
+class ImportCanvasGradebookHistory(BackgroundJob):
+
+    @classmethod
+    def generate_job_id(cls):
+        return 'ImportCanvasGradebookHistory_' + str(int(time.time()))
 
     def run(self, term_id=None):
+        job_id = self.generate_job_id()
         if not term_id:
             term_id = current_term_id()
         if app.config['TEST_CANVAS_COURSE_IDS']:
             canvas_course_ids = app.config['TEST_CANVAS_COURSE_IDS']
         else:
             canvas_course_ids = [row['canvas_course_id'] for row in get_enrolled_canvas_sites_for_term(term_id)]
-        app.logger.info(f'Starting Canvas grade change log API import job for term {term_id}, {len(canvas_course_ids)} course sites...')
+        app.logger.info(f'Starting Canvas gradebook history import job {job_id} for term {term_id}, {len(canvas_course_ids)} course sites...')
 
-        rows = []
         success_count = 0
         failure_count = 0
         index = 1
         for course_id in canvas_course_ids:
-            app.logger.info(
-                f'Fetching Canvas grade change log history for course id {course_id}, term {term_id} ({index} of {len(canvas_course_ids)})',
+            path = f'/api/v1/courses/{course_id}/gradebook_history/feed'
+            s3_key = f'{get_s3_canvas_api_daily_path()}/gradebook_history/gradebook_history_{course_id}.json'
+            create_canvas_api_import_status(
+                job_id=job_id,
+                term_id=term_id,
+                course_id=course_id,
+                table_name='gradebook_history',
             )
-            feed = canvas_api.get_course_grade_change_log(course_id)
-            if feed:
-                success_count += 1
-                for event in feed:
-                    rows.append({
-                        'course_id': course_id,
-                        **event,
-                    })
-            else:
+            app.logger.info(
+                f'Fetching Canvas gradebook history for course id {course_id}, term {term_id} ({index} of {len(canvas_course_ids)})',
+            )
+            response = dispatch(
+                'import_canvas_api_data',
+                data={
+                    'course_id': course_id,
+                    'path': path,
+                    's3_key': s3_key,
+                    'canvas_api_import_job_id': job_id,
+                },
+            )
+            if not response:
+                app.logger.error(f'Canvas gradebook history import failed for course id {course_id}.')
+                update_canvas_api_import_status(
+                    job_id=job_id,
+                    course_id=course_id,
+                    status='error',
+                )
                 failure_count += 1
-                app.logger.error(f'Canvas grade change log history import failed for course id {course_id}.')
+            else:
+                success_count += 1
             index += 1
 
-        s3_key = f'{get_s3_canvas_api_daily_path()}/grade_change_log/grade_change_log.json'
-        app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
-        if not s3.upload_json(rows, s3_key):
-            raise BackgroundJobError('Error on S3 upload: aborting job.')
         return (
-            f'Canvas grade change log API import completed for term {term_id}: {success_count} succeeded, '
+            f'Canvas gradebook history import completed for term {term_id}: {success_count} succeeded, '
             f'{failure_count} failed.'
         )
