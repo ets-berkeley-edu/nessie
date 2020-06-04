@@ -24,6 +24,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
+import random
+
 from flask import current_app as app
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
@@ -52,7 +54,7 @@ def build_url(path, query=None):
 
 
 def authorized_request(url):
-    auth_headers = {'Authorization': 'Bearer {}'.format(app.config['CANVAS_HTTP_TOKEN'])}
+    auth_headers = {'Authorization': 'Bearer {}'.format(_get_token())}
     return http.request(url, auth_headers)
 
 
@@ -73,3 +75,7 @@ def paged_request(path, mock, query=None, key=None):
             results.extend(response.json().get(key)) if key else results.extend(response.json())
             url = http.get_next_page(response)
     return results
+
+
+def _get_token():
+    return random.choice(app.config['CANVAS_HTTP_TOKENS'])
