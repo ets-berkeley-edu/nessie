@@ -23,35 +23,19 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from nessie.externals import canvas_api
-from nessie.lib.mockingbird import MockResponse, register_mock
-from tests.util import capture_app_logs
+from nessie.externals import s3
+from nessie.jobs.import_canvas_api_data import ImportCanvasApiData
+from tests.util import mock_s3
 
 
-class TestCanvasApi:
-    """Canvas API client."""
+class TestImportCanvasApiData:
 
-    def test_course_enrollments(self, app):
-        """Returns course enrollments."""
-        feed = canvas_api.get_course_enrollments(7654321)
-        assert feed
-        assert len(feed) == 44
-        assert feed[0]['user_id'] == 9000100
-        assert feed[0]['last_activity_at'] == '2017-11-28T23:01:51Z'
-        assert feed[43]['user_id'] == 5432100
-        assert feed[43]['last_activity_at'] == '2017-11-29T22:15:26Z'
-
-    def test_course_not_found(self, app, caplog):
-        """Logs 404 for unknown course."""
-        with capture_app_logs(app):
-            response = canvas_api.get_course_enrollments(9999999)
-            assert '404 Client Error' in caplog.text
-            assert not response
-
-    def test_server_error(self, app, caplog):
-        """Logs unexpected server errors."""
-        canvas_error = MockResponse(500, {}, '{"message": "Internal server error."}')
-        with register_mock(canvas_api.get_course_enrollments, canvas_error):
-            response = canvas_api.get_course_enrollments(7654320)
-            assert '500 Server Error' in caplog.text
-            assert not response
+    def test_canvas_sync_metadata(self, app, metadata_db):
+        """Makes an API call and puts the result in S3."""
+        with mock_s3(app):
+            bucket = app.config['LOCH_S3_BUCKET']
+            path = '/api/v1/audit/grade_change/courses/7654321'
+            s3_key = f'{bucket}/grade_change_log/grade_change_log_7654321.json'
+            result = ImportCanvasApiData().run_wrapped(course_id='7654321', path=path, s3_key=s3_key)
+            assert result is True
+            assert s3.object_exists(s3_key) is True
