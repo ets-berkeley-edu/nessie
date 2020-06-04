@@ -78,7 +78,7 @@ CANVAS_DATA_API_SECRET = 'some secret'
 CANVAS_DATA_HOST = 'foo.instructure.com'
 
 CANVAS_HTTP_URL = 'https://wottsamatta.instructure.com'
-CANVAS_HTTP_TOKEN = 'yet another secret'
+CANVAS_HTTP_TOKENS = ['yet another secret', 'in a list of secrets']
 
 # If set to 'auto', the next three items will use defaults based on SIS term definitions.
 CURRENT_TERM = 'Fall 2017'
