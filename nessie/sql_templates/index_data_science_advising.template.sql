@@ -50,6 +50,7 @@ INSERT INTO {rds_schema_data_science}.advising_notes (
     SELECT DISTINCT id, sid, student_first_name, student_last_name,
     advisor_email, reason_for_appointment, conversation_type, body, created_at
     FROM {redshift_schema_data_science_advising_internal}.advising_notes N
+    WHERE sid <> ''
   $REDSHIFT$)
   AS redshift_notes (
     id VARCHAR,

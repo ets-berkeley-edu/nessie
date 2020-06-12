@@ -37,10 +37,12 @@ CREATE TABLE {rds_schema_advising_notes}.advising_note_authors
     sid VARCHAR NOT NULL,
     first_name VARCHAR NOT NULL,
     last_name VARCHAR NOT NULL,
+    campus_email VARCHAR,
     PRIMARY KEY (uid)
 );
 
-CREATE INDEX IF NOT EXISTS advising_note_authors_sid_idx
-ON {rds_schema_advising_notes}.advising_note_authors (sid);
+CREATE INDEX IF NOT EXISTS advising_note_authors_uid_idx ON {rds_schema_advising_notes}.advising_note_authors (uid);
+CREATE INDEX IF NOT EXISTS advising_note_authors_sid_idx ON {rds_schema_advising_notes}.advising_note_authors (sid);
+CREATE INDEX IF NOT EXISTS advising_note_authors_campus_email_idx ON {rds_schema_advising_notes}.advising_note_authors (campus_email);
 
 COMMIT TRANSACTION;
