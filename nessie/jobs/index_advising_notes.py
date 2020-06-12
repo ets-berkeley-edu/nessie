@@ -51,28 +51,8 @@ class IndexAdvisingNotes(BackgroundJob):
 
     def import_note_authors(self):
         notes_schema = app.config['RDS_SCHEMA_ADVISING_NOTES']
-        asc_schema = app.config['RDS_SCHEMA_ASC']
-        e_i_schema = app.config['RDS_SCHEMA_E_I']
-        sis_notes_schema = app.config['RDS_SCHEMA_SIS_ADVISING_NOTES']
-        advisor_schema_redshift = app.config['REDSHIFT_SCHEMA_ADVISOR_INTERNAL']
 
-        advisor_sids_from_sis_notes = set(
-            [r['advisor_sid'] for r in rds.fetch(f'SELECT DISTINCT advisor_sid FROM {sis_notes_schema}.advising_notes')],
-        )
-        advisor_sids_from_advisors = set(
-            [r['sid'] for r in redshift.fetch(f'SELECT DISTINCT sid FROM {advisor_schema_redshift}.advisor_departments')],
-        )
-        advisor_sids = list(advisor_sids_from_sis_notes | advisor_sids_from_advisors)
-
-        advisor_uids_from_asc_notes = set(
-            [r['advisor_uid'] for r in rds.fetch(f'SELECT DISTINCT advisor_uid FROM {asc_schema}.advising_notes')],
-        )
-        advisor_uids_from_e_i_notes = set(
-            [r['advisor_uid'] for r in rds.fetch(f'SELECT DISTINCT advisor_uid FROM {e_i_schema}.advising_notes')],
-        )
-        advisor_uids = list(advisor_uids_from_asc_notes | advisor_uids_from_e_i_notes)
-
-        advisor_attributes = calnet.client(app).search_csids(advisor_sids) + calnet.client(app).search_uids(advisor_uids)
+        advisor_attributes = self._advisor_attributes_by_sid() + self._advisor_attributes_by_uid() + self._advisor_attributes_by_email()
         if not advisor_attributes:
             raise BackgroundJobError('Failed to fetch note author attributes.')
 
@@ -82,10 +62,10 @@ class IndexAdvisingNotes(BackgroundJob):
             insertable_rows = []
             for entry in unique_advisor_attributes:
                 first_name, last_name = calnet.split_sortable_name(entry)
-                insertable_rows.append(tuple((entry.get('uid'), entry.get('csid'), first_name, last_name)))
+                insertable_rows.append(tuple((entry.get('uid'), entry.get('csid'), first_name, last_name, entry.get('campus_email'))))
 
             result = transaction.insert_bulk(
-                f'INSERT INTO {notes_schema}.advising_note_authors (uid, sid, first_name, last_name) VALUES %s',
+                f'INSERT INTO {notes_schema}.advising_note_authors (uid, sid, first_name, last_name, campus_email) VALUES %s',
                 insertable_rows,
             )
             if result:
@@ -101,3 +81,38 @@ class IndexAdvisingNotes(BackgroundJob):
             app.logger.info('Indexed advising notes.')
         else:
             raise BackgroundJobError('Failed to index advising notes.')
+
+    def _advisor_attributes_by_sid(self):
+        sis_notes_schema = app.config['RDS_SCHEMA_SIS_ADVISING_NOTES']
+        advisor_schema_redshift = app.config['REDSHIFT_SCHEMA_ADVISOR_INTERNAL']
+
+        advisor_sids_from_sis_notes = set(
+            [r['advisor_sid'] for r in rds.fetch(f'SELECT DISTINCT advisor_sid FROM {sis_notes_schema}.advising_notes')],
+        )
+        advisor_sids_from_advisors = set(
+            [r['sid'] for r in redshift.fetch(f'SELECT DISTINCT sid FROM {advisor_schema_redshift}.advisor_departments')],
+        )
+        advisor_sids = list(advisor_sids_from_sis_notes | advisor_sids_from_advisors)
+        return calnet.client(app).search_csids(advisor_sids)
+
+    def _advisor_attributes_by_uid(self):
+        asc_schema = app.config['RDS_SCHEMA_ASC']
+        e_i_schema = app.config['RDS_SCHEMA_E_I']
+
+        advisor_uids_from_asc_notes = set(
+            [r['advisor_uid'] for r in rds.fetch(f'SELECT DISTINCT advisor_uid FROM {asc_schema}.advising_notes')],
+        )
+        advisor_uids_from_e_i_notes = set(
+            [r['advisor_uid'] for r in rds.fetch(f'SELECT DISTINCT advisor_uid FROM {e_i_schema}.advising_notes')],
+        )
+        advisor_uids = list(advisor_uids_from_asc_notes | advisor_uids_from_e_i_notes)
+        return calnet.client(app).search_uids(advisor_uids)
+
+    def _advisor_attributes_by_email(self):
+        data_science_schema = app.config['RDS_SCHEMA_DATA_SCIENCE']
+        sql = f"""
+            SELECT DISTINCT advisor_email FROM {data_science_schema}.advising_notes
+            WHERE advisor_email IS NOT NULL
+        """
+        advisor_emails = set([r['advisor_email'] for r in rds.fetch(sql)])
+        return calnet.client(app).search_emails(list(advisor_emails))

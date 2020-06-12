@@ -78,6 +78,9 @@ class Client:
     def search_uids(self, uids):
         return self._search(uids, 'uid', 'uid')
 
+    def search_emails(self, emails):
+        return self._search(emails, 'berkeleyEduOfficialEmail', 'campus_email')
+
     def _search(self, ids, ldap_id_type, id_key_in_ldap_result):
         all_out = []
         for i in range(0, len(ids), BATCH_QUERY_MAXIMUM):

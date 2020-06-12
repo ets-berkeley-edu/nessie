@@ -65,18 +65,23 @@ SELECT ascn.sid, ascn.id, NULL AS note_body, NULL AS advisor_sid, ascn.advisor_u
        NULL AS note_category, NULL AS note_subcategory, NULL AS created_by, ascn.created_at, ascn.updated_at
 FROM {rds_schema_asc}.advising_notes ascn
 UNION
+SELECT dsn.sid, dsn.id, dsn.body AS note_body, dsna.sid AS advisor_sid, dsna.uid AS advisor_uid, dsna.first_name AS advisor_first_name,
+       dsna.last_name AS advisor_last_name, NULL AS note_category, NULL AS note_subcategory, NULL AS created_by, dsn.created_at, NULL AS updated_at
+FROM {rds_schema_data_science}.advising_notes dsn
+JOIN {rds_schema_advising_notes}.advising_note_authors dsna ON dsn.advisor_email = dsna.campus_email
+UNION
 SELECT ein.sid, ein.id, NULL AS note_body, NULL AS advisor_sid, ein.advisor_uid, ein.advisor_first_name, ein.advisor_last_name,
        NULL AS note_category, NULL AS note_subcategory, NULL AS created_by, ein.created_at, ein.updated_at
 FROM {rds_schema_e_i}.advising_notes ein
 );
 
-CREATE INDEX idx_sis_advising_notes_id ON {rds_schema_advising_notes}.advising_notes(id);
-CREATE INDEX idx_sis_advising_notes_sid ON {rds_schema_advising_notes}.advising_notes(sid);
-CREATE INDEX idx_sis_advising_notes_advisor_sid ON {rds_schema_advising_notes}.advising_notes(advisor_sid);
-CREATE INDEX idx_sis_advising_notes_advisor_uid ON {rds_schema_advising_notes}.advising_notes(advisor_uid);
-CREATE INDEX idx_sis_advising_notes_created_at ON {rds_schema_advising_notes}.advising_notes(created_at);
-CREATE INDEX idx_sis_advising_notes_created_by ON {rds_schema_advising_notes}.advising_notes(created_by);
-CREATE INDEX idx_sis_advising_notes_updated_at ON {rds_schema_advising_notes}.advising_notes(updated_at);
+CREATE INDEX idx_advising_notes_id ON {rds_schema_advising_notes}.advising_notes(id);
+CREATE INDEX idx_advising_notes_sid ON {rds_schema_advising_notes}.advising_notes(sid);
+CREATE INDEX idx_advising_notes_advisor_sid ON {rds_schema_advising_notes}.advising_notes(advisor_sid);
+CREATE INDEX idx_advising_notes_advisor_uid ON {rds_schema_advising_notes}.advising_notes(advisor_uid);
+CREATE INDEX idx_advising_notes_created_at ON {rds_schema_advising_notes}.advising_notes(created_at);
+CREATE INDEX idx_advising_notes_created_by ON {rds_schema_advising_notes}.advising_notes(created_by);
+CREATE INDEX idx_advising_notes_updated_at ON {rds_schema_advising_notes}.advising_notes(updated_at);
 
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_advising_notes}.advising_notes_search_index CASCADE;
 
