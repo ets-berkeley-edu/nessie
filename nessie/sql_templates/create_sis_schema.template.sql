@@ -40,6 +40,26 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_sis} GRANT SELECT ON TABLES 
 -- External Tables
 --------------------------------------------------------------------
 
+-- basic attributes
+CREATE EXTERNAL TABLE {redshift_schema_sis}.basic_attributes
+(
+    ldap_uid VARCHAR,
+    first_name VARCHAR,
+    last_name VARCHAR,
+    email_address VARCHAR,
+    sid VARCHAR,
+    affiliations VARCHAR,
+    person_type VARCHAR
+)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
+WITH SERDEPROPERTIES (
+  'separatorChar' = ',',
+  'quoteChar' = '\"',
+  'escapeChar' = '\\'
+)
+STORED AS TEXTFILE
+LOCATION '{loch_s3_sis_data_path}/advisees/basic_student_attributes';
+
 -- courses
 CREATE EXTERNAL TABLE {redshift_schema_sis}.courses(
     section_id INT,
