@@ -209,7 +209,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'loch_s3_canvas_data_path_today': s3_prefix + get_s3_canvas_daily_path(),
         'loch_s3_canvas_data_path_historical': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_HISTORICAL'],
         'loch_s3_coe_data_path': s3_prefix + get_s3_coe_daily_path(),
-        'loch_s3_dsa_data_path': s3_protected_prefix + app.config['LOCH_S3_DSA_DATA_SFTP_PATH'],
+        'loch_s3_dsa_data_path': s3_protected_prefix + app.config['LOCH_S3_DSA_DATA_PATH'],
         'loch_s3_gradescope_data_path': s3_prefix + app.config['LOCH_S3_GRADESCOPE_DATA_PATH'],
         'loch_s3_oua_data_path': s3_protected_prefix + get_s3_oua_daily_path(),
         'loch_s3_slate_sftp_path': s3_protected_prefix + app.config['LOCH_S3_SLATE_DATA_SFTP_PATH'],
