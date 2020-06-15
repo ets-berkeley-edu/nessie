@@ -65,8 +65,19 @@ INSERT INTO {rds_schema_data_science}.advising_notes (
   )
 );
 
-CREATE INDEX idx_e_i_advising_notes_sid ON {rds_schema_data_science}.advising_notes(sid);
-CREATE INDEX idx_e_i_advising_notes_advisor_email ON {rds_schema_data_science}.advising_notes(advisor_email);
-CREATE INDEX idx_e_i_advising_notes_created_at ON {rds_schema_data_science}.advising_notes(created_at);
+CREATE INDEX idx_data_science_advising_notes_sid ON {rds_schema_data_science}.advising_notes(sid);
+CREATE INDEX idx_data_science_advising_notes_advisor_email ON {rds_schema_data_science}.advising_notes(advisor_email);
+CREATE INDEX idx_data_science_advising_notes_created_at ON {rds_schema_data_science}.advising_notes(created_at);
+
+DROP MATERIALIZED VIEW IF EXISTS {rds_schema_data_science}.advising_notes_search_index CASCADE;
+
+CREATE MATERIALIZED VIEW {rds_schema_data_science}.advising_notes_search_index AS (
+  SELECT n.id, to_tsvector('english', COALESCE(n.body || ' ', '') || n.reason_for_appointment) AS fts_index
+  FROM {rds_schema_data_science}.advising_notes n
+);
+
+CREATE INDEX idx_advising_notes_ft_search
+ON {rds_schema_data_science}.advising_notes_search_index
+USING gin(fts_index);
 
 COMMIT TRANSACTION;
