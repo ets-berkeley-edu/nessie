@@ -308,8 +308,8 @@ def get_fetched_non_advisees():
 def get_unfetched_non_advisees():
     sql = f"""SELECT DISTINCT(attrs.sis_id) AS sid
               FROM (
-                SELECT sis_id FROM {sis_schema()}.enrollments
-                UNION SELECT sid AS sis_id FROM {sis_schema()}.basic_attributes
+                SELECT sis_id FROM {sis_schema()}.enrollments WHERE sis_id IS NOT NULL
+                UNION SELECT sid AS sis_id FROM {sis_schema()}.basic_attributes WHERE sid IS NOT NULL
               ) attrs
               LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = attrs.sis_id
               LEFT JOIN {coe_schema()}.students coe ON coe.sid = attrs.sis_id
@@ -323,8 +323,8 @@ def get_unfetched_non_advisees():
 def get_non_advisees_without_registration_imports():
     sql = f"""SELECT DISTINCT(attrs.sis_id) AS sid
               FROM (
-                SELECT sis_id FROM {sis_schema()}.enrollments
-                UNION SELECT sid AS sis_id FROM {sis_schema()}.basic_attributes
+                SELECT sis_id FROM {sis_schema()}.enrollments WHERE sis_id IS NOT NULL
+                UNION SELECT sid AS sis_id FROM {sis_schema()}.basic_attributes WHERE sid IS NOT NULL
               ) attrs
               LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = attrs.sis_id
               LEFT JOIN {coe_schema()}.students coe ON coe.sid = attrs.sis_id
