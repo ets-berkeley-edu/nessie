@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index
     uid VARCHAR NOT NULL,
     first_name VARCHAR NOT NULL,
     last_name VARCHAR NOT NULL,
-    level VARCHAR(2),
+    level VARCHAR,
     gpa DECIMAL(5,3),
     units DECIMAL (6,3),
     transfer BOOLEAN,
@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index_hist_
     uid VARCHAR NOT NULL,
     first_name VARCHAR NOT NULL,
     last_name VARCHAR NOT NULL,
-    level VARCHAR(3),
+    level VARCHAR,
     gpa DECIMAL(5,3),
     units DECIMAL (6,3)
 );
@@ -210,7 +210,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_profile_ind
     uid VARCHAR NOT NULL,
     first_name VARCHAR NOT NULL,
     last_name VARCHAR NOT NULL,
-    level VARCHAR(2),
+    level VARCHAR,
     gpa DECIMAL(5,3),
     units DECIMAL (6,3)
 );
@@ -221,7 +221,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_profile_ind
     uid VARCHAR NOT NULL,
     first_name VARCHAR NOT NULL,
     last_name VARCHAR NOT NULL,
-    level VARCHAR(3),
+    level VARCHAR,
     gpa DECIMAL(5,3),
     units DECIMAL (6,3),
     transfer BOOLEAN,
