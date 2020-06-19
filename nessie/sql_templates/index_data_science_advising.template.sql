@@ -39,7 +39,7 @@ CREATE TABLE {rds_schema_data_science}.advising_notes (
   advisor_email VARCHAR,
   reason_for_appointment VARCHAR,
   conversation_type VARCHAR,
-  body VARCHAR,
+  body TEXT,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
   PRIMARY KEY (id)
 );
@@ -60,7 +60,7 @@ INSERT INTO {rds_schema_data_science}.advising_notes (
     advisor_email VARCHAR,
     reason_for_appointment VARCHAR,
     conversation_type VARCHAR,
-    body VARCHAR,
+    body TEXT,
     created_at TIMESTAMP WITH TIME ZONE
   )
 );
