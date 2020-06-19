@@ -49,7 +49,7 @@ CREATE EXTERNAL TABLE {redshift_schema_data_science_advising}.advising_notes
     expected_grad_term VARCHAR,
     reason_for_appointment VARCHAR,
     conversation_type VARCHAR,
-    notes VARCHAR
+    notes VARCHAR(max)
 )
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
