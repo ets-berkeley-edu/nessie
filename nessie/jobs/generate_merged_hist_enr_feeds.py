@@ -90,10 +90,16 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
                 sids = non_advisee_sids[i:i + BATCH_QUERY_MAXIMUM]
                 profile_count += self.collect_merged_profiles(sids, feed_file, index_file, names_file)
             if profile_count:
-                for table_name, data in tables.items():
-                    student_schema.truncate_staging_table(table_name)
-                    student_schema.write_file_to_staging(table_name, data, profile_count)
-                    student_schema.refresh_all_from_staging([table_name])
+                with redshift.transaction() as transaction:
+                    for table_name, data in tables.items():
+                        student_schema.truncate_staging_table(table_name)
+                        student_schema.write_file_to_staging(table_name, data, profile_count)
+                        student_schema.refresh_from_staging(
+                            table_name,
+                            None,
+                            non_advisee_sids,
+                            transaction,
+                        )
         app.logger.info('Non-advisee profile generation complete.')
         return profile_count
 
@@ -174,7 +180,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
                     student_schema.refresh_from_staging(
                         table_name,
                         term_id,
-                        None,
+                        non_advisee_sids,
                         transaction,
                     )
                 total_count += term_count
