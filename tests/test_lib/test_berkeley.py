@@ -38,7 +38,7 @@ def current_term_index(app):
     app.config['FUTURE_TERM'] = 'auto'
     app.config['LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM'] = 'auto'
     berkeley.cache_thread.config_terms = None
-    rds_schema = app.config['RDS_SCHEMA_SIS_INTERNAL']
+    rds_schema = app.config['RDS_SCHEMA_SIS_TERMS']
     rds.execute(f'DROP SCHEMA {rds_schema} CASCADE')
     rds.execute(resolve_sql_template('create_rds_indexes.template.sql'))
     rds.execute(f"""INSERT INTO {rds_schema}.current_term_index

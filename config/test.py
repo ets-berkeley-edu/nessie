@@ -29,7 +29,7 @@ AWS_APP_ROLE_ARN = 'arn:aws:iam::123456789012:role/test-role'
 
 TESTING = True
 
-EARLIEST_LEGACY_TERM = 'Summer 2016'
+EARLIEST_LEGACY_TERM = 'Summer 1995'
 
 LOCH_S3_BUCKET = 'mock-bucket'
 LOCH_S3_PUBLIC_BUCKET = 'mock-bucket'
