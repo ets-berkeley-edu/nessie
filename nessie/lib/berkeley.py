@@ -189,7 +189,8 @@ def previous_term_id(term_id):
     elif term_id[3] == '5':
         previous = term_id[:3] + '2'
     elif term_id[3] == '2':
-        previous = term_id[:1] + str(int(term_id[1:3]) - 1).zfill(2) + '8'
+        year_code = str(int(term_id[:1]) - 1) + '99' if term_id[1:3] == '00' else term_id[:1] + str(int(term_id[1:3]) - 1).zfill(2)
+        previous = year_code + '8'
     return previous
 
 
