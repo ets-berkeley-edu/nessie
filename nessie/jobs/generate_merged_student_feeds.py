@@ -23,9 +23,11 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from contextlib import ExitStack
 from itertools import groupby
 import json
 import operator
+import tempfile
 from time import sleep
 
 from flask import current_app as app
@@ -35,7 +37,7 @@ from nessie.jobs.generate_merged_enrollment_term import GenerateMergedEnrollment
 from nessie.lib.berkeley import current_term_id, future_term_id, future_term_ids, legacy_term_ids, reverse_term_ids
 from nessie.lib.metadata import get_merged_enrollment_term_job_status, queue_merged_enrollment_term_jobs
 from nessie.lib.queries import get_advisee_advisor_mappings, get_advisee_student_profile_elements
-from nessie.lib.util import encoded_tsv_row, resolve_sql_template
+from nessie.lib.util import resolve_sql_template, write_to_tsv_file
 from nessie.merged.sis_profile import parse_merged_sis_profile
 from nessie.merged.sis_profile_v1 import parse_merged_sis_profile_v1
 from nessie.merged.student_demographics import add_demographics_rows, refresh_rds_demographics
@@ -137,19 +139,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             return status_string
 
     def generate_student_profile_tables(self, advisees_by_canvas_id, advisees_by_sid):
-        # In-memory storage for generated feeds prior to TSV output.
-        # TODO: store in Redis or filesystem to free up memory
-        rows = {
-            'student_profiles': [],
-            'student_profile_index': [],
-            'student_majors': [],
-            'student_holds': [],
-            'demographics': [],
-            'ethnicities': [],
-            'intended_majors': [],
-            'minors': [],
-            'visas': [],
-        }
         tables = [
             'student_profiles', 'student_profile_index', 'student_majors', 'student_holds',
             'demographics', 'ethnicities', 'intended_majors', 'minors', 'visas',
@@ -164,23 +153,31 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             return False
         count = len(all_student_feed_elements)
         app.logger.info(f'Will generate feeds for {count} students.')
-        for index, feed_elements in enumerate(all_student_feed_elements):
-            sid = feed_elements['sid']
-            merged_profile = self.generate_student_profile_feed(feed_elements, rows, all_student_advisor_mappings.get(sid, []))
-            if merged_profile:
-                canvas_user_id = feed_elements['canvas_user_id']
-                if canvas_user_id:
-                    advisees_by_canvas_id[canvas_user_id] = {'sid': sid, 'uid': feed_elements['ldap_uid']}
-                    advisees_by_sid[sid] = {'canvas_user_id': canvas_user_id}
-                self.successes.append(sid)
-            else:
-                self.failures.append(sid)
-        for table in tables:
-            if rows[table]:
-                student_schema.write_to_staging(table, rows[table])
+        with ExitStack() as stack:
+            feed_files = {table: stack.enter_context(tempfile.TemporaryFile()) for table in tables}
+            feed_counts = {table: 0 for table in tables}
+            for index, feed_elements in enumerate(all_student_feed_elements):
+                sid = feed_elements['sid']
+                merged_profile = self.generate_student_profile_feed(
+                    feed_elements,
+                    all_student_advisor_mappings.get(sid, []),
+                    feed_files,
+                    feed_counts,
+                )
+                if merged_profile:
+                    canvas_user_id = feed_elements['canvas_user_id']
+                    if canvas_user_id:
+                        advisees_by_canvas_id[canvas_user_id] = {'sid': sid, 'uid': feed_elements['ldap_uid']}
+                        advisees_by_sid[sid] = {'canvas_user_id': canvas_user_id}
+                    self.successes.append(sid)
+                else:
+                    self.failures.append(sid)
+            for table in tables:
+                if feed_files[table]:
+                    student_schema.write_file_to_staging(table, feed_files[table], feed_counts[table])
         return tables
 
-    def generate_student_profile_feed(self, feed_elements, rows, advisors):
+    def generate_student_profile_feed(self, feed_elements, advisors, feed_files, feed_counts):
         sid = feed_elements['sid']
         uid = feed_elements['ldap_uid']
         if not uid:
@@ -191,7 +188,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             sis_profile = parse_merged_sis_profile(feed_elements)
         demographics = feed_elements.get('demographics_feed') and json.loads(feed_elements.get('demographics_feed'))
         if demographics:
-            demographics = add_demographics_rows(sid, demographics, rows)
+            demographics = add_demographics_rows(sid, demographics, feed_files, feed_counts)
 
         advisor_feed = []
         for a in advisors:
@@ -218,7 +215,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'demographics': demographics,
             'advisors': advisor_feed,
         }
-        rows['student_profiles'].append(encoded_tsv_row([sid, json.dumps(merged_profile)]))
+        feed_counts['student_profiles'] += write_to_tsv_file(feed_files['student_profiles'], [sid, json.dumps(merged_profile)])
 
         if sis_profile:
             first_name = merged_profile['firstName'] or ''
@@ -230,20 +227,24 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             expected_grad_term = str(sis_profile.get('expectedGraduationTerm', {}).get('id') or '')
             terms_in_attendance = str(sis_profile.get('termsInAttendance', {}) or '')
 
-            rows['student_profile_index'].append(
-                encoded_tsv_row([sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance]),
+            feed_counts['student_profile_index'] += write_to_tsv_file(
+                feed_files['student_profile_index'],
+                [sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance],
             )
 
             for plan in sis_profile.get('plans', []):
                 if plan.get('status') == 'Active':
-                    rows['student_majors'].append(encoded_tsv_row([sid, plan.get('program', None), plan.get('description', None)]))
+                    feed_counts['student_majors'] += write_to_tsv_file(
+                        feed_files['student_majors'],
+                        [sid, plan.get('program', None), plan.get('description', None)],
+                    )
             for hold in sis_profile.get('holds', []):
-                rows['student_holds'].append(encoded_tsv_row([sid, json.dumps(hold)]))
+                feed_counts['student_holds'] += write_to_tsv_file(feed_files['student_holds'], [sid, json.dumps(hold)])
             for intended_major in sis_profile.get('intendedMajors', []):
-                rows['intended_majors'].append(encoded_tsv_row([sid, intended_major.get('description', None)]))
+                feed_counts['intended_majors'] += write_to_tsv_file(feed_files['intended_majors'], [sid, intended_major.get('description', None)])
             for plan in sis_profile.get('plansMinor', []):
                 if plan.get('status') == 'Active':
-                    rows['minors'].append(encoded_tsv_row([sid, plan.get('description', None)]))
+                    feed_counts['minors'] += write_to_tsv_file(feed_files['minors'], [sid, plan.get('description', None)])
 
         return merged_profile
 

@@ -45,6 +45,11 @@ def encoded_tsv_row(elements):
     return '\t'.join([_to_tsv_string(e) for e in elements]).encode()
 
 
+def write_to_tsv_file(f, elements):
+    f.write(encoded_tsv_row(elements) + b'\n')
+    return 1
+
+
 def fill_pattern_from_args(pattern, func, *args, **kw):
     return pattern.format(**get_args_dict(func, *args, **kw))
 

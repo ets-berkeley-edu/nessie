@@ -24,21 +24,25 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 from collections import defaultdict
 
-from nessie.lib.util import encoded_tsv_row
+from nessie.lib.util import write_to_tsv_file
 
 UNDERREPRESENTED_GROUPS = {'Black/African American', 'Hispanic/Latino', 'American Indian/Alaska Native'}
 
 
-def add_demographics_rows(sid, feed, rows_map):
+def add_demographics_rows(sid, feed, feed_files, feed_counts):
     parsed = parse_sis_demographics_api(feed)
     if parsed:
         filtered_ethnicities = parsed.pop('filtered_ethnicities', [])
         for ethn in filtered_ethnicities:
-            rows_map['ethnicities'].append(encoded_tsv_row([sid, ethn]))
-        rows_map['demographics'].append(encoded_tsv_row([sid, parsed.get('gender'), parsed.get('underrepresented', False)]))
+            feed_counts['ethnicities'] += write_to_tsv_file(feed_files['ethnicities'], [sid, ethn])
+
+        feed_counts['demographics'] += write_to_tsv_file(
+            feed_files['demographics'],
+            [sid, parsed.get('gender'), parsed.get('underrepresented', False)],
+        )
         visa = parsed.get('visa')
         if visa:
-            rows_map['visas'].append(encoded_tsv_row([sid, visa.get('status'), visa.get('type')]))
+            feed_counts['visas'] += write_to_tsv_file(feed_files['visas'], [sid, visa.get('status'), visa.get('type')])
     return parsed
 
 
