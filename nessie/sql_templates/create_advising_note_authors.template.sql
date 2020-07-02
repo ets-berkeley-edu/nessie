@@ -34,7 +34,7 @@ DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_note_authors CASCADE;
 CREATE TABLE {rds_schema_advising_notes}.advising_note_authors
 (
     uid VARCHAR NOT NULL,
-    sid VARCHAR NOT NULL,
+    sid VARCHAR,
     first_name VARCHAR NOT NULL,
     last_name VARCHAR NOT NULL,
     campus_email VARCHAR,
