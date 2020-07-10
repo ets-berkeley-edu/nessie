@@ -26,6 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from nessie.jobs.background_job import ChainedBackgroundJob
 from nessie.jobs.create_calnet_schema import CreateCalNetSchema
 from nessie.jobs.create_coe_schema import CreateCoeSchema
+from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.jobs.create_undergrads_schema import CreateUndergradsSchema
 from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
@@ -42,6 +43,7 @@ class ChainedImportStudentPopulation(ChainedBackgroundJob):
             GenerateAscProfiles(),
             CreateUndergradsSchema(),
             ImportNonCurrentStudents(),
+            CreateSisSchema(),
             ImportCalNetData(),
             CreateCalNetSchema(),
             ImportStudentPhotos(),
