@@ -14,7 +14,7 @@
     "@babel/runtime": "^7.5.5",
     "axios": "^0.19.0",
     "bootstrap-vue": "^2.1.0",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "vue": "^2.6.10",
     "vue-class-component": "^7.1.0",
     "vue-lodash": "^2.0.2",
