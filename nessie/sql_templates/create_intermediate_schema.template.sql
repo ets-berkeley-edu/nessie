@@ -82,6 +82,7 @@ AS (
         sc.instruction_format AS sis_instruction_format,
         sc.section_num AS sis_section_num,
         sc.allowed_units,
+        sc.instruction_mode,
         sc.instructor_uid,
         sc.instructor_name,
         sc.instructor_role_code,
@@ -168,7 +169,8 @@ AS (
         sc.course_title AS sis_course_title,
         sc.instruction_format AS sis_instruction_format,
         sc.section_num AS sis_section_num,
-        sc.is_primary AS sis_primary
+        sc.is_primary AS sis_primary,
+        sc.instruction_mode AS sis_instruction_mode
     FROM {redshift_schema_canvas}.course_section_dim s
     JOIN {redshift_schema_canvas}.course_dim c
         ON s.course_id = c.id
@@ -205,7 +207,8 @@ AS (
         crs.sis_course_name,
         crs.sis_primary,
         crs.sis_instruction_format,
-        crs.sis_section_num
+        crs.sis_section_num,
+        crs.sis_instruction_mode
     FROM {redshift_schema_sis}.enrollments en
     JOIN {redshift_schema_intermediate}.course_sections crs
         ON crs.sis_section_id = en.section_id

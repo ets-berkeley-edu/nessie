@@ -84,8 +84,9 @@ def merge_dropped_classes(student_enrollments_map, all_drops=None):
                 drops = []
                 for row in list(enrs_grp):
                     drops.append({
-                        'displayName': row['sis_course_name'],
                         'component': row['sis_instruction_format'],
+                        'displayName': row['sis_course_name'],
+                        'instructionMode': row['sis_instruction_mode'],
                         'sectionNumber': row['sis_section_num'],
                         'withdrawAfterDeadline': (row['grade'] == 'W'),
                     })
@@ -251,13 +252,14 @@ def merge_enrollment(enrollments, term_id, term_name):
         section_feed = {
             'ccn': enrollment['sis_section_id'],
             'component': enrollment['sis_instruction_format'],
-            'sectionNumber': enrollment['sis_section_num'],
             'enrollmentStatus': enrollment['sis_enrollment_status'],
-            'units': enrollment['units'],
-            'gradingBasis': berkeley.translate_grading_basis(enrollment['grading_basis']),
             'grade': enrollment['grade'],
+            'gradingBasis': berkeley.translate_grading_basis(enrollment['grading_basis']),
+            'instructionMode': enrollment['sis_instruction_mode'],
             'midtermGrade': enrollment['grade_midterm'],
             'primary': enrollment['sis_primary'],
+            'sectionNumber': enrollment['sis_section_num'],
+            'units': enrollment['units'],
         }
 
         # The SIS enrollments API gives us no better unique identifier than the course display name.

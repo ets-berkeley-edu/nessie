@@ -214,8 +214,8 @@ def get_all_advisee_sis_enrollments():
     sql = f"""SELECT
                   enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id,
                   enr.ldap_uid, enr.sid,
-                  enr.sis_course_title, enr.sis_course_name,
-                  enr.sis_section_id, enr.sis_primary, enr.sis_instruction_format, enr.sis_section_num
+                  enr.sis_course_title, enr.sis_course_name, enr.sis_section_id,
+                  enr.sis_primary, enr.sis_instruction_mode, enr.sis_instruction_format, enr.sis_section_num
               FROM {intermediate_schema()}.sis_enrollments enr
               JOIN {calnet_schema()}.advisees ldap
                 ON enr.ldap_uid = ldap.ldap_uid
@@ -352,8 +352,8 @@ def get_non_advisee_sis_enrollments(sids, term_id):
     sql = f"""SELECT
                   enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id,
                   enr.ldap_uid, enr.sid,
-                  enr.sis_course_title, enr.sis_course_name,
-                  enr.sis_section_id, enr.sis_primary, enr.sis_instruction_format, enr.sis_section_num
+                  enr.sis_course_title, enr.sis_course_name, enr.sis_section_id,
+                  enr.sis_primary, enr.sis_instruction_mode, enr.sis_instruction_format, enr.sis_section_num
               FROM {intermediate_schema()}.sis_enrollments enr
               WHERE enr.sid=ANY(%s)
                 AND enr.sis_term_id='{term_id}'

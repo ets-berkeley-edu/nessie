@@ -80,7 +80,8 @@ CREATE EXTERNAL TABLE {redshift_schema_sis}.courses(
     meeting_start_date VARCHAR,
     meeting_end_date VARCHAR,
     course_title VARCHAR,
-    allowed_units DOUBLE PRECISION
+    allowed_units DOUBLE PRECISION,
+    instruction_mode VARCHAR
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
 WITH SERDEPROPERTIES (
