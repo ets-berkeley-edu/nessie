@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.sis_sections
     sis_instruction_format VARCHAR,
     sis_section_num VARCHAR,
     allowed_units DOUBLE PRECISION,
+    instruction_mode VARCHAR,
     instructor_uid VARCHAR,
     instructor_name VARCHAR,
     instructor_role_code VARCHAR,
@@ -96,7 +97,8 @@ INSERT INTO {rds_schema_sis_internal}.sis_sections (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT sis_term_id, sis_section_id, is_primary, sis_course_name, sis_course_title, sis_instruction_format,
-      sis_section_num, allowed_units, instructor_uid, instructor_name, instructor_role_code, meeting_location,
+      sis_section_num, allowed_units, instruction_mode,
+      instructor_uid, instructor_name, instructor_role_code, meeting_location,
       meeting_days, meeting_start_time, meeting_end_time, meeting_start_date, meeting_end_date
     FROM {redshift_schema_intermediate}.sis_sections
   $REDSHIFT$)
@@ -109,6 +111,7 @@ INSERT INTO {rds_schema_sis_internal}.sis_sections (
     sis_instruction_format VARCHAR,
     sis_section_num VARCHAR,
     allowed_units DOUBLE PRECISION,
+    instruction_mode VARCHAR,
     instructor_uid VARCHAR,
     instructor_name VARCHAR,
     instructor_role_code VARCHAR,

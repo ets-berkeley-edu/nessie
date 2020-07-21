@@ -36,8 +36,20 @@ class TestMergedSisEnrollments:
         terms_feed, canvas_site_feed = generate_student_term_maps(self.advisees_by_sid)
         drops = terms_feed['2178'][self.oski_sid]['droppedSections']
         assert 2 == len(drops)
-        assert drops[0] == {'displayName': 'ENV,RES C9', 'component': 'STD', 'sectionNumber': '001', 'withdrawAfterDeadline': True}
-        assert drops[1] == {'displayName': 'HISTORY 10CH', 'component': 'LEC', 'sectionNumber': '003', 'withdrawAfterDeadline': False}
+        assert drops[0] == {
+            'component': 'STD',
+            'displayName': 'ENV,RES C9',
+            'instructionMode': 'P',
+            'sectionNumber': '001',
+            'withdrawAfterDeadline': True,
+        }
+        assert drops[1] == {
+            'component': 'LEC',
+            'displayName': 'HISTORY 10CH',
+            'instructionMode': 'P',
+            'sectionNumber': '003',
+            'withdrawAfterDeadline': False,
+        }
         enrollments = terms_feed['2178'][self.oski_sid]['enrollments']
         assert any(enr['displayName'] == 'ENV,RES C9' for enr in enrollments) is False
 
@@ -50,6 +62,20 @@ class TestMergedSisEnrollments:
         assert 'D-' == enrollments[0]['midtermGrade']
         assert 'BURMESE 1A' == enrollments[0]['displayName']
         assert 90100 == enrollments[0]['sections'][0]['ccn']
+
+    def test_includes_instruction_modes(self, app, student_tables):
+        terms_feed, canvas_site_feed = generate_student_term_maps(self.advisees_by_sid)
+        term_feed = terms_feed['2178'][self.oski_sid]
+        assert term_feed['enrollments']
+        for enrollment in term_feed['enrollments']:
+            assert enrollment['sections']
+            for section in enrollment['sections']:
+                if section['ccn'] == 90200:
+                    assert 'H' == section['instructionMode']
+                elif section['ccn'] == 90399:
+                    assert 'W' == section['instructionMode']
+                else:
+                    assert 'P' == section['instructionMode']
 
     def test_includes_course_site_section_mappings(self, app):
         """Maps Canvas sites to SIS courses and sections."""
@@ -80,6 +106,7 @@ class TestMergedSisEnrollments:
                 'sis_course_title': 'GIBBON',
                 'sis_enrollment_status': 'E',
                 'sis_instruction_format': 'LEC',
+                'sis_instruction_mode': 'P',
                 'sis_primary': True,
                 'sis_section_id': 123,
                 'sis_section_num': '1',
@@ -95,6 +122,7 @@ class TestMergedSisEnrollments:
                 'sis_course_title': 'HUME',
                 'sis_enrollment_status': 'E',
                 'sis_instruction_format': 'LEC',
+                'sis_instruction_mode': 'P',
                 'sis_primary': True,
                 'sis_section_id': 234,
                 'sis_section_num': '1',
@@ -110,6 +138,7 @@ class TestMergedSisEnrollments:
                 'sis_course_title': 'BURNEY',
                 'sis_enrollment_status': 'E',
                 'sis_instruction_format': 'LEC',
+                'sis_instruction_mode': 'P',
                 'sis_primary': True,
                 'sis_section_id': 345,
                 'sis_section_num': '1',
@@ -125,6 +154,7 @@ class TestMergedSisEnrollments:
                 'sis_course_title': 'BOZ',
                 'sis_enrollment_status': 'E',
                 'sis_instruction_format': 'LEC',
+                'sis_instruction_mode': 'P',
                 'sis_primary': True,
                 'sis_section_id': 456,
                 'sis_section_num': '1',
@@ -140,6 +170,7 @@ class TestMergedSisEnrollments:
                 'sis_course_title': 'SMART',
                 'sis_enrollment_status': 'E',
                 'sis_instruction_format': 'LEC',
+                'sis_instruction_mode': 'P',
                 'sis_primary': True,
                 'sis_section_id': 567,
                 'sis_section_num': '1',
