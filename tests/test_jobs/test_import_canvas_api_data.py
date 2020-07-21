@@ -36,6 +36,11 @@ class TestImportCanvasApiData:
             bucket = app.config['LOCH_S3_BUCKET']
             path = '/api/v1/audit/grade_change/courses/7654321'
             s3_key = f'{bucket}/grade_change_log/grade_change_log_7654321.json'
-            result = ImportCanvasApiData().run_wrapped(course_id='7654321', path=path, s3_key=s3_key)
+            result = ImportCanvasApiData().run_wrapped(
+                course_id='7654321',
+                path=path,
+                s3_key=s3_key,
+                key='events',
+            )
             assert result is True
             assert s3.object_exists(s3_key) is True
