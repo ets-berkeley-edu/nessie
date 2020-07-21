@@ -23,6 +23,9 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import json
+import tempfile
+
 from botocore.exceptions import ClientError, ConnectionError
 from flask import current_app as app
 from nessie.externals import canvas_api, s3
@@ -42,43 +45,44 @@ class ImportCanvasApiData(BackgroundJob):
                 course_id=course_id,
                 status='started',
             )
-        feed = self._fetch_canvas_api_data(
-            path=path,
-            mock=mock,
-            key=key,
-        )
-        if feed:
-            app.logger.info(f'Will stash feed in S3: {s3_key}')
-            try:
-                response = s3.upload_json(feed, s3_key)
-                if response and canvas_api_import_job_id:
-                    update_canvas_api_import_status(
-                        job_id=canvas_api_import_job_id,
-                        course_id=course_id,
-                        status='complete',
-                    )
-                return True
-            except (ClientError, ConnectionError, ValueError) as e:
-                if canvas_api_import_job_id:
-                    update_canvas_api_import_status(
-                        job_id=canvas_api_import_job_id,
-                        course_id=course_id,
-                        status='error',
-                        details=str(e),
-                    )
-                return False
-        if canvas_api_import_job_id:
-            update_canvas_api_import_status(
-                job_id=canvas_api_import_job_id,
-                course_id=course_id,
-                status='no_data',
-            )
-        return True
+        with tempfile.TemporaryFile() as feed_file:
+            if self._fetch_canvas_api_data(path, feed_file, mock=mock, key=key):
+                app.logger.info(f'Will stash feed in S3: {s3_key}')
+                try:
+                    response = s3.upload_file(feed_file, s3_key)
+                    if response and canvas_api_import_job_id:
+                        update_canvas_api_import_status(
+                            job_id=canvas_api_import_job_id,
+                            course_id=course_id,
+                            status='complete',
+                        )
+                    return True
+                except (ClientError, ConnectionError, ValueError) as e:
+                    if canvas_api_import_job_id:
+                        update_canvas_api_import_status(
+                            job_id=canvas_api_import_job_id,
+                            course_id=course_id,
+                            status='error',
+                            details=str(e),
+                        )
+                    app.logger.error(e)
+                    return False
+            if canvas_api_import_job_id:
+                update_canvas_api_import_status(
+                    job_id=canvas_api_import_job_id,
+                    course_id=course_id,
+                    status='no_data',
+                )
+            return True
 
     @fixture('canvas_course_grade_change_log_7654321.json')
-    def _fetch_canvas_api_data(self, path, mock=None, key=None):
-        return canvas_api.paged_request(
+    def _fetch_canvas_api_data(self, path, feed_file, mock=None, key=None):
+        response = canvas_api.paged_request(
             path=path,
             mock=mock,
             key=key,
         )
+        for page in response:
+            for record in page:
+                feed_file.write(json.dumps(record).encode() + b'\n')
+        return response

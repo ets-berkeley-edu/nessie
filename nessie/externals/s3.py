@@ -222,6 +222,12 @@ def upload_data(data, s3_key, bucket=None):
     return True
 
 
+def upload_file(file, s3_key, bucket=None):
+    # Be kind; rewind
+    file.seek(0)
+    return upload_data(file, s3_key, bucket)
+
+
 def upload_json(obj, s3_key):
     data = json.dumps(obj)
     return upload_data(data, s3_key)
