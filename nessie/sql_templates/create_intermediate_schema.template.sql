@@ -187,7 +187,7 @@ AS (
     GROUP BY
         c.canvas_id, s.canvas_id, c.name, c.code, s.name, et.name,
         sc.term_id, sc.section_id,
-        sc.course_display_name, sc.course_title, sc.instruction_format, sc.section_num, sc.is_primary
+        sc.course_display_name, sc.course_title, sc.instruction_format, sc.section_num, sc.is_primary, sc.instruction_mode
 );
 
 CREATE TABLE {redshift_schema_intermediate}.sis_enrollments
