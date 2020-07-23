@@ -78,8 +78,8 @@ CREATE EXTERNAL TABLE {redshift_schema_canvas_api}.grade_change_log (
     graded_anonymously BOOLEAN,
     version_number VARCHAR,
     request_id VARCHAR,
-    links array<
-        struct<
+    links ARRAY <
+        STRUCT <
             assignment:BIGINT,
             course:BIGINT,
             student:VARCHAR,
