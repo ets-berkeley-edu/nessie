@@ -54,7 +54,8 @@ AS (
         sc.course_display_name AS sis_course_name,
         sc.course_title AS sis_course_title,
         sc.instruction_format AS sis_instruction_format,
-        sc.section_num AS sis_section_num
+        sc.section_num AS sis_section_num,
+        sc.instruction_mode AS sis_instruction_mode
     FROM {redshift_schema_sis}.enrollments en
     JOIN {redshift_schema_sis}.courses sc
         ON en.term_id = sc.term_id
@@ -67,7 +68,7 @@ AS (
     /* Clear out duplicates. */
     GROUP BY
         en.term_id, en.section_id, en.ldap_uid, en.sis_id, en.enrollment_status, en.grade, en.grade_midterm,
-        sc.course_display_name, sc.course_title, sc.instruction_format, sc.section_num
+        sc.course_display_name, sc.course_title, sc.instruction_format, sc.section_num, sc.instruction_mode
 );
 
 CREATE TABLE {redshift_schema_intermediate}.sis_sections
