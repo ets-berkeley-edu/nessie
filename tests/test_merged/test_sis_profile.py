@@ -111,6 +111,10 @@ class TestMergedSisProfile:
         assert len(profile['plansMinor']) == 1
         assert [p['description'] for p in profile['plansMinor']] == ['Art History']
 
+    def test_subplans(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
+        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+        assert profile['subplans'] == ['Ecosystem Sciences']
+
     def test_intended_major_ignored_if_empty(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
         assert 'intendedMajors' not in profile
