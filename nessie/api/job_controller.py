@@ -277,21 +277,18 @@ def import_canvas_api_data():
     s3_key = data and data.get('s3_key')
     if not s3_key:
         raise BadRequestError('Required "s3_key" parameter missing.')
-    key = data and data.get('key')
-    canvas_api_import_job_id = data and data.get('canvas_api_import_job_id')
-    if canvas_api_import_job_id:
-        update_canvas_api_import_status(
-            job_id=canvas_api_import_job_id,
-            course_id=course_id,
-            status='received',
-        )
+    job_id = data and data.get('job_id')
+    update_canvas_api_import_status(
+        job_id=job_id,
+        course_id=course_id,
+        status='received',
+    )
     job_started = ImportCanvasApiData(
         course_id=course_id,
         path=path,
         mock=mock,
         s3_key=s3_key,
-        key=key,
-        canvas_api_import_job_id=canvas_api_import_job_id,
+        job_id=job_id,
     ).run_async()
     return respond_with_status(job_started)
 

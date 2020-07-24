@@ -23,9 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-import json
-import tempfile
-
 from botocore.exceptions import ClientError, ConnectionError
 from flask import current_app as app
 from nessie.externals import canvas_api, s3
@@ -38,52 +35,30 @@ from nessie.lib.mockingbird import fixture
 
 class ImportCanvasApiData(BackgroundJob):
 
-    def run(self, course_id, path, s3_key, mock=None, key=None, canvas_api_import_job_id=None):
-        if canvas_api_import_job_id:
-            update_canvas_api_import_status(
-                job_id=canvas_api_import_job_id,
-                course_id=course_id,
-                status='started',
-            )
-        with tempfile.TemporaryFile() as feed_file:
-            if self._fetch_canvas_api_data(path, feed_file, course_id, mock=mock, key=key):
-                app.logger.info(f'Will stash feed in S3: {s3_key}')
-                try:
-                    response = s3.upload_file(feed_file, s3_key)
-                    if response and canvas_api_import_job_id:
-                        update_canvas_api_import_status(
-                            job_id=canvas_api_import_job_id,
-                            course_id=course_id,
-                            status='complete',
-                        )
+    def run(self, course_id, path, s3_key, job_id, mock=None):
+        update_canvas_api_import_status(job_id, course_id, 'started')
+        try:
+            feed = self._fetch_canvas_api_data(path, mock=mock)
+            if not feed:
+                update_canvas_api_import_status(job_id, course_id, 'no_data')
+                return True
+            for page_number, page in enumerate(feed):
+                if self._first_page_empty(page_number, page):
+                    update_canvas_api_import_status(job_id, course_id, 'no_data')
                     return True
-                except (ClientError, ConnectionError, ValueError) as e:
-                    if canvas_api_import_job_id:
-                        update_canvas_api_import_status(
-                            job_id=canvas_api_import_job_id,
-                            course_id=course_id,
-                            status='error',
-                            details=str(e),
-                        )
-                    app.logger.error(e)
-                    return False
-            if canvas_api_import_job_id:
-                update_canvas_api_import_status(
-                    job_id=canvas_api_import_job_id,
-                    course_id=course_id,
-                    status='no_data',
-                )
-            return True
+                with s3.stream_upload(page, f'{s3_key}_{page_number}.json'):
+                    update_canvas_api_import_status(job_id, course_id, status='streaming', details=f'page_number={page_number}')
+        except (ClientError, ConnectionError, ValueError) as e:
+            update_canvas_api_import_status(job_id, course_id, 'error', details=str(e))
+            app.logger.error(e)
+            return False
+        update_canvas_api_import_status(job_id, course_id, 'complete')
+        return True
+
+    def _first_page_empty(self, page_number, page):
+        # Some Canvas APIs (e.g. Grade Change Log) return a small but non-empty response when there is no data.
+        return page_number == 0 and len(page.text) < 500
 
     @fixture('canvas_course_grade_change_log_7654321.json')
-    def _fetch_canvas_api_data(self, path, feed_file, course_id, mock=None, key=None):
-        response = canvas_api.paged_request(
-            path=path,
-            mock=mock,
-            key=key,
-        )
-        for page in response:
-            for record in page:
-                record['course_id'] = course_id
-                feed_file.write(json.dumps(record).encode() + b'\n')
-        return response
+    def _fetch_canvas_api_data(self, path, mock=None):
+        return canvas_api.paged_request(path=path, mock=mock)

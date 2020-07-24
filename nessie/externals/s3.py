@@ -23,6 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from contextlib import contextmanager
 from gzip import GzipFile
 import io
 import json
@@ -235,32 +236,15 @@ def upload_json(obj, s3_key):
 
 def upload_from_url(url, s3_key, on_stream_opened=None):
     bucket = app.config['LOCH_S3_BUCKET']
-    s3_url = build_s3_url(s3_key)
     with requests.get(url, stream=True) as response:
         if response.status_code != 200:
             app.logger.error(
                 f'Received unexpected status code, aborting S3 upload '
                 f'(status={response.status_code}, body={response.text}, key={s3_key} url={url})')
             raise ConnectionError(f'Response {response.status_code}: {response.text}')
-        if on_stream_opened:
-            on_stream_opened(response.headers)
         try:
-            s3_upload_args = {'ServerSideEncryption': app.config['LOCH_S3_ENCRYPTION']}
-            if s3_url.endswith('.gz'):
-                s3_upload_args.update({
-                    'ContentEncoding': 'gzip',
-                    'ContentType': 'text/plain',
-                })
-            session = get_session()
-            # smart_open needs to be told to ignore the .gz extension, or it will smartly attempt to double-compress it.
-            with smart_open.open(
-                s3_url,
-                'wb',
-                ignore_ext=True,
-                transport_params=dict(session=session, multipart_upload_kwargs=s3_upload_args),
-            ) as s3_out:
-                for chunk in response.iter_content(chunk_size=1024):
-                    s3_out.write(chunk)
+            with stream_upload(response, s3_key):
+                on_stream_opened(response.headers)
         except (ClientError, ConnectionError, ValueError) as e:
             app.logger.error(f'Error on S3 upload: source_url={url}, bucket={bucket}, key={s3_key}, error={e}')
             raise e
@@ -273,3 +257,25 @@ def upload_from_url(url, s3_key, on_stream_opened=None):
 def upload_tsv_rows(rows, s3_key):
     data = b'\n'.join(rows)
     return upload_data(data, s3_key)
+
+
+@contextmanager
+def stream_upload(response, s3_key):
+    s3_url = build_s3_url(s3_key)
+    s3_upload_args = {'ServerSideEncryption': app.config['LOCH_S3_ENCRYPTION']}
+    if s3_url.endswith('.gz'):
+        s3_upload_args.update({
+            'ContentEncoding': 'gzip',
+            'ContentType': 'text/plain',
+        })
+    session = get_session()
+    # smart_open needs to be told to ignore the .gz extension, or it will smartly attempt to double-compress it.
+    with smart_open.open(
+        s3_url,
+        'wb',
+        ignore_ext=True,
+        transport_params=dict(session=session, multipart_upload_kwargs=s3_upload_args),
+    ) as s3_out:
+        yield
+        for chunk in response.iter_content(chunk_size=1024):
+            s3_out.write(chunk)

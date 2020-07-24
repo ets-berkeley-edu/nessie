@@ -57,7 +57,7 @@ class ImportCanvasGradebookHistory(BackgroundJob):
         index = 1
         for course_id in canvas_course_ids:
             path = f'/api/v1/courses/{course_id}/gradebook_history/feed'
-            s3_key = f'{get_s3_canvas_api_path()}/gradebook_history/gradebook_history_{course_id}.json'
+            s3_key = f'{get_s3_canvas_api_path()}/gradebook_history/gradebook_history_{course_id}'
             create_canvas_api_import_status(
                 job_id=job_id,
                 term_id=term_id,
@@ -73,7 +73,7 @@ class ImportCanvasGradebookHistory(BackgroundJob):
                     'course_id': course_id,
                     'path': path,
                     's3_key': s3_key,
-                    'canvas_api_import_job_id': job_id,
+                    'job_id': job_id,
                 },
             )
             if not response:

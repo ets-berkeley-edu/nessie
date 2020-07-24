@@ -31,6 +31,8 @@ from nessie.externals import rds, s3
 
 
 def create_canvas_api_import_status(job_id, term_id, course_id, table_name):
+    if not job_id:
+        return False
     sql = f"""INSERT INTO {_rds_schema()}.canvas_api_import_job_status
                (job_id, term_id, course_id, table_name, status, instance_id, created_at, updated_at)
                VALUES (%s, %s, %s, %s, 'created', %s, current_timestamp, current_timestamp)
@@ -71,6 +73,8 @@ def get_failures_from_last_sync():
 
 
 def update_canvas_api_import_status(job_id, course_id, status, details=None):
+    if not job_id:
+        return False
     sql = f"""UPDATE {_rds_schema()}.canvas_api_import_job_status
              SET status=%s, updated_at=current_timestamp"""
     params = [status]
