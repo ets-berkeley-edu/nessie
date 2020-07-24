@@ -440,6 +440,16 @@
                       "description": "Major - Regular Acad/Prfnl"
                     }
                   },
+                  "academicSubPlans": [
+                    {
+                      "cipCode": "03.0103",
+                      "subPlan": {
+                        "code": "04683SP01G",
+                        "description": "Ecosystem Sciences",
+                        "formalDescription": "Concentration in Ecosystem Sciences"
+                      }
+                    }
+                  ],
                   "expectedGraduationTerm": {
                     "id": "2198",
                     "name": "2019 Fall"

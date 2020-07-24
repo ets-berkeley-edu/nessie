@@ -282,6 +282,7 @@ def merge_sis_profile_phones(sis_student_api_feed, sis_profile):
 def merge_sis_profile_plans(academic_status, sis_profile):
     plans = []
     plans_minor = []
+    subplans = set()
     for student_plan in academic_status.get('studentPlans', []):
         academic_plan = student_plan.get('academicPlan', {})
         # SIS majors come in five flavors, plus a sixth for minors.
@@ -322,8 +323,16 @@ def merge_sis_profile_plans(academic_status, sis_profile):
             plan_collection = plans
         if not next((p for p in plan_collection if p.get('description') == plan_feed.get('description')), None):
             plan_collection.append(plan_feed)
+
+        # Add any subplans.
+        for academic_subplan in student_plan.get('academicSubPlans', []):
+            subplan_description = academic_subplan.get('subPlan', {}).get('description')
+            if subplan_description:
+                subplans.add(subplan_description)
+
     sis_profile['plans'] = sorted(plans, key=itemgetter('description'))
     sis_profile['plansMinor'] = sorted(plans_minor, key=itemgetter('description'))
+    sis_profile['subplans'] = sorted(list(subplans))
 
 
 def merge_intended_majors(intended_majors_feed, sis_profile):
