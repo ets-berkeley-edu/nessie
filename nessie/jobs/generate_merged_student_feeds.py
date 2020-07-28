@@ -283,6 +283,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             and self._refresh_rds_profiles(transaction)
             and self._delete_rds_rows('intended_majors', sids, transaction)
             and self._refresh_rds_intended_majors(transaction)
+            and self._delete_rds_rows('academic_standing', sids, transaction)
+            and self._refresh_rds_academic_standing(transaction)
             and self._delete_rds_rows('minors', sids, transaction)
             and self._refresh_rds_minors(transaction)
             and self._index_rds_email_address(transaction)
@@ -311,6 +313,23 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             sql = f'TRUNCATE {self.rds_schema}.{table}'
             params = None
         return transaction.execute(sql, params)
+
+    def _refresh_rds_academic_standing(self, transaction):
+        return transaction.execute(
+            f"""INSERT INTO {self.rds_schema}.academic_standing (
+            SELECT *
+            FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
+                SELECT DISTINCT sid, term_id, acad_standing_action, acad_standing_status, LEFT(action_date, 10)
+                FROM {self.redshift_schema}.academic_standing
+              $REDSHIFT$)
+            AS redshift_academic_standing (
+                sid VARCHAR,
+                term_id VARCHAR,
+                acad_standing_action VARCHAR,
+                acad_standing_status VARCHAR,
+                action_date VARCHAR
+            ));""",
+        )
 
     def _refresh_rds_academic_status(self, transaction):
         return transaction.execute(

@@ -89,6 +89,19 @@ GRANT USAGE ON SCHEMA {rds_schema_student} TO {rds_app_boa_user};
 GRANT SELECT ON ALL TABLES IN SCHEMA {rds_schema_student} TO {rds_app_boa_user};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_student} GRANT SELECT ON TABLES TO {rds_app_boa_user};
 
+CREATE TABLE IF NOT EXISTS {rds_schema_student}.academic_standing
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR NOT NULL,
+    acad_standing_action VARCHAR,
+    acad_standing_status VARCHAR,
+    action_date VARCHAR,
+    PRIMARY KEY (sid, term_id)
+);
+
+CREATE INDEX IF NOT EXISTS academic_standing_action_idx ON {rds_schema_student}.academic_standing (acad_standing_action);
+CREATE INDEX IF NOT EXISTS academic_standing_status_idx ON {rds_schema_student}.academic_standing (acad_standing_status);
+
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_academic_status
 (
     sid VARCHAR NOT NULL,

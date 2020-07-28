@@ -40,6 +40,22 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_sis} GRANT SELECT ON TABLES 
 -- External Tables
 --------------------------------------------------------------------
 
+-- academic status
+CREATE EXTERNAL TABLE {redshift_schema_sis}.academic_standing
+(
+    sid VARCHAR,
+    term_id VARCHAR,
+    acad_standing_action VARCHAR,
+    acad_standing_action_descr VARCHAR,
+    acad_standing_status VARCHAR,
+    acad_standing_status_descr VARCHAR,
+    action_date VARCHAR
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '{loch_s3_sis_data_path}/advisees/academic_standing';
+
 -- basic attributes
 CREATE EXTERNAL TABLE {redshift_schema_sis}.basic_attributes
 (
