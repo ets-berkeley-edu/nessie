@@ -197,6 +197,17 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_majors
 DISTKEY (sid)
 SORTKEY (college, major);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.academic_standing
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR NOT NULL,
+    acad_standing_action VARCHAR,
+    acad_standing_status VARCHAR,
+    action_date VARCHAR
+)
+DISTKEY (sid)
+SORTKEY (sid);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.demographics
 (
     sid VARCHAR NOT NULL,
