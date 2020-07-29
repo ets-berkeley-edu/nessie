@@ -52,6 +52,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     rds_schema = app.config['RDS_SCHEMA_STUDENT']
     rds_dblink_to_redshift = app.config['REDSHIFT_DATABASE'] + '_redshift'
     redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
+    redshift_schema_sis = app.config['REDSHIFT_SCHEMA_SIS']
 
     def run(self, term_id=None):
         app.logger.info('Starting merged profile generation job.')
@@ -100,6 +101,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             raise BackgroundJobError('Failed to queue enrollment term jobs.')
 
         student_schema.refresh_all_from_staging(profile_tables)
+        self.update_redshift_academic_standing()
         self.update_rds_profile_indexes()
 
         app.logger.info('Profile generation complete; waiting for enrollment term generation to finish.')
@@ -253,6 +255,14 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         for sid, rows in groupby(get_advisee_advisor_mappings(), operator.itemgetter('student_sid')):
             advisors_by_student_id[sid] = list(rows)
         return advisors_by_student_id
+
+    def update_redshift_academic_standing(self):
+        redshift.execute(
+            f"""TRUNCATE {self.redshift_schema}.academic_standing;
+            INSERT INTO {self.redshift_schema}.academic_standing
+                SELECT sid, term_id, acad_standing_action, acad_standing_status, action_date
+                FROM {self.redshift_schema_sis}.academic_standing;""",
+        )
 
     def update_rds_profile_indexes(self):
         with rds.transaction() as transaction:
