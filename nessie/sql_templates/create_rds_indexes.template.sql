@@ -95,10 +95,11 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.academic_standing
     term_id VARCHAR NOT NULL,
     acad_standing_action VARCHAR,
     acad_standing_status VARCHAR,
-    action_date VARCHAR,
-    PRIMARY KEY (sid, term_id)
+    action_date VARCHAR
 );
 
+CREATE INDEX IF NOT EXISTS academic_standing_sid_idx ON {rds_schema_student}.academic_standing (sid);
+CREATE INDEX IF NOT EXISTS academic_standing_term_id_idx ON {rds_schema_student}.academic_standing (term_id);
 CREATE INDEX IF NOT EXISTS academic_standing_action_idx ON {rds_schema_student}.academic_standing (acad_standing_action);
 CREATE INDEX IF NOT EXISTS academic_standing_status_idx ON {rds_schema_student}.academic_standing (acad_standing_status);
 
