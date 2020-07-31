@@ -10,7 +10,7 @@ import { getRunnableJobs } from '@/api/job';
 
 Vue.use(VueRouter);
 
-let registerMe = () => {
+const registerMe = () => {
   return Promise.resolve(
     getMyProfile().then(me => {
       if (me) {
@@ -26,10 +26,10 @@ let registerMe = () => {
   );
 };
 
-let beforeEach = (to: any, from: any, next: Function) => {
+const beforeEach = (to: any, from: any, next: Function) => {
   store.dispatch('context/loadConfig').then(() => {
     store.dispatch('context/clearErrors').then(() => {
-      let safeNext = (to: any, next: Function) => {
+      const safeNext = (to: any, next: Function) => {
         if (to.matched.length) {
           next();
         } else {
@@ -45,7 +45,7 @@ let beforeEach = (to: any, from: any, next: Function) => {
   });
 };
 
-let requiresAuth = (to: any, from: any, next: Function) => {
+const requiresAuth = (to: any, from: any, next: Function) => {
   if (store.getters['user/user']) {
     next();
   } else {
