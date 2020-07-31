@@ -29,6 +29,7 @@ import cas
 from flask import current_app as app, flash, redirect, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 from nessie.lib.http import add_param_to_url, tolerant_jsonify
+from nessie.models.user import find_by_uid
 
 
 @app.route('/api/user/cas_login_url', methods=['GET'])
@@ -62,7 +63,7 @@ def cas_login():
     redirect_url = request.args.get('url')
     uid, attributes, proxy_granting_ticket = _cas_client(redirect_url).verify_ticket(ticket)
     logger.info(f'Logged into CAS as user {uid}')
-    user = app.login_manager.user_callback(uid)
+    user = find_by_uid(uid)
     if user is None:
         logger.error(f'User with UID {uid} was not found.')
         param = ('casLoginError', f'Sorry, no user found with UID {uid}.')

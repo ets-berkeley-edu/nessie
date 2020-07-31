@@ -24,7 +24,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import jsonify, make_response, request
-from flask_login import LoginManager, UserMixin
+from flask_login import LoginManager
+from nessie.models.user import find_by_uid
 
 
 def register_routes(app):
@@ -32,14 +33,8 @@ def register_routes(app):
     # Register authentication before routes are registered.
     login_manager = LoginManager()
 
-    def _find_by_uid(current_user_uid):
-        if current_user_uid:
-            uid = next((uid for uid in app.config['AUTHORIZED_USERS'] if uid == int(current_user_uid)), None)
-            return User(uid) if uid else None
-        else:
-            return None
-    login_manager.user_loader(_find_by_uid)
     login_manager.init_app(app)
+    login_manager.user_loader(find_by_uid)
 
     # Register API routes.
     import nessie.api.admin_controller
@@ -89,13 +84,3 @@ def register_routes(app):
             else:
                 app.logger.debug(log_message)
         return response
-
-
-class User(UserMixin):
-
-    def __init__(self, uid):
-        self.id = uid
-        self.name = f'uid:{str(uid)}'
-
-    def __repr__(self):
-        return self.id
