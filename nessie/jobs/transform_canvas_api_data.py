@@ -52,12 +52,17 @@ class TransformCanvasApiData(BackgroundJob):
     def transform(self, s3_source, s3_dest, key=None):
         objects = s3.get_keys_with_prefix(s3_source)
         app.logger.info(f'Will transform {len(objects)} objects from {s3_source} and put results to {s3_dest}.')
+        skip_count = 0
         for o in objects:
             file_name = o.split('/')[-1]
-            course_id = int(file_name.split('_')[-2])
+            if s3.object_exists(f'{s3_dest}/{file_name}'):
+                skip_count += 1
+                continue
             canvas_api_data = s3.get_object_json(o).get(key) if key else s3.get_object_json(o)
             with tempfile.TemporaryFile() as result:
+                course_id = int(file_name.split('_')[-2])
                 for record in canvas_api_data:
                     record['course_id'] = course_id
                     result.write(json.dumps(record).encode() + b'\n')
                 s3.upload_file(result, f'{s3_dest}/{file_name}')
+        app.logger.info(f'Transformed {len(objects) - skip_count} new objects; skipped {skip_count} existing objects.')
