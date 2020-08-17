@@ -1,4 +1,4 @@
 module.exports = {
   publicPath: process.env.NODE_ENV === 'production' ? '/static' : '',
-  lintOnSave: true
+  lintOnSave: process.env.NODE_ENV !== 'production'
 };

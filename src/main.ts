@@ -3,9 +3,11 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import App from '@/App.vue';
 import axios from 'axios';
 import BootstrapVue from 'bootstrap-vue';
+import lodash from 'lodash'
 import router from '@/router';
 import store from '@/store';
 import Vue from 'vue';
+import VueLodash from 'vue-lodash'
 
 // Allow cookies in Access-Control requests
 axios.defaults.withCredentials = true;
@@ -22,7 +24,7 @@ axios.interceptors.response.use(response => response, function(error) {
 Vue.config.productionTip = false;
 Vue.use(BootstrapVue);
 Vue.use(require('vue-moment'));
-Vue.use(require('vue-lodash'), { name: '_' });
+Vue.use(VueLodash, { lodash });
 
 new Vue({
   router,
