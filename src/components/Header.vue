@@ -13,7 +13,7 @@
     <div v-if="user" class="flex-row greeting">
       <div>Hello {{ user.uid }}</div>
       <div>
-        [<b-link @click="logOut()">Logout</b-link>]
+        [<b-link @click="logOut">Logout</b-link>]
       </div>
     </div>
   </div>

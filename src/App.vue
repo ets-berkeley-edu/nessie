@@ -3,7 +3,7 @@
     <Container>
       <Header />
       <div class="content">
-        <display-error />
+        <DisplayError />
         <router-view />
       </div>
       <Footer />
