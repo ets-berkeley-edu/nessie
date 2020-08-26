@@ -1,30 +1,30 @@
-import Vue from 'vue';
-import Vuex from 'vuex';
+import Vue from 'vue'
+import Vuex from 'vuex'
 
-Vue.use(Vuex);
+Vue.use(Vuex)
 
 const state = {
   user: null
-};
+}
 
 const getters = {
   user: (state: any) => {
-    return state.user;
+    return state.user
   }
-};
+}
 
 const mutations = {
   logout: (state: any) => {
-    state.user = null;
+    state.user = null
   },
   registerMe: (state: any, user: any) => {
-    state.user = user;
+    state.user = user
   }
-};
+}
 
 export default {
   namespaced: true,
   state,
   getters,
   mutations
-};
+}

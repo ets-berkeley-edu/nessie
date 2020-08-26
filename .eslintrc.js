@@ -17,6 +17,7 @@ module.exports = {
     'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
     'no-unexpected-multiline': 2,
     'quotes': [2, 'single'],
+    'semi': [2, 'never'],
     'vue/array-bracket-spacing': 2,
     'vue/arrow-spacing': 2,
     'vue/attributes-order': 2,

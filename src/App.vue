@@ -12,10 +12,10 @@
 </template>
 
 <script>
-import Container from './components/Container';
-import DisplayError from './components/DisplayError';
-import Footer from './components/Footer';
-import Header from './components/Header';
+import Container from './components/Container'
+import DisplayError from './components/DisplayError'
+import Footer from './components/Footer'
+import Header from './components/Header'
 
 export default {
   name: 'App',
@@ -25,7 +25,7 @@ export default {
     Footer,
     Header
   }
-};
+}
 </script>
 
 <style src="./nessie.css">

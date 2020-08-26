@@ -35,9 +35,9 @@
 </template>
 
 <script>
-import Context from '@/mixins/Context';
+import Context from '@/mixins/Context'
 
 export default {
   mixins: [Context]
-};
+}
 </script>
