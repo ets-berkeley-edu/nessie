@@ -15,18 +15,18 @@
 </template>
 
 <script>
-import store from '@/store';
-import Context from '@/mixins/Context';
+import store from '@/store'
+import Context from '@/mixins/Context'
 
 export default {
   name: 'DisplayError',
   mixins: [Context],
   methods: {
     dismissError(id) {
-      store.commit('context/dismissError', id);
+      store.commit('context/dismissError', id)
     }
   }
-};
+}
 </script>
 
 <style scoped>

@@ -61,8 +61,8 @@
 </template>
 
 <script>
-import { getSchedule, reloadSchedule, removeSchedule, updateSchedule } from '@/api/schedule';
-import LargeSpinner from '@/components/widgets/LargeSpinner';
+import { getSchedule, reloadSchedule, removeSchedule, updateSchedule } from '@/api/schedule'
+import LargeSpinner from '@/components/widgets/LargeSpinner'
 
 export default {
   name: 'Schedule',
@@ -73,47 +73,47 @@ export default {
     return {
       jobs: [],
       loading: true
-    };
+    }
   },
   created() {
-    this.getSchedule();
+    this.getSchedule()
   },
   methods: {
     getSchedule() {
-      this.loading = true;
+      this.loading = true
       getSchedule().then(data => {
-        this.jobs = data;
-        this.loading = false;
-      });
+        this.jobs = data
+        this.loading = false
+      })
     },
     pauseJob(jobId) {
-      this.loading = true;
+      this.loading = true
       updateSchedule(jobId, {}).then(updatedJob => {
         this.jobs.forEach((job, index) => {
           if (job.id === updatedJob.id) {
-            this.jobs.splice(index, 1);
+            this.jobs.splice(index, 1)
           }
-        });
-        this.jobs.push(updatedJob);
-        this.loading = false;
-      });
+        })
+        this.jobs.push(updatedJob)
+        this.loading = false
+      })
     },
     reloadSchedule() {
-      this.loading = true;
+      this.loading = true
       reloadSchedule().then(data => {
-        this.jobs = data;
-        this.loading = false;
-      });
+        this.jobs = data
+        this.loading = false
+      })
     },
     removeJob(jobId) {
-      this.loading = true;
+      this.loading = true
       removeSchedule(jobId).then(data => {
-        this.jobs = data;
-        this.loading = false;
-      });
+        this.jobs = data
+        this.loading = false
+      })
     },
   }
-};
+}
 </script>
 
 <style scoped>

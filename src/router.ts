@@ -1,57 +1,57 @@
-import Home from '@/views/Home.vue';
-import Login from '@/views/Login.vue';
-import Schedule from '@/views/Schedule.vue';
-import Status from '@/views/Status.vue';
-import store from '@/store';
-import Vue from 'vue';
-import VueRouter from 'vue-router';
-import { getMyProfile } from '@/api/user';
-import { getRunnableJobs } from '@/api/job';
+import Home from '@/views/Home.vue'
+import Login from '@/views/Login.vue'
+import Schedule from '@/views/Schedule.vue'
+import Status from '@/views/Status.vue'
+import store from '@/store'
+import Vue from 'vue'
+import VueRouter from 'vue-router'
+import { getMyProfile } from '@/api/user'
+import { getRunnableJobs } from '@/api/job'
 
-Vue.use(VueRouter);
+Vue.use(VueRouter)
 
 const registerMe = () => {
   return Promise.resolve(
     getMyProfile().then(me => {
       if (me) {
-        store.commit('user/registerMe', me);
+        store.commit('user/registerMe', me)
         getRunnableJobs().then(data => {
-          store.commit('schedule/cacheRunnableJobs', data);
-          return me;
-        });
+          store.commit('schedule/cacheRunnableJobs', data)
+          return me
+        })
       } else {
-        return null;
+        return null
       }
     })
-  );
-};
+  )
+}
 
 const beforeEach = (to: any, from: any, next: Function) => {
   store.dispatch('context/loadConfig').then(() => {
     store.dispatch('context/clearErrors').then(() => {
       const safeNext = (to: any, next: Function) => {
         if (to.matched.length) {
-          next();
+          next()
         } else {
-          next('/home');
+          next('/home')
         }
-      };
-      if (store.getters['user/user']) {
-        safeNext(to, next);
-      } else {
-        registerMe().then(() => safeNext(to, next));
       }
-    });
-  });
-};
+      if (store.getters['user/user']) {
+        safeNext(to, next)
+      } else {
+        registerMe().then(() => safeNext(to, next))
+      }
+    })
+  })
+}
 
 const requiresAuth = (to: any, from: any, next: Function) => {
   if (store.getters['user/user']) {
-    next();
+    next()
   } else {
-    next('/login');
+    next('/login')
   }
-};
+}
 
 const router = new VueRouter({
   mode: 'history',
@@ -62,9 +62,9 @@ const router = new VueRouter({
       component: Login,
       beforeEnter: (to: any, from: any, next: Function) => {
         if (store.getters['user/user']) {
-          next('/home');
+          next('/home')
         } else {
-          next();
+          next()
         }
       }
     },
@@ -85,8 +85,8 @@ const router = new VueRouter({
       beforeEnter: requiresAuth
     }
   ]
-});
+})
 
-router.beforeEach(beforeEach);
+router.beforeEach(beforeEach)
 
-export default router;
+export default router

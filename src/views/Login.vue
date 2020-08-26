@@ -6,15 +6,15 @@
   </div>
 </template>
 <script>
-import { getCasLoginURL } from '@/api/user';
+import { getCasLoginURL } from '@/api/user'
 
 export default {
   methods: {
     casLogin() {
       getCasLoginURL().then(data => {
-        window.location = data.casLoginURL;
-      });
+        window.location = data.casLoginURL
+      })
     }
   }
-};
+}
 </script>

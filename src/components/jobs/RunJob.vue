@@ -52,9 +52,9 @@
 </template>
 
 <script>
-import _ from 'lodash';
-import store from '@/store';
-import { runJob } from '@/api/job';
+import _ from 'lodash'
+import store from '@/store'
+import { runJob } from '@/api/job'
 
 export default {
   name: 'RunJob',
@@ -64,37 +64,37 @@ export default {
       params: {},
       started: [],
       selected: null
-    };
+    }
   },
   computed: {
     runnableJobs() {
-      return store.getters['schedule/runnableJobs'];
+      return store.getters['schedule/runnableJobs']
     },
     selectedJobRunnable() {
       if (!this.selected) {
-        return false;
+        return false
       }
-      return !_.find(this.selected.required, key => !this.params[key]);
+      return !_.find(this.selected.required, key => !this.params[key])
     }
   },
   methods: {
     /* eslint no-undef: "warn" */
     runSelectedJob() {
-      let apiPath = this.selected.path;
+      let apiPath = this.selected.path
       _.each(this.selected.required, key => {
-        apiPath = _.replace(apiPath, '<' + key + '>', this.params[key]);
-      });
+        apiPath = _.replace(apiPath, '<' + key + '>', this.params[key])
+      })
       runJob(apiPath).then(data => {
-        let job = _.remove(this.runnableJobs, this.selected)[0];
+        let job = _.remove(this.runnableJobs, this.selected)[0]
         if (data.status.includes('error')) {
-          this.errored.push(job);
+          this.errored.push(job)
         } else {
-          this.started.push(job);
+          this.started.push(job)
         }
-      });
+      })
     }
   }
-};
+}
 </script>
 
 <style scoped>

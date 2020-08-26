@@ -27,10 +27,10 @@
 </template>
 
 <script>
-import _ from 'lodash';
-import Datepicker from 'vuejs-datepicker';
-import LargeSpinner from '@/components/widgets/LargeSpinner';
-import { getBackgroundJobStatus } from '@/api/job';
+import _ from 'lodash'
+import Datepicker from 'vuejs-datepicker'
+import LargeSpinner from '@/components/widgets/LargeSpinner'
+import { getBackgroundJobStatus } from '@/api/job'
 
 export default {
   name: 'JobStatus',
@@ -52,15 +52,15 @@ export default {
         ]
       },
       loading: true
-    };
+    }
   },
   created() {
-    this.getBackgroundJobStatus();
+    this.getBackgroundJobStatus()
   },
   methods: {
     /* eslint no-undef: "warn" */
     getBackgroundJobStatus() {
-      this.loading = true;
+      this.loading = true
       getBackgroundJobStatus(this.jobsDate).then(data => {
         this.jobStatuses.rows = _.map(data, row => {
           let style =
@@ -68,15 +68,15 @@ export default {
               ? 'danger'
               : row.status === 'started'
                 ? 'info'
-                : 'success';
-          row._cellVariants = { status: style };
-          return row;
-        });
-        this.loading = false;
-      });
+                : 'success'
+          row._cellVariants = { status: style }
+          return row
+        })
+        this.loading = false
+      })
     }
   }
-};
+}
 </script>
 
 <style scoped>

@@ -20,24 +20,24 @@
 </template>
 
 <script>
-import { getCasLogoutURL } from '@/api/user';
-import store from '@/store';
+import { getCasLogoutURL } from '@/api/user'
+import store from '@/store'
 
 export default {
   name: 'Header',
   computed: {
     user() {
-      return store.getters['user/user'];
+      return store.getters['user/user']
     }
   },
   methods: {
     logOut() {
       getCasLogoutURL().then(data => {
-        window.location.href = data.casLogoutURL;
-      });
+        window.location.href = data.casLogoutURL
+      })
     }
   }
-};
+}
 </script>
 
 <style scoped>

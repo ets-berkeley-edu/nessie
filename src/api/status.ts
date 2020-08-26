@@ -1,23 +1,23 @@
-import axios from 'axios';
-import store from '@/store';
+import axios from 'axios'
+import store from '@/store'
 
 export function getConfig() {
-  const apiBaseUrl = store.getters['context/apiBaseUrl'];
+  const apiBaseUrl = store.getters['context/apiBaseUrl']
   return axios
     .get(`${apiBaseUrl}/api/config`)
-    .then(response => response.data, err => err.response);
+    .then(response => response.data, err => err.response)
 }
 
 export function getPing() {
-  const apiBaseUrl = store.getters['context/apiBaseUrl'];
+  const apiBaseUrl = store.getters['context/apiBaseUrl']
   return axios
     .get(`${apiBaseUrl}/api/ping`)
-    .then(response => response.data, err => err.response);
+    .then(response => response.data, err => err.response)
 }
 
 export function getVersion() {
-  const apiBaseUrl = store.getters['context/apiBaseUrl'];
+  const apiBaseUrl = store.getters['context/apiBaseUrl']
   return axios
     .get(`${apiBaseUrl}/api/version`)
-    .then(response => response.data, err => err.response);
+    .then(response => response.data, err => err.response)
 }
