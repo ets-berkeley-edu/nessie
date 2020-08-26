@@ -64,6 +64,7 @@ from nessie.jobs.import_canvas_gradebook_history import ImportCanvasGradebookHis
 from nessie.jobs.import_degree_progress import ImportDegreeProgress
 from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
 from nessie.jobs.import_non_current_students import ImportNonCurrentStudents
+from nessie.jobs.import_piazza_api_data import ImportPiazzaApiData
 from nessie.jobs.import_registrations import ImportRegistrations
 from nessie.jobs.import_registrations_hist_enr import ImportRegistrationsHistEnr
 from nessie.jobs.import_sis_student_api import ImportSisStudentApi
@@ -82,6 +83,7 @@ from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
 from nessie.jobs.transform_canvas_api_data import TransformCanvasApiData
 from nessie.jobs.transform_lrs_incrementals import TransformLrsIncrementals
+from nessie.jobs.transform_piazza_api_data import TransformPiazzaApiData
 from nessie.jobs.verify_canvas_api_import import VerifyCanvasApiImport
 from nessie.jobs.verify_sis_advising_note_attachments import VerifySisAdvisingNoteAttachments
 from nessie.lib.http import tolerant_jsonify
@@ -346,6 +348,19 @@ def import_non_current_students():
     return respond_with_status(job_started)
 
 
+@app.route('/api/job/import_piazza_api_data/<frequency>', methods=['POST'])
+@app.route('/api/job/import_piazza_api_data/<frequency>/<datestamp>', methods=['POST'])
+@auth_required
+def import_piazza_api_data(frequency, datestamp=None):
+    if frequency not in 'daily monthly full'.split():
+        raise BadRequestError(f'Incorrect frequency parameter "{frequency}".')
+    job_started = ImportPiazzaApiData(
+        frequency=frequency,
+        datestamp=datestamp,
+    ).run_async()
+    return respond_with_status(job_started)
+
+
 @app.route('/api/job/index_enrollments/<term_id>', methods=['POST'])
 @auth_required
 def index_enrollments(term_id):
@@ -404,6 +419,17 @@ def transform_canvas_api_data():
 @auth_required
 def transform_lrs_incrementals():
     job_started = TransformLrsIncrementals().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/transform_piazza_api_data', methods=['POST'])
+@auth_required
+def transform_piazza_api_data():
+    if 'path' in request.args:
+        path = request.args['path']
+    else:
+        path = 'latest'
+    job_started = TransformPiazzaApiData(path=path).run_async()
     return respond_with_status(job_started)
 
 

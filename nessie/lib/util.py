@@ -27,6 +27,7 @@ from datetime import datetime
 import hashlib
 import inspect
 import re
+from time import strftime
 
 from dateutil.rrule import DAILY, rrule
 from flask import current_app as app
@@ -117,6 +118,14 @@ def get_s3_coe_daily_path(cutoff=None):
 
 def get_s3_oua_daily_path(cutoff=None):
     return app.config['LOCH_S3_OUA_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
+
+
+def get_s3_piazza_data_path(path=None):
+    if path is None:
+        return app.config['LOCH_S3_PIAZZA_DATA_PATH']
+    elif path == 'latest':
+        path = strftime('daily/%Y/%m/%d/daily_%Y-%m-%d.zip')
+    return app.config['LOCH_S3_PIAZZA_DATA_PATH'] + f'/{path}'
 
 
 def get_s3_sis_attachment_current_paths(begin_dt=None):
