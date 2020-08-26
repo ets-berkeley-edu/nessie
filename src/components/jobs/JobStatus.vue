@@ -2,11 +2,11 @@
   <div>
     <h2>Job Status</h2>
     <div>
-      <datepicker
+      <Datepicker
         v-model="jobsDate"
         placeholder="Select Date"
         @disabled="loading"
-        @closed="getBackgroundJobStatus"></datepicker>
+        @closed="getBackgroundJobStatus"></Datepicker>
     </div>
     <div class="results-container">
       <LargeSpinner v-if="loading" />
