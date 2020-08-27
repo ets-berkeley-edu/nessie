@@ -28,6 +28,7 @@ from gzip import GzipFile
 import io
 import json
 import socket
+from zipfile import ZipFile
 
 import boto3
 from botocore.exceptions import ClientError, ConnectionError
@@ -148,6 +149,18 @@ def get_object_json(s3_key):
     text = get_object_text(s3_key)
     if text:
         return json.loads(text)
+
+
+def get_object_compressed_text_reader(key):
+    """Read a .zip file as text; a blend of get_object_text and get_unzipped_text_reader."""
+    client = get_client()
+    bucket = app.config['LOCH_S3_BUCKET']
+    try:
+        _object = client.get_object(Bucket=bucket, Key=key)
+        return ZipFile(io.BytesIO(_object['Body'].read()), mode='r')
+    except (ClientError, ConnectionError, ValueError) as e:
+        app.logger.error(f'Error retrieving S3 object text: bucket={bucket}, key={key}, error={e}')
+        return None
 
 
 def get_object_text(key):
