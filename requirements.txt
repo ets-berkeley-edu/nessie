@@ -6,7 +6,7 @@ Werkzeug==1.0.1
 apscheduler==3.6.3
 boto3==1.7.84
 decorator==4.4.2
-ldap3==2.8
+ldap3==2.7
 psycopg2-binary==2.8.5
 pytz==2020.1
 requests==2.24.0
