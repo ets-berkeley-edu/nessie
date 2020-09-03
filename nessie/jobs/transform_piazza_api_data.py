@@ -44,22 +44,29 @@ class TransformPiazzaApiData(BackgroundJob):
         s3_source = get_s3_piazza_data_path(path)
         s3_dest = get_s3_piazza_data_path('transformed')
 
-        self.transform(f'{s3_source}', f'{s3_dest}')
+        try:
+            message = self.transform(f'{s3_source}', f'{s3_dest}')
+        except Exception as e:
+            update_background_job_status(self.job_id, 'failed', details='error: ' + str(e))
+            app.logger.error(e)
+            return False
 
-        update_background_job_status(self.job_id, 'succeeded')
-        return 'Piazza data transform complete.'
+        update_background_job_status(self.job_id, 'succeeded', details=f'{path}: {message}')
+        app.logger.debug('Piazza data transform complete.')
+        return True
 
     def transform(self, s3_source, s3_dest, key=None):
         app.logger.info(f'Doing Piazza API data transform job... {s3_source} > {s3_dest}')
         objects = s3.get_keys_with_prefix(s3_source)
         app.logger.info(f'Will transform {len(objects)} objects from {s3_source} and put results to {s3_dest}.')
-        skip_count = 0
+        objects_updated = 0
         new_objects = 0
+        objects_in_error = 0
+        total_objects = 0
         for o in objects:
             file_name = o.split('/')[-1]
             app.logger.info(f'processing {file_name}')
             # file_name is like 'daily_2020-08-14.zip'
-            # datestamp = file_name.split('_')[1].split('.')[0]
             piazza_zip_file = s3.get_object_compressed_text_reader(o).get(key) if key else s3.get_object_compressed_text_reader(o)
             for subfile in piazza_zip_file.namelist():
                 if '.json' in subfile:
@@ -71,15 +78,20 @@ class TransformPiazzaApiData(BackgroundJob):
                         with tempfile.TemporaryFile() as result:
                             s3_object = f'{s3_dest}/{file_type}/{course_id}/{json_file}'
                             if s3.object_exists(s3_object):
-                                skip_count += 1
-                                continue
+                                objects_updated += 1
+                            else:
+                                new_objects += 1
                             result.write(record)
-                            # result.write(json.dumps(record).encode('utf-8'))
                             s3.upload_file(result, s3_object)
-                            new_objects += 1
+                            total_objects += 1
                     except Exception as e:
-                        app.logger.info(f'could not extract {subfile}')
-                        app.logger.info(e)
+                        app.logger.error(f'could not extract {subfile}')
+                        app.logger.error(e)
+                        objects_in_error += 1
                 else:
+                    # not a json file, so we skip it
                     continue
-        app.logger.info(f'Transformed {len(objects)} input files; created {new_objects} new objects; skipped {skip_count} existing objects.')
+        message = f'Transformed {len(objects)} input files; created {new_objects} new objects; '\
+                  + f'updated {objects_updated} existing objects. {objects_in_error} objects in error'
+        app.logger.info(message)
+        return message

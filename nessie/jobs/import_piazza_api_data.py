@@ -41,12 +41,12 @@ class ImportPiazzaApiData(BackgroundJob):
     def run(self, frequency, datestamp, mock=None):
         create_background_job_status(self.job_id)
         try:
-            self.process_archives(frequency, datestamp, self.job_id)
+            message = self.process_archives(frequency, datestamp, self.job_id)
+            update_background_job_status(self.job_id, 'succeeded', details=message)
         except Exception as e:
-            update_background_job_status(self.job_id, frequency, details='error: ' + str(e))
+            update_background_job_status(self.job_id, 'failed', details='error: ' + str(e))
             app.logger.error(e)
             return False
-        update_background_job_status(self.job_id, frequency, 'succeeded')
         return True
 
     def process_archives(self, frequency, datestamp, job_id):
@@ -61,8 +61,7 @@ class ImportPiazzaApiData(BackgroundJob):
             list_of_archives = self.get_list_of_archives(self.headers)
             archives_to_process = self.select_archives_by_type_and_date(list_of_archives, frequency, datestamp)
             if not archives_to_process:
-                update_background_job_status(job_id, frequency, details='no_data')
-                return True
+                return f'{frequency}/{datestamp}: no_data'
             for file_number, archive_file in enumerate(archives_to_process):
                 download_url = self.piazza_api('school.generate_url', self.headers, {'sid': self.sid, 'name': archive_file['name']})
                 download_url = download_url.text
@@ -75,15 +74,16 @@ class ImportPiazzaApiData(BackgroundJob):
                 s3_file = f'{s3_key}/{parts}/{piazza_file_name}.zip'
 
                 def update_streaming_status(headers):
-                    update_background_job_status(job_id, s3_file, details=f"streaming, size={headers.get('Content-Length')}")
+                    update_background_job_status(job_id, 'streaming', details=f"{s3_file}, size={headers.get('Content-Length')}")
 
                 response = s3.upload_from_url(download_url, s3_file, on_stream_opened=update_streaming_status)
                 if response and job_id:
                     destination_size = response.get('ContentLength')
-                    update_background_job_status(job_id, s3_file, details=f'stream complete, size={destination_size}')
+                    update_background_job_status(job_id, 'stream complete', details=f'{s3_file}, stream complete, size={destination_size}')
         except Exception as e:
             # let the people upstairs know, they're in charge
             raise e
+        return f'{frequency}/{datestamp}'
 
     def get_list_of_archives(self, headers):
         email = app.config['PIAZZA_API_USERNAME']  # email for piazza account with school export permission
