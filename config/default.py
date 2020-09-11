@@ -127,6 +127,12 @@ LDAP_HOST = 'ldap-test.berkeley.edu'
 LDAP_BIND = 'mybind'
 LDAP_PASSWORD = 'secret'
 
+PIAZZA_API_URL = 'https://piazza.com/logic/api'
+PIAZZA_API_SID = 'piazza_api_id'
+PIAZZA_API_USERNAME = 'piazza_api_username@berkeley.edu'
+PIAZZA_API_PASSWORD = 'piazza_api_password'
+PIAZZA_API_SESSIONID = 'a_random_string'
+
 # Loch LRS configs
 LRS_DATABASE_URI = 'postgres://lrs:lrs@localhost:5432/lrs'
 
@@ -188,6 +194,8 @@ LOCH_S3_SIS_DATA_PATH = 'sis-data'
 LOCH_S3_SIS_API_DATA_PATH = 'sis-api-data'
 
 LOCH_CANVAS_DATA_REQUESTS_CUTOFF_DATE = '20180101'
+
+LOCH_S3_PIAZZA_DATA_PATH = 'piazza-data'
 
 LOGGING_FORMAT = '[%(asctime)s] - %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 LOGGING_LOCATION = 'nessie.log'
