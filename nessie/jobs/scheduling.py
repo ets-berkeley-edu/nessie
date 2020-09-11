@@ -56,6 +56,7 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_LOAD_LRS_INCREMENTALS': 3800,
     'JOB_LOAD_ADVISING_NOTES': 4000,
     'JOB_IMPORT_CANVAS_API': 5000,
+    'JOB_IMPORT_PIAZZA_API': 6000,
 }
 
 
@@ -96,6 +97,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.import_canvas_gradebook_history import ImportCanvasGradebookHistory
     from nessie.jobs.import_degree_progress import ImportDegreeProgress
     from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
+    from nessie.jobs.import_piazza_api_data import ImportPiazzaApiData
     from nessie.jobs.import_sis_student_api import ImportSisStudentApi
     from nessie.jobs.import_sis_student_api_hist_enr import ImportSisStudentApiHistEnr
     from nessie.jobs.import_registrations import ImportRegistrations
@@ -109,6 +111,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
     from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
     from nessie.jobs.transform_lrs_incrementals import TransformLrsIncrementals
+    from nessie.jobs.transform_piazza_api_data import TransformPiazzaApiData
     from nessie.jobs.verify_sis_advising_note_attachments import VerifySisAdvisingNoteAttachments
 
     schedule_job(sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots, force)
@@ -183,6 +186,15 @@ def schedule_all_jobs(force=False):
             ImportCanvasGradebookHistory,
             ImportCanvasGradeChangeLog,
             CreateCanvasApiSchema,
+        ],
+        force,
+    )
+    schedule_chained_job(
+        sched,
+        'JOB_IMPORT_PIAZZA_API',
+        [
+            ImportPiazzaApiData,
+            TransformPiazzaApiData,
         ],
         force,
     )
