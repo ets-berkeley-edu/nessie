@@ -36,22 +36,21 @@ from nessie.lib.util import get_s3_piazza_data_path
 
 class TransformPiazzaApiData(BackgroundJob):
 
-    def run(self, path='latest'):
-
+    def run(self, archive=None):
+        frequency, datestamp, archive, s3_prefix = get_s3_piazza_data_path(archive)
         app.logger.info('Starting Piazza API data transform job...')
         create_background_job_status(self.job_id)
 
-        s3_source = get_s3_piazza_data_path(path)
-        s3_dest = get_s3_piazza_data_path('transformed')
+        s3_dest = app.config['LOCH_S3_PIAZZA_DATA_PATH'] + '/transformed'
 
         try:
-            message = self.transform(f'{s3_source}', f'{s3_dest}')
+            message = self.transform(s3_prefix, s3_dest)
         except Exception as e:
             update_background_job_status(self.job_id, 'failed', details='error: ' + str(e))
             app.logger.error(e)
             return False
 
-        update_background_job_status(self.job_id, 'succeeded', details=f'{path}: {message}')
+        update_background_job_status(self.job_id, 'succeeded', details=f'{s3_prefix}: {message}')
         app.logger.debug('Piazza data transform complete.')
         return True
 

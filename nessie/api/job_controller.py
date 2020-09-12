@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import json
+import re
 
 from flask import current_app as app, request
 from nessie.api.auth_helper import auth_required
@@ -356,16 +357,13 @@ def import_non_current_students():
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/import_piazza_api_data/<frequency>', methods=['POST'])
-@app.route('/api/job/import_piazza_api_data/<frequency>/<datestamp>', methods=['POST'])
+@app.route('/api/job/import_piazza_api_data', methods=['POST'])
+@app.route('/api/job/import_piazza_api_data/<archive>', methods=['POST'])
 @auth_required
-def import_piazza_api_data(frequency, datestamp=None):
-    if frequency not in 'daily monthly full'.split():
-        raise BadRequestError(f'Incorrect frequency parameter "{frequency}".')
-    job_started = ImportPiazzaApiData(
-        frequency=frequency,
-        datestamp=datestamp,
-    ).run_async()
+def import_piazza_api_data(archive='latest'):
+    if not re.match('(daily|monthly|full|latest)', archive):
+        raise BadRequestError(f'Incorrect archive parameter "{archive}", should be "latest" or like "daily-2020-09-12".')
+    job_started = ImportPiazzaApiData(archive=archive).run_async()
     return respond_with_status(job_started)
 
 
@@ -431,13 +429,12 @@ def transform_lrs_incrementals():
 
 
 @app.route('/api/job/transform_piazza_api_data', methods=['POST'])
+@app.route('/api/job/transform_piazza_api_data/<archive>', methods=['POST'])
 @auth_required
-def transform_piazza_api_data():
-    if 'path' in request.args:
-        path = request.args['path']
-    else:
-        path = 'latest'
-    job_started = TransformPiazzaApiData(path=path).run_async()
+def transform_piazza_api_data(archive='latest'):
+    if not re.match('(daily|monthly|full|latest)', archive):
+        raise BadRequestError(f'Incorrect archive parameter "{archive}", should be "latest" or like "daily-2020-09-12".')
+    job_started = TransformPiazzaApiData(archive=archive).run_async()
     return respond_with_status(job_started)
 
 

@@ -38,7 +38,8 @@ import requests
 
 class ImportPiazzaApiData(BackgroundJob):
 
-    def run(self, frequency, datestamp, mock=None):
+    def run(self, archive=None):
+        frequency, datestamp, archive, s3_path = get_s3_piazza_data_path(archive)
         create_background_job_status(self.job_id)
         try:
             message = self.process_archives(frequency, datestamp, self.job_id)
@@ -50,7 +51,7 @@ class ImportPiazzaApiData(BackgroundJob):
         return True
 
     def process_archives(self, frequency, datestamp, job_id):
-        s3_key = get_s3_piazza_data_path()
+        s3_key = app.config['LOCH_S3_PIAZZA_DATA_PATH']
         self.sid = app.config['PIAZZA_API_SID']  # this is Piazza school ID for Berkeley
         self.session_id = app.config['PIAZZA_API_SESSIONID']  # a 'random string' but we still are getting it from config
         self.headers = {
