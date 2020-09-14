@@ -116,6 +116,10 @@ def get_s3_coe_daily_path(cutoff=None):
     return app.config['LOCH_S3_COE_DATA_PATH']
 
 
+def get_s3_edl_daily_path(cutoff=None):
+    return app.config['LOCH_S3_EDL_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
+
+
 def get_s3_oua_daily_path(cutoff=None):
     return app.config['LOCH_S3_OUA_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
@@ -205,6 +209,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_schema_e_i_advising_notes': app.config['REDSHIFT_SCHEMA_E_I_ADVISING_NOTES'],
         'redshift_schema_e_i_advising_notes_internal': app.config['REDSHIFT_SCHEMA_E_I_ADVISING_NOTES_INTERNAL'],
         'redshift_schema_edl_sis': app.config['REDSHIFT_SCHEMA_EDL_SIS'],
+        'redshift_schema_edl_sis_internal': app.config['REDSHIFT_SCHEMA_EDL_SIS_INTERNAL'],
         'redshift_schema_edw': app.config['REDSHIFT_SCHEMA_EDW'],
         'redshift_schema_gradescope': app.config['REDSHIFT_SCHEMA_GRADESCOPE'],
         'redshift_schema_intermediate': app.config['REDSHIFT_SCHEMA_INTERMEDIATE'],
@@ -228,6 +233,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'loch_s3_coe_data_path': s3_prefix + get_s3_coe_daily_path(),
         'loch_s3_dsa_data_path': s3_protected_prefix + app.config['LOCH_S3_DSA_DATA_PATH'],
         'loch_s3_edl_data_path': s3_prefix + app.config['LOCH_S3_EDL_DATA_PATH'],
+        'loch_s3_edl_data_path_today': s3_prefix + get_s3_edl_daily_path(),
         'loch_s3_gradescope_data_path': s3_prefix + app.config['LOCH_S3_GRADESCOPE_DATA_PATH'],
         'loch_s3_oua_data_path': s3_protected_prefix + get_s3_oua_daily_path(),
         'loch_s3_slate_sftp_path': s3_protected_prefix + app.config['LOCH_S3_SLATE_DATA_SFTP_PATH'],

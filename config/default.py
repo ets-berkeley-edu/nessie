@@ -99,6 +99,8 @@ ENROLLMENTS_API_ID = 'secretid'
 ENROLLMENTS_API_KEY = 'secretkey'
 ENROLLMENTS_API_URL = 'https://secreturl.berkeley.edu/enrollments'
 
+FEATURE_FLAG_EDL_DEGREE_PROGRESS = False
+
 # True on master node, false on worker nodes.
 # Override by embedding "master" or "worker" in the EB_ENVIRONMENT environment variable.
 JOB_SCHEDULING_ENABLED = True
@@ -210,6 +212,7 @@ RDS_SCHEMA_BOAC = 'boac_analytics'
 RDS_SCHEMA_COE = 'boac_advising_coe'
 RDS_SCHEMA_DATA_SCIENCE = 'boac_advising_data_science'
 RDS_SCHEMA_E_I = 'boac_advising_e_i'
+RDS_SCHEMA_EDL_SIS = 'edl_sis_data'
 RDS_SCHEMA_OUA = 'boac_advising_oua'
 RDS_SCHEMA_METADATA = 'metadata'
 RDS_SCHEMA_SIS_ADVISING_NOTES = 'sis_advising_notes'
@@ -244,7 +247,7 @@ REDSHIFT_SCHEMA_CALIPER = 'lrs_caliper_analytics'
 REDSHIFT_SCHEMA_COE = 'boac_advising_coe'
 REDSHIFT_SCHEMA_DATA_SCIENCE_ADVISING_INTERNAL = 'data_science_advising'
 REDSHIFT_SCHEMA_E_I_ADVISING_NOTES_INTERNAL = 'e_i_advising_notes'
-REDSHIFT_SCHEMA_EDL_SIS = 'edl_sis_data'
+REDSHIFT_SCHEMA_EDL_SIS_INTERNAL = 'edl_sis_data'
 REDSHIFT_SCHEMA_EDW = 'edw_data'
 REDSHIFT_SCHEMA_INTERMEDIATE = 'intermediate'
 REDSHIFT_SCHEMA_SIS_INTERNAL = 'sis_data'
@@ -260,6 +263,7 @@ REDSHIFT_SCHEMA_CANVAS = 'External Canvas schema name'
 REDSHIFT_SCHEMA_CANVAS_API = 'External Canvas API schema name'
 REDSHIFT_SCHEMA_COE_EXTERNAL = 'External COE schema name'
 REDSHIFT_SCHEMA_E_I_ADVISING_NOTES = 'External E&I Advising Notes schema name'
+REDSHIFT_SCHEMA_EDL_SIS = 'External EDL SIS schema name'
 REDSHIFT_SCHEMA_DATA_SCIENCE_ADVISING = 'External Data Science Advising schema name'
 REDSHIFT_SCHEMA_GRADESCOPE = 'External gradescope schema name'
 REDSHIFT_SCHEMA_LRS = 'External LRS schema name'
