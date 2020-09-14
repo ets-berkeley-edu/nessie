@@ -120,12 +120,14 @@ def get_s3_oua_daily_path(cutoff=None):
     return app.config['LOCH_S3_OUA_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
 
-def get_s3_piazza_data_path(path=None):
-    if path is None:
-        return app.config['LOCH_S3_PIAZZA_DATA_PATH']
-    elif path == 'latest':
-        path = strftime('daily/%Y/%m/%d/daily_%Y-%m-%d.zip')
-    return app.config['LOCH_S3_PIAZZA_DATA_PATH'] + f'/{path}'
+def get_s3_piazza_data_path(archive=None):
+    # archive need to be, or become, one of the piazza zip file names, without .zip, i.e. type-yyyy-mm-dd
+    if archive == 'latest' or archive is None:
+        archive = strftime('daily-%Y-%m-%d')
+    match = re.match(r'(\w+)\-(\d{4}\-\d{2}\-\d{2})', archive)
+    frequency = match[1]
+    datestamp = match[2]
+    return frequency, datestamp, archive, app.config['LOCH_S3_PIAZZA_DATA_PATH'] + '/' + archive.replace('-', '/')
 
 
 def get_s3_sis_attachment_current_paths(begin_dt=None):
