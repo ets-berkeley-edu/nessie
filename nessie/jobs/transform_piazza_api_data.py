@@ -28,7 +28,7 @@ import tempfile
 from flask import current_app as app
 from nessie.externals import s3
 from nessie.jobs.background_job import BackgroundJob
-from nessie.lib.metadata import create_background_job_status, update_background_job_status
+from nessie.lib.metadata import update_background_job_status
 from nessie.lib.util import get_s3_piazza_data_path
 
 """Logic for transforming Piazza API data into Spark-parsable JSON."""
@@ -39,22 +39,14 @@ class TransformPiazzaApiData(BackgroundJob):
     def run(self, archive=None):
         frequency, datestamp, archive, s3_prefix = get_s3_piazza_data_path(archive)
         app.logger.info('Starting Piazza API data transform job...')
-        create_background_job_status(self.job_id)
 
         s3_dest = app.config['LOCH_S3_PIAZZA_DATA_PATH'] + '/transformed'
 
-        try:
-            message = self.transform(s3_prefix, s3_dest)
-        except Exception as e:
-            update_background_job_status(self.job_id, 'failed', details='error: ' + str(e))
-            app.logger.error(e)
-            return False
+        message = self.transform(s3_prefix, s3_dest, self.job_id)
+        app.logger.info('Piazza data transform complete.')
+        return f'{s3_prefix}: {message}'
 
-        update_background_job_status(self.job_id, 'succeeded', details=f'{s3_prefix}: {message}')
-        app.logger.debug('Piazza data transform complete.')
-        return True
-
-    def transform(self, s3_source, s3_dest, key=None):
+    def transform(self, s3_source, s3_dest, job_id):
         app.logger.info(f'Doing Piazza API data transform job... {s3_source} > {s3_dest}')
         objects = s3.get_keys_with_prefix(s3_source)
         app.logger.info(f'Will transform {len(objects)} objects from {s3_source} and put results to {s3_dest}.')
@@ -64,9 +56,9 @@ class TransformPiazzaApiData(BackgroundJob):
         total_objects = 0
         for o in objects:
             file_name = o.split('/')[-1]
-            app.logger.info(f'processing {file_name}')
+            app.logger.debug(f'processing {file_name}')
             # file_name is like 'daily_2020-08-14.zip'
-            piazza_zip_file = s3.get_object_compressed_text_reader(o).get(key) if key else s3.get_object_compressed_text_reader(o)
+            piazza_zip_file = s3.get_object_compressed_text_reader(o)
             for subfile in piazza_zip_file.namelist():
                 if '.json' in subfile:
                     try:
@@ -83,6 +75,13 @@ class TransformPiazzaApiData(BackgroundJob):
                             result.write(record)
                             s3.upload_file(result, s3_object)
                             total_objects += 1
+                        # update job queue every 1000 files...
+                        if total_objects % 100 == 0:
+                            message = f'{subfile}, {total_objects} so far;  \
+                                      + f{new_objects} new files; ' \
+                                      + f'{objects_updated} existing files. {objects_in_error} files in error' \
+                                      + f'({len(objects)} objects in all)'
+                            update_background_job_status(job_id, 'transforming', details=message)
                     except Exception as e:
                         app.logger.error(f'could not extract {subfile}')
                         app.logger.error(e)

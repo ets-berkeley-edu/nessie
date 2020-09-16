@@ -29,7 +29,7 @@ from re import split
 from flask import current_app as app
 from nessie.externals import s3
 from nessie.jobs.background_job import BackgroundJob
-from nessie.lib.metadata import create_background_job_status, update_background_job_status
+from nessie.lib.metadata import update_background_job_status
 from nessie.lib.util import get_s3_piazza_data_path
 import requests
 
@@ -40,15 +40,7 @@ class ImportPiazzaApiData(BackgroundJob):
 
     def run(self, archive=None):
         frequency, datestamp, archive, s3_path = get_s3_piazza_data_path(archive)
-        create_background_job_status(self.job_id)
-        try:
-            message = self.process_archives(frequency, datestamp, self.job_id)
-            update_background_job_status(self.job_id, 'succeeded', details=message)
-        except Exception as e:
-            update_background_job_status(self.job_id, 'failed', details='error: ' + str(e))
-            app.logger.error(e)
-            return False
-        return True
+        return self.process_archives(frequency, datestamp, self.job_id)
 
     def process_archives(self, frequency, datestamp, job_id):
         s3_key = app.config['LOCH_S3_PIAZZA_DATA_PATH']
