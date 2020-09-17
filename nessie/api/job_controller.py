@@ -361,8 +361,8 @@ def import_non_current_students():
 @app.route('/api/job/import_piazza_api_data/<archive>', methods=['POST'])
 @auth_required
 def import_piazza_api_data(archive='latest'):
-    if not (re.match('(daily|monthly|full|latest)', archive) and re.match(r'(\w+)\_(\d{4}\-\d{2}\-\d{2})', archive)):
-        raise BadRequestError(f'Incorrect archive parameter "{archive}", should be "latest" or like "daily_2020-09-12".')
+    if (archive != 'latest') and not (re.match('(daily|monthly|full)', archive) and re.match(r'(\w+)_(\d{4}\-\d{2}\-\d{2})', archive)):
+        raise BadRequestError(f"Incorrect archive parameter '{archive}', should be 'latest' or like 'daily_2020-09-12'.")
     job_started = ImportPiazzaApiData(archive=archive).run_async()
     return respond_with_status(job_started)
 
@@ -432,8 +432,8 @@ def transform_lrs_incrementals():
 @app.route('/api/job/transform_piazza_api_data/<archive>', methods=['POST'])
 @auth_required
 def transform_piazza_api_data(archive='latest'):
-    if not re.match('(daily|monthly|full|latest)', archive):
-        raise BadRequestError(f'Incorrect archive parameter "{archive}", should be "latest" or like "daily-2020-09-12".')
+    if (archive != 'latest') and not (re.match('(daily|monthly|full)', archive) and re.match(r'(\w+)\_(\d{4}\-\d{2}\-\d{2})', archive)):
+        raise BadRequestError(f"Incorrect archive parameter '{archive}', should be 'latest' or like 'daily_2020-09-12'.")
     job_started = TransformPiazzaApiData(archive=archive).run_async()
     return respond_with_status(job_started)
 

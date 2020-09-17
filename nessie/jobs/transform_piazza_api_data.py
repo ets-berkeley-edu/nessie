@@ -76,9 +76,9 @@ class TransformPiazzaApiData(BackgroundJob):
                             s3.upload_file(result, s3_object)
                             total_objects += 1
                         # update job queue every 1000 files...
-                        if total_objects % 100 == 0:
-                            message = f'{subfile}, {total_objects} so far;  \
-                                      + f{new_objects} new files; ' \
+                        if total_objects % 1000 == 0:
+                            message = f'{subfile}, {total_objects} so far; ' \
+                                      + f'{new_objects} new files; ' \
                                       + f'{objects_updated} existing files. {objects_in_error} files in error' \
                                       + f'({len(objects)} objects in all)'
                             update_background_job_status(job_id, 'transforming', details=message)

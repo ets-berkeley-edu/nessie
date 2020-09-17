@@ -54,7 +54,7 @@ class ImportPiazzaApiData(BackgroundJob):
             list_of_archives = self.get_list_of_archives(self.headers)
             archives_to_process = self.select_archives_by_type_and_date(list_of_archives, frequency, datestamp)
             if not archives_to_process:
-                return f'{frequency}/{datestamp}: no_data'
+                return f'{frequency}/{datestamp}: no archives found for these criteria'
             for file_number, archive_file in enumerate(archives_to_process):
                 download_url = self.piazza_api('school.generate_url', self.headers, {'sid': self.sid, 'name': archive_file['name']})
                 download_url = download_url.text
@@ -76,7 +76,7 @@ class ImportPiazzaApiData(BackgroundJob):
         except Exception as e:
             # let the people upstairs know, they're in charge
             raise e
-        return f'{frequency}/{datestamp}'
+        return ', '.join(f"{a['name']}: {a['size']} bytes" for a in archives_to_process)
 
     def get_list_of_archives(self, headers):
         email = app.config['PIAZZA_API_USERNAME']  # email for piazza account with school export permission
