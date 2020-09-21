@@ -30,7 +30,7 @@ from tempfile import TemporaryFile
 
 from flask import current_app as app
 from nessie.externals import redshift, s3
-from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import get_s3_edl_daily_path, resolve_sql_template, resolve_sql_template_string, write_to_tsv_file
 
 """Logic for EDL SIS schema creation job."""
@@ -49,18 +49,15 @@ class CreateEdlSisSchema(BackgroundJob):
 
     def create_schema(self):
         app.logger.info('Executing SQL...')
-        redshift.drop_external_schema(self.external_schema)
         resolved_ddl = resolve_sql_template('create_edl_sis_schema.template.sql')
-        if redshift.execute_ddl_script(resolved_ddl):
-            verify_external_schema(self.external_schema, resolved_ddl)
-        else:
+        if not redshift.execute_ddl_script(resolved_ddl):
             raise BackgroundJobError('EDL SIS schema creation job failed.')
         app.logger.info('Redshift schema created.')
 
     def generate_feeds(self):
-        self.stage_degree_progress()
+        self.generate_degree_progress_feeds()
 
-    def stage_degree_progress(self):
+    def generate_degree_progress_feeds(self):
         app.logger.error('Staging degree progress feeds...')
         table = 'student_degree_progress'
         rows = redshift.fetch(f'SELECT * FROM {self.internal_schema}.{table}_index ORDER by sid')
