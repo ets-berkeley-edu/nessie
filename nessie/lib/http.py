@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import logging
+import re
 import urllib
 
 from flask import current_app as app
@@ -33,15 +34,20 @@ import simplejson as json
 
 
 class ResponseExceptionWrapper:
-    def __init__(self, exception, original_response=None):
+    def __init__(self, exception, original_response=None, auth_params=None):
         self.exception = exception
         self.raw_response = original_response
+        self.auth_params = auth_params
 
     def __bool__(self):
         return False
 
     def __repr__(self):
-        return f'<ResponseExceptionWrapper exception={self.exception}, raw_response={self.raw_response}>'
+        _repr = f'<ResponseExceptionWrapper exception={self.exception}, raw_response={self.raw_response}>'
+        if self.auth_params:
+            for key, value in self.auth_params.items():
+                _repr = re.sub(value, f'<{key}>', _repr)
+        return _repr
 
 
 def add_param_to_url(url, param):
@@ -98,11 +104,12 @@ def request(url, headers={}, method='get', auth=None, auth_params=None, data=Non
             urllib_logger.setLevel(saved_level)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
+        wrapped_e = ResponseExceptionWrapper(e, response, auth_params)
         if not (hasattr(response, 'status_code') and response.status_code == 404 and not log_404s):
-            app.logger.error(e)
+            app.logger.error(wrapped_e)
             if hasattr(response, 'content'):
                 app.logger.error(response.content)
-        return ResponseExceptionWrapper(e, response)
+        return wrapped_e
     else:
         return response
 
