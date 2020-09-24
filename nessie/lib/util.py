@@ -23,11 +23,10 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from datetime import datetime
+from datetime import date, datetime, timedelta
 import hashlib
 import inspect
 import re
-from time import strftime
 
 from dateutil.rrule import DAILY, rrule
 from flask import current_app as app
@@ -127,7 +126,8 @@ def get_s3_oua_daily_path(cutoff=None):
 def get_s3_piazza_data_path(archive=None):
     # archive need to be, or become, one of the piazza zip file names, without .zip, i.e. type_yyyy-mm-dd
     if archive == 'latest' or archive is None:
-        archive = strftime('daily_%Y-%m-%d')
+        # we have decided to use 'yesterday' (local time, as the default for 'latest')
+        archive = (date.today() - timedelta(days=1)).strftime('daily_%Y-%m-%d')
     match = re.match(r'(\w+)\_(\d{4}\-\d{2}\-\d{2})', archive)
     frequency = match[1]
     datestamp = match[2]
