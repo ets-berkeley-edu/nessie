@@ -58,7 +58,7 @@ class CreateEdlSisSchema(BackgroundJob):
         self.generate_degree_progress_feeds()
 
     def generate_degree_progress_feeds(self):
-        app.logger.error('Staging degree progress feeds...')
+        app.logger.info('Staging degree progress feeds...')
         table = 'student_degree_progress'
         rows = redshift.fetch(f'SELECT * FROM {self.internal_schema}.{table}_index ORDER by sid')
         with TemporaryFile() as feeds:
