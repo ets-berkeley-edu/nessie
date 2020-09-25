@@ -172,6 +172,7 @@ def resolve_sql_template_string(template_string, **kwargs):
     s3_protected_prefix = 's3://' + app.config['LOCH_S3_PROTECTED_BUCKET'] + '/'
     template_data = {
         'earliest_term_id': earliest_term_id(),
+        'edl_iam_role': app.config['AWS_EDL_ROLE_ARN'],
         'rds_app_boa_user': app.config['RDS_APP_BOA_USER'],
         'rds_dblink_to_redshift': app.config['REDSHIFT_DATABASE'] + '_redshift',
         'rds_schema_advising_notes': app.config['RDS_SCHEMA_ADVISING_NOTES'],
