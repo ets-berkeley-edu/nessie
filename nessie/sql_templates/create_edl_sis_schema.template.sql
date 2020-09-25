@@ -24,6 +24,16 @@
  */
 
 --------------------------------------------------------------------
+-- External schema
+--------------------------------------------------------------------
+
+DROP SCHEMA IF EXISTS {redshift_schema_edl_sis};
+CREATE EXTERNAL SCHEMA {redshift_schema_edl_sis}
+FROM data catalog
+DATABASE 'cs_analytics'
+IAM_ROLE '{redshift_iam_role},{edl_iam_role}';
+
+--------------------------------------------------------------------
 -- Internal schema
 --------------------------------------------------------------------
 
