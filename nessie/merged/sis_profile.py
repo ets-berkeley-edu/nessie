@@ -163,7 +163,9 @@ def merge_degrees(sis_student_api_feed, sis_profile, academic_status):
         degree_desc = degree.get('academicDegree', {}).get('type', {}).get('description')
         degree_plans = []
         for plan in degree.get('academicPlans', []):
-            if plan.get('targetDegree', {}).get('type', {}).get('description', {}) == degree_desc:
+            plan_type = plan.get('type', {}).get('code')
+            target_degree = plan.get('targetDegree', {}).get('type', {}).get('description', {})
+            if target_degree == degree_desc or plan_type == 'MIN':
                 # formalDescription seems to work for UGRD plans but gets too wordy for others.
                 if sis_profile.get('academicCareer') == 'UGRD':
                     plan_desc = plan.get('plan', {}).get('formalDescription')
@@ -172,6 +174,7 @@ def merge_degrees(sis_student_api_feed, sis_profile, academic_status):
                 degree_plans.append({
                     'group': plan.get('academicProgram', {}).get('academicGroup', {}).get('formalDescription'),
                     'plan': plan_desc,
+                    'type': plan_type,
                 })
         sis_profile['degree'] = {
             'dateAwarded': degree.get('dateAwarded'),

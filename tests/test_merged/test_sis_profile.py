@@ -261,9 +261,13 @@ class TestMergedSisProfile:
             assert profile['academicCareerCompleted'] == '2018-05-17'
             assert profile['degree']['dateAwarded'] == '2018-05-17'
             assert profile['degree']['description'] == 'Bachelor of Arts'
-            assert len(profile['degree']['plans']) == 1
+            assert len(profile['degree']['plans']) == 2
             assert profile['degree']['plans'][0]['group'] == 'College of Letters and Science'
             assert profile['degree']['plans'][0]['plan'] == 'Physics'
+            assert profile['degree']['plans'][0]['type'] == 'MAJ'
+            assert profile['degree']['plans'][1]['group'] is None
+            assert profile['degree']['plans'][1]['plan'] == 'Minor in Music'
+            assert profile['degree']['plans'][1]['type'] == 'MIN'
 
         def test_pre_cs_degree(self, app):
             # Older feeds may be missing normal post-CS fields.
