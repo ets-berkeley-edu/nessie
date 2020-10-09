@@ -111,6 +111,7 @@ def get_advisee_advisor_mappings():
             aa.ldap_uid AS advisor_uid,
             aa.first_name AS advisor_first_name,
             aa.last_name AS advisor_last_name,
+            aa.title AS advisor_title,
             aa.campus_email AS advisor_campus_email,
             aa.email AS advisor_email
         FROM {calnet_schema()}.advisees ldap
