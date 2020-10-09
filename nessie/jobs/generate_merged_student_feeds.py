@@ -201,6 +201,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 'lastName': a['advisor_last_name'],
                 'email': (a['advisor_campus_email'] or a['advisor_email']),
                 'role': a['advisor_role'],
+                'title': a['advisor_title'],
                 'program': a['program'],
                 'plan': a['plan'],
             })
