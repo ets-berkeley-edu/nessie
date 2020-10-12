@@ -57,6 +57,7 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_LOAD_ADVISING_NOTES': 4000,
     'JOB_IMPORT_CANVAS_API': 5000,
     'JOB_IMPORT_PIAZZA_API': 6000,
+    'JOB_IMPORT_EDL': 7000,
 }
 
 
@@ -84,6 +85,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
     from nessie.jobs.create_canvas_api_schema import CreateCanvasApiSchema
     from nessie.jobs.create_e_i_advising_notes_schema import CreateEIAdvisingNotesSchema
+    from nessie.jobs.create_edl_sis_schema import CreateEdlSisSchema
     from nessie.jobs.create_oua_schema import CreateOUASchema
     from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
     from nessie.jobs.create_sis_schema import CreateSisSchema
@@ -198,6 +200,7 @@ def schedule_all_jobs(force=False):
         ],
         force,
     )
+    schedule_job(sched, 'JOB_IMPORT_EDL', CreateEdlSisSchema, force)
 
 
 def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):
