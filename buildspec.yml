@@ -9,13 +9,8 @@ phases:
       - npm -v
       - npm install
 
-  pre_build:
-    commands:
-      - echo "pre_build phase"
-
   build:
     commands:
-      - npm install -g @vue/cli
       - npm run build-vue
 
   post_build:
