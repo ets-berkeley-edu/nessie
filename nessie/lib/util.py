@@ -74,6 +74,21 @@ def hashed_datestamp(date_to_stamp=None):
     return hashlib.md5(datestamp.encode('utf-8')).hexdigest() + '-' + datestamp
 
 
+# As described in NS-993, the SIS note attachments we receive don't always follow
+# the naming convention { EMPLID }_{ SAA_NOTE_ID }_{ SAA_SEQ_NBR }{ .ext }
+# and need to be brought into compliance.
+def normalize_sis_note_attachment_file_name(path):
+    file_name = path.split('/')[-1]
+    match = re.search(r'(^\d+_\d+_\d+)(.*?)(\.\w{1,8})??$', file_name)
+    if match is None:
+        app.logger.warning(f'Encountered an unexpected file name pattern: {file_name}')
+        return file_name
+    corrected_file_name, discard_chars, file_ext = match.groups()
+    if file_ext is None:
+        file_ext = ''
+    return f'{corrected_file_name}{file_ext}'
+
+
 def split_tsv_row(row):
     return tuple([v if len(v) else None for v in row.decode().split('\t')])
 

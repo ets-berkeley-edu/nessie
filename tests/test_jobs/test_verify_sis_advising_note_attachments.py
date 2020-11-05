@@ -47,11 +47,13 @@ def set_up_to_succeed(app, caplog):
     with capture_app_logs(app):
         with mock_s3(app, bucket=bucket) as m3:
             m3.Object(bucket, f'{source_prefix}/2017/01/18/12345678_00012_1.pdf').put(Body=b'a note attachment')
-            m3.Object(bucket, f'{source_prefix}/2018/12/22/23456789_00003_1.png').put(Body=b'another note attachment')
-            m3.Object(bucket, f'{source_prefix}/2019/08/29/34567890_00014_2.xls').put(Body=b'yet another note attachment')
+            m3.Object(bucket, f'{source_prefix}/2018/12/22/23456789_00003_1').put(Body=b'another note attachment')
+            m3.Object(bucket, f'{source_prefix}/2019/08/29/34567890_00014_2.._500,1M1L4H0N_ref_].16SVX').put(
+                Body=b'malformed original file name',
+            )
             m3.Object(bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf').put(Body=b'a note attachment')
-            m3.Object(bucket, f'{dest_prefix}/23456789/23456789_00003_1.png').put(Body=b'another note attachment')
-            m3.Object(bucket, f'{dest_prefix}/34567890/34567890_00014_2.xls').put(Body=b'yet another note attachment')
+            m3.Object(bucket, f'{dest_prefix}/23456789/23456789_00003_1').put(Body=b'another note attachment')
+            m3.Object(bucket, f'{dest_prefix}/34567890/34567890_00014_2.16SVX').put(Body=b'malformed original file name')
             yield
     assert 'No attachments missing on S3 when compared against the view.' in caplog.text
 
@@ -63,19 +65,19 @@ def set_up_to_fail(app, caplog):
     with capture_app_logs(app):
         with mock_s3(app, bucket=bucket) as m3:
             m3.Object(bucket, f'{source_prefix}/2017/01/18/12345678_00012_1.pdf').put(Body=b'a note attachment')
-            m3.Object(bucket, f'{source_prefix}/2018/12/22/23456789_00003_1.png').put(Body=b'another note attachment')
+            m3.Object(bucket, f'{source_prefix}/2018/12/22/23456789_00003_1').put(Body=b'another note attachment')
             m3.Object(bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf').put(Body=b'a note attachment')
-            m3.Object(bucket, f'{dest_prefix}/34567890/34567890_00014_2.xls').put(Body=b'yet another note attachment')
+            m3.Object(bucket, f'{dest_prefix}/34567890/34567890_00014_2.16SVX').put(Body=b'yet another note attachment')
             m3.Object(bucket, f'{dest_prefix}/45678901/45678901_00192_4.xls').put(Body=b'bamboozled by a completely unexpected note attachment')
             with pytest.raises(BackgroundJobError) as e:
                 yield
     assert 'Attachments verification found missing attachments or sync failures:' in str(e.value)
     assert '\'attachment_sync_failure_count\': 1' in str(e.value)
     assert '\'missing_s3_attachments_count\': 1' in str(e.value)
-    assert '\'attachment_sync_failures\': [\'sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/22/23456789_00003_1.png\']' in str(
+    assert '\'attachment_sync_failures\': [\'sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/22/23456789_00003_1\']' in str(
         e.value,
     )
-    assert '\'missing_s3_attachments\': [\'23456789_00003_1.png\']' in str(e.value)
+    assert '\'missing_s3_attachments\': [\'23456789_00003_1\']' in str(e.value)
     assert 'Attachments missing on S3 when compared against SIS notes views: 1' in caplog.text
 
 
