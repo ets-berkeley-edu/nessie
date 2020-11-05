@@ -180,7 +180,7 @@ AS (
     	A.saa_note_id AS student_note_nr,
         N.scc_row_add_oprid AS created_by,
         A.userfilename AS user_file_name,
-        A.attachsysfilename AS sis_file_name,
+        REGEXP_SUBSTR(A.attachsysfilename, '^\\d+_\\d+_\\d+') || REGEXP_SUBSTR(A.attachsysfilename, '\\.[^.]*$') as sis_file_name,
         FALSE AS is_historical
     FROM
         {redshift_schema_sis_advising_notes}.advising_note_attachments_incr A

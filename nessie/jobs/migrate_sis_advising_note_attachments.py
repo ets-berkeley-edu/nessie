@@ -23,12 +23,11 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
 from flask import current_app as app
 from nessie.externals import s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.metadata import most_recent_background_job_status
-from nessie.lib.util import get_s3_sis_attachment_current_paths, get_s3_sis_attachment_path
+from nessie.lib.util import get_s3_sis_attachment_current_paths, get_s3_sis_attachment_path, normalize_sis_note_attachment_file_name
 
 
 """Logic for migrating SIS advising note attachments. Expects a full or partial datestamp parameter in the form YYYY-MM-DD."""
@@ -61,10 +60,11 @@ class MigrateSisAdvisingNoteAttachments(BackgroundJob):
         bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
         objects = s3.get_keys_with_prefix(source_prefix, bucket=app.config['LOCH_S3_PROTECTED_BUCKET'])
         for o in objects:
-            file_name = o.split('/')[-1]
+            file_name = normalize_sis_note_attachment_file_name(o)
             sid = file_name.split('_')[0]
 
             dest_key = f'{dest_prefix}/{sid}/{file_name}'
+            app.logger.info(dest_key)
             if not s3.copy(bucket, o, bucket, dest_key):
                 raise BackgroundJobError(f'Copy from source to destination {dest_key} failed.')
 

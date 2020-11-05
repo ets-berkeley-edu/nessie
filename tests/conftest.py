@@ -196,8 +196,8 @@ def sis_note_tables(app):
         (advising_note_id, sid, student_note_nr, created_by, user_file_name, sis_file_name)
         VALUES
         ('12345678-00012', '12345678', '00012', '123', 'Sp_19_French_1B.pdf', '12345678_00012_1.pdf'),
-        ('23456789-00003', '23456789', '00003', '123', 'Advising_Notes_test_attachment_document.png', '23456789_00003_1.png'),
-        ('34567890-00014', '34567890', '00014', '123', 'notes_notes_notes.xls', '34567890_00014_2.xls')
+        ('23456789-00003', '23456789', '00003', '123', 'Advising_Notes_test_attachment_document', '23456789_00003_1'),
+        ('34567890-00014', '34567890', '00014', '123', 'notes._500,1M1L4H0N_ref_].16SVX', '34567890_00014_2.16SVX')
     """)
     yield
     redshift.execute(f'DROP SCHEMA {internal_schema} CASCADE')
