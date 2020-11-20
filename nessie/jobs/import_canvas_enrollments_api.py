@@ -62,7 +62,7 @@ class ImportCanvasEnrollmentsApi(BackgroundJob):
                 app.logger.error(f'Canvas enrollments API import failed for course id {course_id}.')
             index += 1
 
-        s3_key = f'{get_s3_sis_api_daily_path()}/canvas_api_enrollments_{term_id}.tsv'
+        s3_key = f'{get_s3_sis_api_daily_path()}/canvas_api_enrollments/canvas_api_enrollments_{term_id}.tsv'
         app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
         if not s3.upload_tsv_rows(rows, s3_key):
             raise BackgroundJobError('Error on S3 upload: aborting job.')
@@ -70,12 +70,28 @@ class ImportCanvasEnrollmentsApi(BackgroundJob):
         app.logger.info('Will copy S3 feeds into Redshift...')
         query = resolve_sql_template_string(
             """
-            DELETE FROM {redshift_schema_student}_staging.canvas_api_enrollments WHERE term_id = '{term_id}';
-            COPY {redshift_schema_student}_staging.canvas_api_enrollments
-                FROM '{loch_s3_sis_api_data_path}/canvas_api_enrollments_{term_id}.tsv'
+            CREATE EXTERNAL SCHEMA {redshift_schema_student}_staging_ext_tmp FROM data catalog
+                DATABASE '{redshift_schema_student}_staging_ext_tmp'
                 IAM_ROLE '{redshift_iam_role}'
-                DELIMITER '\\t'
-                TIMEFORMAT 'YYYY-MM-DDTHH:MI:SSZ';
+                CREATE EXTERNAL DATABASE IF NOT EXISTS;
+           CREATE EXTERNAL TABLE {redshift_schema_student}_staging_ext_tmp.canvas_api_enrollments (
+                course_id VARCHAR NOT NULL,
+                user_id VARCHAR NOT NULL,
+                term_id VARCHAR(4) NOT NULL,
+                last_activity_at TIMESTAMP,
+                feed VARCHAR(max) NOT NULL
+            )
+            ROW FORMAT DELIMITED
+            FIELDS TERMINATED BY '\\t'
+            STORED AS TEXTFILE
+            LOCATION '{loch_s3_sis_api_data_path}/canvas_api_enrollments';
+
+            DELETE FROM {redshift_schema_student}_staging.canvas_api_enrollments WHERE term_id = '{term_id}';
+            INSERT INTO {redshift_schema_student}_staging.canvas_api_enrollments
+                (SELECT * FROM {redshift_schema_student}_staging_ext_tmp.canvas_api_enrollments);
+            DROP TABLE {redshift_schema_student}_staging_ext_tmp.canvas_api_enrollments;
+            DROP SCHEMA {redshift_schema_student}_staging_ext_tmp;
+
             DELETE FROM {redshift_schema_student}.canvas_api_enrollments
                 WHERE term_id = '{term_id}'
                 AND course_id IN
