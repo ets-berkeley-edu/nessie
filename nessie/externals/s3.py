@@ -28,6 +28,7 @@ from gzip import GzipFile
 import io
 import json
 import socket
+import tempfile
 from zipfile import ZipFile
 
 import boto3
@@ -242,9 +243,10 @@ def upload_file(file, s3_key, bucket=None):
     return upload_data(file, s3_key, bucket)
 
 
-def upload_json(obj, s3_key):
-    data = json.dumps(obj)
-    return upload_data(data, s3_key)
+def upload_json(obj, s3_key, bucket=None):
+    with tempfile.TemporaryFile() as json_file:
+        json.dump(obj, json_file)
+        return upload_file(json_file, s3_key, bucket)
 
 
 def upload_from_url(url, s3_key, on_stream_opened=None):
