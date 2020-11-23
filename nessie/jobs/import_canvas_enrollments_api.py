@@ -103,7 +103,7 @@ class ImportCanvasEnrollmentsApi(BackgroundJob):
             """,
             term_id=term_id,
         )
-        if not redshift.execute(query):
+        if not redshift.execute_ddl_script(query):
             raise BackgroundJobError('Error on Redshift copy: aborting job.')
 
         return (
