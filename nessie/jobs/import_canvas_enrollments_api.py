@@ -75,11 +75,11 @@ class ImportCanvasEnrollmentsApi(BackgroundJob):
                 IAM_ROLE '{redshift_iam_role}'
                 CREATE EXTERNAL DATABASE IF NOT EXISTS;
            CREATE EXTERNAL TABLE {redshift_schema_student}_staging_ext_tmp.canvas_api_enrollments (
-                course_id VARCHAR NOT NULL,
-                user_id VARCHAR NOT NULL,
-                term_id VARCHAR(4) NOT NULL,
+                course_id VARCHAR,
+                user_id VARCHAR,
+                term_id VARCHAR,
                 last_activity_at TIMESTAMP,
-                feed VARCHAR(max) NOT NULL
+                feed VARCHAR
             )
             ROW FORMAT DELIMITED
             FIELDS TERMINATED BY '\\t'
