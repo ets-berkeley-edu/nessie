@@ -152,6 +152,7 @@ def schedule_all_jobs(force=False):
         'JOB_GENERATE_ALL_TABLES',
         [
             RefreshCanvasDataCatalog,
+            CreateSisSchema,
             GenerateIntermediateTables,
             IndexEnrollments,
             GenerateBoacAnalytics,
