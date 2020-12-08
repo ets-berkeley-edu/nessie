@@ -50,6 +50,7 @@ class TestGetSchedule:
         generate_tables_job = next(job for job in jobs if job['id'] == 'job_generate_all_tables')
         assert generate_tables_job['components'] == [
             'RefreshCanvasDataCatalog',
+            'CreateSisSchema',
             'GenerateIntermediateTables',
             'IndexEnrollments',
             'GenerateBoacAnalytics',
