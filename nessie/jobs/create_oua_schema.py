@@ -38,19 +38,7 @@ class CreateOUASchema(BackgroundJob):
     def run(self):
         app.logger.info('Starting OUA Slate schema creation job...')
         app.logger.info('Executing SQL...')
-        self.migrate_oua_sftp_data()
-        external_schema = app.config['REDSHIFT_SCHEMA_OUA']
-        redshift.drop_external_schema(external_schema)
-        resolved_ddl = resolve_sql_template('create_oua_schema_template.sql')
-        if redshift.execute_ddl_script(resolved_ddl):
-            verify_external_schema(external_schema, resolved_ddl)
-            self.create_rds_tables_and_indexes()
-            app.logger.info('OUA Slate RDS indexes created.')
-            return 'OUA schema creation job completed.'
-        else:
-            raise BackgroundJobError('OUA Slate schema creation job failed.')
 
-    def migrate_oua_sftp_data(self):
         s3_protected_bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
         oua_slate_sftp_path = app.config['LOCH_S3_SLATE_DATA_SFTP_PATH'] + '/' + self.get_sftp_date_offset() + '/'
         oua_daily_dest_path = get_s3_oua_daily_path() + '/admissions/'
@@ -64,17 +52,31 @@ class CreateOUASchema(BackgroundJob):
                     destination_key = source_key.replace(oua_slate_sftp_path, oua_daily_dest_path)
                     if not s3.copy(s3_protected_bucket, source_key, s3_protected_bucket, destination_key):
                         raise BackgroundJobError(f'Copy from SFTP location {source_key} to daily OUA destination {destination_key} failed.')
-        else:
-            raise BackgroundJobError('No OUA files found in SFTP location today. Skipping OUA data refresh')
+            external_schema = app.config['REDSHIFT_SCHEMA_OUA']
+            redshift.drop_external_schema(external_schema)
+            resolved_ddl = resolve_sql_template('create_oua_schema_template.sql')
+            if redshift.execute_ddl_script(resolved_ddl):
+                verify_external_schema(external_schema, resolved_ddl)
+                self.create_rds_tables_and_indexes()
+                app.logger.info('OUA Slate RDS indexes created.')
+                return 'OUA schema creation job completed.'
 
-    def create_rds_tables_and_indexes(self):
+            else:
+                raise BackgroundJobError('OUA Slate schema creation job failed.')
+
+        else:
+            return 'No OUA files found in SFTP location today. Skipping OUA data refresh'
+
+    @staticmethod
+    def create_rds_tables_and_indexes():
         resolved_ddl = resolve_sql_template('index_oua_admissions.template.sql')
         if rds.execute(resolved_ddl):
             app.logger.info('Created OUA Slate RDS tables and indexes successfully')
         else:
             raise BackgroundJobError('OUA Slate schema creation job failed to create rds tables and indexes.')
 
-    def get_sftp_date_offset(self):
+    @staticmethod
+    def get_sftp_date_offset():
         current_date = datetime.now()
         date_part = current_date.strftime('%Y/%m/%d')
         return date_part
