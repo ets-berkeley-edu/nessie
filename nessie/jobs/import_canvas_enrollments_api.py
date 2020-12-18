@@ -74,7 +74,7 @@ class ImportCanvasEnrollmentsApi(BackgroundJob):
                 DATABASE '{redshift_schema_student}_staging_ext_tmp'
                 IAM_ROLE '{redshift_iam_role}'
                 CREATE EXTERNAL DATABASE IF NOT EXISTS;
-           CREATE EXTERNAL TABLE {redshift_schema_student}_staging_ext_tmp.canvas_api_enrollments (
+            CREATE EXTERNAL TABLE {redshift_schema_student}_staging_ext_tmp.canvas_api_enrollments (
                 course_id VARCHAR,
                 user_id VARCHAR,
                 term_id VARCHAR,
