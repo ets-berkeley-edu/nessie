@@ -76,10 +76,29 @@ class ImportDegreeProgress(BackgroundJob):
         app.logger.info('Will copy S3 feeds into Redshift...')
         if not redshift.execute(f'TRUNCATE {self.redshift_schema}_staging.sis_api_degree_progress'):
             raise BackgroundJobError('Error truncating old staging rows: aborting job.')
-        if not redshift.copy_tsv_from_s3(f'{self.redshift_schema}_staging.sis_api_degree_progress', s3_key):
-            raise BackgroundJobError('Error on Redshift copy: aborting job.')
-        staging_to_destination_query = resolve_sql_template_string(
+
+        query = resolve_sql_template_string(
             """
+            CREATE EXTERNAL SCHEMA {redshift_schema_student}_staging_ext_tmp FROM data catalog
+                DATABASE '{redshift_schema_student}_staging_ext_tmp'
+                IAM_ROLE '{redshift_iam_role}'
+                CREATE EXTERNAL DATABASE IF NOT EXISTS;
+            CREATE EXTERNAL TABLE {redshift_schema_student}_staging_ext_tmp.sis_api_degree_progress (
+                sid VARCHAR,
+                feed VARCHAR
+            )
+            ROW FORMAT DELIMITED
+            FIELDS TERMINATED BY '\\t'
+            STORED AS TEXTFILE
+            LOCATION '{loch_s3_sis_api_data_path}/degree_progress';
+
+            DELETE FROM {redshift_schema_student}_staging.sis_api_degree_progress
+                WHERE sid IN (SELECT sid FROM {redshift_schema_student}_staging_ext_tmp.sis_api_degree_progress);
+            INSERT INTO {redshift_schema_student}_staging.sis_api_degree_progress
+                (SELECT * FROM {redshift_schema_student}_staging_ext_tmp.sis_api_degree_progress);
+            DROP TABLE {redshift_schema_student}_staging_ext_tmp.sis_api_degree_progress;
+            DROP SCHEMA {redshift_schema_student}_staging_ext_tmp;
+
             DELETE FROM {redshift_schema_student}.sis_api_degree_progress
                 WHERE sid IN (SELECT sid FROM {redshift_schema_student}_staging.sis_api_degree_progress);
             INSERT INTO {redshift_schema_student}.sis_api_degree_progress
@@ -87,8 +106,10 @@ class ImportDegreeProgress(BackgroundJob):
             TRUNCATE {redshift_schema_student}_staging.sis_api_degree_progress;
             """,
         )
-        if not redshift.execute(staging_to_destination_query):
+        if not redshift.execute_ddl_script(query):
             raise BackgroundJobError('Error on Redshift copy: aborting job.')
+
+        redshift.execute('VACUUM; ANALYZE;')
 
         return (
             f'SIS degree progress API import job completed: {success_count} succeeded, '
