@@ -312,6 +312,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             and self._index_rds_midpoint_deficient_grades(transaction)
             and self._index_rds_enrolled_units(transaction)
             and self._index_rds_term_gpa(transaction)
+            and self._index_rds_epn_grading_option(transaction)
         ):
             return False
         return True
@@ -511,4 +512,14 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             f"""UPDATE {self.rds_schema}.student_enrollment_terms
             SET term_gpa = (enrollment_term::json->'termGpa'->>'gpa')::numeric
             WHERE (enrollment_term::json->'termGpa'->>'unitsTakenForGpa')::numeric > 0;""",
+        )
+
+    def _index_rds_epn_grading_option(self, transaction):
+        return transaction.execute(
+            f"""UPDATE {self.rds_schema}.student_enrollment_terms t1
+            SET epn_grading_option = TRUE
+            FROM {self.rds_schema}.student_enrollment_terms t2, json_array_elements(t2.enrollment_term::json->'enrollments') enr
+            WHERE t1.sid = t2.sid
+            AND t1.term_id = t2.term_id
+            AND enr->>'gradingBasis' = 'EPN';""",
         )
