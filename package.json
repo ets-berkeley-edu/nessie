@@ -10,7 +10,7 @@
     "serve-vue": "vue-cli-service serve --open"
   },
   "dependencies": {
-    "axios": "0.21.0",
+    "axios": "0.21.1",
     "bootstrap-vue": "2.18.1",
     "lodash": "4.17.20",
     "vue": "2.6.12",
