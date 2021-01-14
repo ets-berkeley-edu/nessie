@@ -244,8 +244,6 @@ def upload_file(file, s3_key, bucket=None):
 
 def upload_json(obj, s3_key, bucket=None):
     tmpfile = tempfile.NamedTemporaryFile()
-    with open(tmpfile.name, mode='wt', encoding='utf-8') as f:
-        json.dump(obj, f)
     with open(tmpfile.name, mode='rb') as f:
         return upload_file(f, s3_key, bucket)
 
