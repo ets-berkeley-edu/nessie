@@ -71,7 +71,7 @@ class TestMigrateSisAdvisingNoteAttachments:
         with capture_app_logs(app):
             with mock_s3(app, bucket=bucket) as m3:
                 m3.Object(bucket, f'{source_prefix}/2019/08/28/12345678_00012_1.pdf').put(Body=b'a note attachment')
-                m3.Object(bucket, f'{source_prefix}/2019/08/28/23456789_00003_1.png').put(Body=b'another note attachment')
+                m3.Object(bucket, f'{source_prefix}/2019/08/28/23456789_00003_1').put(Body=b'another note attachment')
                 m3.Object(bucket, f'{source_prefix}/2019/08/29/34567890_00014_2.xls').put(Body=b'ok to copy me')
 
                 response = MigrateSisAdvisingNoteAttachments().run()
@@ -82,7 +82,7 @@ class TestMigrateSisAdvisingNoteAttachments:
                     'SIS advising note attachment migration complete for sis-data/sis-sftp/incremental/advising-notes/attachment-files/.'
                 )
                 assert object_exists(m3, bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf')
-                assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00003_1.png')
+                assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00003_1')
                 assert object_exists(m3, bucket, f'{dest_prefix}/34567890/34567890_00014_2.xls')
 
     @mock.patch('nessie.lib.util.datetime', autospec=True)
@@ -96,7 +96,7 @@ class TestMigrateSisAdvisingNoteAttachments:
             with mock_s3(app, bucket=bucket) as m3:
                 m3.Object(bucket, f'{source_prefix}/2019/08/25/45678912_00027_1.pdf').put(Body=b'i\'ve already been copied')
                 m3.Object(bucket, f'{source_prefix}/2019/08/26/12345678_00012_1.pdf').put(Body=b'a note attachment')
-                m3.Object(bucket, f'{source_prefix}/2019/08/28/23456789_00003_1.png').put(Body=b'another note attachment')
+                m3.Object(bucket, f'{source_prefix}/2019/08/28/23456789_00003_1').put(Body=b'another note attachment')
                 m3.Object(bucket, f'{source_prefix}/2019/08/29/34567890_00014_2.xls').put(Body=b'don\'t copy me')
 
                 response = MigrateSisAdvisingNoteAttachments().run()
@@ -115,7 +115,7 @@ sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/28.'
                 )
                 assert not object_exists(m3, bucket, f'{dest_prefix}/45678912/45678912_00027_1.xls')
                 assert object_exists(m3, bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf')
-                assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00003_1.png')
+                assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00003_1')
                 assert not object_exists(m3, bucket, f'{dest_prefix}/34567890/34567890_00014_2.xls')
 
     def test_run_with_datestamp_param(self, app, caplog):
@@ -127,7 +127,7 @@ sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/28.'
         with capture_app_logs(app):
             with mock_s3(app, bucket=bucket) as m3:
                 m3.Object(bucket, f'{source_prefix}/2019/08/28/12345678_00012_1.pdf').put(Body=b'a note attachment')
-                m3.Object(bucket, f'{source_prefix}/2019/08/28/23456789_00003_1.png').put(Body=b'another note attachment')
+                m3.Object(bucket, f'{source_prefix}/2019/08/28/23456789_00003_1').put(Body=b'another note attachment')
                 m3.Object(bucket, f'{source_prefix}/2019/08/29/34567890_00014_2.xls').put(Body=b'don\'t copy me')
 
                 response = MigrateSisAdvisingNoteAttachments().run(datestamp=datestamp)
@@ -138,7 +138,7 @@ sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/28.'
                     'SIS advising note attachment migration complete for sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/28.'
                 )
                 assert object_exists(m3, bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf')
-                assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00003_1.png')
+                assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00003_1')
                 assert not object_exists(m3, bucket, f'{dest_prefix}/34567890/34567890_00014_2.xls')
 
     def test_run_with_all_param(self, app, caplog):
@@ -150,7 +150,7 @@ sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/28.'
         with capture_app_logs(app):
             with mock_s3(app, bucket=bucket) as m3:
                 m3.Object(bucket, f'{source_prefix}/2019/08/28/12345678_00012_1.pdf').put(Body=b'a note attachment')
-                m3.Object(bucket, f'{source_prefix}/2019/08/28/23456789_00003_1.png').put(Body=b'another note attachment')
+                m3.Object(bucket, f'{source_prefix}/2019/08/28/23456789_00003_1').put(Body=b'another note attachment')
                 m3.Object(bucket, f'{source_prefix}/2019/08/29/34567890_00014_2.xls').put(Body=b'ok to copy me')
 
                 response = MigrateSisAdvisingNoteAttachments().run(datestamp=datestamp)
@@ -161,7 +161,7 @@ sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/28.'
                     'SIS advising note attachment migration complete for sis-data/sis-sftp/incremental/advising-notes/attachment-files.'
                 )
                 assert object_exists(m3, bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf')
-                assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00003_1.png')
+                assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00003_1')
                 assert object_exists(m3, bucket, f'{dest_prefix}/34567890/34567890_00014_2.xls')
 
     def test_run_with_invalid_param(self, app, caplog):
@@ -182,3 +182,27 @@ sis-data/sis-sftp/incremental/advising-notes/attachment-files/2019/08/28.'
                     'SIS advising note attachment migration complete for sis-data/sis-sftp/incremental/advising-notes/attachment-files/wrong!#$&.'
                 )
                 assert not object_exists(m3, bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf')
+
+    def test_malformed_filenames(self, app, caplog):
+        (bucket, source_prefix, dest_prefix) = get_s3_refs(app)
+        datestamp = 'all'
+
+        caplog.set_level(logging.INFO)
+        with capture_app_logs(app):
+            with mock_s3(app, bucket=bucket) as m3:
+                m3.Object(bucket, f'{source_prefix}/2019/08/28/12345678_00012_1_May_7_2019_email.pdf').put(Body=b'extra chars in my name lol')
+                m3.Object(bucket, f'{source_prefix}/2019/08/28/23456789_00052_1.png.png').put(Body=b'somehow i got a redundant .ext')
+                m3.Object(bucket, f'{source_prefix}/2019/08/29/23456789_00053_1._DEGREE_COMPLETION_LETTER').put(
+                    Body=b'original file name mistaken for the .ext',
+                )
+                m3.Object(bucket, f'{source_prefix}/2019/08/29/34567890_00014_2..7.19_(2)-edited_(1)-2_(1)_(1).xls').put(
+                    Body=b'is this a versioning scheme?',
+                )
+
+                MigrateSisAdvisingNoteAttachments().run(datestamp=datestamp)
+
+                assert 'Copied 4 attachments to the destination folder.' in caplog.text
+                assert object_exists(m3, bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf')
+                assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00052_1.png')
+                assert object_exists(m3, bucket, f'{dest_prefix}/23456789/23456789_00053_1')
+                assert object_exists(m3, bucket, f'{dest_prefix}/34567890/34567890_00014_2.xls')

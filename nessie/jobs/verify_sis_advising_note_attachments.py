@@ -27,7 +27,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.util import get_s3_sis_attachment_path
+from nessie.lib.util import get_s3_sis_attachment_path, normalize_sis_note_attachment_file_name
 
 
 """Logic for validating SIS advising note attachments."""
@@ -72,7 +72,7 @@ class VerifySisAdvisingNoteAttachments(BackgroundJob):
         dest_attachments = sorted(s3.get_keys_with_prefix(dest_prefix, False, bucket))
 
         for source_key in source_attachments:
-            file_name = source_key.split('/')[-1]
+            file_name = normalize_sis_note_attachment_file_name(source_key)
             sid = file_name.split('_')[0]
             dest_key = f'{dest_prefix}/{sid}/{file_name}'
 
