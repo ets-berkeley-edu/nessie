@@ -48,7 +48,7 @@ def get_course_enrollments(course_id, mock=None):
     )
     results = []
     for page in response:
-        results.extend(page.json())
+        results.extend(page)
     return results
 
 
@@ -62,7 +62,7 @@ def authorized_request(url):
     return http.request(url, auth_headers)
 
 
-def paged_request(path, mock, query=None):
+def paged_request(path, mock, query=None, key=None):
     if query is None:
         query = {}
     query['per_page'] = 100
@@ -75,7 +75,7 @@ def paged_request(path, mock, query=None):
             response = authorized_request(url)
             if not response:
                 return None
-            yield response
+            yield response.json().get(key) if key else response.json()
             url = http.get_next_page(response)
 
 
