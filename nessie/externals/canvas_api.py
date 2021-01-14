@@ -48,6 +48,25 @@ def get_course_enrollments(course_id, mock=None):
     )
 
 
+@fixture('canvas_course_gradebook_history_{course_id}')
+def get_course_gradebook_history(course_id, mock=None):
+    path = f'/api/v1/courses/{course_id}/gradebook_history/feed'
+    return paged_request(
+        path=path,
+        mock=mock,
+    )
+
+
+@fixture('canvas_course_grade_change_log_{course_id}')
+def get_course_grade_change_log(course_id, mock=None):
+    path = f'/api/v1/audit/grade_change/courses/{course_id}'
+    return paged_request(
+        path=path,
+        mock=mock,
+        key='events',
+    )
+
+
 def build_url(path, query=None):
     working_url = app.config['CANVAS_HTTP_URL'] + path
     return http.build_url(working_url, query)

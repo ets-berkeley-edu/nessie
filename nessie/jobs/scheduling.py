@@ -95,8 +95,8 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.generate_merged_hist_enr_feeds import GenerateMergedHistEnrFeeds
     from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
     from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
-    from nessie.jobs.import_canvas_grade_change_log import ImportCanvasGradeChangeLog
-    from nessie.jobs.import_canvas_gradebook_history import ImportCanvasGradebookHistory
+    from nessie.jobs.import_canvas_grade_change_log_api import ImportCanvasGradeChangeLogApi
+    from nessie.jobs.import_canvas_gradebook_history_api import ImportCanvasGradebookHistoryApi
     from nessie.jobs.import_degree_progress import ImportDegreeProgress
     from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
     from nessie.jobs.import_piazza_api_data import ImportPiazzaApiData
@@ -186,8 +186,8 @@ def schedule_all_jobs(force=False):
         sched,
         'JOB_IMPORT_CANVAS_API',
         [
-            ImportCanvasGradebookHistory,
-            ImportCanvasGradeChangeLog,
+            ImportCanvasGradebookHistoryApi,
+            ImportCanvasGradeChangeLogApi,
             CreateCanvasApiSchema,
         ],
         force,
