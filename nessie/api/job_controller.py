@@ -35,7 +35,6 @@ from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
 from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
 from nessie.jobs.create_berkeleyx_schema import CreateBerkeleyxSchema
 from nessie.jobs.create_calnet_schema import CreateCalNetSchema
-from nessie.jobs.create_canvas_api_schema import CreateCanvasApiSchema
 from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.create_coe_schema import CreateCoeSchema
 from nessie.jobs.create_data_science_advising_schema import CreateDataScienceAdvisingSchema
@@ -60,8 +59,6 @@ from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.jobs.import_calnet_data import ImportCalNetData
 from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
-from nessie.jobs.import_canvas_grade_change_log_api import ImportCanvasGradeChangeLogApi
-from nessie.jobs.import_canvas_gradebook_api import ImportCanvasGradebookApi
 from nessie.jobs.import_degree_progress import ImportDegreeProgress
 from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
 from nessie.jobs.import_non_current_students import ImportNonCurrentStudents
@@ -106,13 +103,6 @@ def create_asc_advising_notes_schema():
 @auth_required
 def create_berkeleyx_schema():
     job_started = CreateBerkeleyxSchema().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/create_canvas_api_schema', methods=['POST'])
-@auth_required
-def create_canvas_api_schema():
-    job_started = CreateCanvasApiSchema().run_async()
     return respond_with_status(job_started)
 
 
@@ -280,30 +270,6 @@ def import_canvas_enrollments_api():
     else:
         term_id = None
     job_started = ImportCanvasEnrollmentsApi(term_id=term_id).run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/import_canvas_gradebook_api', methods=['POST'])
-@auth_required
-def import_canvas_gradebook_api():
-    args = get_json_args(request)
-    if args:
-        term_id = args.get('term')
-    else:
-        term_id = None
-    job_started = ImportCanvasGradebookApi(term_id=term_id).run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/import_canvas_grade_change_log_api', methods=['POST'])
-@auth_required
-def import_canvas_grade_change_log_api():
-    args = get_json_args(request)
-    if args:
-        term_id = args.get('term')
-    else:
-        term_id = None
-    job_started = ImportCanvasGradeChangeLogApi(term_id=term_id).run_async()
     return respond_with_status(job_started)
 
 
