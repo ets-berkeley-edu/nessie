@@ -55,9 +55,6 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_GENERATE_CURRENT_TERM_FEEDS': 3500,
     'JOB_LOAD_LRS_INCREMENTALS': 3800,
     'JOB_LOAD_ADVISING_NOTES': 4000,
-    'JOB_IMPORT_CANVAS_API': 5000,
-    'JOB_IMPORT_PIAZZA_API': 6000,
-    'JOB_IMPORT_EDL': 7000,
 }
 
 
@@ -83,7 +80,6 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.chained_import_student_population import ChainedImportStudentPopulation
     from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
     from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
-    from nessie.jobs.create_canvas_api_schema import CreateCanvasApiSchema
     from nessie.jobs.create_e_i_advising_notes_schema import CreateEIAdvisingNotesSchema
     from nessie.jobs.create_edl_sis_schema import CreateEdlSisSchema
     from nessie.jobs.create_oua_schema import CreateOUASchema
@@ -95,8 +91,6 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.generate_merged_hist_enr_feeds import GenerateMergedHistEnrFeeds
     from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
     from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
-    from nessie.jobs.import_canvas_grade_change_log_api import ImportCanvasGradeChangeLogApi
-    from nessie.jobs.import_canvas_gradebook_history_api import ImportCanvasGradebookHistoryApi
     from nessie.jobs.import_degree_progress import ImportDegreeProgress
     from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
     from nessie.jobs.import_piazza_api_data import ImportPiazzaApiData
@@ -182,26 +176,6 @@ def schedule_all_jobs(force=False):
         ],
         force,
     )
-    schedule_chained_job(
-        sched,
-        'JOB_IMPORT_CANVAS_API',
-        [
-            ImportCanvasGradebookHistoryApi,
-            ImportCanvasGradeChangeLogApi,
-            CreateCanvasApiSchema,
-        ],
-        force,
-    )
-    schedule_chained_job(
-        sched,
-        'JOB_IMPORT_PIAZZA_API',
-        [
-            ImportPiazzaApiData,
-            TransformPiazzaApiData,
-        ],
-        force,
-    )
-    schedule_job(sched, 'JOB_IMPORT_EDL', CreateEdlSisSchema, force)
 
 
 def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):

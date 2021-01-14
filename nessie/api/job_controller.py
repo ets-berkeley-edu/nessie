@@ -61,7 +61,7 @@ from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.jobs.import_calnet_data import ImportCalNetData
 from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
 from nessie.jobs.import_canvas_grade_change_log_api import ImportCanvasGradeChangeLogApi
-from nessie.jobs.import_canvas_gradebook_history_api import ImportCanvasGradebookHistoryApi
+from nessie.jobs.import_canvas_gradebook_api import ImportCanvasGradebookApi
 from nessie.jobs.import_degree_progress import ImportDegreeProgress
 from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
 from nessie.jobs.import_non_current_students import ImportNonCurrentStudents
@@ -283,15 +283,15 @@ def import_canvas_enrollments_api():
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/import_canvas_gradebook_history_api', methods=['POST'])
+@app.route('/api/job/import_canvas_gradebook_api', methods=['POST'])
 @auth_required
-def import_canvas_gradebook_history_api():
+def import_canvas_gradebook_api():
     args = get_json_args(request)
     if args:
         term_id = args.get('term')
     else:
         term_id = None
-    job_started = ImportCanvasGradebookHistoryApi(term_id=term_id).run_async()
+    job_started = ImportCanvasGradebookApi(term_id=term_id).run_async()
     return respond_with_status(job_started)
 
 

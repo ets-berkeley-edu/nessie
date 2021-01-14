@@ -38,10 +38,7 @@ class ImportCanvasGradeChangeLogApi(BackgroundJob):
     def run(self, term_id=None):
         if not term_id:
             term_id = current_term_id()
-        if app.config['TEST_CANVAS_COURSE_IDS']:
-            canvas_course_ids = app.config['TEST_CANVAS_COURSE_IDS']
-        else:
-            canvas_course_ids = [row['canvas_course_id'] for row in get_enrolled_canvas_sites_for_term(term_id)]
+        canvas_course_ids = [row['canvas_course_id'] for row in get_enrolled_canvas_sites_for_term(term_id)]
         app.logger.info(f'Starting Canvas grade change log API import job for term {term_id}, {len(canvas_course_ids)} course sites...')
 
         rows = []
