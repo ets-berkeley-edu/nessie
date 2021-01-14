@@ -46,7 +46,7 @@ class ImportCanvasApiData(BackgroundJob):
                 status='started',
             )
         with tempfile.TemporaryFile() as feed_file:
-            if self._fetch_canvas_api_data(path, feed_file, course_id, mock=mock, key=key):
+            if self._fetch_canvas_api_data(path, feed_file, mock=mock, key=key):
                 app.logger.info(f'Will stash feed in S3: {s3_key}')
                 try:
                     response = s3.upload_file(feed_file, s3_key)
@@ -76,7 +76,7 @@ class ImportCanvasApiData(BackgroundJob):
             return True
 
     @fixture('canvas_course_grade_change_log_7654321.json')
-    def _fetch_canvas_api_data(self, path, feed_file, course_id, mock=None, key=None):
+    def _fetch_canvas_api_data(self, path, feed_file, mock=None, key=None):
         response = canvas_api.paged_request(
             path=path,
             mock=mock,
@@ -84,6 +84,5 @@ class ImportCanvasApiData(BackgroundJob):
         )
         for page in response:
             for record in page:
-                record['course_id'] = course_id
                 feed_file.write(json.dumps(record).encode() + b'\n')
         return response
