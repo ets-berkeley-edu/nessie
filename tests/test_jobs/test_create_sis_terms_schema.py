@@ -56,14 +56,31 @@ def term_definitions(app):
 
 class TestCreateSisTermsSchema:
 
-    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
-    def test_refresh_current_term_index(self, mock_datetime, app, term_definitions):
-        mock_datetime.now.return_value = datetime(year=2018, month=5, day=1, hour=5, minute=21)
+    def refresh_term_index(self, app):
         from nessie.jobs.create_sis_terms_schema import CreateSisTermsSchema
         CreateSisTermsSchema().refresh_current_term_index()
-
         rds_schema = app.config['RDS_SCHEMA_SIS_TERMS']
         rows = rds.fetch(f'SELECT * FROM {rds_schema}.current_term_index')
         assert len(rows) == 1
-        assert rows[0]['current_term_name'] == 'Spring 2018'
-        assert rows[0]['future_term_name'] == 'Fall 2018'
+        return rows[0]
+
+    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    def test_early_spring(self, mock_datetime, app, term_definitions):
+        mock_datetime.now.return_value = datetime(year=2018, month=1, day=16, hour=5, minute=21)
+        terms = self.refresh_term_index(app)
+        assert terms['current_term_name'] == 'Spring 2018'
+        assert terms['future_term_name'] == 'Spring 2018'
+
+    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    def test_mid_spring(self, mock_datetime, app, term_definitions):
+        mock_datetime.now.return_value = datetime(year=2018, month=3, day=13, hour=5, minute=21)
+        terms = self.refresh_term_index(app)
+        assert terms['current_term_name'] == 'Spring 2018'
+        assert terms['future_term_name'] == 'Summer 2018'
+
+    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    def test_late_spring(self, mock_datetime, app, term_definitions):
+        mock_datetime.now.return_value = datetime(year=2018, month=4, day=13, hour=5, minute=21)
+        terms = self.refresh_term_index(app)
+        assert terms['current_term_name'] == 'Spring 2018'
+        assert terms['future_term_name'] == 'Fall 2018'
