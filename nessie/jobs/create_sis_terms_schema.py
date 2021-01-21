@@ -84,17 +84,22 @@ class CreateSisTermsSchema(BackgroundJob):
         current_term = self.get_sis_current_term(today)
 
         if current_term:
-            current_term_id = current_term['term_id']
+            term_id = current_term['term_id']
 
-            # If today is one month or less before the end of the current term, or if the current term is summer,
-            # include the next term.
-            if current_term_id[3] == '5' or (current_term['term_ends'] - timedelta(weeks=4)) < today:
-                future_term_id = next_term_id(current_term['term_id'])
-                # ... and if the upcoming term is Summer, include the next Fall term as well.
-                if future_term_id[3] == '5':
-                    future_term_id = next_term_id(future_term_id)
-            else:
-                future_term_id = current_term_id
+            # Check if the advance enrollment period has started for the next two upcoming terms.
+            future_term_id = term_id
+            for _ in range(2):
+                term_id = next_term_id(term_id)
+                term = self.get_sis_term_for_id(term_id)
+                advance_enrollment_period = 0
+                if term_id[3] == '2':
+                    advance_enrollment_period = 95
+                elif term_id[3] == '5':
+                    advance_enrollment_period = 124
+                elif term_id[3] == '8':
+                    advance_enrollment_period = 140
+                if term['term_begins'] - timedelta(days=advance_enrollment_period) < today:
+                    future_term_id = term_id
 
             with rds.transaction() as transaction:
                 transaction.execute(f'TRUNCATE {rds_schema}.current_term_index')
@@ -108,5 +113,10 @@ class CreateSisTermsSchema(BackgroundJob):
 
     def get_sis_current_term(self, for_date):
         sql = f"SELECT * FROM {rds_schema}.term_definitions WHERE term_ends > '{for_date}' ORDER BY term_id ASC LIMIT 1"
+        rows = rds.fetch(sql)
+        return rows and rows[0]
+
+    def get_sis_term_for_id(self, term_id):
+        sql = f"SELECT * FROM {rds_schema}.term_definitions WHERE term_id = '{term_id}' LIMIT 1"
         rows = rds.fetch(sql)
         return rows and rows[0]
