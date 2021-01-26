@@ -85,7 +85,6 @@ from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
 from nessie.jobs.transform_lrs_incrementals import TransformLrsIncrementals
 from nessie.jobs.transform_piazza_api_data import TransformPiazzaApiData
-from nessie.jobs.verify_canvas_api_import import VerifyCanvasApiImport
 from nessie.jobs.verify_sis_advising_note_attachments import VerifySisAdvisingNoteAttachments
 from nessie.lib.http import tolerant_jsonify
 from nessie.lib.metadata import update_canvas_api_import_status, update_canvas_sync_status
@@ -490,13 +489,6 @@ def import_registrations_hist_enr(load_mode):
 @auth_required
 def migrate_sis_advising_note_attachments(datestamp):
     job_started = MigrateSisAdvisingNoteAttachments(datestamp=datestamp).run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/verify_canvas_api_import', methods=['POST'])
-@auth_required
-def verify_canvas_api_import():
-    job_started = VerifyCanvasApiImport().run_async()
     return respond_with_status(job_started)
 
 
