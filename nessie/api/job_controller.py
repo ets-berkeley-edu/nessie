@@ -35,7 +35,6 @@ from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
 from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
 from nessie.jobs.create_berkeleyx_schema import CreateBerkeleyxSchema
 from nessie.jobs.create_calnet_schema import CreateCalNetSchema
-from nessie.jobs.create_canvas_api_schema import CreateCanvasApiSchema
 from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.create_coe_schema import CreateCoeSchema
 from nessie.jobs.create_data_science_advising_schema import CreateDataScienceAdvisingSchema
@@ -59,10 +58,7 @@ from nessie.jobs.generate_merged_hist_enr_feeds import GenerateMergedHistEnrFeed
 from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.jobs.import_calnet_data import ImportCalNetData
-from nessie.jobs.import_canvas_api_data import ImportCanvasApiData
 from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
-from nessie.jobs.import_canvas_grade_change_log import ImportCanvasGradeChangeLog
-from nessie.jobs.import_canvas_gradebook_history import ImportCanvasGradebookHistory
 from nessie.jobs.import_degree_progress import ImportDegreeProgress
 from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
 from nessie.jobs.import_non_current_students import ImportNonCurrentStudents
@@ -83,13 +79,11 @@ from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.jobs.sync_canvas_requests_snapshots import SyncCanvasRequestsSnapshots
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
-from nessie.jobs.transform_canvas_api_data import TransformCanvasApiData
 from nessie.jobs.transform_lrs_incrementals import TransformLrsIncrementals
 from nessie.jobs.transform_piazza_api_data import TransformPiazzaApiData
-from nessie.jobs.verify_canvas_api_import import VerifyCanvasApiImport
 from nessie.jobs.verify_sis_advising_note_attachments import VerifySisAdvisingNoteAttachments
 from nessie.lib.http import tolerant_jsonify
-from nessie.lib.metadata import update_canvas_api_import_status, update_canvas_sync_status
+from nessie.lib.metadata import update_canvas_sync_status
 
 
 @app.route('/api/job/create_advisor_schema', methods=['POST'])
@@ -110,13 +104,6 @@ def create_asc_advising_notes_schema():
 @auth_required
 def create_berkeleyx_schema():
     job_started = CreateBerkeleyxSchema().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/create_canvas_api_schema', methods=['POST'])
-@auth_required
-def create_canvas_api_schema():
-    job_started = CreateCanvasApiSchema().run_async()
     return respond_with_status(job_started)
 
 
@@ -275,36 +262,6 @@ def generate_merged_student_feeds(term_id):
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/import_canvas_api_data', methods=['POST'])
-@auth_required
-def import_canvas_api_data():
-    data = json.loads(request.data)
-    course_id = data and data.get('course_id')
-    if not course_id:
-        raise BadRequestError('Required "course_id" parameter missing.')
-    path = data and data.get('path')
-    if not path:
-        raise BadRequestError('Required "path" parameter missing.')
-    mock = data and data.get('mock')
-    s3_key = data and data.get('s3_key')
-    if not s3_key:
-        raise BadRequestError('Required "s3_key" parameter missing.')
-    job_id = data and data.get('job_id')
-    update_canvas_api_import_status(
-        job_id=job_id,
-        course_id=course_id,
-        status='received',
-    )
-    job_started = ImportCanvasApiData(
-        course_id=course_id,
-        path=path,
-        mock=mock,
-        s3_key=s3_key,
-        job_id=job_id,
-    ).run_async()
-    return respond_with_status(job_started)
-
-
 @app.route('/api/job/import_canvas_enrollments_api', methods=['POST'])
 @auth_required
 def import_canvas_enrollments_api():
@@ -314,20 +271,6 @@ def import_canvas_enrollments_api():
     else:
         term_id = None
     job_started = ImportCanvasEnrollmentsApi(term_id=term_id).run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/import_canvas_gradebook_historys/<term_id>', methods=['POST'])
-@auth_required
-def import_canvas_gradebook_history(term_id):
-    job_started = ImportCanvasGradebookHistory(term_id=term_id).run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/import_canvas_grade_change_logs/<term_id>', methods=['POST'])
-@auth_required
-def import_canvas_grade_change_log(term_id):
-    job_started = ImportCanvasGradeChangeLog(term_id=term_id).run_async()
     return respond_with_status(job_started)
 
 
@@ -414,13 +357,6 @@ def migrate_lrs_incrementals():
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/transform_canvas_api_data', methods=['POST'])
-@auth_required
-def transform_canvas_api_data():
-    job_started = TransformCanvasApiData().run_async()
-    return respond_with_status(job_started)
-
-
 @app.route('/api/job/transform_lrs_incrementals', methods=['POST'])
 @auth_required
 def transform_lrs_incrementals():
@@ -495,13 +431,6 @@ def import_registrations_hist_enr(load_mode):
 @auth_required
 def migrate_sis_advising_note_attachments(datestamp):
     job_started = MigrateSisAdvisingNoteAttachments(datestamp=datestamp).run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/verify_canvas_api_import', methods=['POST'])
-@auth_required
-def verify_canvas_api_import():
-    job_started = VerifyCanvasApiImport().run_async()
     return respond_with_status(job_started)
 
 

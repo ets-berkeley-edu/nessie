@@ -30,19 +30,6 @@ from flask import current_app as app
 from nessie.externals import rds, s3
 
 
-def create_canvas_api_import_status(job_id, term_id, course_id, table_name):
-    if not job_id:
-        return False
-    sql = f"""INSERT INTO {_rds_schema()}.canvas_api_import_job_status
-               (job_id, term_id, course_id, table_name, status, instance_id, created_at, updated_at)
-               VALUES (%s, %s, %s, %s, 'created', %s, current_timestamp, current_timestamp)
-               """
-    return rds.execute(
-        sql,
-        params=(job_id, term_id, str(course_id), table_name, _instance_id()),
-    )
-
-
 def create_canvas_sync_status(job_id, filename, canvas_table, source_url):
     sql = f"""INSERT INTO {_rds_schema()}.canvas_sync_job_status
                (job_id, filename, canvas_table, source_url, status, instance_id, created_at, updated_at)
@@ -70,23 +57,6 @@ def get_failures_from_last_sync():
             AND (status NOT IN ('complete', 'duplicate') OR destination_size != source_size)"""
         failures = rds.fetch(failures_query, params=[last_job_id])
     return {'job_id': last_job_id, 'failures': failures}
-
-
-def update_canvas_api_import_status(job_id, course_id, status, details=None):
-    if not job_id:
-        return False
-    sql = f"""UPDATE {_rds_schema()}.canvas_api_import_job_status
-             SET status=%s, updated_at=current_timestamp"""
-    params = [status]
-    if details:
-        sql += ', details=%s'
-        params.append(details)
-    sql += ' WHERE job_id=%s AND course_id=%s'
-    params += [job_id, str(course_id)]
-    return rds.execute(
-        sql,
-        params=tuple(params),
-    )
 
 
 def update_canvas_sync_status(job_id, key, status, **kwargs):

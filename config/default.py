@@ -113,7 +113,6 @@ JOB_RESYNC_CANVAS_SNAPSHOTS = {}
 JOB_IMPORT_ADVISORS = {}
 JOB_IMPORT_ADMISSIONS = {}
 JOB_IMPORT_SIS_DATA = {}
-JOB_IMPORT_CANVAS_API = {}
 JOB_IMPORT_CANVAS_ENROLLMENTS = {}
 JOB_IMPORT_STUDENT_POPULATION = {}
 JOB_IMPORT_DEGREE_PROGRESS = {}
@@ -185,7 +184,6 @@ LOCH_S3_BOA_DATA_API_PATH = 'boa-data/boa-api'
 LOCH_S3_BOAC_ANALYTICS_DATA_PATH = 'boac-analytics'
 LOCH_S3_CAL1CARD_PHOTOS_PATH = 'cal1card-data/photos'
 LOCH_S3_CALNET_DATA_PATH = 'calnet-data'
-LOCH_S3_CANVAS_API_DATA_PATH = 'canvas-api-data'
 LOCH_S3_COE_DATA_PATH = 'coe-data'
 LOCH_S3_DSA_DATA_PATH = 'dsa-data'
 LOCH_S3_E_I_DATA_SFTP_PATH = 'e-and-i-data'
@@ -261,7 +259,6 @@ REDSHIFT_SCHEMA_ADVISOR = 'External Advisor schema name'
 REDSHIFT_SCHEMA_ASC_ADVISING_NOTES = 'External ASC Advising Notes schema name'
 REDSHIFT_SCHEMA_CALNET = 'External CalNet schema name'
 REDSHIFT_SCHEMA_CANVAS = 'External Canvas schema name'
-REDSHIFT_SCHEMA_CANVAS_API = 'External Canvas API schema name'
 REDSHIFT_SCHEMA_COE_EXTERNAL = 'External COE schema name'
 REDSHIFT_SCHEMA_E_I_ADVISING_NOTES = 'External E&I Advising Notes schema name'
 REDSHIFT_SCHEMA_EDL_SIS = 'External EDL SIS schema name'
@@ -287,8 +284,6 @@ STUDENT_API_USER = None
 TERMS_API_ID = 'secretid'
 TERMS_API_KEY = 'secretkey'
 TERMS_API_URL = 'https://secreturl.berkeley.edu/terms'
-
-TEST_CANVAS_COURSE_IDS = None
 
 VUE_LOCALHOST_BASE_URL = None
 

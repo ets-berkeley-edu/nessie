@@ -37,7 +37,7 @@ from nessie.lib.mockingbird import fixture
 @fixture('canvas_course_enrollments_{course_id}')
 def get_course_enrollments(course_id, mock=None):
     path = f'/api/v1/courses/{course_id}/enrollments'
-    response = paged_request(
+    return paged_request(
         path=path,
         mock=mock,
         query={
@@ -46,10 +46,6 @@ def get_course_enrollments(course_id, mock=None):
             'state[]': ['active', 'completed', 'inactive'],
         },
     )
-    results = []
-    for page in response:
-        results.extend(page.json())
-    return results
 
 
 def build_url(path, query=None):
@@ -70,13 +66,15 @@ def paged_request(path, mock, query=None):
         path,
         query,
     )
+    results = []
     while url:
         with mock(url):
             response = authorized_request(url)
             if not response:
                 return None
-            yield response
+            results.extend(response.json())
             url = http.get_next_page(response)
+    return results
 
 
 def _get_token():
