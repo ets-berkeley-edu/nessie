@@ -318,16 +318,26 @@ def import_canvas_enrollments_api():
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/import_canvas_gradebook_historys/<term_id>', methods=['POST'])
+@app.route('/api/job/import_canvas_gradebook_history', methods=['POST'])
 @auth_required
-def import_canvas_gradebook_history(term_id):
+def import_canvas_gradebook_history():
+    args = get_json_args(request)
+    if args:
+        term_id = args.get('term')
+    else:
+        term_id = None
     job_started = ImportCanvasGradebookHistory(term_id=term_id).run_async()
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/import_canvas_grade_change_logs/<term_id>', methods=['POST'])
+@app.route('/api/job/import_canvas_grade_change_log', methods=['POST'])
 @auth_required
-def import_canvas_grade_change_log(term_id):
+def import_canvas_grade_change_log():
+    args = get_json_args(request)
+    if args:
+        term_id = args.get('term')
+    else:
+        term_id = None
     job_started = ImportCanvasGradeChangeLog(term_id=term_id).run_async()
     return respond_with_status(job_started)
 
