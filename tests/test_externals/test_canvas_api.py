@@ -55,3 +55,21 @@ class TestCanvasApi:
             response = canvas_api.get_course_enrollments(7654320)
             assert '500 Server Error' in caplog.text
             assert not response
+
+    def test_course_gradebook_history(self, app):
+        """Returns course gradebook history."""
+        feed = canvas_api.get_course_gradebook_history(7654321)
+        assert feed
+        assert len(feed) == 2
+        assert feed[0]['id'] == 92781685
+        assert feed[1]['id'] == 92781685
+
+    def test_course_grade_change_log(self, app):
+        """Returns course grade change log."""
+        feed = canvas_api.get_course_grade_change_log(7654321)
+        app.logger.error(feed)
+        assert feed
+        assert len(feed) == 3
+        assert feed[0]['id'] == '3dbdce27-674f'
+        assert feed[1]['id'] == 'e157fe26-8615'
+        assert feed[2]['id'] == '4e942713-73e2'
