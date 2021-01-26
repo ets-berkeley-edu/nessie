@@ -182,7 +182,9 @@ def upload_file_to_staging(table, term_file, row_count, term_id):
         tsv_filename = f'staging_{table}.tsv'
     s3_key = f'{get_s3_sis_api_daily_path()}/{tsv_filename}'
     app.logger.info(f'Will stash {row_count} feeds in S3: {s3_key}')
-    if not s3.upload_file(term_file, s3_key):
+    # Be kind; rewind
+    term_file.seek(0)
+    if not s3.upload_data(term_file, s3_key):
         raise BackgroundJobError('Error on S3 upload: aborting job.')
 
     app.logger.info('Will copy S3 feeds into Redshift...')
