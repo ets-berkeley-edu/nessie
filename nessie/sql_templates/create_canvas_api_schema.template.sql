@@ -39,6 +39,7 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 
 CREATE EXTERNAL TABLE {redshift_schema_canvas_api}.gradebook_history (
     id BIGINT,
+    course_id BIGINT,
     assignment_id BIGINT,
     assignment_name VARCHAR,
     body TEXT,
@@ -63,11 +64,11 @@ CREATE EXTERNAL TABLE {redshift_schema_canvas_api}.gradebook_history (
     workflow_state VARCHAR
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
-WITH SERDEPROPERTIES ('strip.outer.array' = 'true')
 LOCATION '{loch_s3_canvas_api_data_path}/gradebook_history';
 
 CREATE EXTERNAL TABLE {redshift_schema_canvas_api}.grade_change_log (
     id VARCHAR,
+    course_id BIGINT,
     created_at TIMESTAMP,
     event_type VARCHAR,
     excused_after BOOLEAN,
@@ -88,5 +89,4 @@ CREATE EXTERNAL TABLE {redshift_schema_canvas_api}.grade_change_log (
     >
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
-WITH SERDEPROPERTIES ('paths' = 'events')
 LOCATION '{loch_s3_canvas_api_data_path}/grade_change_log';
