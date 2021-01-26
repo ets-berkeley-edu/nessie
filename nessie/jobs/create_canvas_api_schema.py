@@ -37,7 +37,7 @@ class CreateCanvasApiSchema(BackgroundJob):
         app.logger.info('Starting Canvas API schema creation job...')
         external_schema = app.config['REDSHIFT_SCHEMA_CANVAS_API']
         s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
-        s3_canvas_api_data_url = s3_prefix + get_s3_canvas_api_path(transformed=True)
+        s3_canvas_api_data_url = s3_prefix + get_s3_canvas_api_path()
 
         redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template(

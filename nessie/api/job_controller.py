@@ -83,7 +83,6 @@ from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.jobs.sync_canvas_requests_snapshots import SyncCanvasRequestsSnapshots
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
-from nessie.jobs.transform_canvas_api_data import TransformCanvasApiData
 from nessie.jobs.transform_lrs_incrementals import TransformLrsIncrementals
 from nessie.jobs.transform_piazza_api_data import TransformPiazzaApiData
 from nessie.jobs.verify_canvas_api_import import VerifyCanvasApiImport
@@ -411,13 +410,6 @@ def full_caliper_import():
 @auth_required
 def migrate_lrs_incrementals():
     job_started = MigrateLrsIncrementals().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/transform_canvas_api_data', methods=['POST'])
-@auth_required
-def transform_canvas_api_data():
-    job_started = TransformCanvasApiData().run_async()
     return respond_with_status(job_started)
 
 

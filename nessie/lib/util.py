@@ -116,8 +116,8 @@ def get_s3_calnet_daily_path(cutoff=None):
     return app.config['LOCH_S3_CALNET_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
 
-def get_s3_canvas_api_path(transformed=False):
-    return app.config['LOCH_S3_CANVAS_API_DATA_PATH'] + ('/transformed' if transformed else '/incremental')
+def get_s3_canvas_api_path():
+    return app.config['LOCH_S3_CANVAS_API_DATA_PATH'] + '/incremental'
 
 
 def get_s3_canvas_daily_path(cutoff=None):
