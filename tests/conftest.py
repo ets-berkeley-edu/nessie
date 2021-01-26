@@ -84,18 +84,6 @@ def metadata_db(app):
         created_at TIMESTAMP NOT NULL,
         updated_at TIMESTAMP NOT NULL
     )""")
-    rds.execute(f"""CREATE TABLE IF NOT EXISTS {rds_schema}.canvas_api_import_job_status
-    (
-        job_id VARCHAR NOT NULL,
-        course_id VARCHAR NOT NULL,
-        term_id VARCHAR NOT NULL,
-        table_name VARCHAR NOT NULL,
-        status VARCHAR NOT NULL,
-        details VARCHAR(4096),
-        instance_id VARCHAR,
-        created_at TIMESTAMP NOT NULL,
-        updated_at TIMESTAMP NOT NULL
-    )""")
     rds.execute(f"""CREATE TABLE IF NOT EXISTS {rds_schema}.canvas_sync_job_status
     (
        job_id VARCHAR NOT NULL,

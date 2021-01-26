@@ -63,22 +63,6 @@ CREATE TABLE IF NOT EXISTS {rds_schema_metadata}.background_job_status
     details VARCHAR(4096)
 );
 
-CREATE TABLE IF NOT EXISTS {rds_schema_metadata}.canvas_api_import_job_status
-(
-    job_id VARCHAR NOT NULL,
-    course_id VARCHAR NOT NULL,
-    term_id VARCHAR NOT NULL,
-    table_name VARCHAR NOT NULL,
-    status VARCHAR NOT NULL,
-    details VARCHAR(4096),
-    instance_id VARCHAR,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS canvas_api_import_job_idx
-ON {rds_schema_metadata}.canvas_api_import_job_status (job_id, course_id);
-
 CREATE TABLE IF NOT EXISTS {rds_schema_metadata}.canvas_sync_job_status
 (
     job_id VARCHAR NOT NULL,
