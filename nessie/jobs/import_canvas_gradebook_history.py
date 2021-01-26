@@ -31,7 +31,7 @@ from nessie.lib.berkeley import current_term_id
 from nessie.lib.dispatcher import dispatch
 from nessie.lib.metadata import create_canvas_api_import_status, update_canvas_api_import_status
 from nessie.lib.queries import get_enrolled_canvas_sites_for_term
-from nessie.lib.util import get_s3_canvas_api_path
+from nessie.lib.util import get_s3_canvas_api_daily_path
 
 """Canvas gradebook history import job."""
 
@@ -57,7 +57,7 @@ class ImportCanvasGradebookHistory(BackgroundJob):
         index = 1
         for course_id in canvas_course_ids:
             path = f'/api/v1/courses/{course_id}/gradebook_history/feed'
-            s3_key = f'{get_s3_canvas_api_path()}/gradebook_history/gradebook_history_{course_id}.json'
+            s3_key = f'{get_s3_canvas_api_daily_path()}/gradebook_history/gradebook_history_{course_id}.json'
             create_canvas_api_import_status(
                 job_id=job_id,
                 term_id=term_id,

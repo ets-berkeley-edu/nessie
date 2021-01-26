@@ -23,10 +23,12 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from datetime import datetime, timedelta
+
 from flask import current_app as app
-from nessie.externals import redshift
+from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
-from nessie.lib.util import get_s3_canvas_api_path, resolve_sql_template
+from nessie.lib.util import get_s3_canvas_api_daily_path, resolve_sql_template
 
 """Logic for Canvas API schema creation job."""
 
@@ -35,14 +37,22 @@ class CreateCanvasApiSchema(BackgroundJob):
 
     def run(self):
         app.logger.info('Starting Canvas API schema creation job...')
+        canvas_api_path = get_s3_canvas_api_daily_path()
+        if not s3.get_keys_with_prefix(canvas_api_path):
+            canvas_api_path = get_s3_canvas_api_daily_path(datetime.now() - timedelta(days=1))
+            if not s3.get_keys_with_prefix(canvas_api_path):
+                raise BackgroundJobError('No timely Canvas API data found, aborting')
+            else:
+                app.logger.info('Falling back to yesterday\'s Canvas API data')
+
         external_schema = app.config['REDSHIFT_SCHEMA_CANVAS_API']
         s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
-        s3_canvas_api_data_url = s3_prefix + get_s3_canvas_api_path()
+        s3_canvas_api_data_url = s3_prefix + canvas_api_path
 
         redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template(
             'create_canvas_api_schema.template.sql',
-            loch_s3_canvas_api_data_path=s3_canvas_api_data_url,
+            loch_s3_canvas_api_data_path_today=s3_canvas_api_data_url,
         )
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(external_schema, resolved_ddl)

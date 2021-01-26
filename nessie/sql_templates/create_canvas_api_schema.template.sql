@@ -66,7 +66,7 @@ CREATE EXTERNAL TABLE {redshift_schema_canvas_api}.gradebook_history (
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
 WITH SERDEPROPERTIES ('strip.outer.array' = 'true')
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_api_data_path}/gradebook_history';
+LOCATION '{loch_s3_canvas_api_data_path_today}/gradebook_history';
 
 CREATE EXTERNAL TABLE {redshift_schema_canvas_api}.grade_change_log (
     id VARCHAR,
@@ -93,4 +93,4 @@ CREATE EXTERNAL TABLE {redshift_schema_canvas_api}.grade_change_log (
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
 WITH SERDEPROPERTIES ('strip.outer.array' = 'true')
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_api_data_path}/grade_change_log';
+LOCATION '{loch_s3_canvas_api_data_path_today}/grade_change_log';
