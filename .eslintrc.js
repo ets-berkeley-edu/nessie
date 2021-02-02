@@ -12,9 +12,12 @@ module.exports = {
   plugins: ['vue'],
   rules: {
     'eqeqeq': 2,
+    'key-spacing': 2,
     'multiline-html-element-content-newline': 0,
     'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
+    'no-multi-spaces': 2,
+    'no-trailing-spaces': 2,
     'no-unexpected-multiline': 2,
     'quotes': [2, 'single'],
     'semi': [2, 'never'],
@@ -27,7 +30,7 @@ module.exports = {
     'vue/comma-dangle': 2,
     'vue/component-name-in-template-casing': 2,
     'vue/eqeqeq': 2,
-    'vue/html-closing-bracket-newline': 0,
+    'vue/html-closing-bracket-newline': 2,
     'vue/html-closing-bracket-spacing': 2,
     'vue/html-end-tags': 2,
     'vue/html-indent': 2,
@@ -64,4 +67,4 @@ module.exports = {
   parserOptions: {
     parser: require.resolve('@typescript-eslint/parser')
   }
-};
+}

@@ -6,7 +6,8 @@
         v-model="jobsDate"
         placeholder="Select Date"
         @disabled="loading"
-        @closed="getBackgroundJobStatus"></Datepicker>
+        @closed="getBackgroundJobStatus"
+      ></Datepicker>
     </div>
     <div class="results-container">
       <LargeSpinner v-if="loading" />
@@ -16,7 +17,8 @@
             striped
             hover
             :items="jobStatuses.rows"
-            :fields="jobStatuses.fields"></b-table>
+            :fields="jobStatuses.fields"
+          ></b-table>
         </div>
         <div v-if="!jobStatuses.rows.length">
           No jobs
