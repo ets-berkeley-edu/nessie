@@ -5,7 +5,8 @@
         v-if="error.stack"
         v-b-popover.hover="error.stack"
         active-class="rightbottom"
-        title="Error">
+        title="Error"
+      >
         <i class="has-error fas fa-exclamation-triangle"></i>
       </b-link>
       {{ error.message }}

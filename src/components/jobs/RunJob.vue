@@ -12,7 +12,8 @@
             <option
               v-for="job in runnableJobs"
               :key="job.id"
-              :value="job">
+              :value="job"
+            >
               {{ job.name }}
             </option>
           </b-form-select>
@@ -32,7 +33,8 @@
         <ul>
           <li
             v-for="job in errored"
-            :key="job.id">
+            :key="job.id"
+          >
             {{ job.name }}
           </li>
         </ul>
@@ -42,7 +44,8 @@
         <ul>
           <li
             v-for="job in started"
-            :key="job.id">
+            :key="job.id"
+          >
             {{ job.name }}
           </li>
         </ul>

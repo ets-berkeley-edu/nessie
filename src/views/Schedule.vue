@@ -8,13 +8,15 @@
         v-for="job in jobs"
         :key="job.id"
         no-body
-        class="mb-1">
+        class="mb-1"
+      >
         <b-card-header header-tag="header" class="p-1" role="tab">
           <b-btn
             v-b-toggle="job.id"
             block
             href="#"
-            variant="info">
+            variant="info"
+          >
             {{ job.id }}
           </b-btn>
         </b-card-header>
@@ -22,7 +24,8 @@
           :id="job.id"
           visible
           accordion="job-panel"
-          role="tabpanel">
+          role="tabpanel"
+        >
           <b-card-body>
             <div>
               <b>Trigger:</b> {{ job.trigger }}
@@ -37,7 +40,8 @@
               <h3>Components</h3>
               <div
                 v-for="component in job.components"
-                :key="component">
+                :key="component"
+              >
                 <span class="message">{{ component }}</span>
               </div>
             </div>
@@ -45,7 +49,8 @@
               <h3>Args</h3>
               <div
                 v-for="arg in job.args"
-                :key="arg">
+                :key="arg"
+              >
                 <span class="message">{{ arg }}</span>
               </div>
             </div>
