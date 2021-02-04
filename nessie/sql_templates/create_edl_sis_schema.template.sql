@@ -71,10 +71,59 @@ AS (
     AND requirement_cd in ('000000001', '000000002', '000000003', '000000018')
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl_sis_internal}.student_degree_progress
+CREATE TABLE {redshift_schema_edl_sis_internal}.student_degree_progress
 (
     sid VARCHAR NOT NULL,
     feed VARCHAR(max) NOT NULL
 )
 DISTKEY (sid)
 SORTKEY (sid);
+
+CREATE TABLE {redshift_schema_edl_sis_internal}.student_majors
+DISTKEY (sid)
+SORTKEY (college, major)
+AS (
+    SELECT
+      student_id AS sid,
+      academic_plan_nm AS major,
+      academic_program_nm AS college
+    FROM {redshift_schema_edl_sis}.student_academic_plan_data
+    WHERE academic_plan_type_cd in ('MAJ', 'SS', 'SP', 'HS', 'CRT')
+);
+
+CREATE TABLE {redshift_schema_edl_sis_internal}.student_minors
+DISTKEY (sid)
+SORTKEY (sid, minor)
+AS (
+    SELECT
+      student_id AS sid,
+      academic_plan_nm AS minor
+    FROM {redshift_schema_edl_sis}.student_academic_plan_data
+    WHERE academic_plan_type_cd = 'MIN'
+);
+
+CREATE TABLE {redshift_schema_edl_sis_internal}.student_profile_index
+DISTKEY (units)
+INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name)
+AS (
+    SELECT
+      reg.student_id AS sid,
+      NULL AS uid,
+      p.person_preferred_first_nm AS first_name,
+      p.person_preferred_last_nm AS last_name,
+      NULL AS level,
+      reg.total_cumulative_gpa_nbr AS gpa,
+      reg.total_units_completed_qty AS units,
+      NULL AS transfer,
+      reg.expected_graduation_term AS expected_grad_term,
+      reg.terms_in_attendance,
+      reg.load_dt AS edl_load_date
+    FROM {redshift_schema_edl_sis}.student_registration_term_data reg
+    JOIN {redshift_schema_edl_sis}.student_personal_data p
+    ON reg.student_id = p.student_id
+    WHERE reg.semester_year_term_cd = (
+        SELECT MAX(semester_year_term_cd)
+        FROM {redshift_schema_edl_sis}.student_registration_term_data max_reg
+        WHERE max_reg.student_id = reg.student_id
+    )
+);
