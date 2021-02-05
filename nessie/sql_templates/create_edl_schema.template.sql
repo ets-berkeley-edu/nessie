@@ -27,8 +27,8 @@
 -- External schema
 --------------------------------------------------------------------
 
-DROP SCHEMA IF EXISTS {redshift_schema_edl_sis};
-CREATE EXTERNAL SCHEMA {redshift_schema_edl_sis}
+DROP SCHEMA IF EXISTS {redshift_schema_edl_external};
+CREATE EXTERNAL SCHEMA {redshift_schema_edl_external}
 FROM data catalog
 DATABASE 'cs_analytics'
 IAM_ROLE '{redshift_iam_role},{edl_iam_role}';
@@ -37,16 +37,16 @@ IAM_ROLE '{redshift_iam_role},{edl_iam_role}';
 -- Internal schema
 --------------------------------------------------------------------
 
-DROP SCHEMA IF EXISTS {redshift_schema_edl_sis_internal} CASCADE;
-CREATE SCHEMA {redshift_schema_edl_sis_internal};
-GRANT USAGE ON SCHEMA {redshift_schema_edl_sis_internal} TO GROUP {redshift_dblink_group};
-ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_edl_sis_internal} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
+DROP SCHEMA IF EXISTS {redshift_schema_edl} CASCADE;
+CREATE SCHEMA {redshift_schema_edl};
+GRANT USAGE ON SCHEMA {redshift_schema_edl} TO GROUP {redshift_dblink_group};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_edl} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
 
 --------------------------------------------------------------------
 -- Internal tables
 --------------------------------------------------------------------
 
-CREATE TABLE {redshift_schema_edl_sis_internal}.student_degree_progress_index
+CREATE TABLE {redshift_schema_edl}.student_degree_progress_index
 SORTKEY (sid)
 AS (
     SELECT
@@ -66,12 +66,12 @@ AS (
         ELSE 'Not Satisfied'
       END AS status,
       load_dt AS edl_load_date
-    FROM {redshift_schema_edl_sis}.student_academic_progress_data
+    FROM {redshift_schema_edl_external}.student_academic_progress_data
     WHERE requirement_group_cd = '000131'
     AND requirement_cd in ('000000001', '000000002', '000000003', '000000018')
 );
 
-CREATE TABLE {redshift_schema_edl_sis_internal}.student_degree_progress
+CREATE TABLE {redshift_schema_edl}.student_degree_progress
 (
     sid VARCHAR NOT NULL,
     feed VARCHAR(max) NOT NULL
@@ -79,7 +79,7 @@ CREATE TABLE {redshift_schema_edl_sis_internal}.student_degree_progress
 DISTKEY (sid)
 SORTKEY (sid);
 
-CREATE TABLE {redshift_schema_edl_sis_internal}.student_majors
+CREATE TABLE {redshift_schema_edl}.student_majors
 DISTKEY (sid)
 SORTKEY (college, major)
 AS (
@@ -87,22 +87,22 @@ AS (
       student_id AS sid,
       academic_plan_nm AS major,
       academic_program_nm AS college
-    FROM {redshift_schema_edl_sis}.student_academic_plan_data
+    FROM {redshift_schema_edl_external}.student_academic_plan_data
     WHERE academic_plan_type_cd in ('MAJ', 'SS', 'SP', 'HS', 'CRT')
 );
 
-CREATE TABLE {redshift_schema_edl_sis_internal}.student_minors
+CREATE TABLE {redshift_schema_edl}.student_minors
 DISTKEY (sid)
 SORTKEY (sid, minor)
 AS (
     SELECT
       student_id AS sid,
       academic_plan_nm AS minor
-    FROM {redshift_schema_edl_sis}.student_academic_plan_data
+    FROM {redshift_schema_edl_external}.student_academic_plan_data
     WHERE academic_plan_type_cd = 'MIN'
 );
 
-CREATE TABLE {redshift_schema_edl_sis_internal}.student_profile_index
+CREATE TABLE {redshift_schema_edl}.student_profile_index
 DISTKEY (units)
 INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name)
 AS (
@@ -118,12 +118,12 @@ AS (
       reg.expected_graduation_term AS expected_grad_term,
       reg.terms_in_attendance,
       reg.load_dt AS edl_load_date
-    FROM {redshift_schema_edl_sis}.student_registration_term_data reg
-    JOIN {redshift_schema_edl_sis}.student_personal_data p
+    FROM {redshift_schema_edl_external}.student_registration_term_data reg
+    JOIN {redshift_schema_edl_external}.student_personal_data p
     ON reg.student_id = p.student_id
     WHERE reg.semester_year_term_cd = (
         SELECT MAX(semester_year_term_cd)
-        FROM {redshift_schema_edl_sis}.student_registration_term_data max_reg
+        FROM {redshift_schema_edl_external}.student_registration_term_data max_reg
         WHERE max_reg.student_id = reg.student_id
     )
 );

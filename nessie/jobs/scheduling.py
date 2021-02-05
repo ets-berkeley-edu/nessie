@@ -83,7 +83,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
     from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
     from nessie.jobs.create_e_i_advising_notes_schema import CreateEIAdvisingNotesSchema
-    from nessie.jobs.create_edl_sis_schema import CreateEdlSisSchema
+    from nessie.jobs.create_edl_schema import CreateEdlSchema
     from nessie.jobs.create_oua_schema import CreateOUASchema
     from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
     from nessie.jobs.create_sis_schema import CreateSisSchema
@@ -187,7 +187,7 @@ def schedule_all_jobs(force=False):
         ],
         force,
     )
-    schedule_job(sched, 'JOB_IMPORT_EDL', CreateEdlSisSchema, force)
+    schedule_job(sched, 'JOB_IMPORT_EDL', CreateEdlSchema, force)
 
 
 def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):

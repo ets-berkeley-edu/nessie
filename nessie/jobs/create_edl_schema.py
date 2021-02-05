@@ -36,10 +36,10 @@ from nessie.lib.util import get_s3_edl_daily_path, resolve_sql_template, resolve
 """Logic for EDL SIS schema creation job."""
 
 
-class CreateEdlSisSchema(BackgroundJob):
+class CreateEdlSchema(BackgroundJob):
 
-    external_schema = app.config['REDSHIFT_SCHEMA_EDL_SIS']
-    internal_schema = app.config['REDSHIFT_SCHEMA_EDL_SIS_INTERNAL']
+    external_schema = app.config['REDSHIFT_SCHEMA_EDL_EXTERNAL']
+    internal_schema = app.config['REDSHIFT_SCHEMA_EDL']
 
     def run(self):
         app.logger.info('Starting EDL SIS schema creation job...')
@@ -49,7 +49,7 @@ class CreateEdlSisSchema(BackgroundJob):
 
     def create_schema(self):
         app.logger.info('Executing SQL...')
-        resolved_ddl = resolve_sql_template('create_edl_sis_schema.template.sql')
+        resolved_ddl = resolve_sql_template('create_edl_schema.template.sql')
         if not redshift.execute_ddl_script(resolved_ddl):
             raise BackgroundJobError('EDL SIS schema creation job failed.')
         app.logger.info('Redshift schema created.')
