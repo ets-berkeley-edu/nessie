@@ -60,8 +60,12 @@ def coe_schema():
     return app.config['REDSHIFT_SCHEMA_COE']
 
 
-def edl_sis_schema():
-    return app.config['REDSHIFT_SCHEMA_EDL_SIS_INTERNAL']
+def edl_feature_flag():
+    return app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE']
+
+
+def edl_schema():
+    return app.config['REDSHIFT_SCHEMA_EDL']
 
 
 def intermediate_schema():
@@ -127,9 +131,7 @@ def get_advisee_advisor_mappings():
 @fixture('query_advisee_student_profile_feeds.csv')
 def get_advisee_student_profile_elements():
     sis_api_profile_table = 'sis_api_profiles_v1' if app.config['STUDENT_V1_API_PREFERRED'] else 'sis_api_profiles'
-    degree_progress_table = (
-        f'{edl_sis_schema()}.student_degree_progress' if app.config['FEATURE_FLAG_EDL_DEGREE_PROGRESS']
-        else f'{student_schema()}.sis_api_degree_progress')
+    degree_progress_table = (f'{edl_schema()}.student_degree_progress' if edl_feature_flag() else f'{student_schema()}.sis_api_degree_progress')
     sql = f"""SELECT DISTINCT ldap.ldap_uid, ldap.sid, ldap.first_name, ldap.last_name,
                 us.canvas_id AS canvas_user_id, us.name AS canvas_user_name,
                 sis.feed AS sis_profile_feed,
