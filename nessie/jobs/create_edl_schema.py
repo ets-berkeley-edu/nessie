@@ -31,6 +31,7 @@ from tempfile import TemporaryFile
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
+from nessie.lib.berkeley import degree_program_url_for_major
 from nessie.lib.util import get_s3_edl_daily_path, resolve_sql_template, resolve_sql_template_string, write_to_tsv_file
 
 """Logic for EDL SIS schema creation job."""
@@ -55,7 +56,41 @@ class CreateEdlSchema(BackgroundJob):
         app.logger.info('Redshift schema created.')
 
     def generate_feeds(self):
+        self.generate_academic_plans_feeds()
         self.generate_degree_progress_feeds()
+
+    def generate_academic_plans_feeds(self):
+        app.logger.info('Staging academic plans feeds...')
+        rows = redshift.fetch(f'SELECT * FROM {self.internal_schema}.student_academic_plan_index ORDER by sid')
+        with TemporaryFile() as feeds:
+            for sid, rows_for_student in groupby(rows, operator.itemgetter('sid')):
+                rows_for_student = list(rows_for_student)
+                feed = self.generate_academic_plans_feed(rows_for_student)
+                write_to_tsv_file(feeds, [sid, json.dumps(feed)])
+            self._upload_file_to_staging('student_academic_plans', feeds)
+
+    def generate_academic_plans_feed(self, rows_for_student):
+        majors = []
+        minors = []
+        subplans = []
+        for row in rows_for_student:
+            plan = {
+                'degreeProgramUrl': degree_program_url_for_major(row['plan']),
+                'description': row['plan'],
+                'program': row['program'],
+                'status': 'Active' if row['status'] == 'Active in Program' else row['status'],
+            }
+            if 'MIN' == row['plan_type']:
+                minors.append(plan)
+            else:
+                majors.append(plan)
+            if row['subplan']:
+                subplans.append(row['subplan'])
+        return {
+            'plans': majors,
+            'plansMinor': minors,
+            'subplans': subplans,
+        }
 
     def generate_degree_progress_feeds(self):
         app.logger.info('Staging degree progress feeds...')

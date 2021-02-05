@@ -52,6 +52,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     rds_schema = app.config['RDS_SCHEMA_STUDENT']
     rds_dblink_to_redshift = app.config['REDSHIFT_DATABASE'] + '_redshift'
     redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
+    redshift_schema_edl = app.config['REDSHIFT_SCHEMA_EDL']
     redshift_schema_sis = app.config['REDSHIFT_SCHEMA_SIS']
 
     def run(self, term_id=None):
@@ -344,12 +345,13 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         )
 
     def _refresh_rds_academic_status(self, transaction):
+        redshift_schema = self.redshift_schema_edl if app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE'] else self.redshift_schema_sis
         return transaction.execute(
             f"""INSERT INTO {self.rds_schema}.student_academic_status (
             SELECT *
             FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                 SELECT DISTINCT sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance
-                FROM {self.redshift_schema}.student_profile_index
+                FROM {redshift_schema}.student_profile_index
               $REDSHIFT$)
             AS redshift_profile_index (
                 sid VARCHAR,
@@ -419,12 +421,13 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         )
 
     def _refresh_rds_majors(self, transaction):
+        redshift_schema = self.redshift_schema_edl if app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE'] else self.redshift_schema_sis
         return transaction.execute(
             f"""INSERT INTO {self.rds_schema}.student_majors (
             SELECT *
             FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                 SELECT DISTINCT sid, college, major
-                FROM {self.redshift_schema}.student_majors
+                FROM {redshift_schema}.student_majors
               $REDSHIFT$)
             AS redshift_majors (
                 sid VARCHAR,
@@ -462,12 +465,15 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         )
 
     def _refresh_rds_minors(self, transaction):
+        redshift_table = (
+            f'{self.redshift_schema_edl}.student_minors' if app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE']
+            else f'{self.redshift_schema_sis}.minors')
         return transaction.execute(
             f"""INSERT INTO {self.rds_schema}.minors (
             SELECT DISTINCT *
                 FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                     SELECT sid, minor
-                    FROM {self.redshift_schema}.minors
+                    FROM {redshift_table}
               $REDSHIFT$)
             AS redshift_minors (
                 sid VARCHAR,

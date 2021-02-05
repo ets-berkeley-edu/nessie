@@ -46,6 +46,28 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_edl} GRANT SELECT ON TABLES 
 -- Internal tables
 --------------------------------------------------------------------
 
+CREATE TABLE {redshift_schema_edl}.student_academic_plan_index
+SORTKEY (sid)
+AS (
+    SELECT
+      student_id AS sid,
+      academic_program_nm AS program,
+      academic_plan_nm AS plan,
+      academic_plan_type_cd AS plan_type,
+      academic_subplan_nm AS subplan,
+      academic_program_status_desc AS status
+    FROM {redshift_schema_edl_external}.student_academic_plan_data
+    WHERE academic_plan_type_cd IN ('MAJ', 'SS', 'SP', 'HS', 'CRT', 'MIN')
+);
+
+CREATE TABLE {redshift_schema_edl}.student_academic_plans
+(
+    sid VARCHAR NOT NULL,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid);
+
 CREATE TABLE {redshift_schema_edl}.student_degree_progress_index
 SORTKEY (sid)
 AS (
@@ -89,6 +111,7 @@ AS (
       academic_program_nm AS college
     FROM {redshift_schema_edl_external}.student_academic_plan_data
     WHERE academic_plan_type_cd in ('MAJ', 'SS', 'SP', 'HS', 'CRT')
+    AND academic_program_status_cd = 'AC'
 );
 
 CREATE TABLE {redshift_schema_edl}.student_minors
@@ -100,6 +123,7 @@ AS (
       academic_plan_nm AS minor
     FROM {redshift_schema_edl_external}.student_academic_plan_data
     WHERE academic_plan_type_cd = 'MIN'
+    AND academic_program_status_cd = 'AC'
 );
 
 CREATE TABLE {redshift_schema_edl}.student_profile_index
