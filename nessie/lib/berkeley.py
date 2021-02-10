@@ -165,6 +165,14 @@ def canvas_terms():
     return [term_name_for_sis_id(sid_id) for sid_id in sis_term_ids]
 
 
+def career_code_to_name(code):
+    return {
+        'UGRD': 'UNDERGRAD',
+        'UCBX': 'EXTENSION',
+        'GRAD': 'GRADUATE',
+    }.get(code)
+
+
 def feature_flag_edl():
     return app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE']
 

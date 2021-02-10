@@ -28,7 +28,7 @@ from operator import itemgetter
 import re
 
 from flask import current_app as app
-from nessie.lib.berkeley import degree_program_url_for_major, term_name_for_sis_id
+from nessie.lib.berkeley import career_code_to_name, degree_program_url_for_major, term_name_for_sis_id
 from nessie.lib.util import to_float, vacuum_whitespace
 
 
@@ -118,14 +118,9 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
 
 def parse_career_status(career_code, sis_student_api_feed):
     # Try to derive a coherent career-status from the SIS affiliations.
-    career_to_affiliation = {
-        'UGRD': 'UNDERGRAD',
-        'UCBX': 'EXTENSION',
-        'GRAD': 'GRADUATE',
-    }
     career_status = None
     for affiliation in sis_student_api_feed.get('affiliations', []):
-        if affiliation.get('type', {}).get('code') == career_to_affiliation.get(career_code):
+        if affiliation.get('type', {}).get('code') == career_code_to_name(career_code):
             if affiliation.get('detail') == 'Completed':
                 career_status = 'Completed'
             else:
