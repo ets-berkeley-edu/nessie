@@ -11,6 +11,7 @@ export default {
       'currentEnrollmentTermId',
       'ebEnvironment',
       'errors',
+      'featureFlagEnterpriseDataLake',
       'nessieEnv',
       'ping',
       'version'

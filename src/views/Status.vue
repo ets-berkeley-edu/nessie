@@ -16,6 +16,7 @@
         <li>EB environment: {{ ebEnvironment }}</li>
         <li>Current Enrollment Term: {{ currentEnrollmentTerm }}</li>
         <li>Current Enrollment Term ID: {{ currentEnrollmentTermId }}</li>
+        <li>EDL feature flag: {{ featureFlagEnterpriseDataLake }}</li>
       </ul>
     </div>
     <h2>Version</h2>
