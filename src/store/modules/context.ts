@@ -14,11 +14,10 @@ const state = {
 
 const getters = {
   apiBaseUrl: (): any => process.env.VUE_APP_API_BASE_URL,
-  currentEnrollmentTermId: (state: any): boolean =>
-    _.get(state.config, 'currentEnrollmentTermId'),
-  currentEnrollmentTerm: (state: any): boolean =>
-    _.get(state.config, 'currentEnrollmentTerm'),
+  currentEnrollmentTermId: (state: any): boolean => _.get(state.config, 'currentEnrollmentTermId'),
+  currentEnrollmentTerm: (state: any): boolean => _.get(state.config, 'currentEnrollmentTerm'),
   ebEnvironment: (state: any): string => _.get(state.config, 'ebEnvironment'),
+  featureFlagEnterpriseDataLake: (state: any): string => _.get(state.config, 'featureFlagEnterpriseDataLake'),
   nessieEnv: (state: any): string => _.get(state.config, 'nessieEnv'),
   errors: (state: any): any => state.errors,
   ping: (state: any): any => state.ping,
