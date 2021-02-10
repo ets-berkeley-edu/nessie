@@ -6,13 +6,7 @@ export default {
   computed: {
     ...mapGetters('context', [
       'apiBaseUrl',
-      'currentEnrollmentTermId',
-      'currentEnrollmentTerm',
-      'currentEnrollmentTermId',
-      'ebEnvironment',
       'errors',
-      'featureFlagEnterpriseDataLake',
-      'nessieEnv',
       'ping',
       'version'
     ])
