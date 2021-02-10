@@ -31,7 +31,7 @@ from tempfile import TemporaryFile
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.berkeley import degree_program_url_for_major
+from nessie.lib.berkeley import degree_program_url_for_major, feature_flag_edl
 from nessie.lib.util import get_s3_edl_daily_path, resolve_sql_template, resolve_sql_template_string, write_to_tsv_file
 
 """Logic for EDL SIS schema creation job."""
@@ -43,16 +43,29 @@ class CreateEdlSchema(BackgroundJob):
     internal_schema = app.config['REDSHIFT_SCHEMA_EDL']
 
     def run(self):
-        app.logger.info('Starting EDL SIS schema creation job...')
-        self.create_schema()
-        self.generate_feeds()
-        return 'EDL SIS schema creation job completed.'
+        if feature_flag_edl:
+            app.logger.info('Starting EDL schema creation job...')
+            self.create_schema()
+            self.generate_feeds()
+            return 'EDL schema creation job completed.'
+        else:
+            return 'Skipped EDL schema creation job because feature-flag is false.'
 
     def create_schema(self):
         app.logger.info('Executing SQL...')
         resolved_ddl = resolve_sql_template('create_edl_schema.template.sql')
         if not redshift.execute_ddl_script(resolved_ddl):
             raise BackgroundJobError('EDL SIS schema creation job failed.')
+        # Create staging schema
+        resolved_ddl_staging = resolve_sql_template(
+            'create_edl_schema.template.sql',
+            redshift_schema_edl=f'{self.internal_schema}_staging',
+        )
+        if redshift.execute_ddl_script(resolved_ddl_staging):
+            app.logger.info(f"Schema '{self.internal_schema}_staging' found or created.")
+        else:
+            raise BackgroundJobError(f'{self.internal_schema} schema creation failed.')
+
         app.logger.info('Redshift schema created.')
 
     def generate_feeds(self):

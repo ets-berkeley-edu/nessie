@@ -72,6 +72,7 @@ class TestJobControllerAuthentication:
     'api_path_no_params',
     [
         '/api/job/create_canvas_schema',
+        '/api/job/create_edl_schema',
         '/api/job/create_sis_schema',
         '/api/job/generate_boac_analytics',
         '/api/job/generate_intermediate_tables',
