@@ -41,8 +41,9 @@ def app_config():
     return tolerant_jsonify({
         'currentEnrollmentTerm': current_term_name,
         'currentEnrollmentTermId': int(current_term_id),
-        'futureTermId': int(future_term_id),
         'ebEnvironment': app.config['EB_ENVIRONMENT'] if 'EB_ENVIRONMENT' in app.config else None,
+        'featureFlagEnterpriseDataLake': app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE'],
+        'futureTermId': int(future_term_id),
         'nessieEnv': app.config['NESSIE_ENV'],
     })
 

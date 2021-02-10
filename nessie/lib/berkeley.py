@@ -165,6 +165,10 @@ def canvas_terms():
     return [term_name_for_sis_id(sid_id) for sid_id in sis_term_ids]
 
 
+def feature_flag_edl():
+    return app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE']
+
+
 def future_term_ids():
     return _collect_terms(start_term_id=future_term_id(), stop_term_id=current_term_id(), include_stop=False)
 
@@ -214,7 +218,7 @@ def sis_term_id_for_name(term_name=None):
             return match.group(2) + match.group(3) + season_codes[match.group(1)]
 
 
-def term_name_for_sis_id(sis_id=None):
+def term_info_for_sis_term_id(sis_id=None):
     if sis_id:
         sis_id = str(sis_id)
         season_codes = {
@@ -224,7 +228,13 @@ def term_name_for_sis_id(sis_id=None):
             '0': 'Winter',
         }
         year = f'19{sis_id[1:3]}' if sis_id.startswith('1') else f'20{sis_id[1:3]}'
-        return f'{season_codes[sis_id[3:4]]} {year}'
+        return season_codes[sis_id[3:4]], year
+
+
+def term_name_for_sis_id(sis_id=None):
+    if sis_id:
+        season, year = term_info_for_sis_term_id(sis_id)
+        return f'{season} {year}'
 
 
 def degree_program_url_for_major(plan_description):

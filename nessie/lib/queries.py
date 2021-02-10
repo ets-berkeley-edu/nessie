@@ -60,6 +60,10 @@ def coe_schema():
     return app.config['REDSHIFT_SCHEMA_COE']
 
 
+def edl_external_schema():
+    return app.config['REDSHIFT_SCHEMA_EDL_EXTERNAL']
+
+
 def edl_feature_flag():
     return app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE']
 
@@ -266,6 +270,36 @@ def get_all_instructor_uids():
     return redshift.fetch(sql)
 
 
+def get_edl_student_registrations(sids, order_by='student_id'):
+    sql = f"""SELECT
+                academic_career_cd,
+                academic_level_beginning_of_term_cd,
+                academic_level_beginning_of_term_desc,
+                academic_level_end_of_term_cd,
+                academic_level_end_of_term_desc,
+                current_term_gpa_nbr,
+                eligibility_status_desc,
+                eligible_to_enroll_flag,
+                expected_graduation_term,
+                intends_to_graduate_flag,
+                load_dt,
+                maximum_term_enrollment_units_limit,
+                minimum_term_enrollment_units_limit,
+                registered_flag,
+                registrn_eligibility_status_cd,
+                semester_year_term_cd AS term_id,
+                student_id,
+                term_enrolled_units,
+                terms_in_attendance,
+                total_cumulative_gpa_nbr,
+                total_units_completed_qty
+              FROM {edl_external_schema()}.student_registration_term_data
+              WHERE student_id=ANY('{{{','.join(sids)}}}')
+              ORDER BY {order_by}
+        """
+    return redshift.fetch(sql)
+
+
 def get_enrolled_canvas_sites_for_term(term_id):
     sql = f"""SELECT DISTINCT enr.canvas_course_id
               FROM {intermediate_schema()}.active_student_enrollments enr
@@ -340,7 +374,7 @@ def get_non_advisees_without_registration_imports():
               LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = attrs.sid
               LEFT JOIN {coe_schema()}.students coe ON coe.sid = attrs.sid
               LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = attrs.sid
-              LEFT JOIN {student_schema()}.hist_enr_last_registrations hist ON hist.sid = attrs.sid
+              LEFT JOIN {edl_schema() if edl_feature_flag() else student_schema()}.hist_enr_last_registrations hist ON hist.sid = attrs.sid
               WHERE ascs.sid IS NULL AND coe.sid IS NULL AND ug.sid IS NULL AND hist.sid IS NULL
                 AND char_length(attrs.sid) < 12
         """

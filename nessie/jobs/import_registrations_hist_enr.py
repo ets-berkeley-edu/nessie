@@ -30,36 +30,28 @@ from timeit import default_timer as timer
 from flask import current_app as app
 from nessie.externals import redshift, s3, sis_student_api
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.queries import get_non_advisees_without_registration_imports
+from nessie.lib.berkeley import feature_flag_edl, term_info_for_sis_term_id
+from nessie.lib.queries import get_edl_student_registrations, get_non_advisees_without_registration_imports
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string
+import numpy as np
 
 """Imports and stores SIS Students Registrations API data for non-advisees."""
-
-
-def async_get_feed(app_obj, sid):
-    with app_obj.app_context():
-        app.logger.info(f'Fetching registration history for SID {sid}')
-        feed = sis_student_api.get_term_gpas_registration_demog(sid, with_demog=False)
-        result = {
-            'sid': sid,
-            'feed': feed,
-        }
-    return result
 
 
 class ImportRegistrationsHistEnr(BackgroundJob):
 
     rds_schema = app.config['RDS_SCHEMA_STUDENT']
-    redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
+    redshift_schema = app.config['REDSHIFT_SCHEMA_EDL' if feature_flag_edl() else 'REDSHIFT_SCHEMA_STUDENT']
     max_threads = app.config['STUDENT_API_MAX_THREADS']
 
     def run(self, load_mode='batch'):
         new_sids = [row['sid'] for row in get_non_advisees_without_registration_imports()]
+        load_all = feature_flag_edl or load_mode == 'new'
 
         # The size of the non-advisee population makes it unlikely that a one-shot load of all these slow feeds will
         # finish successfully without interfering with other work. Therefore the default approach is to apply a strict
         # upper limit on the number of feeds loaded in any one job run, no matter how many SIDs remain to be processed.
-        if load_mode == 'new':
+        if load_all:
             sids = new_sids
         elif load_mode == 'batch':
             max_batch = app.config['HIST_ENR_REGISTRATIONS_IMPORT_BATCH_SIZE']
@@ -74,10 +66,11 @@ class ImportRegistrationsHistEnr(BackgroundJob):
             'term_gpas': [],
             'last_registrations': [],
         }
-        successes, failures = self.load_concurrently(rows, sids)
+        successes, failures = self._query_edl(rows, sids) if feature_flag_edl() else self._query_student_api(rows, sids)
         if len(successes) > 0:
             for key in rows.keys():
-                s3_key = f'{get_s3_sis_api_daily_path()}/{key}.tsv'
+                filename = f'{key}_edl' if feature_flag_edl() else f'{key}_api'
+                s3_key = f'{get_s3_sis_api_daily_path()}/{filename}.tsv'
                 app.logger.info(f'Will stash {len(successes)} feeds in S3: {s3_key}')
                 if not s3.upload_tsv_rows(rows[key], s3_key):
                     raise BackgroundJobError('Error on S3 upload: aborting job.')
@@ -88,28 +81,50 @@ class ImportRegistrationsHistEnr(BackgroundJob):
                     raise BackgroundJobError('Error on Redshift copy: aborting job.')
                 staging_to_destination_query = resolve_sql_template_string(
                     """
-                    DELETE FROM {redshift_schema_student}.hist_enr_{table_key}
+                    DELETE FROM {target_schema}.hist_enr_{table_key}
                         WHERE sid IN
-                        (SELECT sid FROM {redshift_schema_student}_staging.hist_enr_{table_key});
-                    INSERT INTO {redshift_schema_student}.hist_enr_{table_key}
-                        (SELECT * FROM {redshift_schema_student}_staging.hist_enr_{table_key});
-                    TRUNCATE TABLE {redshift_schema_student}_staging.hist_enr_{table_key};
+                        (SELECT sid FROM {target_schema}_staging.hist_enr_{table_key});
+                    INSERT INTO {target_schema}.hist_enr_{table_key}
+                        (SELECT * FROM {target_schema}_staging.hist_enr_{table_key});
+                    TRUNCATE TABLE {target_schema}_staging.hist_enr_{table_key};
                     """,
                     table_key=key,
+                    target_schema=self.redshift_schema,
                 )
                 if not redshift.execute(staging_to_destination_query):
                     raise BackgroundJobError('Error inserting staging entries into destination: aborting job.')
-        return (
-            f'Registrations import completed: {len(successes)} succeeded, {len(failures)} failed.'
-        )
+        return successes, failures
 
-    def load_concurrently(self, rows, sids):
+    def _query_edl(self, rows, sids):
+        successes = []
+        for edl_row in get_edl_student_registrations(sids, order_by='student_id, semester_year_term_cd DESC'):
+            sid = edl_row['student_id']
+            if sid not in successes:
+                # Based on the SQL order_by above, the first result per SID will be 'last_registration'.
+                successes.append(sid)
+                rows['last_registrations'].append(
+                    encoded_tsv_row([sid, _edl_registration_to_json(edl_row)]),
+                )
+            rows['term_gpas'].append(
+                encoded_tsv_row(
+                    [
+                        sid,
+                        edl_row['term_id'],
+                        edl_row['current_term_gpa_nbr'] or '0',
+                        edl_row.get('unitsTakenForGpa') or '0',  # TODO: Does EDL give us 'unitsTakenForGpa'?
+                    ],
+                ),
+            )
+        failures = list(np.setdiff1d(sids, successes))
+        return successes, failures
+
+    def _query_student_api(self, rows, sids):
         successes = []
         failures = []
         app_obj = app._get_current_object()
         start_loop = timer()
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
-            for result in executor.map(async_get_feed, repeat(app_obj), sids):
+            for result in executor.map(_async_get_feed, repeat(app_obj), sids):
                 sid = result['sid']
                 full_feed = result['feed']
                 if full_feed:
@@ -134,3 +149,126 @@ class ImportRegistrationsHistEnr(BackgroundJob):
                     app.logger.error(f'Registration history import failed for SID {sid}.')
         app.logger.info(f'Wanted {len(sids)} students; got {len(successes)} in {timer() - start_loop} secs')
         return successes, failures
+
+
+def _async_get_feed(app_obj, sid):
+    with app_obj.app_context():
+        app.logger.info(f'Fetching registration history for SID {sid}')
+        feed = sis_student_api.get_term_gpas_registration_demog(sid, with_demog=False)
+        result = {
+            'sid': sid,
+            'feed': feed,
+        }
+    return result
+
+
+def _edl_registration_to_json(row):
+    def _flag_to_bool(key):
+        return (row[key] or '').upper() == 'Y'
+
+    term_id = row['term_id']
+    season, year = term_info_for_sis_term_id(term_id)
+    career_code = row['academic_career_cd']
+    # TODO: From EDL query results, what do we do with 'total_cumulative_gpa_nbr'?
+    # TODO: All 'None' entries below need investigation. Does EDL provide?
+    return {
+        'loadedAt': row['load_dt'],
+        'term': {
+            'id': term_id,
+            'name': f'{year} {season}',
+            'category': {
+                'code': None,
+                'description': None,
+            },
+            'academicYear': year,
+            'beginDate': None,
+            'endDate': None,
+        },
+        'academicCareer': {
+            'code': career_code,
+            'description': 'Undergraduate' if career_code == 'UGRD' else ('Graduate' if career_code == 'GRAD' else career_code),
+        },
+        'eligibleToRegister': _flag_to_bool('eligible_to_enroll_flag'),
+        'eligibilityStatus': {
+            'code': row['registrn_eligibility_status_cd'],
+            'description': row['eligibility_status_desc'],
+        },
+        'registered': _flag_to_bool('registered_flag'),
+        'disabled': None,
+        'athlete': None,
+        'intendsToGraduate': _flag_to_bool('intends_to_graduate_flag'),
+        'academicLevels': [
+            {
+                'type': {
+                    'code': 'BOT',
+                    'description': 'Beginning of Term',
+                },
+                'level': {
+                    'code': row['academic_level_beginning_of_term_cd'],
+                    'description': row['academic_level_beginning_of_term_desc'],
+                },
+            },
+            {
+                'type': {
+                    'code': 'EOT',
+                    'description': 'End of Term',
+                },
+                'level': {
+                    'code': row['academic_level_end_of_term_cd'],
+                    'description': row['academic_level_end_of_term_desc'],
+                },
+            },
+        ],
+        'academicStanding': {
+            'standing': {
+                'code': None,
+                'description': None,
+            },
+            'status': {
+                'code': None,
+                'description': None,
+            },
+            'fromDate': None,
+        },
+        'termUnits': [
+            {
+                'type': {
+                    'code': 'Total',
+                    'description': 'Total Units',
+                },
+                'unitsMin': row['minimum_term_enrollment_units_limit'],
+                'unitsMax': row['maximum_term_enrollment_units_limit'],
+                'unitsEnrolled': row['term_enrolled_units'],
+                'unitsTaken': row['total_units_completed_qty'],
+                'unitsPassed': None,
+                'unitsIncomplete': None,
+            },
+            {
+                'type': {
+                    'code': 'For GPA',
+                    'description': 'Units For GPA',
+                },
+                'unitsTaken': None,
+                'unitsPassed': None,
+            },
+            {
+                'type': {
+                    'code': 'Not For GPA',
+                    'description': 'Units Not For GPA',
+                },
+                'unitsMax': None,
+                'unitsEnrolled': None,
+                'unitsTaken': None,
+                'unitsPassed': None,
+                'unitsIncomplete': None,
+            },
+        ],
+        'termGPA': {
+            'type': {
+                'code': 'TGPA',
+                'description': 'Term GPA',
+            },
+            'average': row['current_term_gpa_nbr'],
+            'source': 'UCB',
+        },
+    }

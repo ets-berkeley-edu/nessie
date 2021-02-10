@@ -126,6 +126,24 @@ AS (
     AND academic_program_status_cd = 'AC'
 );
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.hist_enr_last_registrations
+(
+    sid VARCHAR NOT NULL,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY(sid)
+SORTKEY(sid);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.hist_enr_term_gpas
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    gpa DECIMAL(5,3),
+    units_taken_for_gpa DECIMAL(4,1)
+)
+DISTKEY (sid)
+SORTKEY (sid, term_id);
+
 CREATE TABLE {redshift_schema_edl}.student_profile_index
 DISTKEY (units)
 INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name)
