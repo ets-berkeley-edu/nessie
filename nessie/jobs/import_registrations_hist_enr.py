@@ -30,7 +30,7 @@ from timeit import default_timer as timer
 from flask import current_app as app
 from nessie.externals import redshift, s3, sis_student_api
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.berkeley import feature_flag_edl, term_info_for_sis_term_id
+from nessie.lib.berkeley import career_code_to_name, feature_flag_edl, term_info_for_sis_term_id
 from nessie.lib.queries import get_edl_student_registrations, get_non_advisees_without_registration_imports
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string
 import numpy as np
@@ -46,7 +46,7 @@ class ImportRegistrationsHistEnr(BackgroundJob):
 
     def run(self, load_mode='batch'):
         new_sids = [row['sid'] for row in get_non_advisees_without_registration_imports()]
-        load_all = feature_flag_edl or load_mode == 'new'
+        load_all = feature_flag_edl() or load_mode == 'new'
 
         # The size of the non-advisee population makes it unlikely that a one-shot load of all these slow feeds will
         # finish successfully without interfering with other work. Therefore the default approach is to apply a strict
@@ -166,13 +166,15 @@ def _edl_registration_to_json(row):
     def _flag_to_bool(key):
         return (row[key] or '').upper() == 'Y'
 
+    def _str(v):
+        return v and str(v)
     term_id = row['term_id']
     season, year = term_info_for_sis_term_id(term_id)
     career_code = row['academic_career_cd']
     # TODO: From EDL query results, what do we do with 'total_cumulative_gpa_nbr'?
     # TODO: All 'None' entries below need investigation. Does EDL provide?
     return {
-        'loadedAt': row['load_dt'],
+        'loadedAt': _str(row['load_dt']),
         'term': {
             'id': term_id,
             'name': f'{year} {season}',
@@ -186,7 +188,7 @@ def _edl_registration_to_json(row):
         },
         'academicCareer': {
             'code': career_code,
-            'description': 'Undergraduate' if career_code == 'UGRD' else ('Graduate' if career_code == 'GRAD' else career_code),
+            'description': career_code_to_name(career_code),
         },
         'eligibleToRegister': _flag_to_bool('eligible_to_enroll_flag'),
         'eligibilityStatus': {
@@ -236,10 +238,10 @@ def _edl_registration_to_json(row):
                     'code': 'Total',
                     'description': 'Total Units',
                 },
-                'unitsMin': row['minimum_term_enrollment_units_limit'],
-                'unitsMax': row['maximum_term_enrollment_units_limit'],
-                'unitsEnrolled': row['term_enrolled_units'],
-                'unitsTaken': row['total_units_completed_qty'],
+                'unitsMin': _str(row['minimum_term_enrollment_units_limit']),
+                'unitsMax': _str(row['maximum_term_enrollment_units_limit']),
+                'unitsEnrolled': _str(row['term_enrolled_units']),
+                'unitsTaken': _str(row['total_units_completed_qty']),
                 'unitsPassed': None,
                 'unitsIncomplete': None,
             },
@@ -268,7 +270,7 @@ def _edl_registration_to_json(row):
                 'code': 'TGPA',
                 'description': 'Term GPA',
             },
-            'average': row['current_term_gpa_nbr'],
+            'average': _str(row['current_term_gpa_nbr']),
             'source': 'UCB',
         },
     }
