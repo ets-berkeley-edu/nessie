@@ -26,8 +26,12 @@ Vue.use(BootstrapVue)
 Vue.use(require('vue-moment'))
 Vue.use(VueLodash, { lodash })
 
-new Vue({
-  router,
-  store,
-  render: h => h(App)
-}).$mount('#app')
+axios.get(`${process.env.VUE_APP_API_BASE_URL}/api/config`).then(response => {
+  Vue.prototype.$config = response.data
+
+  new Vue({
+    router,
+    store,
+    render: h => h(App)
+  }).$mount('#app')
+})

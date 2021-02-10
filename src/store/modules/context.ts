@@ -1,12 +1,10 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-import _ from 'lodash'
-import { getConfig, getPing, getVersion } from '@/api/status'
+import {getPing, getVersion} from '@/api/status'
 
 Vue.use(Vuex)
 
 const state = {
-  config: undefined,
   errors: [],
   ping: undefined,
   version: undefined
@@ -14,11 +12,6 @@ const state = {
 
 const getters = {
   apiBaseUrl: (): any => process.env.VUE_APP_API_BASE_URL,
-  currentEnrollmentTermId: (state: any): boolean => _.get(state.config, 'currentEnrollmentTermId'),
-  currentEnrollmentTerm: (state: any): boolean => _.get(state.config, 'currentEnrollmentTerm'),
-  ebEnvironment: (state: any): string => _.get(state.config, 'ebEnvironment'),
-  featureFlagEnterpriseDataLake: (state: any): string => _.get(state.config, 'featureFlagEnterpriseDataLake'),
-  nessieEnv: (state: any): string => _.get(state.config, 'nessieEnv'),
   errors: (state: any): any => state.errors,
   ping: (state: any): any => state.ping,
   version: (state: any): any => state.version
@@ -36,29 +29,21 @@ const mutations = {
     error.id = new Date().getTime()
     state.errors.push(error)
   },
-  storeConfig: (state: any, config: any) => (state.config = config),
   storePing: (state: any, ping: any) => (state.ping = ping),
   storeVersion: (state: any, version: any) => (state.version = version)
 }
 
 const actions = {
   clearErrors: ({ commit }) => commit('clearErrors'),
-  loadConfig: ({ commit, state }) => {
-    return new Promise(resolve => {
-      if (state.config) {
-        resolve(state.config)
-      } else {
-        getPing().then(ping => {
-          commit('storePing', ping)
-          getVersion().then(version => {
-            commit('storeVersion', version)
-            getConfig().then(config => {
-              commit('storeConfig', config)
-              resolve(config)
-            })
-          })
+  init: ({ commit }) => {
+    return new Promise<void>(resolve => {
+      getPing().then(ping => {
+        commit('storePing', ping)
+        getVersion().then(version => {
+          commit('storeVersion', version)
+          resolve()
         })
-      }
+      })
     })
   }
 }

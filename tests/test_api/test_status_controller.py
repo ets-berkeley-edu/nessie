@@ -31,7 +31,11 @@ class TestStatusController:
         """Returns a well-formed response."""
         response = client.get('/api/config')
         assert response.status_code == 200
-        assert response.json['nessieEnv'] == 'test'
+        api_json = response.json
+        assert api_json['ebEnvironment'] is None
+        assert api_json['featureFlagEnterpriseDataLake'] is False
+        assert api_json['jobSchedulingEnabled'] is True
+        assert api_json['nessieEnv'] == 'test'
 
     def test_ping(self, client):
         """Answers the phone when pinged."""

@@ -27,7 +27,7 @@ const registerMe = () => {
 }
 
 const beforeEach = (to: any, from: any, next: Function) => {
-  store.dispatch('context/loadConfig').then(() => {
+  store.dispatch('context/init').then(() => {
     store.dispatch('context/clearErrors').then(() => {
       const safeNext = (to: any, next: Function) => {
         if (to.matched.length) {

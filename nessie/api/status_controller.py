@@ -29,23 +29,39 @@ from flask import current_app as app
 from nessie import __version__ as version
 from nessie import db
 from nessie.externals import redshift
-from nessie.lib import berkeley
+from nessie.lib.berkeley import current_term_id, current_term_name, future_term_id
 from nessie.lib.http import tolerant_jsonify
+
+PUBLIC_CONFIGS = [
+    'CURRENT_TERM',
+    'EARLIEST_LEGACY_TERM',
+    'EARLIEST_TERM',
+    'EB_ENVIRONMENT',
+    'FEATURE_FLAG_ENTERPRISE_DATA_LAKE',
+    'FUTURE_TERM',
+    'JOB_SCHEDULING_ENABLED',
+    'NESSIE_ENV',
+    'WORKER_QUEUE_ENABLED',
+    'WORKER_THREADS',
+]
 
 
 @app.route('/api/config')
 def app_config():
-    current_term_name = berkeley.current_term_name()
-    current_term_id = berkeley.current_term_id()
-    future_term_id = berkeley.future_term_id()
-    return tolerant_jsonify({
-        'currentEnrollmentTerm': current_term_name,
-        'currentEnrollmentTermId': int(current_term_id),
-        'ebEnvironment': app.config['EB_ENVIRONMENT'] if 'EB_ENVIRONMENT' in app.config else None,
-        'featureFlagEnterpriseDataLake': app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE'],
-        'futureTermId': int(future_term_id),
-        'nessieEnv': app.config['NESSIE_ENV'],
-    })
+    def _to_api_key(key):
+        chunks = key.split('_')
+        return f"{chunks[0].lower()}{''.join(chunk.title() for chunk in chunks[1:])}"
+
+    return tolerant_jsonify(
+        {
+            **dict((_to_api_key(key), app.config[key] if key in app.config else None) for key in PUBLIC_CONFIGS),
+            **{
+                'currentEnrollmentTerm': current_term_name(),
+                'currentEnrollmentTermId': int(current_term_id()),
+                'futureTermId': int(future_term_id()),
+            },
+        },
+    )
 
 
 @app.route('/api/ping')
