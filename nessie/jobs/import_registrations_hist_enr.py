@@ -97,7 +97,7 @@ class ImportRegistrationsHistEnr(BackgroundJob):
 
     def _query_edl(self, rows, sids):
         successes = []
-        for edl_row in get_edl_student_registrations(sids, order_by='student_id, semester_year_term_cd DESC'):
+        for edl_row in get_edl_student_registrations(sids):
             sid = edl_row['student_id']
             if sid not in successes:
                 # Based on the SQL order_by above, the first result per SID will be 'last_registration'.
@@ -174,7 +174,7 @@ def _edl_registration_to_json(row):
     # TODO: From EDL query results, what do we do with 'total_cumulative_gpa_nbr'?
     # TODO: All 'None' entries below need investigation. Does EDL provide?
     return {
-        'loadedAt': _str(row['load_dt']),
+        'loadedAt': _str(row['edl_load_date']),
         'term': {
             'id': term_id,
             'name': f'{year} {season}',
@@ -238,31 +238,49 @@ def _edl_registration_to_json(row):
                     'code': 'Total',
                     'description': 'Total Units',
                 },
-                'unitsMin': _str(row['minimum_term_enrollment_units_limit']),
-                'unitsMax': _str(row['maximum_term_enrollment_units_limit']),
+                'unitsCumulative': None,
                 'unitsEnrolled': _str(row['term_enrolled_units']),
-                'unitsTaken': _str(row['total_units_completed_qty']),
-                'unitsPassed': None,
                 'unitsIncomplete': None,
+                'unitsMax': _str(row['maximum_term_enrollment_units_limit']),
+                'unitsMin': _str(row['minimum_term_enrollment_units_limit']),
+                'unitsOther': None,
+                'unitsPassed': None,
+                'unitsTaken': _str(row['total_units_completed_qty']),
+                'unitsTransferAccepted': None,
+                'unitsTransferEarned': None,
+                'unitsWaitlisted': None,
             },
             {
                 'type': {
                     'code': 'For GPA',
                     'description': 'Units For GPA',
                 },
-                'unitsTaken': None,
-                'unitsPassed': None,
+                'unitsEnrolled': None,
+                'unitsIncomplete': None,
+                'unitsMax': None,
+                'unitsMin': None,
+                'unitsOther': None,
+                'unitsPassed': _str(row['unt_passd_gpa']),
+                'unitsTaken': _str(row['unt_taken_gpa']),
+                'unitsTransferAccepted': None,
+                'unitsTransferEarned': None,
+                'unitsWaitlisted': None,
             },
             {
                 'type': {
                     'code': 'Not For GPA',
                     'description': 'Units Not For GPA',
                 },
-                'unitsMax': None,
-                'unitsEnrolled': None,
-                'unitsTaken': None,
-                'unitsPassed': None,
+                'unitsEnrolled': _str(row['tot_inprog_gpa']),
                 'unitsIncomplete': None,
+                'unitsMax': _str(row['max_nogpa_unit']),
+                'unitsMin': None,
+                'unitsOther': None,
+                'unitsPassed': _str(row['unt_passd_nogpa']),
+                'unitsTaken': _str(row['unt_taken_nogpa']),
+                'unitsTransferAccepted': None,
+                'unitsTransferEarned': None,
+                'unitsWaitlisted': None,
             },
         ],
         'termGPA': {
@@ -272,5 +290,16 @@ def _edl_registration_to_json(row):
             },
             'average': _str(row['current_term_gpa_nbr']),
             'source': 'UCB',
+        },
+        'withdrawalCancel': {
+            'date': _str(row['withdraw_date']),
+            'reason': {
+                'code': row['withdraw_reason'],
+                'description': None,
+            },
+            'type': {
+                'code': row['withdraw_code'],
+                'description': None,
+            },
         },
     }
