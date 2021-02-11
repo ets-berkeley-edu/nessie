@@ -176,7 +176,7 @@ INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name)
 AS (
     SELECT
       reg.student_id AS sid,
-      NULL AS uid,
+      s.campus_id AS uid,
       p.person_preferred_first_nm AS first_name,
       p.person_preferred_last_nm AS last_name,
       p.gender_cd AS gender,
@@ -190,6 +190,9 @@ AS (
     FROM {redshift_schema_edl_external}.student_registration_term_data reg
     JOIN {redshift_schema_edl_external}.student_personal_data p
     ON reg.student_id = p.student_id
+    JOIN {redshift_schema_edl_external_staging}.cs_ps_person_sa s
+    ON p.student_id = s.emplid
+    AND s.campus_id <> ''
     WHERE reg.semester_year_term_cd = (
         SELECT MAX(semester_year_term_cd)
         FROM {redshift_schema_edl_external}.student_registration_term_data max_reg

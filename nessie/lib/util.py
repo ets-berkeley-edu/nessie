@@ -220,6 +220,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_schema_e_i_advising_notes': app.config['REDSHIFT_SCHEMA_E_I_ADVISING_NOTES'],
         'redshift_schema_e_i_advising_notes_internal': app.config['REDSHIFT_SCHEMA_E_I_ADVISING_NOTES_INTERNAL'],
         'redshift_schema_edl_external': app.config['REDSHIFT_SCHEMA_EDL_EXTERNAL'],
+        'redshift_schema_edl_external_staging': app.config['REDSHIFT_SCHEMA_EDL_EXTERNAL_STAGING'],
         'redshift_schema_edl': app.config['REDSHIFT_SCHEMA_EDL'],
         'redshift_schema_edw': app.config['REDSHIFT_SCHEMA_EDW'],
         'redshift_schema_gradescope': app.config['REDSHIFT_SCHEMA_GRADESCOPE'],
