@@ -364,7 +364,7 @@ def get_edl_student_registrations(sids):
                 s.ssr_tot_en_grdpts,
                 s.ssr_tot_en_tkngpa,
                 s.ssr_tot_tr_grdpts,
-                s.ssr_tot_tr_tkngpa
+                s.ssr_tot_tr_tkngpa,
                 s.ssr_trf_cur_gpa,
                 s.start_date,
                 s.stats_on_trans_dt,

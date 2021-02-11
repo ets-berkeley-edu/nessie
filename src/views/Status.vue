@@ -4,12 +4,12 @@
     <h2>Config</h2>
     <b-list-group class="w-50">
       <b-list-group-item
-        v-for="(value, key) in $config"
+        v-for="key in _.keys($config).sort()"
         :key="key"
         class="d-flex justify-content-between align-items-center"
       >
         <b-badge pill variant="info"><span class="config-pill">{{ _.capitalize(decamelize(key)) }}</span></b-badge>
-        {{ value }}
+        {{ $config[key] }}
       </b-list-group-item>
     </b-list-group>
     <div class="py-3">
