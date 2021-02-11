@@ -55,7 +55,8 @@ AS (
       academic_plan_nm AS plan,
       academic_plan_type_cd AS plan_type,
       academic_subplan_nm AS subplan,
-      academic_program_status_desc AS status
+      academic_program_status_desc AS status,
+      load_dt AS edl_load_date
     FROM {redshift_schema_edl_external}.student_academic_plan_data
     WHERE academic_plan_type_cd IN ('MAJ', 'SS', 'SP', 'HS', 'CRT', 'MIN')
 );
@@ -67,6 +68,16 @@ CREATE TABLE {redshift_schema_edl}.student_academic_plans
 )
 DISTKEY (sid)
 SORTKEY (sid);
+
+CREATE TABLE {redshift_schema_edl}.student_citizenships
+SORTKEY(sid)
+AS (
+    SELECT
+      student_id AS sid,
+      citizenship_country_desc AS citizenship_country,
+      load_dt AS edl_load_date
+    FROM {redshift_schema_edl_external}.student_citizenship_data
+);
 
 CREATE TABLE {redshift_schema_edl}.student_degree_progress_index
 SORTKEY (sid)
@@ -101,6 +112,19 @@ CREATE TABLE {redshift_schema_edl}.student_degree_progress
 DISTKEY (sid)
 SORTKEY (sid);
 
+CREATE TABLE {redshift_schema_edl}.student_ethnicities
+DISTKEY (sid)
+SORTKEY (sid, ethnicity)
+AS (
+  SELECT
+    student_id AS sid,
+    ethnic_desc AS ethnicity,
+    ethnic_rollup_desc AS ethnicity_group,
+    ethnic_hispanic_latino_flg AS hispanic_latino,
+    load_dt AS edl_load_date
+  FROM {redshift_schema_edl_external}.student_ethnicity_data
+);
+
 CREATE TABLE {redshift_schema_edl}.student_majors
 DISTKEY (sid)
 SORTKEY (college, major)
@@ -108,7 +132,8 @@ AS (
     SELECT
       student_id AS sid,
       academic_plan_nm AS major,
-      academic_program_nm AS college
+      academic_program_nm AS college,
+      load_dt AS edl_load_date
     FROM {redshift_schema_edl_external}.student_academic_plan_data
     WHERE academic_plan_type_cd in ('MAJ', 'SS', 'SP', 'HS', 'CRT')
     AND academic_program_status_cd = 'AC'
@@ -120,7 +145,8 @@ SORTKEY (sid, minor)
 AS (
     SELECT
       student_id AS sid,
-      academic_plan_nm AS minor
+      academic_plan_nm AS minor,
+      load_dt AS edl_load_date
     FROM {redshift_schema_edl_external}.student_academic_plan_data
     WHERE academic_plan_type_cd = 'MIN'
     AND academic_program_status_cd = 'AC'
@@ -153,6 +179,7 @@ AS (
       NULL AS uid,
       p.person_preferred_first_nm AS first_name,
       p.person_preferred_last_nm AS last_name,
+      p.gender_cd AS gender,
       NULL AS level,
       reg.total_cumulative_gpa_nbr AS gpa,
       reg.total_units_completed_qty AS units,
@@ -168,4 +195,16 @@ AS (
         FROM {redshift_schema_edl_external}.student_registration_term_data max_reg
         WHERE max_reg.student_id = reg.student_id
     )
+);
+
+CREATE TABLE {redshift_schema_edl}.student_visas
+SORTKEY(sid)
+AS (
+    SELECT
+      student_id AS sid,
+      visa_workpermit_status_cd AS visa_status,
+      visa_permit_type_cd AS visa_type,
+      load_dt AS edl_load_date
+    FROM {redshift_schema_edl_external}.student_visa_permit_data
+    WHERE country_cd = 'USA'
 );
