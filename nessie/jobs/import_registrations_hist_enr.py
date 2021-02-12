@@ -35,7 +35,7 @@ from nessie.lib.queries import get_edl_student_registrations, get_non_advisees_w
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string
 import numpy as np
 
-"""Imports and stores SIS Students Registrations API data for non-advisees."""
+"""Imports historical student registration data."""
 
 
 class ImportRegistrationsHistEnr(BackgroundJob):
@@ -60,7 +60,8 @@ class ImportRegistrationsHistEnr(BackgroundJob):
             else:
                 sids = new_sids[0:(max_batch)]
 
-        app.logger.info(f'Starting registrations import job for {len(sids)} non-advisees...')
+        app.logger.info(f'Starting import of historical registration data for {len(sids)} students...')
+        redshift.execute('VACUUM; ANALYZE;')
 
         rows = {
             'term_gpas': [],
@@ -93,6 +94,9 @@ class ImportRegistrationsHistEnr(BackgroundJob):
                 )
                 if not redshift.execute(staging_to_destination_query):
                     raise BackgroundJobError('Error inserting staging entries into destination: aborting job.')
+
+        redshift.execute('VACUUM; ANALYZE;')
+        app.logger.info(f'Finished import of historical registration data for {len(sids)} students.')
         return successes, failures
 
     def _query_edl(self, rows, sids):
@@ -239,13 +243,13 @@ def _edl_registration_to_json(row):
                     'description': 'Total Units',
                 },
                 'unitsCumulative': None,
-                'unitsEnrolled': _str(row['term_enrolled_units']),
+                'unitsEnrolled': _str(row['units_term_enrolled']),
                 'unitsIncomplete': None,
-                'unitsMax': _str(row['maximum_term_enrollment_units_limit']),
-                'unitsMin': _str(row['minimum_term_enrollment_units_limit']),
+                'unitsMax': _str(row['units_term_enrollment_max']),
+                'unitsMin': _str(row['units_term_enrollment_min']),
                 'unitsOther': None,
                 'unitsPassed': None,
-                'unitsTaken': _str(row['total_units_completed_qty']),
+                'unitsTaken': _str(row['total_units_completed_qty']),  # TODO: Is this right?
                 'unitsTransferAccepted': None,
                 'unitsTransferEarned': None,
                 'unitsWaitlisted': None,
@@ -288,18 +292,37 @@ def _edl_registration_to_json(row):
                 'code': 'TGPA',
                 'description': 'Term GPA',
             },
-            'average': _str(row['current_term_gpa_nbr']),
+            'average': _str(row['current_term_gpa']),
             'source': 'UCB',
         },
         'withdrawalCancel': {
             'date': _str(row['withdraw_date']),
             'reason': {
                 'code': row['withdraw_reason'],
-                'description': None,
+                'description': _withdraw_code_to_name(row['withdraw_reason']),
             },
             'type': {
                 'code': row['withdraw_code'],
-                'description': None,
+                'description': _withdraw_code_to_name(row['withdraw_code']),
             },
         },
     }
+
+
+def _withdraw_code_to_name(code):
+    mappings = {
+        'CAN': 'CAN',
+        'DNSH': 'DNSH',
+        'DYSH': 'DYSH',
+        'MEDA': 'MEDA',
+        'MEDI': 'Medical',
+        'NPAY': 'NPAY',
+        'NWD': 'NWD',
+        'OTHR': 'Other',
+        'PARN': 'PARN',
+        'PERS': 'Personal',
+        'RETR': 'RETR',
+        'RSCH': 'RSCH',
+        'WDR': 'Withdrew',
+    }
+    return mappings.get(code) or code
