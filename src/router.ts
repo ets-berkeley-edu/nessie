@@ -1,30 +1,11 @@
 import Home from '@/views/Home.vue'
-import Login from '@/views/Login.vue'
 import Schedule from '@/views/Schedule.vue'
 import Status from '@/views/Status.vue'
 import store from '@/store'
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import { getMyProfile } from '@/api/user'
-import { getRunnableJobs } from '@/api/job'
 
 Vue.use(VueRouter)
-
-const registerMe = () => {
-  return Promise.resolve(
-    getMyProfile().then(me => {
-      if (me) {
-        store.commit('user/registerMe', me)
-        getRunnableJobs().then(data => {
-          store.commit('schedule/cacheRunnableJobs', data)
-          return me
-        })
-      } else {
-        return null
-      }
-    })
-  )
-}
 
 const beforeEach = (to: any, from: any, next: Function) => {
   store.dispatch('context/init').then(() => {
@@ -36,17 +17,13 @@ const beforeEach = (to: any, from: any, next: Function) => {
           next('/home')
         }
       }
-      if (store.getters['user/user']) {
-        safeNext(to, next)
-      } else {
-        registerMe().then(() => safeNext(to, next))
-      }
+      safeNext(to, next)
     })
   })
 }
 
 const requiresAuth = (to: any, from: any, next: Function) => {
-  if (store.getters['user/user']) {
+  if (Vue.prototype.$currentUser) {
     next()
   } else {
     next('/login')
@@ -57,16 +34,8 @@ const router = new VueRouter({
   mode: 'history',
   routes: [
     {
-      path: '/login',
-      name: 'login',
-      component: Login,
-      beforeEnter: (to: any, from: any, next: Function) => {
-        if (store.getters['user/user']) {
-          next('/home')
-        } else {
-          next()
-        }
-      }
+      path: '/',
+      redirect: '/home'
     },
     {
       path: '/home',

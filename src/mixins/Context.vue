@@ -1,5 +1,5 @@
 <script>
-import { mapGetters } from 'vuex'
+import {mapGetters} from 'vuex'
 
 export default {
   name: 'Context',
@@ -7,6 +7,7 @@ export default {
     ...mapGetters('context', [
       'apiBaseUrl',
       'errors',
+      'loading',
       'ping',
       'version'
     ])

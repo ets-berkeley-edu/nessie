@@ -5,7 +5,7 @@
       <Datepicker
         v-model="jobsDate"
         placeholder="Select Date"
-        @disabled="loading"
+        @disabled="!!loading"
         @closed="getBackgroundJobStatus"
       ></Datepicker>
     </div>
@@ -30,12 +30,14 @@
 
 <script>
 import _ from 'lodash'
+import Context from '@/mixins/Context'
 import Datepicker from 'vuejs-datepicker'
 import LargeSpinner from '@/components/widgets/LargeSpinner'
 import { getBackgroundJobStatus } from '@/api/job'
 
 export default {
   name: 'JobStatus',
+  mixins: [Context],
   components: {
     Datepicker,
     LargeSpinner
@@ -52,17 +54,15 @@ export default {
           { key: 'started', sortable: true },
           { key: 'finished', sortable: true }
         ]
-      },
-      loading: true
+      }
     }
   },
   created() {
     this.getBackgroundJobStatus()
   },
   methods: {
-    /* eslint no-undef: "warn" */
     getBackgroundJobStatus() {
-      this.loading = true
+      this.$loading()
       getBackgroundJobStatus(this.jobsDate).then(data => {
         this.jobStatuses.rows = _.map(data, row => {
           let style =
@@ -74,7 +74,7 @@ export default {
           row._cellVariants = { status: style }
           return row
         })
-        this.loading = false
+        this.$ready()
       })
     }
   }

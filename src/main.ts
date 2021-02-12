@@ -1,13 +1,14 @@
 import 'bootstrap-vue/dist/bootstrap-vue.min.css'
 import 'bootstrap/dist/css/bootstrap.min.css'
+import _ from 'lodash'
 import App from '@/App.vue'
 import axios from 'axios'
-import BootstrapVue from 'bootstrap-vue'
 import lodash from 'lodash'
 import router from '@/router'
 import store from '@/store'
 import Vue from 'vue'
 import VueLodash from 'vue-lodash'
+import {BootstrapVue, BootstrapVueIcons} from 'bootstrap-vue'
 
 // Allow cookies in Access-Control requests
 axios.defaults.withCredentials = true
@@ -23,15 +24,25 @@ axios.interceptors.response.use(response => response, function(error) {
 
 Vue.config.productionTip = false
 Vue.use(BootstrapVue)
+Vue.use(BootstrapVueIcons)
 Vue.use(require('vue-moment'))
 Vue.use(VueLodash, { lodash })
 
-axios.get(`${process.env.VUE_APP_API_BASE_URL}/api/config`).then(response => {
+Vue.prototype.$_ = _
+Vue.prototype.$loading = () => store.dispatch('context/loadingStart')
+Vue.prototype.$ready = () => store.dispatch('context/loadingComplete')
+
+const apiBaseUrl = process.env.VUE_APP_API_BASE_URL
+
+axios.get(`${apiBaseUrl}/api/config`).then(response => {
   Vue.prototype.$config = response.data
 
-  new Vue({
-    router,
-    store,
-    render: h => h(App)
-  }).$mount('#app')
+  axios.get(`${apiBaseUrl}/api/user/profile`).then(response => {
+    Vue.prototype.$currentUser = response.data
+    new Vue({
+      router,
+      store,
+      render: h => h(App)
+    }).$mount('#app')
+  })
 })
