@@ -8,16 +8,18 @@ import VueRouter from 'vue-router'
 Vue.use(VueRouter)
 
 const beforeEach = (to: any, from: any, next: Function) => {
-  store.dispatch('context/init').then(() => {
-    store.dispatch('context/clearErrors').then(() => {
-      const safeNext = (to: any, next: Function) => {
-        if (to.matched.length) {
-          next()
-        } else {
-          next('/home')
+  store.dispatch('context/loadingStart').then(() => {
+    store.dispatch('context/init').then(() => {
+      store.dispatch('context/clearErrors').then(() => {
+        const safeNext = (to: any, next: Function) => {
+          if (to.matched.length) {
+            next()
+          } else {
+            next('/home')
+          }
         }
-      }
-      safeNext(to, next)
+        safeNext(to, next)
+      })
     })
   })
 }
