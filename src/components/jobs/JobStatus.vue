@@ -1,7 +1,7 @@
 <template>
   <div>
-    <h2>Job Status</h2>
-    <div>
+    <div class="mx-2">
+      <h2>Job Status</h2>
       <Datepicker
         v-model="jobsDate"
         placeholder="Select Date"

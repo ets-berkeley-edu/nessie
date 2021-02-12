@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="mx-3">
     <h2>Config</h2>
     <b-list-group class="w-50">
       <b-list-group-item

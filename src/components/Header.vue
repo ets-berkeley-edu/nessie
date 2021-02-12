@@ -1,7 +1,7 @@
 <template>
-  <div class="align-items-center d-flex justify-content-between mb-3">
+  <div class="align-items-center d-flex justify-content-between" :class="{'mb-3': !$currentUser}">
     <div class="align-items-center d-flex">
-      <div class="pr-2">
+      <div class="mt-2 pr-2">
         <router-link :to="{name: 'home'}"><img src="@/assets/logo.png"></router-link>
       </div>
       <div>
@@ -14,15 +14,15 @@
         </div>
       </div>
     </div>
-    <div v-if="$currentUser" class="align-self-start pt-3">
+    <div v-if="$currentUser">
       <b-link class="align-items-center d-flex greeting" @click="logOut">
         <span class="sr-only">Log Out</span>
-        <b-icon font-scale="2" class="p-0" icon="box-arrow-right"></b-icon>
+        <b-icon font-scale="2" icon="box-arrow-right"></b-icon>
       </b-link>
     </div>
-    <div v-if="!$currentUser">
+    <div v-if="!$currentUser" class="pt-2">
       <form @submit.prevent="casLogin">
-        <button id="cas-log-in" class="btn btn-default btn-primary splash-btn-sign-in">Sign In</button>
+        <button id="cas-log-in" class="btn btn-default btn-primary">Sign In</button>
       </form>
     </div>
   </div>
@@ -47,9 +47,6 @@ export default {
 </script>
 
 <style scoped>
-.breadcrumb span {
-  padding: 5px;
-}
 .git-commit {
   font-size: 12px;
 }
