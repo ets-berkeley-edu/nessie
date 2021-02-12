@@ -37,16 +37,3 @@ h6 {
 a {
   text-decoration: none;
 }
-
-.flex-row {
-  display: flex;
-  flex-direction: row;
-}
-
-.content {
-  flex: 1;
-}
-
-.no-wrap {
-  white-space: nowrap;
-}

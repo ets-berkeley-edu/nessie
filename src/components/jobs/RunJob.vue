@@ -1,11 +1,11 @@
 <template>
-  <div v-if="runnableJobs">
+  <div v-if="runnableJobs" class="mx-2">
     <h2>Manage Jobs</h2>
     <div v-if="!runnableJobs.length">
       Sorry, no runnable jobs were found.
     </div>
     <div v-if="runnableJobs.length">
-      <div class="flex-row">
+      <div class="d-flex flex-row">
         <div>
           <b-form-select v-model="selected" class="mb-3">
             <option :value="null">Select...</option>
