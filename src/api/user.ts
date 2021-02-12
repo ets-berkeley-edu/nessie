@@ -8,13 +8,6 @@ export function getCasLoginURL() {
     .then(response => response.data, err => err.response)
 }
 
-export function getMyProfile() {
-  const apiBaseUrl = store.getters['context/apiBaseUrl']
-  return axios
-    .get(`${apiBaseUrl}/api/user/profile`)
-    .then(response => response.data, err => err.response)
-}
-
 export function getCasLogoutURL() {
   const apiBaseUrl = store.getters['context/apiBaseUrl']
   return axios

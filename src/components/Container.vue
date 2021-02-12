@@ -15,7 +15,7 @@ export default {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding: 0 30px 0 30px;
+  padding: 10px 30px 0 30px;
   width: 100%;
 }
 </style>

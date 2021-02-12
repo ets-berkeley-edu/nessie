@@ -1,10 +1,10 @@
 <template>
-  <div>
-    <h1>Manage Jobs</h1>
-    <div v-if="!runnableJobs">
+  <div v-if="runnableJobs">
+    <h2>Manage Jobs</h2>
+    <div v-if="!runnableJobs.length">
       Sorry, no runnable jobs were found.
     </div>
-    <div v-if="runnableJobs">
+    <div v-if="runnableJobs.length">
       <div class="flex-row">
         <div>
           <b-form-select v-model="selected" class="mb-3">
@@ -56,29 +56,29 @@
 
 <script>
 import _ from 'lodash'
-import store from '@/store'
-import { runJob } from '@/api/job'
+import {getRunnableJobs, runJob} from '@/api/job'
 
 export default {
   name: 'RunJob',
-  data() {
-    return {
-      errored: [],
-      params: {},
-      started: [],
-      selected: null
-    }
-  },
+  data: () => ({
+    errored: [],
+    params: {},
+    runnableJobs: undefined,
+    started: [],
+    selected: null
+  }),
   computed: {
-    runnableJobs() {
-      return store.getters['schedule/runnableJobs']
-    },
     selectedJobRunnable() {
       if (!this.selected) {
         return false
       }
       return !_.find(this.selected.required, key => !this.params[key])
     }
+  },
+  created() {
+    getRunnableJobs().then(data => {
+      this.runnableJobs = data
+    })
   },
   methods: {
     /* eslint no-undef: "warn" */

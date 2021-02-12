@@ -6,6 +6,7 @@ Vue.use(Vuex)
 
 const state = {
   errors: [],
+  loading: false,
   ping: undefined,
   version: undefined
 }
@@ -13,6 +14,7 @@ const state = {
 const getters = {
   apiBaseUrl: (): any => process.env.VUE_APP_API_BASE_URL,
   errors: (state: any): any => state.errors,
+  loading: (state: any): boolean => state.loading,
   ping: (state: any): any => state.ping,
   version: (state: any): any => state.version
 }
@@ -25,6 +27,8 @@ const mutations = {
       state.errors.splice(indexOf, 1)
     }
   },
+  loadingComplete: (state: any) => state.loading = false,
+  loadingStart: (state: any) => state.loading = true,
   reportError: (state: any, error: any) => {
     error.id = new Date().getTime()
     state.errors.push(error)
@@ -45,7 +49,10 @@ const actions = {
         })
       })
     })
-  }
+  },
+  loadingComplete: ({ commit }) => commit('loadingComplete'),
+  loadingStart: ({ commit }) => commit('loadingStart'),
+
 }
 
 export default {
