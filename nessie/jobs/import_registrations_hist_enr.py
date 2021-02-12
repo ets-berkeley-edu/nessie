@@ -46,12 +46,11 @@ class ImportRegistrationsHistEnr(BackgroundJob):
 
     def run(self, load_mode='batch'):
         new_sids = [row['sid'] for row in get_non_advisees_without_registration_imports()]
-        load_all = feature_flag_edl() or load_mode == 'new'
 
         # The size of the non-advisee population makes it unlikely that a one-shot load of all these slow feeds will
         # finish successfully without interfering with other work. Therefore the default approach is to apply a strict
         # upper limit on the number of feeds loaded in any one job run, no matter how many SIDs remain to be processed.
-        if load_all:
+        if load_mode == 'new':
             sids = new_sids
         elif load_mode == 'batch':
             max_batch = app.config['HIST_ENR_REGISTRATIONS_IMPORT_BATCH_SIZE']
@@ -72,14 +71,19 @@ class ImportRegistrationsHistEnr(BackgroundJob):
             for key in rows.keys():
                 filename = f'{key}_edl' if feature_flag_edl() else f'{key}_api'
                 s3_key = f'{get_s3_sis_api_daily_path()}/{filename}.tsv'
-                app.logger.info(f'Will stash {len(successes)} feeds in S3: {s3_key}')
+                app.logger.info(f'Upload {key} data to s3:{s3_key}. The file represents {len(rows[key])} students.')
                 if not s3.upload_tsv_rows(rows[key], s3_key):
-                    raise BackgroundJobError('Error on S3 upload: aborting job.')
-                app.logger.info('Will copy S3 feeds into Redshift...')
-                if not redshift.execute(f'TRUNCATE {self.redshift_schema}_staging.hist_enr_{key}'):
+                    raise BackgroundJobError(f'Error during S3 upload: {s3_key}. Aborting job.')
+
+                staging_table = f'{self.redshift_schema}_staging.hist_enr_{key}'
+                if not redshift.execute(f'TRUNCATE {staging_table}'):
                     raise BackgroundJobError('Error truncating old staging rows: aborting job.')
-                if not redshift.copy_tsv_from_s3(f'{self.redshift_schema}_staging.hist_enr_{key}', s3_key):
+
+                app.logger.info(f'Populate {staging_table} (Redshift table) with s3:{s3_key}')
+                if not redshift.copy_tsv_from_s3(staging_table, s3_key):
                     raise BackgroundJobError('Error on Redshift copy: aborting job.')
+
+                app.logger.info(f'Insert student data into {self.redshift_schema}.hist_enr_{key}')
                 staging_to_destination_query = resolve_sql_template_string(
                     """
                     DELETE FROM {target_schema}.hist_enr_{table_key}
@@ -96,7 +100,7 @@ class ImportRegistrationsHistEnr(BackgroundJob):
                     raise BackgroundJobError('Error inserting staging entries into destination: aborting job.')
 
         redshift.execute('VACUUM; ANALYZE;')
-        app.logger.info(f'Finished import of historical registration data for {len(sids)} students.')
+        app.logger.info(f'Finished import of historical registration data: {len(successes)} successes and {len(failures)} failures.')
         return successes, failures
 
     def _query_edl(self, rows, sids):
@@ -114,8 +118,8 @@ class ImportRegistrationsHistEnr(BackgroundJob):
                     [
                         sid,
                         edl_row['term_id'],
-                        edl_row['current_term_gpa_nbr'] or '0',
-                        edl_row.get('unitsTakenForGpa') or '0',  # TODO: Does EDL give us 'unitsTakenForGpa'?
+                        edl_row['current_term_gpa'] or '0',
+                        edl_row.get('unt_taken_gpa') or '0',  # TODO: Does EDL give us 'unitsTakenForGpa'?
                     ],
                 ),
             )
@@ -249,7 +253,7 @@ def _edl_registration_to_json(row):
                 'unitsMin': _str(row['units_term_enrollment_min']),
                 'unitsOther': None,
                 'unitsPassed': None,
-                'unitsTaken': _str(row['total_units_completed_qty']),  # TODO: Is this right?
+                'unitsTaken': _str(row['units_term_completed']),  # TODO: Is this right?
                 'unitsTransferAccepted': None,
                 'unitsTransferEarned': None,
                 'unitsWaitlisted': None,

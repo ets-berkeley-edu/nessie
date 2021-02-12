@@ -31,7 +31,6 @@ export default {
     gitCommit: undefined
   }),
   created() {
-    this.$loading()
     this.gitCommit = this.$_.get(this.version.build, 'gitCommit')
     this.$ready()
   },
