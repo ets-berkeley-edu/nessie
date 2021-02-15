@@ -26,6 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import json
 
 from nessie.externals import redshift
+from nessie.lib.queries import student_schema
 from tests.util import mock_s3, override_config
 
 
@@ -33,12 +34,13 @@ class TestImportSisStudentApi:
 
     def test_import_sis_student_api(self, app, metadata_db, student_tables, caplog):
         from nessie.jobs.import_sis_student_api import ImportSisStudentApi
-        initial_rows = redshift.fetch('SELECT * FROM student_test.sis_api_profiles ORDER BY sid')
+
+        initial_rows = redshift.fetch(f'SELECT * FROM {student_schema()}.sis_api_profiles ORDER BY sid')
         assert len(initial_rows) == 0
         with mock_s3(app):
             result = ImportSisStudentApi().run_wrapped()
         assert result == 'SIS student API import job completed: 3 succeeded, 7 failed.'
-        rows = redshift.fetch('SELECT * FROM student_test.sis_api_profiles ORDER BY sid')
+        rows = redshift.fetch(f'SELECT * FROM {student_schema()}.sis_api_profiles ORDER BY sid')
         assert len(rows) == 3
         assert rows[0]['sid'] == '11667051'
         feed = json.loads(rows[0]['feed'], strict=False)
@@ -58,7 +60,7 @@ class TestImportSisStudentApi:
             with mock_s3(app):
                 result = ImportSisStudentApi().run_wrapped()
             assert result == 'SIS student API V1 import job completed: 4 succeeded, 6 failed.'
-            rows = redshift.fetch('SELECT * FROM student_test.sis_api_profiles_v1 ORDER BY sid')
+            rows = redshift.fetch(f'SELECT * FROM {student_schema()}.sis_api_profiles_v1 ORDER BY sid')
             assert len(rows) == 4
             assert rows[0]['sid'] == '11667051'
             assert rows[1]['sid'] == '1234567890'

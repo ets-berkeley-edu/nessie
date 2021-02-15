@@ -43,7 +43,7 @@ class CreateEdlSchema(BackgroundJob):
     internal_schema = app.config['REDSHIFT_SCHEMA_EDL']
 
     def run(self):
-        if feature_flag_edl:
+        if feature_flag_edl():
             app.logger.info('Starting EDL schema creation job...')
             self.create_schema()
             self.generate_feeds()
