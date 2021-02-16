@@ -28,6 +28,7 @@ import json
 import logging
 
 from nessie.externals import rds, redshift
+from nessie.lib.queries import student_schema
 from tests.util import capture_app_logs, mock_s3, override_config
 
 
@@ -35,16 +36,17 @@ class TestImportRegistrations:
 
     def test_import_registrations(self, app, metadata_db, student_tables, caplog):
         from nessie.jobs.import_registrations import ImportRegistrations
-        rows = redshift.fetch('SELECT * FROM student_test.student_term_gpas')
+
+        rows = redshift.fetch(f'SELECT * FROM {student_schema()}.student_term_gpas')
         assert len(rows) == 0
-        rows = redshift.fetch('SELECT * FROM student_test.student_last_registrations')
+        rows = redshift.fetch(f'SELECT * FROM {student_schema()}.student_last_registrations')
         assert len(rows) == 0
         caplog.set_level(logging.DEBUG)
         with capture_app_logs(app):
             with mock_s3(app):
                 result = ImportRegistrations().run_wrapped()
             assert result == 'Registrations import completed: 2 succeeded, 8 failed.'
-            rows = redshift.fetch('SELECT * FROM student_test.student_term_gpas ORDER BY sid')
+            rows = redshift.fetch(f'SELECT * FROM {student_schema()}.student_term_gpas ORDER BY sid')
             assert len(rows) == 11
             for row in rows[0:6]:
                 assert row['sid'] == '11667051'
@@ -54,7 +56,7 @@ class TestImportRegistrations:
             assert row_2168['gpa'] == Decimal('3.000')
             assert row_2168['units_taken_for_gpa'] == Decimal('8.0')
 
-            rows = redshift.fetch('SELECT * FROM student_test.student_last_registrations ORDER BY sid')
+            rows = redshift.fetch(f'SELECT * FROM {student_schema()}.student_last_registrations ORDER BY sid')
             assert len(rows) == 2
             assert rows[0]['sid'] == '11667051'
             assert rows[1]['sid'] == '1234567890'
@@ -62,7 +64,7 @@ class TestImportRegistrations:
             assert feed['term']['id'] == '2172'
             assert feed['academicLevels'][0]['level']['description'] == 'Sophomore'
 
-            rows = redshift.fetch('SELECT * FROM student_test.student_api_demographics ORDER BY sid')
+            rows = redshift.fetch(f'SELECT * FROM {student_schema()}.student_api_demographics ORDER BY sid')
             assert len(rows) == 2
             assert rows[0]['sid'] == '11667051'
             assert rows[1]['sid'] == '1234567890'

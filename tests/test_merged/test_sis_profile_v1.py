@@ -25,6 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import json
 
+from nessie.lib.queries import student_schema
 from nessie.merged.sis_profile_v1 import parse_merged_sis_profile_v1
 import pytest
 
@@ -32,14 +33,14 @@ import pytest
 @pytest.fixture()
 def sis_api_profiles(app, student_tables):
     from nessie.externals import redshift
-    sql = """SELECT sid, feed FROM student_test.sis_api_profiles_v1"""
+    sql = f'SELECT sid, feed FROM {student_schema()}.sis_api_profiles_v1'
     return redshift.fetch(sql)
 
 
 @pytest.fixture()
 def sis_api_degree_progress(app, student_tables):
     from nessie.externals import redshift
-    sql = """SELECT sid, feed FROM student_test.sis_api_degree_progress"""
+    sql = f'SELECT sid, feed FROM {student_schema()}.sis_api_degree_progress'
     return redshift.fetch(sql)
 
 

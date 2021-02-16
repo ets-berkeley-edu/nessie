@@ -30,28 +30,19 @@ from timeit import default_timer as timer
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3, sis_student_api
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
+from nessie.lib.berkeley import edl_demographics_to_json, edl_registration_to_json, feature_flag_edl
 from nessie.lib.metadata import update_registration_import_status
-from nessie.lib.queries import get_active_sids_with_oldest_registration_imports, get_all_student_ids, get_sids_with_registration_imports
+from nessie.lib.queries import get_active_sids_with_oldest_registration_imports, get_all_student_ids, \
+    get_edl_student_registrations, get_sids_with_registration_imports, student_schema
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
+import numpy as np
 
 """Imports and stores SIS Students Registrations API data, including term GPAs and most recent registration."""
-
-
-def async_get_feed(app_obj, sid):
-    with app_obj.app_context():
-        app.logger.info(f'Fetching registration history for SID {sid}')
-        feed = sis_student_api.get_term_gpas_registration_demog(sid)
-        result = {
-            'sid': sid,
-            'feed': feed,
-        }
-    return result
 
 
 class ImportRegistrations(BackgroundJob):
 
     rds_schema = app.config['RDS_SCHEMA_STUDENT']
-    redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
     max_threads = app.config['STUDENT_API_MAX_THREADS']
 
     def run(self, load_mode='new'):
@@ -76,9 +67,9 @@ class ImportRegistrations(BackgroundJob):
         rows = {
             'term_gpas': [],
             'last_registrations': [],
-            'api_demographics': [],
+            _demographics_key(): [],
         }
-        successes, failures = self.load_concurrently(rows, sids)
+        successes, failures = self._query_edl(rows, sids) if feature_flag_edl() else self._query_student_api(rows, sids)
         if load_mode != 'new' and (len(successes) == 0) and (len(failures) > 0):
             raise BackgroundJobError('Failed to import registration histories: aborting job.')
 
@@ -88,20 +79,21 @@ class ImportRegistrations(BackgroundJob):
             if not s3.upload_tsv_rows(rows[key], s3_key):
                 raise BackgroundJobError('Error on S3 upload: aborting job.')
             app.logger.info('Will copy S3 feeds into Redshift...')
-            if not redshift.execute(f'TRUNCATE {self.redshift_schema}_staging.student_{key}'):
+            if not redshift.execute(f'TRUNCATE {student_schema()}_staging.student_{key}'):
                 raise BackgroundJobError('Error truncating old staging rows: aborting job.')
-            if not redshift.copy_tsv_from_s3(f'{self.redshift_schema}_staging.student_{key}', s3_key):
+            if not redshift.copy_tsv_from_s3(f'{student_schema()}_staging.student_{key}', s3_key):
                 raise BackgroundJobError('Error on Redshift copy: aborting job.')
             staging_to_destination_query = resolve_sql_template_string(
                 """
-                DELETE FROM {redshift_schema_student}.student_{table_key}
+                DELETE FROM {target_schema}.student_{table_key}
                     WHERE sid IN
-                    (SELECT sid FROM {redshift_schema_student}_staging.student_{table_key});
-                INSERT INTO {redshift_schema_student}.student_{table_key}
-                    (SELECT * FROM {redshift_schema_student}_staging.student_{table_key});
-                TRUNCATE TABLE {redshift_schema_student}_staging.student_{table_key};
+                    (SELECT sid FROM {target_schema}_staging.student_{table_key});
+                INSERT INTO {target_schema}.student_{table_key}
+                    (SELECT * FROM {target_schema}_staging.student_{table_key});
+                TRUNCATE TABLE {target_schema}_staging.student_{table_key};
                 """,
                 table_key=key,
+                target_schema=student_schema(),
             )
             if not redshift.execute(staging_to_destination_query):
                 raise BackgroundJobError('Error inserting staging entries into destination: aborting job.')
@@ -120,13 +112,39 @@ class ImportRegistrations(BackgroundJob):
             f'Registrations import completed: {len(successes)} succeeded, {len(failures)} failed.'
         )
 
-    def load_concurrently(self, rows, sids):
+    def _query_edl(self, rows, sids):
+        successes = []
+        for edl_row in get_edl_student_registrations(sids):
+            sid = edl_row['student_id']
+            if sid not in successes:
+                # Based on the SQL order_by, the first result per SID will be 'last_registration'.
+                successes.append(sid)
+                rows['last_registrations'].append(
+                    encoded_tsv_row([sid, edl_registration_to_json(edl_row)]),
+                )
+            rows['term_gpas'].append(
+                encoded_tsv_row(
+                    [
+                        sid,
+                        edl_row['term_id'],
+                        edl_row['current_term_gpa'] or '0',
+                        edl_row.get('unt_taken_gpa') or '0',  # TODO: Does EDL give us 'unitsTakenForGpa'?
+                    ],
+                ),
+            )
+            rows[_demographics_key()].append(
+                encoded_tsv_row([sid, edl_demographics_to_json(edl_row)]),
+            )
+        failures = list(np.setdiff1d(sids, successes))
+        return successes, failures
+
+    def _query_student_api(self, rows, sids):
         successes = []
         failures = []
         app_obj = app._get_current_object()
         start_loop = timer()
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
-            for result in executor.map(async_get_feed, repeat(app_obj), sids):
+            for result in executor.map(_async_get_feed, repeat(app_obj), sids):
                 sid = result['sid']
                 full_feed = result['feed']
                 if full_feed:
@@ -148,7 +166,7 @@ class ImportRegistrations(BackgroundJob):
                         app.logger.info(f'No past UGRD registrations found for SID {sid}.')
                     demographics = full_feed.get('demographics', {})
                     if demographics:
-                        rows['api_demographics'].append(
+                        rows[_demographics_key()].append(
                             encoded_tsv_row([sid, json.dumps(demographics)]),
                         )
                 else:
@@ -170,3 +188,18 @@ class ImportRegistrations(BackgroundJob):
             return False
 
         return True
+
+
+def _async_get_feed(app_obj, sid):
+    with app_obj.app_context():
+        app.logger.info(f'Fetching registration history for SID {sid}')
+        feed = sis_student_api.get_term_gpas_registration_demog(sid)
+        result = {
+            'sid': sid,
+            'feed': feed,
+        }
+    return result
+
+
+def _demographics_key():
+    return 'demographics' if feature_flag_edl() else 'api_demographics'

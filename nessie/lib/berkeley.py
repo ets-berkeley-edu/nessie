@@ -173,6 +173,240 @@ def career_code_to_name(code):
     }.get(code)
 
 
+def edl_demographics_to_json(row):
+    # TODO: Extract demographics from query results
+    return {
+        'ethnicities': [
+            {
+                'detail': {
+                    'code': 'EUROPEAN',
+                    'description': 'European/European descent',
+                },
+                'group': {
+                    'code': '1',
+                    'description': 'White',
+                },
+                'hispanicLatino': False,
+            },
+            {
+                'detail': {
+                    'code': 'IPEDSWHT',
+                    'description': 'White IPEDS',
+                },
+                'group': {
+                    'code': '1',
+                    'description': 'White',
+                },
+                'hispanicLatino': False,
+            },
+        ],
+        'gender': {
+            'discloseGenderIdentity': False,
+            'discloseGenderOfRecord': True,
+            'discloseSexAtBirth': False,
+            'fromDate': '2019-08-21',
+            'genderIdentity': {
+                'code': 'TF',
+                'description': 'Trans Female/Trans Woman',
+            },
+            'genderOfRecord': {
+                'code': 'F',
+                'description': 'Female',
+            },
+            'sexAtBirth': {
+                'code': 'M',
+                'description': 'Male',
+            },
+        },
+        'residency': {
+            'countryCode': 'USA',
+            'financialAid': {
+                'code': 'RES',
+                'description': 'Resident',
+            },
+            'fromDate': '2016-07-14',
+            'fromTerm': {
+                'academicYear': '2017',
+                'beginDate': '2016-08-17',
+                'category': {
+                    'code': 'R',
+                    'description': 'Regular Term',
+                },
+                'endDate': '2016-12-16',
+                'id': '2168',
+                'name': '2016 Fall',
+            },
+            'official': {
+                'code': 'RES',
+                'description': 'Resident',
+            },
+            'source': {
+                'code': 'Official',
+            },
+            'statementOfLegalResidenceStatus': {
+                'code': 'Y',
+                'description': 'Residency Determined',
+            },
+            'tuition': {
+                'code': 'RES',
+                'description': 'Resident',
+            },
+        },
+        'usaCountry': {
+            'citizenshipStatus': {
+                'code': '1',
+                'description': 'Native',
+            },
+            'militaryStatus': {},
+            'passport': {},
+            'visa': {},
+        },
+    }
+
+
+def edl_registration_to_json(row):
+    def _flag_to_bool(key):
+        return (row[key] or '').upper() == 'Y'
+
+    def _str(v):
+        return v and str(v)
+    term_id = row['term_id']
+    season, year = term_info_for_sis_term_id(term_id)
+    career_code = row['academic_career_cd']
+    # TODO: From EDL query results, what do we do with 'total_cumulative_gpa_nbr'?
+    # TODO: All 'None' entries below need investigation. Does EDL provide?
+    return {
+        'loadedAt': _str(row['edl_load_date']),
+        'term': {
+            'id': term_id,
+            'name': f'{year} {season}',
+            'category': {
+                'code': None,
+                'description': None,
+            },
+            'academicYear': year,
+            'beginDate': None,
+            'endDate': None,
+        },
+        'academicCareer': {
+            'code': career_code,
+            'description': career_code_to_name(career_code),
+        },
+        'eligibleToRegister': _flag_to_bool('eligible_to_enroll_flag'),
+        'eligibilityStatus': {
+            'code': row['registrn_eligibility_status_cd'],
+            'description': row['eligibility_status_desc'],
+        },
+        'registered': _flag_to_bool('registered_flag'),
+        'disabled': None,
+        'athlete': None,
+        'intendsToGraduate': _flag_to_bool('intends_to_graduate_flag'),
+        'academicLevels': [
+            {
+                'type': {
+                    'code': 'BOT',
+                    'description': 'Beginning of Term',
+                },
+                'level': {
+                    'code': row['academic_level_beginning_of_term_cd'],
+                    'description': row['academic_level_beginning_of_term_desc'],
+                },
+            },
+            {
+                'type': {
+                    'code': 'EOT',
+                    'description': 'End of Term',
+                },
+                'level': {
+                    'code': row['academic_level_end_of_term_cd'],
+                    'description': row['academic_level_end_of_term_desc'],
+                },
+            },
+        ],
+        'academicStanding': {
+            'standing': {
+                'code': None,
+                'description': None,
+            },
+            'status': {
+                'code': None,
+                'description': None,
+            },
+            'fromDate': None,
+        },
+        'termUnits': [
+            {
+                'type': {
+                    'code': 'Total',
+                    'description': 'Total Units',
+                },
+                'unitsCumulative': None,
+                'unitsEnrolled': _str(row['units_term_enrolled']),
+                'unitsIncomplete': None,
+                'unitsMax': _str(row['units_term_enrollment_max']),
+                'unitsMin': _str(row['units_term_enrollment_min']),
+                'unitsOther': None,
+                'unitsPassed': None,
+                'unitsTaken': _str(row['units_term_completed']),  # TODO: Is this right?
+                'unitsTransferAccepted': None,
+                'unitsTransferEarned': None,
+                'unitsWaitlisted': None,
+            },
+            {
+                'type': {
+                    'code': 'For GPA',
+                    'description': 'Units For GPA',
+                },
+                'unitsEnrolled': None,
+                'unitsIncomplete': None,
+                'unitsMax': None,
+                'unitsMin': None,
+                'unitsOther': None,
+                'unitsPassed': _str(row['unt_passd_gpa']),
+                'unitsTaken': _str(row['unt_taken_gpa']),
+                'unitsTransferAccepted': None,
+                'unitsTransferEarned': None,
+                'unitsWaitlisted': None,
+            },
+            {
+                'type': {
+                    'code': 'Not For GPA',
+                    'description': 'Units Not For GPA',
+                },
+                'unitsEnrolled': _str(row['tot_inprog_gpa']),
+                'unitsIncomplete': None,
+                'unitsMax': _str(row['max_nogpa_unit']),
+                'unitsMin': None,
+                'unitsOther': None,
+                'unitsPassed': _str(row['unt_passd_nogpa']),
+                'unitsTaken': _str(row['unt_taken_nogpa']),
+                'unitsTransferAccepted': None,
+                'unitsTransferEarned': None,
+                'unitsWaitlisted': None,
+            },
+        ],
+        'termGPA': {
+            'type': {
+                'code': 'TGPA',
+                'description': 'Term GPA',
+            },
+            'average': _str(row['current_term_gpa']),
+            'source': 'UCB',
+        },
+        'withdrawalCancel': {
+            'date': _str(row['withdraw_date']),
+            'reason': {
+                'code': row['withdraw_reason'],
+                'description': _withdraw_code_to_name(row['withdraw_reason']),
+            },
+            'type': {
+                'code': row['withdraw_code'],
+                'description': _withdraw_code_to_name(row['withdraw_code']),
+            },
+        },
+    }
+
+
 def feature_flag_edl():
     return app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE']
 
@@ -346,3 +580,22 @@ def _collect_terms(start_term_id, stop_term_id, include_start=True, include_stop
             return term_ids
         term_ids.append(term_id)
         term_id = previous_term_id(term_id)
+
+
+def _withdraw_code_to_name(code):
+    mappings = {
+        'CAN': 'CAN',
+        'DNSH': 'DNSH',
+        'DYSH': 'DYSH',
+        'MEDA': 'MEDA',
+        'MEDI': 'Medical',
+        'NPAY': 'NPAY',
+        'NWD': 'NWD',
+        'OTHR': 'Other',
+        'PARN': 'PARN',
+        'PERS': 'Personal',
+        'RETR': 'RETR',
+        'RSCH': 'RSCH',
+        'WDR': 'Withdrew',
+    }
+    return mappings.get(code) or code

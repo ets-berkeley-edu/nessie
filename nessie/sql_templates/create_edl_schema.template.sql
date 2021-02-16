@@ -152,6 +152,14 @@ AS (
     AND academic_program_status_cd = 'AC'
 );
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_demographics
+(
+    sid VARCHAR NOT NULL,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY(sid)
+SORTKEY(sid);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.hist_enr_last_registrations
 (
     sid VARCHAR NOT NULL,

@@ -138,11 +138,8 @@ def student_tables(app):
     """Use Postgres to mock the Redshift student schemas on local test runs."""
     from nessie.externals import rds, redshift
     from nessie.lib.util import resolve_sql_template_string, resolve_sql_template
-    rds.execute('DROP SCHEMA sis_internal_test CASCADE')
-    rds.execute(resolve_sql_template('create_rds_indexes.template.sql'))
+
     fixture_path = f"{app.config['BASE_DIR']}/fixtures"
-    with open(f'{fixture_path}/students.sql', 'r') as sql_file:
-        student_sql = sql_file.read()
     params = {}
     for key in [
         'sis_degree_progress_11667051',
@@ -156,8 +153,16 @@ def student_tables(app):
             if key.startswith('sis_student_api'):
                 feed = json.dumps(json.loads(feed)['apiResponse']['response']['any']['students'][0])
             params[key] = feed
-    redshift.execute(resolve_sql_template_string(student_sql), params=params)
+
+    rds.execute('DROP SCHEMA sis_internal_test CASCADE')
+    rds.execute(resolve_sql_template('create_rds_indexes.template.sql'))
+    for sql_file in ('redshift_schema_edl.sql', 'redshift_schema_student.sql', 'redshift_schema_student_metadata.sql'):
+        with open(f'{fixture_path}/{sql_file}', 'r') as sql_file:
+            student_sql = sql_file.read()
+            redshift.execute(resolve_sql_template_string(student_sql), params=params)
+
     yield
+
     for schema in ['advisee_test', 'asc_test', 'coe_test', 'student_test', 'undergrads_test']:
         rds.execute(f'DROP SCHEMA {schema} CASCADE')
         redshift.execute(f'DROP SCHEMA {schema} CASCADE')

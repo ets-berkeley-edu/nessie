@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3
-from nessie.lib.berkeley import canvas_terms, reverse_term_ids, term_name_for_sis_id
+from nessie.lib.berkeley import canvas_terms, feature_flag_edl, reverse_term_ids, term_name_for_sis_id
 from nessie.lib.mockingdata import fixture
 
 # Lazy init to support testing.
@@ -68,14 +68,6 @@ def edl_external_schema_staging():
     return app.config['REDSHIFT_SCHEMA_EDL_EXTERNAL_STAGING']
 
 
-def edl_feature_flag():
-    return app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE']
-
-
-def edl_schema():
-    return app.config['REDSHIFT_SCHEMA_EDL']
-
-
 def intermediate_schema():
     return app.config['REDSHIFT_SCHEMA_INTERMEDIATE']
 
@@ -89,7 +81,7 @@ def sis_schema():
 
 
 def student_schema():
-    return app.config['REDSHIFT_SCHEMA_STUDENT']
+    return app.config['REDSHIFT_SCHEMA_EDL'] if feature_flag_edl() else app.config['REDSHIFT_SCHEMA_STUDENT']
 
 
 def undergrads_schema():
@@ -139,7 +131,9 @@ def get_advisee_advisor_mappings():
 @fixture('query_advisee_student_profile_feeds.csv')
 def get_advisee_student_profile_elements():
     sis_api_profile_table = 'sis_api_profiles_v1' if app.config['STUDENT_V1_API_PREFERRED'] else 'sis_api_profiles'
-    degree_progress_table = (f'{edl_schema()}.student_degree_progress' if edl_feature_flag() else f'{student_schema()}.sis_api_degree_progress')
+    degree_progress_table = 'student_degree_progress' if feature_flag_edl() else 'sis_api_degree_progress'
+    student_demographics = 'student_demographics' if feature_flag_edl() else 'student_api_demographics'
+
     sql = f"""SELECT DISTINCT ldap.ldap_uid, ldap.sid, ldap.first_name, ldap.last_name,
                 us.canvas_id AS canvas_user_id, us.name AS canvas_user_name,
                 sis.feed AS sis_profile_feed,
@@ -157,9 +151,9 @@ def get_advisee_student_profile_elements():
                 ON us.uid = ldap.ldap_uid
               LEFT JOIN {student_schema()}.{sis_api_profile_table} sis
                 ON sis.sid = ldap.sid
-              LEFT JOIN {degree_progress_table} deg
+              LEFT JOIN {student_schema()}.{degree_progress_table} deg
                 ON deg.sid = ldap.sid
-              LEFT JOIN {student_schema()}.student_api_demographics demog
+              LEFT JOIN {student_schema()}.{student_demographics} demog
                 ON demog.sid = ldap.sid
               LEFT JOIN {student_schema()}.student_last_registrations reg
                 ON reg.sid = ldap.sid
@@ -508,7 +502,7 @@ def get_non_advisees_without_registration_imports():
               LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = attrs.sid
               LEFT JOIN {coe_schema()}.students coe ON coe.sid = attrs.sid
               LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = attrs.sid
-              LEFT JOIN {edl_schema() if edl_feature_flag() else student_schema()}.hist_enr_last_registrations hist ON hist.sid = attrs.sid
+              LEFT JOIN {student_schema()}.hist_enr_last_registrations hist ON hist.sid = attrs.sid
               WHERE ascs.sid IS NULL AND coe.sid IS NULL AND ug.sid IS NULL AND hist.sid IS NULL
                 AND char_length(attrs.sid) < 12
         """
