@@ -51,7 +51,7 @@ SORTKEY (section_id)
 AS (
   WITH edl_classes AS (
     SELECT class_number, semester_year_term_cd, instructional_format_nm, class_section_cd, course_nm, course_title_long_nm, graded_section_flg, instruction_mode_cd,
-      /* TODO We find the max units actually enrolled as a placeholder for SIS max allowable units; this probably isn't 100% conformant. */
+      -- TODO: We find the max units actually enrolled as a placeholder for SIS max allowable units; this probably isn't 100% conformant.
       MAX(units) AS max_units
     FROM {redshift_schema_edl_external}.student_enrollment_data
     GROUP BY class_number, semester_year_term_cd, instructional_format_nm, class_section_cd, course_nm, course_title_long_nm, graded_section_flg, instruction_mode_cd
@@ -66,7 +66,7 @@ AS (
     edl_classes.graded_section_flg AS is_primary,
     edl_classes.max_units AS allowed_units,
     edl_classes.instruction_mode_cd AS instruction_mode,
-    /* TODO placeholder columns for meeting and instructor info pending EDW-248 resolution */
+    -- TODO: placeholder columns for meeting and instructor info pending EDW-248 resolution
     NULL AS instructor_uid,
     NULL AS instructor_name,
     NULL AS instructor_role_code,
@@ -95,7 +95,7 @@ AS (
     sed.grading_basis_enrollment_cd AS grading_basis,
     sed.midterm_course_grade_input_cs AS grade_midterm
   FROM {redshift_schema_edl_external}.student_enrollment_data sed
-  /* TODO temporarily attempting UID join from staging tables pending EDW-246 resolution */
+  -- TODO: temporarily attempting UID join from staging tables pending EDW-246 resolution
   LEFT JOIN {redshift_schema_edl_external_staging}.cs_ps_person_sa psa
     ON psa.emplid = sed.student_id
 );

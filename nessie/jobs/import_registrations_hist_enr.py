@@ -26,7 +26,6 @@ from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.abstract.abstract_registrations_job import AbstractRegistrationsJob
 from nessie.jobs.background_job import BackgroundJobError
-from nessie.lib.berkeley import feature_flag_edl
 from nessie.lib.queries import get_non_advisees_without_registration_imports, student_schema
 from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
 
@@ -62,8 +61,7 @@ class ImportRegistrationsHistEnr(AbstractRegistrationsJob):
         successes, failures = self.get_registration_data_per_sids(rows, sids, include_demographics=False)
         if len(successes) > 0:
             for key in rows.keys():
-                filename = f'{key}_edl' if feature_flag_edl() else f'{key}_api'
-                s3_key = f'{get_s3_sis_api_daily_path()}/{filename}.tsv'
+                s3_key = f'{get_s3_sis_api_daily_path(use_edl_if_feature_flag=True)}/{key}.tsv'
                 app.logger.info(f'Upload {key} data to s3:{s3_key}. The file represents {len(rows[key])} students.')
                 if not s3.upload_tsv_rows(rows[key], s3_key):
                     raise BackgroundJobError(f'Error during S3 upload: {s3_key}. Aborting job.')

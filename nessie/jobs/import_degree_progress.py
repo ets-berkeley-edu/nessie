@@ -68,7 +68,7 @@ class ImportDegreeProgress(BackgroundJob):
                 app.logger.error(f'SIS get_degree_progress failed for SID {csid}.')
             index += 1
 
-        s3_key = f'{get_s3_sis_api_daily_path()}/degree_progress.tsv'
+        s3_key = f'{get_s3_sis_api_daily_path(use_edl_if_feature_flag=True)}/degree_progress.tsv'
         app.logger.info(f'Will stash {success_count} feeds in S3: {s3_key}')
         if not s3.upload_tsv_rows(rows, s3_key):
             raise BackgroundJobError('Error on S3 upload: aborting job.')
