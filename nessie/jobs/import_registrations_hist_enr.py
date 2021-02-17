@@ -22,27 +22,20 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES,
 ENHANCEMENTS, OR MODIFICATIONS.
 """
-from concurrent.futures import ThreadPoolExecutor
-from itertools import repeat
-import json
-from timeit import default_timer as timer
-
 from flask import current_app as app
-from nessie.externals import redshift, s3, sis_student_api
-from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.berkeley import edl_registration_to_json, feature_flag_edl
-from nessie.lib.queries import get_edl_student_registrations, get_non_advisees_without_registration_imports, \
-    student_schema
-from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string
-import numpy as np
+from nessie.externals import redshift, s3
+from nessie.jobs.abstract.abstract_registrations_job import AbstractRegistrationsJob
+from nessie.jobs.background_job import BackgroundJobError
+from nessie.lib.berkeley import feature_flag_edl
+from nessie.lib.queries import get_non_advisees_without_registration_imports, student_schema
+from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
 
 """Imports historical student registration data."""
 
 
-class ImportRegistrationsHistEnr(BackgroundJob):
+class ImportRegistrationsHistEnr(AbstractRegistrationsJob):
 
     rds_schema = app.config['RDS_SCHEMA_STUDENT']
-    max_threads = app.config['STUDENT_API_MAX_THREADS']
 
     def run(self, load_mode='batch'):
         new_sids = [row['sid'] for row in get_non_advisees_without_registration_imports()]
@@ -66,7 +59,7 @@ class ImportRegistrationsHistEnr(BackgroundJob):
             'term_gpas': [],
             'last_registrations': [],
         }
-        successes, failures = self._query_edl(rows, sids) if feature_flag_edl() else self._query_student_api(rows, sids)
+        successes, failures = self.get_registration_data_per_sids(rows, sids, include_demographics=False)
         if len(successes) > 0:
             for key in rows.keys():
                 filename = f'{key}_edl' if feature_flag_edl() else f'{key}_api'
@@ -102,69 +95,3 @@ class ImportRegistrationsHistEnr(BackgroundJob):
         redshift.execute('VACUUM; ANALYZE;')
         app.logger.info(f'Finished import of historical registration data: {len(successes)} successes and {len(failures)} failures.')
         return successes, failures
-
-    def _query_edl(self, rows, sids):
-        successes = []
-        for edl_row in get_edl_student_registrations(sids):
-            sid = edl_row['student_id']
-            if sid not in successes:
-                # Based on the SQL order_by above, the first result per SID will be 'last_registration'.
-                successes.append(sid)
-                rows['last_registrations'].append(
-                    encoded_tsv_row([sid, edl_registration_to_json(edl_row)]),
-                )
-            rows['term_gpas'].append(
-                encoded_tsv_row(
-                    [
-                        sid,
-                        edl_row['term_id'],
-                        edl_row['current_term_gpa'] or '0',
-                        edl_row.get('unt_taken_gpa') or '0',  # TODO: Does EDL give us 'unitsTakenForGpa'?
-                    ],
-                ),
-            )
-        failures = list(np.setdiff1d(sids, successes))
-        return successes, failures
-
-    def _query_student_api(self, rows, sids):
-        successes = []
-        failures = []
-        app_obj = app._get_current_object()
-        start_loop = timer()
-        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
-            for result in executor.map(_async_get_feed, repeat(app_obj), sids):
-                sid = result['sid']
-                full_feed = result['feed']
-                if full_feed:
-                    successes.append(sid)
-                    rows['last_registrations'].append(
-                        encoded_tsv_row([sid, json.dumps(full_feed.get('last_registration', {}))]),
-                    )
-                    gpa_feed = full_feed.get('term_gpas', {})
-                    if gpa_feed:
-                        for term_id, term_data in gpa_feed.items():
-                            row = [
-                                sid,
-                                term_id,
-                                (term_data.get('gpa') or '0'),
-                                (term_data.get('unitsTakenForGpa') or '0'),
-                            ]
-                            rows['term_gpas'].append(encoded_tsv_row(row))
-                    else:
-                        app.logger.info(f'No past UGRD registrations found for SID {sid}.')
-                else:
-                    failures.append(sid)
-                    app.logger.error(f'Registration history import failed for SID {sid}.')
-        app.logger.info(f'Wanted {len(sids)} students; got {len(successes)} in {timer() - start_loop} secs')
-        return successes, failures
-
-
-def _async_get_feed(app_obj, sid):
-    with app_obj.app_context():
-        app.logger.info(f'Fetching registration history for SID {sid}')
-        feed = sis_student_api.get_term_gpas_registration_demog(sid, with_demog=False)
-        result = {
-            'sid': sid,
-            'feed': feed,
-        }
-    return result
