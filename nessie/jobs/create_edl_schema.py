@@ -53,12 +53,13 @@ class CreateEdlSchema(BackgroundJob):
 
     def create_schema(self):
         app.logger.info('Executing SQL...')
-        resolved_ddl = resolve_sql_template('create_edl_schema.template.sql')
+        template_sql = 'create_edl_schema.template.sql'
+        resolved_ddl = resolve_sql_template(template_sql)
         if not redshift.execute_ddl_script(resolved_ddl):
             raise BackgroundJobError('EDL SIS schema creation job failed.')
         # Create staging schema
         resolved_ddl_staging = resolve_sql_template(
-            'create_edl_schema.template.sql',
+            template_sql,
             redshift_schema_edl=f'{self.internal_schema}_staging',
         )
         if redshift.execute_ddl_script(resolved_ddl_staging):
@@ -66,7 +67,7 @@ class CreateEdlSchema(BackgroundJob):
         else:
             raise BackgroundJobError(f'{self.internal_schema} schema creation failed.')
 
-        app.logger.info('Redshift schema created.')
+        app.logger.info('Redshift EDL schema created.')
 
     def generate_feeds(self):
         self.generate_academic_plans_feeds()
