@@ -166,6 +166,25 @@ CREATE TABLE {redshift_schema_edl}.student_degree_progress
 DISTKEY (sid)
 SORTKEY (sid);
 
+-- TODO: EDL equivalent of 'sis_profiles'?
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_profiles
+(
+    sid VARCHAR NOT NULL,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY(sid)
+SORTKEY(sid);
+
+-- TODO: EDL equivalent of 'sis_profiles_hist_enr'?
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_profiles_hist_enr
+(
+    sid VARCHAR NOT NULL,
+    uid VARCHAR,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY(sid)
+SORTKEY(sid);
+
 CREATE TABLE {redshift_schema_edl}.student_ethnicities
 DISTKEY (sid)
 SORTKEY (sid, ethnicity)
@@ -213,6 +232,16 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_demographics
 )
 DISTKEY(sid)
 SORTKEY(sid);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_term_gpas
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    gpa DECIMAL(5,3),
+    units_taken_for_gpa DECIMAL(4,1)
+)
+DISTKEY (sid)
+SORTKEY (sid, term_id);
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.hist_enr_last_registrations
 (

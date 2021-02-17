@@ -26,7 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import json
 
 from nessie.externals import redshift
-from nessie.lib.queries import student_schema
+from nessie.lib.queries import student_schema, student_schema_table
 import pytest
 from tests.util import mock_s3
 
@@ -39,7 +39,7 @@ class TestImportDegreeProgress:
         with mock_s3(app):
             result = ImportDegreeProgress().run_wrapped()
         assert result == 'SIS degree progress API import job completed: 1 succeeded, 9 returned no information, 0 failed.'
-        rows = redshift.fetch(f'SELECT * FROM {student_schema()}.sis_api_degree_progress')
+        rows = redshift.fetch(f"SELECT * FROM {student_schema()}.{student_schema_table('degree_progress')}")
         assert len(rows) == 1
         assert rows[0]['sid'] == '11667051'
         feed = json.loads(rows[0]['feed'])
