@@ -28,7 +28,7 @@ import json
 import logging
 
 from nessie.externals import rds, redshift
-from nessie.lib.queries import student_schema
+from nessie.lib.queries import student_schema, student_schema_table
 from tests.util import capture_app_logs, mock_s3, override_config
 
 
@@ -64,7 +64,7 @@ class TestImportRegistrations:
             assert feed['term']['id'] == '2172'
             assert feed['academicLevels'][0]['level']['description'] == 'Sophomore'
 
-            rows = redshift.fetch(f'SELECT * FROM {student_schema()}.student_api_demographics ORDER BY sid')
+            rows = redshift.fetch(f"SELECT * FROM {student_schema()}.{student_schema_table('student_demographics')} ORDER BY sid")
             assert len(rows) == 2
             assert rows[0]['sid'] == '11667051'
             assert rows[1]['sid'] == '1234567890'

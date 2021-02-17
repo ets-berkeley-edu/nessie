@@ -84,6 +84,16 @@ def student_schema():
     return app.config['REDSHIFT_SCHEMA_EDL'] if feature_flag_edl() else app.config['REDSHIFT_SCHEMA_STUDENT']
 
 
+def student_schema_table(key):
+    use_edl = feature_flag_edl()
+    return {
+        'degree_progress': 'student_degree_progress' if use_edl else 'sis_api_degree_progress',
+        'sis_profiles': 'sis_profiles' if use_edl else ('sis_api_profiles_v1' if app.config['STUDENT_V1_API_PREFERRED'] else 'sis_api_profiles'),
+        'sis_profiles_hist_enr': 'sis_profiles_hist_enr' if use_edl else 'sis_api_profiles_hist_enr',
+        'student_demographics': 'student_demographics' if use_edl else 'student_api_demographics',
+    }.get(key, key)
+
+
 def undergrads_schema():
     return app.config['REDSHIFT_SCHEMA_UNDERGRADS']
 
@@ -130,10 +140,6 @@ def get_advisee_advisor_mappings():
 
 @fixture('query_advisee_student_profile_feeds.csv')
 def get_advisee_student_profile_elements():
-    sis_api_profile_table = 'sis_api_profiles_v1' if app.config['STUDENT_V1_API_PREFERRED'] else 'sis_api_profiles'
-    degree_progress_table = 'student_degree_progress' if feature_flag_edl() else 'sis_api_degree_progress'
-    student_demographics = 'student_demographics' if feature_flag_edl() else 'student_api_demographics'
-
     sql = f"""SELECT DISTINCT ldap.ldap_uid, ldap.sid, ldap.first_name, ldap.last_name,
                 us.canvas_id AS canvas_user_id, us.name AS canvas_user_name,
                 sis.feed AS sis_profile_feed,
@@ -149,11 +155,11 @@ def get_advisee_student_profile_elements():
               FROM {calnet_schema()}.advisees ldap
               LEFT JOIN {intermediate_schema()}.users us
                 ON us.uid = ldap.ldap_uid
-              LEFT JOIN {student_schema()}.{sis_api_profile_table} sis
+              LEFT JOIN {student_schema()}.{student_schema_table('sis_profile')} sis
                 ON sis.sid = ldap.sid
-              LEFT JOIN {student_schema()}.{degree_progress_table} deg
+              LEFT JOIN {student_schema()}.{student_schema_table('degree_progress')} deg
                 ON deg.sid = ldap.sid
-              LEFT JOIN {student_schema()}.{student_demographics} demog
+              LEFT JOIN {student_schema()}.{student_schema_table('student_demographics')} demog
                 ON demog.sid = ldap.sid
               LEFT JOIN {student_schema()}.student_last_registrations reg
                 ON reg.sid = ldap.sid
@@ -468,7 +474,7 @@ def get_enrolled_primary_sections(term_id=None):
 
 def get_fetched_non_advisees():
     sql = f"""SELECT DISTINCT(hist.sid) AS sid
-              FROM {student_schema()}.sis_api_profiles_hist_enr hist
+              FROM {student_schema()}.{student_schema_table('sis_profiles_hist_enr')} hist
               LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = hist.sid
               LEFT JOIN {coe_schema()}.students coe ON coe.sid = hist.sid
               LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = hist.sid
@@ -486,7 +492,7 @@ def get_unfetched_non_advisees():
               LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = attrs.sid
               LEFT JOIN {coe_schema()}.students coe ON coe.sid = attrs.sid
               LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = attrs.sid
-              LEFT JOIN {student_schema()}.sis_api_profiles_hist_enr hist ON hist.sid = attrs.sid
+              LEFT JOIN {student_schema()}.{student_schema_table('sis_profiles_hist_enr')} hist ON hist.sid = attrs.sid
               WHERE ascs.sid IS NULL AND coe.sid IS NULL AND ug.sid IS NULL AND hist.sid IS NULL
                 AND char_length(attrs.sid) < 12
         """
@@ -513,7 +519,7 @@ def get_non_advisee_api_feeds(sids):
     sql = f"""SELECT DISTINCT sis.sid, sis.uid,
                 sis.feed AS sis_feed,
                 reg.feed AS last_registration_feed
-              FROM {student_schema()}.sis_api_profiles_hist_enr sis
+              FROM {student_schema()}.{student_schema_table('sis_profiles_hist_enr')} sis
               LEFT JOIN {student_schema()}.hist_enr_last_registrations reg
                 ON reg.sid = sis.sid
               WHERE sis.sid=ANY(%s)

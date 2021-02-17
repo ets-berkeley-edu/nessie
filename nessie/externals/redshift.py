@@ -68,7 +68,7 @@ def execute_ddl_script(sql):
             app.logger.info(f'Executing DDL script {index + 1} of {len(statements)}')
             result = _execute(statement, operation='write', cursor=cursor)
             if not result:
-                app.logger.error('Error executing statement from DDL script; aborting remainder of script.')
+                app.logger.error(f'Aborting DDL script. Error executing statement: {statement}')
                 return False
     return True
 
