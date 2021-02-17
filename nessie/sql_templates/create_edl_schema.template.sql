@@ -46,6 +46,60 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_edl} GRANT SELECT ON TABLES 
 -- Internal tables
 --------------------------------------------------------------------
 
+CREATE TABLE {redshift_schema_edl}.courses
+SORTKEY (section_id)
+AS (
+  WITH edl_classes AS (
+    SELECT class_number, semester_year_term_cd, instructional_format_nm, class_section_cd, course_nm, course_title_long_nm, graded_section_flg, instruction_mode_cd,
+      /* TODO We find the max units actually enrolled as a placeholder for SIS max allowable units; this probably isn't 100% conformant. */
+      MAX(units) AS max_units
+    FROM {redshift_schema_edl_external}.student_enrollment_data
+    GROUP BY class_number, semester_year_term_cd, instructional_format_nm, class_section_cd, course_nm, course_title_long_nm, graded_section_flg, instruction_mode_cd
+  )
+  SELECT
+    edl_classes.class_number AS section_id,
+    edl_classes.semester_year_term_cd AS term_id,
+    edl_classes.instructional_format_nm AS instruction_format,
+    edl_classes.class_section_cd AS section_num,
+    edl_classes.course_nm AS course_display_name,
+    edl_classes.course_title_long_nm AS course_title,
+    edl_classes.graded_section_flg AS is_primary,
+    edl_classes.max_units AS allowed_units,
+    edl_classes.instruction_mode_cd AS instruction_mode,
+    /* TODO placeholder columns for meeting and instructor info pending EDW-248 resolution */
+    NULL AS instructor_uid,
+    NULL AS instructor_name,
+    NULL AS instructor_role_code,
+    NULL AS meeting_location,
+    NULL AS meeting_days,
+    NULL AS meeting_start_time,
+    NULL AS meeting_end_time,
+    NULL AS meeting_start_date,
+    NULL AS meeting_end_date
+  FROM edl_classes
+);
+
+CREATE TABLE {redshift_schema_edl}.enrollments
+SORTKEY (sis_id)
+AS (
+  SELECT
+    sed.class_number AS section_id,
+    sed.semester_year_term_cd AS term_id,
+    psa.campus_uid AS ldap_uid,
+    sed.student_id AS sis_id,
+    sed.enrollment_action_cd AS enrollment_status,
+    sed.wait_list_position_cd AS waitlist_position,
+    sed.units AS units,
+    sed.grd AS grade,
+    sed.final_grade_points AS grade_points,
+    sed.grading_basis_enrollment_cd AS grading_basis,
+    sed.midterm_course_grade_input_cs AS grade_midterm
+  FROM {redshift_schema_edl_external}.student_enrollment_data sed
+  /* TODO temporarily attempting UID join from staging tables pending EDW-246 resolution */
+  LEFT JOIN {redshift_schema_edl_external_staging}.cs_ps_person_sa psa
+    ON psa.emplid = sed.student_id
+);
+
 CREATE TABLE {redshift_schema_edl}.student_academic_plan_index
 SORTKEY (sid)
 AS (
