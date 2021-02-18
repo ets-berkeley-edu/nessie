@@ -38,8 +38,8 @@ const mutations = {
 }
 
 const actions = {
-  clearErrors: ({ commit }) => commit('clearErrors'),
-  init: ({ commit }) => {
+  clearErrors: ({commit}) => commit('clearErrors'),
+  init: ({commit}) => {
     return new Promise<void>(resolve => {
       getPing().then(ping => {
         commit('storePing', ping)
@@ -50,9 +50,8 @@ const actions = {
       })
     })
   },
-  loadingComplete: ({ commit }) => commit('loadingComplete'),
-  loadingStart: ({ commit }) => commit('loadingStart'),
-
+  loadingComplete: ({commit}) => commit('loadingComplete'),
+  loadingStart: ({commit}) => commit('loadingStart')
 }
 
 export default {

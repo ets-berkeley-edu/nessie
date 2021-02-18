@@ -84,6 +84,7 @@ def student_schema():
     return app.config['REDSHIFT_SCHEMA_EDL'] if feature_flag_edl() else app.config['REDSHIFT_SCHEMA_STUDENT']
 
 
+# TODO: Remove this method when the EDL cutover is complete.
 def student_schema_table(key):
     use_edl = feature_flag_edl()
     return {
