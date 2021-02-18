@@ -233,6 +233,14 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_demographics
 DISTKEY(sid)
 SORTKEY(sid);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_last_registrations
+(
+    sid VARCHAR NOT NULL,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY(sid)
+SORTKEY(sid);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_term_gpas
 (
     sid VARCHAR NOT NULL,

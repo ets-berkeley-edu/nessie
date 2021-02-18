@@ -39,9 +39,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.config-pill {
-  font-size: 14px;
-}
-</style>
