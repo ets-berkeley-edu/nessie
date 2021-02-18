@@ -85,11 +85,19 @@ def student_schema():
 
 
 # TODO: Remove this method when the EDL cutover is complete.
+def sis_schema_table(key):
+    use_edl = feature_flag_edl()
+    return {
+        'minors': 'student_minors' if use_edl else 'minors',
+    }.get(key, key)
+
+
+# TODO: Remove this method when the EDL cutover is complete.
 def student_schema_table(key):
     use_edl = feature_flag_edl()
     return {
         'degree_progress': 'student_degree_progress' if use_edl else 'sis_api_degree_progress',
-        'sis_profiles': 'sis_profiles' if use_edl else ('sis_api_profiles_v1' if app.config['STUDENT_V1_API_PREFERRED'] else 'sis_api_profiles'),
+        'sis_profiles': 'sis_profiles' if use_edl else 'sis_api_profiles',
         'sis_profiles_hist_enr': 'sis_profiles_hist_enr' if use_edl else 'sis_api_profiles_hist_enr',
         'student_demographics': 'student_demographics' if use_edl else 'student_api_demographics',
     }.get(key, key)

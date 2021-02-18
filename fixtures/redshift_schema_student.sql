@@ -21,12 +21,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_profiles
     feed TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_profiles_v1
-(
-    sid VARCHAR NOT NULL,
-    feed TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index
 (
     sid VARCHAR NOT NULL,
@@ -128,12 +122,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.sis_api_profiles
     feed TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.sis_api_profiles_v1
-(
-    sid VARCHAR NOT NULL,
-    feed TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_profile_index
 (
     sid VARCHAR NOT NULL,
@@ -210,11 +198,3 @@ INSERT INTO {redshift_schema_student}.sis_api_degree_progress
 (sid, feed)
 VALUES
 ('11667051', %(sis_degree_progress_11667051)s);
-
-INSERT INTO {redshift_schema_student}.sis_api_profiles_v1
-(sid, feed)
-VALUES
-('11667051', %(sis_student_api_v1_11667051)s),
-('1234567890', %(sis_student_api_v1_1234567890)s),
-('2345678901', %(sis_student_api_v1_2345678901)s),
-('5000000000', %(sis_student_api_v1_5000000000)s);

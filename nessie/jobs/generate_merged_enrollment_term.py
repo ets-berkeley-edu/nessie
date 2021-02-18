@@ -35,7 +35,8 @@ from nessie.lib import queries
 from nessie.lib.analytics import merge_analytics_for_course, merge_assignment_submissions_for_user
 from nessie.lib.berkeley import reverse_term_ids
 from nessie.lib.util import encoded_tsv_row
-from nessie.models import student_schema
+from nessie.models.student_schema_manager import drop_staged_enrollment_term, refresh_from_staging, \
+    write_file_to_staging
 
 
 class GenerateMergedEnrollmentTerm(BackgroundJob):
@@ -50,11 +51,11 @@ class GenerateMergedEnrollmentTerm(BackgroundJob):
             for (sid, sid_term_feed) in enrollment_term_map.items():
                 enrollment_term_file.write(encoded_tsv_row([sid, term_id, json.dumps(sid_term_feed)]) + b'\n')
 
-            student_schema.drop_staged_enrollment_term(term_id)
-            student_schema.write_file_to_staging('student_enrollment_terms', enrollment_term_file, len(enrollment_term_map), term_id)
+            drop_staged_enrollment_term(term_id)
+            write_file_to_staging('student_enrollment_terms', enrollment_term_file, len(enrollment_term_map), term_id)
 
         with redshift.transaction() as transaction:
-            student_schema.refresh_from_staging('student_enrollment_terms', term_id, None, transaction, truncate_staging=False)
+            refresh_from_staging('student_enrollment_terms', term_id, None, transaction, truncate_staging=False)
             if not transaction.commit():
                 raise BackgroundJobError(f'Final transaction commit failed on enrollment term refresh (term_id={term_id}).')
 

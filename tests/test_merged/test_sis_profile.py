@@ -31,14 +31,6 @@ import pytest
 from tests.util import capture_app_logs, mock_s3
 
 
-@pytest.fixture
-def force_sis_profile_v2(app):
-    original = app.config['STUDENT_V1_API_PREFERRED']
-    app.config['STUDENT_V1_API_PREFERRED'] = False
-    yield
-    app.config['STUDENT_V1_API_PREFERRED'] = original
-
-
 @pytest.fixture()
 def sis_api_profiles(app, student_tables):
     from nessie.externals import redshift
@@ -78,7 +70,6 @@ def merged_profile(sid, profile_rows, degree_progress_rows, last_registration_ro
     })
 
 
-@pytest.mark.usefixtures('force_sis_profile_v2')
 class TestMergedSisProfile:
     """Test merged SIS profile."""
 

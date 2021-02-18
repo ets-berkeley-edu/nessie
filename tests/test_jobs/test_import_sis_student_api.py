@@ -27,7 +27,7 @@ import json
 
 from nessie.externals import redshift
 from nessie.lib.queries import student_schema
-from tests.util import mock_s3, override_config
+from tests.util import mock_s3
 
 
 class TestImportSisStudentApi:
@@ -53,18 +53,3 @@ class TestImportSisStudentApi:
         assert rows[2]['sid'] == '2345678901'
         feed = json.loads(rows[2]['feed'], strict=False)
         assert feed['registrations'][0]['term']['id'] == '2178'
-
-    def test_import_sis_student_api_v1(self, app, metadata_db, student_tables, caplog):
-        from nessie.jobs.import_sis_student_api import ImportSisStudentApi
-        with override_config(app, 'STUDENT_V1_API_PREFERRED', True):
-            with mock_s3(app):
-                result = ImportSisStudentApi().run_wrapped()
-            assert result == 'SIS student API V1 import job completed: 4 succeeded, 6 failed.'
-            rows = redshift.fetch(f'SELECT * FROM {student_schema()}.sis_api_profiles_v1 ORDER BY sid')
-            assert len(rows) == 4
-            assert rows[0]['sid'] == '11667051'
-            assert rows[1]['sid'] == '1234567890'
-            assert rows[2]['sid'] == '2345678901'
-            assert rows[3]['sid'] == '5000000000'
-            feed = json.loads(rows[0]['feed'], strict=False)
-            assert feed['names'][0]['familyName'] == 'Bear'

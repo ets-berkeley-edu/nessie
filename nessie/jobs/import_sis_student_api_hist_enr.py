@@ -32,9 +32,9 @@ from flask import current_app as app
 from nessie.externals import redshift
 from nessie.externals.sis_student_api import get_v2_by_sids_list
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.queries import get_unfetched_non_advisees
+from nessie.lib.queries import get_unfetched_non_advisees, student_schema, student_schema_table
 from nessie.lib.util import encoded_tsv_row, resolve_sql_template_string
-from nessie.models import student_schema
+from nessie.models.student_schema_manager import truncate_staging_table, write_file_to_staging
 
 """Logic for SIS student API import job for non-advisees."""
 
@@ -51,7 +51,6 @@ def async_get_feeds(app_obj, up_to_100_sids):
 
 class ImportSisStudentApiHistEnr(BackgroundJob):
 
-    redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
     max_threads = app.config['STUDENT_API_MAX_THREADS']
 
     def run(self, sids=None):
@@ -62,18 +61,20 @@ class ImportSisStudentApiHistEnr(BackgroundJob):
         with tempfile.TemporaryFile() as feed_file:
             saved_sids, failure_count = self.load_concurrently(sids, feed_file)
             if saved_sids:
-                student_schema.truncate_staging_table('sis_api_profiles_hist_enr')
-                student_schema.write_file_to_staging('sis_api_profiles_hist_enr', feed_file, len(saved_sids))
+                truncate_staging_table('sis_api_profiles_hist_enr')
+                write_file_to_staging('sis_api_profiles_hist_enr', feed_file, len(saved_sids))
 
         if saved_sids:
             staging_to_destination_query = resolve_sql_template_string(
                 """
-                DELETE FROM {redshift_schema_student}.sis_api_profiles_hist_enr WHERE sid IN
-                    (SELECT sid FROM {redshift_schema_student}_staging.sis_api_profiles_hist_enr);
-                INSERT INTO {redshift_schema_student}.sis_api_profiles_hist_enr
-                    (SELECT * FROM {redshift_schema_student}_staging.sis_api_profiles_hist_enr);
-                TRUNCATE {redshift_schema_student}_staging.sis_api_profiles_hist_enr;
+                DELETE FROM {redshift_schema}.{sis_profiles_hist_enr} WHERE sid IN
+                    (SELECT sid FROM {redshift_schema}_staging.{sis_profiles_hist_enr});
+                INSERT INTO {redshift_schema}.{sis_profiles_hist_enr}
+                    (SELECT * FROM {redshift_schema}_staging.{sis_profiles_hist_enr});
+                TRUNCATE {redshift_schema}_staging.{sis_profiles_hist_enr};
                 """,
+                redshift_schema=student_schema(),
+                sis_profiles_hist_enr=student_schema_table('sis_profiles_hist_enr'),
             )
             if not redshift.execute(staging_to_destination_query):
                 raise BackgroundJobError('Error on Redshift copy: aborting job.')
