@@ -26,7 +26,7 @@ Vue.config.productionTip = false
 Vue.use(BootstrapVue)
 Vue.use(BootstrapVueIcons)
 Vue.use(require('vue-moment'))
-Vue.use(VueLodash, { lodash })
+Vue.use(VueLodash, {lodash})
 
 Vue.prototype.$_ = _
 Vue.prototype.$loading = () => store.dispatch('context/loadingStart')

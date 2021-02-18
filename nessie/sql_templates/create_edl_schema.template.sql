@@ -167,7 +167,7 @@ DISTKEY (sid)
 SORTKEY (sid);
 
 -- TODO: EDL equivalent of 'sis_profiles'?
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_profiles
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.sis_profiles
 (
     sid VARCHAR NOT NULL,
     feed VARCHAR(max) NOT NULL
@@ -176,7 +176,7 @@ DISTKEY(sid)
 SORTKEY(sid);
 
 -- TODO: EDL equivalent of 'sis_profiles_hist_enr'?
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_profiles_hist_enr
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.sis_profiles_hist_enr
 (
     sid VARCHAR NOT NULL,
     uid VARCHAR,

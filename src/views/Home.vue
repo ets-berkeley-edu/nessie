@@ -69,7 +69,11 @@
               hover
               :items="jobStatuses.rows"
               :fields="jobStatuses.fields"
-            ></b-table>
+            >
+              <template #cell(details)="data">
+                <span v-html="data.value"></span>
+              </template>
+            </b-table>
           </div>
           <div v-if="!jobStatuses.rows.length" class="font-weight-bolder ml-2 my-5 text-secondary">
             No jobs run on {{ jobsDate | moment("dddd, MMMM Do, YYYY") }} (UTC).
@@ -99,11 +103,11 @@ export default {
     jobStatuses: {
       rows: [],
       fields: [
-        { key: 'id', sortable: true },
-        { key: 'status', sortable: true },
-        { key: 'details'},
-        { key: 'started', sortable: true, class: 'text-nowrap' },
-        { key: 'finished', sortable: true, class: 'text-nowrap' }
+        {key: 'id', sortable: true},
+        {key: 'status', sortable: true},
+        {key: 'details'},
+        {key: 'started', sortable: true, class: 'text-nowrap'},
+        {key: 'finished', sortable: true, class: 'text-nowrap'}
       ]
     },
     params: {},
@@ -144,7 +148,7 @@ export default {
           } else {
             style = 'success'
           }
-          row._cellVariants = { status: style }
+          row._cellVariants = {status: style}
           return row
         })
         this.$ready()
