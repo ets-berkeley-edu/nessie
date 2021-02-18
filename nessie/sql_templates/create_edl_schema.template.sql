@@ -310,3 +310,21 @@ AS (
     FROM {redshift_schema_edl_external}.student_visa_permit_data
     WHERE country_cd = 'USA'
 );
+
+-- Equivalent to external table {redshift_schema_sis}.term_gpa. Distinct from student_term_gpas and hist_enr_term_gpas
+-- above, which mimic API-sourced data.
+
+CREATE TABLE {redshift_schema_edl}.term_gpa
+SORTKEY(sid)
+AS (
+    SELECT
+      reg.student_id AS sid,
+      reg.semester_year_term_cd AS term_id,
+      reg.term_enrolled_units AS units_total,
+      car_term.unt_taken_gpa AS units_taken_for_gpa,
+      reg.current_term_gpa_nbr AS gpa
+    FROM {redshift_schema_edl_external}.student_registration_term_data reg
+    -- TODO: Units taken for GPA are available in the staging schema only.
+    LEFT JOIN {redshift_schema_edl_external_staging}.cs_ps_stdnt_car_term car_term
+    ON reg.student_id = car_term.emplid AND reg.semester_year_term_cd = car_term.strm 
+);
