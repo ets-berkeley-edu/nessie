@@ -46,6 +46,17 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_edl} GRANT SELECT ON TABLES 
 -- Internal tables
 --------------------------------------------------------------------
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.academic_standing
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR NOT NULL,
+    acad_standing_action VARCHAR,
+    acad_standing_status VARCHAR,
+    action_date VARCHAR
+)
+DISTKEY (sid)
+SORTKEY (sid);
+
 CREATE TABLE {redshift_schema_edl}.courses
 SORTKEY (section_id)
 AS (
@@ -99,6 +110,14 @@ AS (
   LEFT JOIN {redshift_schema_edl_external_staging}.cs_ps_person_sa psa
     ON psa.emplid = sed.student_id
 );
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.intended_majors
+(
+    sid VARCHAR NOT NULL,
+    major VARCHAR NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid, major);
 
 CREATE TABLE {redshift_schema_edl}.student_academic_plan_index
 SORTKEY (sid)
@@ -241,6 +260,14 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_last_registrations
 DISTKEY(sid)
 SORTKEY(sid);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_profiles
+(
+    sid VARCHAR NOT NULL,
+    profile VARCHAR(max) NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_term_gpas
 (
     sid VARCHAR NOT NULL,
@@ -268,6 +295,32 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.hist_enr_term_gpas
 )
 DISTKEY (sid)
 SORTKEY (sid, term_id);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_enrollment_terms
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    enrollment_term VARCHAR(max) NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid, term_id);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_enrollment_terms_hist_enr
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    enrollment_term VARCHAR(max) NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid, term_id);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_holds
+(
+    sid VARCHAR NOT NULL,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid);
 
 CREATE TABLE {redshift_schema_edl}.student_profile_index
 DISTKEY (units)

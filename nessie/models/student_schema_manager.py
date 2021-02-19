@@ -23,23 +23,18 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJobError
+from nessie.lib.queries import student_schema
 from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
 import psycopg2.sql
-
 
 """Higher-level logic for staged student schema in Redshift."""
 
 
-def redshift_schema():
-    return app.config['REDSHIFT_SCHEMA_STUDENT']
-
-
 def staging_schema():
-    return app.config['REDSHIFT_SCHEMA_STUDENT'] + '_staging'
+    return f'{student_schema()}_staging'
 
 
 def drop_staged_enrollment_term(term_id):
@@ -56,7 +51,7 @@ def refresh_all_from_staging(tables):
         for table in tables:
             refresh_from_staging(table, None, None, transaction)
         if not transaction.commit():
-            raise BackgroundJobError(f'Final transaction commit failed for {redshift_schema()}.')
+            raise BackgroundJobError(f'Final transaction commit failed for {student_schema()}.')
 
 
 def refresh_from_staging(table, term_id, sids, transaction, truncate_staging=True):
@@ -71,45 +66,49 @@ def refresh_from_staging(table, term_id, sids, transaction, truncate_staging=Tru
         refresh_conditions.append('sid = ANY(%s)')
         refresh_params.append(sids)
 
-    result = None
+    def _success():
+        app.logger.info(f'Populated {student_schema()}.{table} from staging schema.')
+
+    def _rollback():
+        transaction.rollback()
+        raise BackgroundJobError(f'Failed to populate table {student_schema()}.{table} from staging schema.')
 
     if not refresh_conditions:
         transaction.execute(
             'TRUNCATE {schema}.{table}',
-            schema=psycopg2.sql.Identifier(redshift_schema()),
+            schema=psycopg2.sql.Identifier(student_schema()),
             table=psycopg2.sql.Identifier(table),
         )
-        app.logger.info(f'Truncated destination table {redshift_schema()}.{table}.')
-        result = transaction.execute(
+        app.logger.info(f'Truncated destination table {student_schema()}.{table}.')
+
+        _success() if transaction.execute(
             'INSERT INTO {schema}.{table} (SELECT * FROM {staging_schema}.{table})',
-            schema=psycopg2.sql.Identifier(redshift_schema()),
+            schema=psycopg2.sql.Identifier(student_schema()),
             staging_schema=psycopg2.sql.Identifier(staging_schema()),
             table=psycopg2.sql.Identifier(table),
-        )
+        ) else _rollback()
+
     else:
         delete_sql = 'DELETE FROM {schema}.{table} WHERE ' + ' AND '.join(refresh_conditions)
         transaction.execute(
             delete_sql,
-            schema=psycopg2.sql.Identifier(redshift_schema()),
+            schema=psycopg2.sql.Identifier(student_schema()),
             table=psycopg2.sql.Identifier(table),
             params=tuple(refresh_params),
         )
-        app.logger.info(
-            f'Deleted existing rows from destination table {redshift_schema()}.{table} '
-            f"(term_id={term_id or 'all'}, {len(sids) if sids else 'all'} sids).")
+        app.logger.info(f"""
+            Deleted existing rows from destination table {student_schema()}.{table} '
+            term_id={term_id or 'all'}, {len(sids) if sids else 'all'} sids).
+        """)
         insert_sql = 'INSERT INTO {schema}.{table} (SELECT * FROM {staging_schema}.{table} WHERE ' + ' AND '.join(refresh_conditions) + ')'
-        result = transaction.execute(
+
+        _success() if transaction.execute(
             insert_sql,
-            schema=psycopg2.sql.Identifier(redshift_schema()),
+            schema=psycopg2.sql.Identifier(student_schema()),
             staging_schema=psycopg2.sql.Identifier(staging_schema()),
             table=psycopg2.sql.Identifier(table),
             params=tuple(refresh_params),
-        )
-
-    if not result:
-        transaction.rollback()
-        raise BackgroundJobError(f'Failed to populate table {redshift_schema()}.{table} from staging schema.')
-    app.logger.info(f'Populated {redshift_schema()}.{table} from staging schema.')
+        ) else _rollback()
 
     # The staging table can now be truncated, unless we're running a job distributed between workers.
     if truncate_staging:
@@ -142,7 +141,7 @@ def unload_enrollment_terms(term_ids):
             ALLOWOVERWRITE
             GZIP;
         """,
-        schema=redshift_schema(),
+        schema=student_schema(),
         term_ids=','.join(term_ids),
     )
     if not redshift.execute(query):

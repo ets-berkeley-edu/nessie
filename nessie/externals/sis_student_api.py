@@ -32,30 +32,12 @@ from nessie.lib.mockingbird import fixture
 """Official access to student data."""
 
 
-def get_v1_student(sid):
-    response = _get_v1_student(sid)
-    if response and hasattr(response, 'json'):
-        unwrapped = response.json().get('apiResponse', {}).get('response', {}).get('any', {}).get('students', [])
-        if unwrapped:
-            unwrapped = unwrapped[0]
-        return unwrapped
-    else:
-        return
-
-
 def get_v2_student(sid, term_id=None, as_of=None):
     response = _get_v2_single_student(sid, term_id, as_of)
     if response and hasattr(response, 'json'):
         return response.json().get('apiResponse', {}).get('response', {})
     else:
         return
-
-
-@fixture('sis_student_api_v1_{sid}')
-def _get_v1_student(sid, mock=None):
-    url = http.build_url(app.config['STUDENT_V1_API_URL'] + '/' + str(sid) + '/all')
-    with mock(url):
-        return authorized_request_v1(url)
 
 
 def get_v2_by_sids_list(up_to_100_sids, term_id=None, as_of=None, with_registration=False, with_contacts=True):
@@ -123,7 +105,7 @@ def _get_v2_single_student(sid, term_id=None, as_of=None):
 
 
 def get_term_gpas_registration_demog(sid, with_demog=True):
-    # Unlike the V1 Students API, V2 will not returns 'registrations' data for the upcoming term unless
+    # Students API will not return 'registrations' data for the upcoming term unless
     # we request an 'as-of-date' in the future.
     near_future = (datetime.now() + timedelta(days=60)).strftime('%Y-%m-%d')
     response = _get_v2_registrations_demog(sid, as_of=near_future, with_demog=with_demog)
@@ -229,15 +211,6 @@ def authorized_request_v2(url):
         app.logger.error(f'Error on API call {url}, response={desc}, error={e}')
         return
     return response
-
-
-def authorized_request_v1(url):
-    auth_headers = {
-        'app_id': app.config['STUDENT_API_ID'],
-        'app_key': app.config['STUDENT_API_KEY'],
-        'Accept': 'application/json',
-    }
-    return http.request(url, auth_headers)
 
 
 def basic_auth(url):

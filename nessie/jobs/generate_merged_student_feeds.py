@@ -34,15 +34,17 @@ from flask import current_app as app
 from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.jobs.generate_merged_enrollment_term import GenerateMergedEnrollmentTerm
-from nessie.lib.berkeley import current_term_id, future_term_id, future_term_ids, legacy_term_ids, reverse_term_ids
+from nessie.lib.berkeley import current_term_id, feature_flag_edl, future_term_id, future_term_ids, legacy_term_ids, \
+    reverse_term_ids
 from nessie.lib.metadata import get_merged_enrollment_term_job_status, queue_merged_enrollment_term_jobs
-from nessie.lib.queries import get_advisee_advisor_mappings, get_advisee_student_profile_elements
+from nessie.lib.queries import get_advisee_advisor_mappings, get_advisee_student_profile_elements, sis_schema_table, \
+    student_schema
 from nessie.lib.util import resolve_sql_template, write_to_tsv_file
 from nessie.merged.sis_profile import parse_merged_sis_profile
-from nessie.merged.sis_profile_v1 import parse_merged_sis_profile_v1
 from nessie.merged.student_demographics import add_demographics_rows, refresh_rds_demographics
 from nessie.merged.student_terms import upload_student_term_maps
-from nessie.models import student_schema
+from nessie.models.student_schema_manager import refresh_all_from_staging, truncate_staging_table, \
+    unload_enrollment_terms, write_file_to_staging
 
 """Logic for merged student profile and term generation."""
 
@@ -51,7 +53,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
     rds_schema = app.config['RDS_SCHEMA_STUDENT']
     rds_dblink_to_redshift = app.config['REDSHIFT_DATABASE'] + '_redshift'
-    redshift_schema = app.config['REDSHIFT_SCHEMA_STUDENT']
     redshift_schema_edl = app.config['REDSHIFT_SCHEMA_EDL']
     redshift_schema_sis = app.config['REDSHIFT_SCHEMA_SIS']
 
@@ -101,7 +102,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         if not result:
             raise BackgroundJobError('Failed to queue enrollment term jobs.')
 
-        student_schema.refresh_all_from_staging(profile_tables)
+        refresh_all_from_staging(profile_tables)
         self.update_redshift_academic_standing()
         self.update_rds_profile_indexes()
 
@@ -117,7 +118,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 break
 
         app.logger.info('Exporting analytics data for archival purposes.')
-        student_schema.unload_enrollment_terms([current_term_id(), future_term_id()])
+        unload_enrollment_terms([current_term_id(), future_term_id()])
 
         app.logger.info('Refreshing enrollment terms in RDS.')
         with rds.transaction() as transaction:
@@ -135,7 +136,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             if row['status'] == 'error':
                 errored = True
 
-        student_schema.truncate_staging_table('student_enrollment_terms')
+        truncate_staging_table('student_enrollment_terms')
         if errored:
             raise BackgroundJobError(status_string)
         else:
@@ -147,7 +148,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'demographics', 'ethnicities', 'intended_majors', 'minors', 'visas',
         ]
         for table in tables:
-            student_schema.truncate_staging_table(table)
+            truncate_staging_table(table)
 
         all_student_feed_elements = get_advisee_student_profile_elements()
         all_student_advisor_mappings = self.map_advisors_to_students()
@@ -177,7 +178,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                     self.failures.append(sid)
             for table in tables:
                 if feed_files[table]:
-                    student_schema.write_file_to_staging(table, feed_files[table], feed_counts[table])
+                    write_file_to_staging(table, feed_files[table], feed_counts[table])
         return tables
 
     def generate_student_profile_feed(self, feed_elements, advisors, feed_files, feed_counts):
@@ -185,10 +186,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         uid = feed_elements['ldap_uid']
         if not uid:
             return
-        if app.config['STUDENT_V1_API_PREFERRED']:
-            sis_profile = parse_merged_sis_profile_v1(feed_elements)
-        else:
-            sis_profile = parse_merged_sis_profile(feed_elements)
+        sis_profile = parse_merged_sis_profile(feed_elements)
         demographics = feed_elements.get('demographics_feed') and json.loads(feed_elements.get('demographics_feed'))
         if demographics:
             demographics = add_demographics_rows(sid, demographics, feed_files, feed_counts)
@@ -260,8 +258,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
     def update_redshift_academic_standing(self):
         redshift.execute(
-            f"""TRUNCATE {self.redshift_schema}.academic_standing;
-            INSERT INTO {self.redshift_schema}.academic_standing
+            f"""TRUNCATE {student_schema()}.academic_standing;
+            INSERT INTO {student_schema()}.academic_standing
                 SELECT sid, term_id, acad_standing_action, acad_standing_status, action_date
                 FROM {self.redshift_schema_sis}.academic_standing;""",
         )
@@ -301,7 +299,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             and self._refresh_rds_minors(transaction)
             and self._index_rds_email_address(transaction)
             and self._index_rds_entering_term(transaction)
-            and refresh_rds_demographics(self.rds_schema, self.rds_dblink_to_redshift, self.redshift_schema, transaction)
+            and refresh_rds_demographics(self.rds_schema, self.rds_dblink_to_redshift, student_schema(), transaction)
         ):
             return False
         return True
@@ -333,7 +331,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             SELECT *
             FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                 SELECT DISTINCT sid, term_id, acad_standing_action, acad_standing_status, LEFT(action_date, 10)
-                FROM {self.redshift_schema}.academic_standing
+                FROM {student_schema()}.academic_standing
               $REDSHIFT$)
             AS redshift_academic_standing (
                 sid VARCHAR,
@@ -345,7 +343,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         )
 
     def _refresh_rds_academic_status(self, transaction):
-        redshift_schema = self.redshift_schema_edl if app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE'] else self.redshift_schema_sis
+        redshift_schema = self.redshift_schema_edl if feature_flag_edl() else self.redshift_schema_sis
         return transaction.execute(
             f"""INSERT INTO {self.rds_schema}.student_academic_status (
             SELECT *
@@ -397,7 +395,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             SELECT *
                 FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                     SELECT sid, feed
-                    FROM {self.redshift_schema}.student_holds
+                    FROM {student_schema()}.student_holds
               $REDSHIFT$)
             AS redshift_holds (
                 sid VARCHAR,
@@ -421,7 +419,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         )
 
     def _refresh_rds_majors(self, transaction):
-        redshift_schema = self.redshift_schema_edl if app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE'] else self.redshift_schema_sis
+        redshift_schema = self.redshift_schema_edl if feature_flag_edl() else self.redshift_schema_sis
         return transaction.execute(
             f"""INSERT INTO {self.rds_schema}.student_majors (
             SELECT *
@@ -442,7 +440,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             SELECT *
                 FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                     SELECT sid, profile
-                    FROM {self.redshift_schema}.student_profiles
+                    FROM {student_schema()}.student_profiles
               $REDSHIFT$)
             AS redshift_profiles (
                 sid VARCHAR,
@@ -456,7 +454,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             SELECT DISTINCT *
                 FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                     SELECT sid, major
-                    FROM {self.redshift_schema}.intended_majors
+                    FROM {student_schema()}.intended_majors
               $REDSHIFT$)
             AS redshift_intended_majors (
                 sid VARCHAR,
@@ -465,15 +463,13 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         )
 
     def _refresh_rds_minors(self, transaction):
-        redshift_table = (
-            f'{self.redshift_schema_edl}.student_minors' if app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE']
-            else f'{self.redshift_schema_sis}.minors')
+        redshift_schema = self.redshift_schema_edl if feature_flag_edl() else self.redshift_schema_sis
         return transaction.execute(
             f"""INSERT INTO {self.rds_schema}.minors (
             SELECT DISTINCT *
                 FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                     SELECT sid, minor
-                    FROM {redshift_table}
+                    FROM {redshift_schema}.{sis_schema_table('minors')}
               $REDSHIFT$)
             AS redshift_minors (
                 sid VARCHAR,
@@ -487,7 +483,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             SELECT *
                 FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                     SELECT sid, term_id, enrollment_term
-                    FROM {self.redshift_schema}.student_enrollment_terms
+                    FROM {student_schema()}.student_enrollment_terms
               $REDSHIFT$)
             AS redshift_enrollment_terms (
                 sid VARCHAR,

@@ -34,7 +34,7 @@ from nessie.lib.berkeley import reverse_term_ids
 from nessie.lib.util import encoded_tsv_row, resolve_sql_template
 from nessie.merged.sis_profile import parse_merged_sis_profile
 from nessie.merged.student_terms import map_sis_enrollments, merge_dropped_classes, merge_term_gpas
-from nessie.models import student_schema
+from nessie.models.student_schema_manager import refresh_from_staging, truncate_staging_table, write_file_to_staging
 
 """Logic to generate client-friendly merge of available data on non-current students."""
 
@@ -92,9 +92,9 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
             if profile_count:
                 with redshift.transaction() as transaction:
                     for table_name, data in tables.items():
-                        student_schema.truncate_staging_table(table_name)
-                        student_schema.write_file_to_staging(table_name, data, profile_count)
-                        student_schema.refresh_from_staging(
+                        truncate_staging_table(table_name)
+                        write_file_to_staging(table_name, data, profile_count)
+                        refresh_from_staging(
                             table_name,
                             None,
                             non_advisee_sids,
@@ -164,12 +164,12 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         # external table.)
         total_count = 0
         table_name = 'student_enrollment_terms_hist_enr'
-        student_schema.truncate_staging_table(table_name)
+        truncate_staging_table(table_name)
         for term_id in reverse_term_ids(include_future_terms=True, include_legacy_terms=True):
             with tempfile.TemporaryFile() as feed_file:
                 term_count = self.collect_merged_enrollments(non_advisee_sids, term_id, feed_file)
                 if term_count:
-                    student_schema.write_file_to_staging(
+                    write_file_to_staging(
                         table_name,
                         feed_file,
                         term_count,
@@ -177,7 +177,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
                     )
             if term_count:
                 with redshift.transaction() as transaction:
-                    student_schema.refresh_from_staging(
+                    refresh_from_staging(
                         table_name,
                         term_id,
                         non_advisee_sids,
