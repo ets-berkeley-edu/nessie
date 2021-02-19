@@ -61,8 +61,9 @@ class ImportSisStudentApiHistEnr(BackgroundJob):
         with tempfile.TemporaryFile() as feed_file:
             saved_sids, failure_count = self.load_concurrently(sids, feed_file)
             if saved_sids:
-                truncate_staging_table('sis_api_profiles_hist_enr')
-                write_file_to_staging('sis_api_profiles_hist_enr', feed_file, len(saved_sids))
+                sis_profiles_hist_enr = student_schema_table('sis_profiles_hist_enr')
+                truncate_staging_table(sis_profiles_hist_enr)
+                write_file_to_staging(sis_profiles_hist_enr, feed_file, len(saved_sids))
 
         if saved_sids:
             staging_to_destination_query = resolve_sql_template_string(
@@ -74,7 +75,7 @@ class ImportSisStudentApiHistEnr(BackgroundJob):
                 TRUNCATE {redshift_schema}_staging.{sis_profiles_hist_enr};
                 """,
                 redshift_schema=student_schema(),
-                sis_profiles_hist_enr=student_schema_table('sis_profiles_hist_enr'),
+                sis_profiles_hist_enr=sis_profiles_hist_enr,
             )
             if not redshift.execute(staging_to_destination_query):
                 raise BackgroundJobError('Error on Redshift copy: aborting job.')
