@@ -163,10 +163,11 @@ def student_tables(app):
 
     yield
 
-    for schema in ['advisee_test', 'asc_test', 'coe_test', 'student_test', 'undergrads_test']:
+    for schema in ['asc_test', 'coe_test', 'student_test']:
         rds.execute(f'DROP SCHEMA {schema} CASCADE')
         redshift.execute(f'DROP SCHEMA {schema} CASCADE')
-    redshift.execute('DROP SCHEMA calnet_test CASCADE')
+    for schema in ['advisee_test', 'calnet_test', 'edl_test', 'undergrads_test']:
+        redshift.execute(f'DROP SCHEMA {schema} CASCADE')
 
 
 @pytest.fixture()
