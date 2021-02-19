@@ -74,7 +74,10 @@ AS (
     edl_classes.class_section_cd AS section_num,
     edl_classes.course_nm AS course_display_name,
     edl_classes.course_title_long_nm AS course_title,
-    edl_classes.graded_section_flg AS is_primary,
+    DECODE(edl_classes.graded_section_flg,
+      'N', '0',
+      'Y', '1'
+    )::integer::boolean AS is_primary,
     edl_classes.max_units AS allowed_units,
     edl_classes.instruction_mode_cd AS instruction_mode,
     -- TODO: placeholder columns for meeting and instructor info pending EDW-248 resolution
