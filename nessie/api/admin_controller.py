@@ -24,11 +24,12 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from datetime import datetime
+from random import randint
 
 import dateutil.parser
 from flask import current_app as app, request
 from nessie.api.auth_helper import auth_required
-from nessie.lib import metadata
+from nessie.lib import http, metadata
 from nessie.lib.http import tolerant_jsonify
 
 
@@ -67,3 +68,17 @@ def background_job_status():
             'finished': row['updated_at'].strftime(date_format),
         }
     return tolerant_jsonify([to_api_json(row) for row in rows])
+
+
+@app.route('/api/admin/xkcd')
+@auth_required
+def xkcd():
+    try:
+        url = http.build_url(f'https://xkcd.com/{randint(1, 2427)}/info.0.json')
+        json = http.request(url).json()
+    except Exception:
+        json = {
+            'alt': '40% of OpenBSD installs lead to shark attacks.',
+            'img': 'https://imgs.xkcd.com/comics/success.png',
+        }
+    return tolerant_jsonify(json)
