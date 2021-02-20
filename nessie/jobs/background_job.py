@@ -38,7 +38,7 @@ from nessie.models.util import advisory_lock
 """Parent class for background jobs."""
 
 
-def verify_external_schema(schema, resolved_ddl):
+def verify_external_schema(schema, resolved_ddl, is_zero_count_acceptable=False):
     pattern = f'CREATE EXTERNAL TABLE ({schema}\.\w+)'
     external_tables = re.findall(pattern, resolved_ddl)
     for table in external_tables:
@@ -47,11 +47,13 @@ def verify_external_schema(schema, resolved_ddl):
         if 'historical_requests' in table:
             continue
         result = redshift.fetch(f'SELECT COUNT(*) FROM {table}')
-        if result and result[0] and result[0]['count']:
-            count = result[0]['count']
-            app.logger.info(f'Verified external table {table} ({count} rows).')
+        count = result and result[0] and result[0]['count']
+        verified = count is not None and (is_zero_count_acceptable or count)
+        description = f'external table {table} with {count} rows (zero_count_acceptable: {is_zero_count_acceptable}).'
+        if verified:
+            app.logger.info(f'Verified {description}')
         else:
-            raise BackgroundJobError(f'Failed to verify external table {table}: aborting job.')
+            raise BackgroundJobError(f'Failed to verify {description}')
 
 
 class BackgroundJob(object):
