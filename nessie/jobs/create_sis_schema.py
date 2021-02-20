@@ -30,7 +30,7 @@ import re
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
-from nessie.lib.berkeley import reverse_term_ids
+from nessie.lib.berkeley import feature_flag_edl, reverse_term_ids
 from nessie.lib.util import get_s3_sis_daily_path, resolve_sql_template
 
 """Logic for SIS schema creation job."""
@@ -47,11 +47,10 @@ class CreateSisSchema(BackgroundJob):
             app.logger.info('Error updating manifests, will not execute schema creation SQL')
             return False
         app.logger.info('Executing SQL...')
-        external_schema = app.config['REDSHIFT_SCHEMA_SIS']
         redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template('create_sis_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
-            verify_external_schema(external_schema, resolved_ddl)
+            verify_external_schema(external_schema, resolved_ddl, is_zero_count_acceptable=feature_flag_edl())
         else:
             raise BackgroundJobError('SIS schema creation job failed.')
         return 'SIS schema creation job completed.'
