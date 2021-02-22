@@ -180,8 +180,8 @@ AS (
     LEFT JOIN extracted_section_ids ON s.canvas_id = extracted_section_ids.canvas_section_id
     FULL OUTER JOIN {redshift_schema_sis}.courses sc
         ON extracted_section_ids.sis_term_id >= '{earliest_term_id}'
-        AND extracted_section_ids.sis_term_id = sc.term_id
-        AND extracted_section_ids.sis_section_id = sc.section_id
+        AND extracted_section_ids.sis_term_id = sc.term_id::int
+        AND extracted_section_ids.sis_section_id = sc.section_id::int
         AND (c.workflow_state IN ('available', 'completed'))
     WHERE (s.workflow_state IS NULL OR s.workflow_state != 'deleted')
     /* Clear out duplicates, since SIS data will contain multiple rows for multiple meetings or instructor assignments. */
