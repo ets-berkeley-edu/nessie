@@ -335,19 +335,20 @@ def edl_registration_to_json(row):
             'fromDate': None,
         },
         'termUnits': [
+            # What to do with row['units_term_enrolled']?
             {
                 'type': {
                     'code': 'Total',
                     'description': 'Total Units',
                 },
                 'unitsCumulative': None,
-                'unitsEnrolled': _str(row['units_term_enrolled']),
+                'unitsEnrolled': None,
                 'unitsIncomplete': None,
                 'unitsMax': _str(row['units_term_enrollment_max']),
                 'unitsMin': _str(row['units_term_enrollment_min']),
                 'unitsOther': None,
-                'unitsPassed': None,
-                'unitsTaken': _str(row['units_term_completed']),  # TODO: Is this right?
+                'unitsPassed': _str(row['units_term_completed']),
+                'unitsTaken': None,
                 'unitsTransferAccepted': None,
                 'unitsTransferEarned': None,
                 'unitsWaitlisted': None,

@@ -58,7 +58,7 @@ class AbstractRegistrationsJob(BackgroundJob):
                 # Based on the SQL order_by, the first result per SID will be 'last_registration'.
                 successes.append(sid)
                 rows['last_registrations'].append(
-                    encoded_tsv_row([sid, edl_registration_to_json(edl_row)]),
+                    encoded_tsv_row([sid, json.dumps(edl_registration_to_json(edl_row))]),
                 )
             rows['term_gpas'].append(
                 encoded_tsv_row(
@@ -72,7 +72,7 @@ class AbstractRegistrationsJob(BackgroundJob):
             )
             if self.include_demographics:
                 rows[self.demographics_key].append(
-                    encoded_tsv_row([sid, edl_demographics_to_json(edl_row)]),
+                    encoded_tsv_row([sid, json.dumps(edl_demographics_to_json(edl_row))]),
                 )
         failures = list(np.setdiff1d(sids, successes))
         return successes, failures
