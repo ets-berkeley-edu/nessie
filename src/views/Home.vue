@@ -71,8 +71,33 @@
               :items="jobs.all"
               :fields="jobs.fields"
             >
+              <template #cell(status)="data">
+                <div class="align-items-center d-flex justify-content-center">
+                  <div class="pr-1">
+                    {{ data.value }}
+                  </div>
+                  <div>
+                    <b-icon
+                      v-if="(data.value === 'started') && !data.item.finished && getAgeInHours(data.item) > 5"
+                      v-b-tooltip.hover
+                      icon="question-square-fill"
+                      variant="danger"
+                      :title="`Job has been running for ${getAgeInHours(data.item)} hours. Is it stalled?`"
+                    />
+                  </div>
+                </div>
+              </template>
               <template #cell(details)="data">
                 <span v-html="data.value"></span>
+              </template>
+              <template #cell(started)="data">
+                {{ data.value | moment("HH:mm:ss") }}
+              </template>
+              <template #cell(finished)="data">
+                <span v-if="data.value">{{ data.value | moment("HH:mm:ss") }}</span>
+              </template>
+              <template #cell(duration)="data">
+                {{ data.value ? describeDuration(data.value) : '&mdash;' }}
               </template>
             </b-table>
           </div>
@@ -125,11 +150,12 @@ export default {
       all: [],
       errored: [],
       fields: [
-        {key: 'id', sortable: true},
-        {key: 'status', sortable: true},
-        {key: 'details'},
-        {key: 'started', sortable: true, class: 'text-nowrap'},
-        {key: 'finished', sortable: true, class: 'text-nowrap'}
+        {key: 'id', label: 'Job', sortable: true},
+        {key: 'status', sortable: true, class: 'text-center'},
+        {key: 'details', label: 'Summary'},
+        {key: 'started', label: 'Start (UTC)', sortable: true, class: 'text-nowrap text-right'},
+        {key: 'finished', label: 'End (UTC)', sortable: true, class: 'text-nowrap text-right'},
+        {key: 'duration', label: 'Duration (h:mm:ss)', sortable: true, class: 'text-nowrap text-right'}
       ],
       started: []
     },
@@ -154,6 +180,15 @@ export default {
     })
   },
   methods: {
+    describeDuration(ms) {
+      const d = this.$moment.duration(ms / 1000, 'seconds')
+      const pad = n => `${n < 10 ? '0' : ''}${n}`
+      return `${pad(d.hours())}:${pad(d.minutes())}:${pad(d.seconds())}`
+    },
+    getAgeInHours(job) {
+      const started = this.$moment.utc(job.started)
+      return Math.floor(this.$moment.utc().diff(started) / (1000 * 60 * 60))
+    },
     isAvailable(job) {
       let available = true
       this.$_.each(this.jobs.started, started => {
@@ -182,6 +217,8 @@ export default {
             style = 'success'
           }
           job._cellVariants = {status: style}
+          const finished = job.finished && this.$moment.utc(job.finished)
+          job.duration = finished && finished.diff(this.$moment.utc(job.started))
           return job
         })
       })

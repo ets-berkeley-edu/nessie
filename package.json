@@ -6,7 +6,7 @@
     "build-vue": "vue-cli-service build --modern --dest 'dist/static'",
     "lint-vue": "vue-cli-service lint --no-fix src",
     "lint-vue-fix": "vue-cli-service lint src",
-    "preinstall": "npx npm-force-resolutions",
+    "preinstall": "npx npm-force-resolutions@0.0.3",
     "serve-vue": "vue-cli-service serve --open"
   },
   "dependencies": {

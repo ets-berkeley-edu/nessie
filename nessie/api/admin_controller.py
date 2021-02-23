@@ -53,19 +53,20 @@ def console_available_jobs():
 @auth_required
 def background_job_status():
     iso_date = request.args.get('date')
-    date_format = '%Y-%m-%d %H:%M'
     date = dateutil.parser.parse(iso_date) if iso_date else datetime.today()
     rows = metadata.background_job_status_by_date(created_date=date) or []
     rows.sort(key=lambda row: row.get('created_at'))
 
     def to_api_json(row):
+        created_at = row['created_at']
+        updated_at = row['updated_at']
         return {
             'id': row['job_id'],
             'status': row['status'],
             'instanceId': row['instance_id'],
             'details': row['details'],
-            'started': row['created_at'].strftime(date_format),
-            'finished': row['updated_at'].strftime(date_format),
+            'started': created_at.isoformat(),
+            'finished': None if updated_at == created_at else updated_at.isoformat(),
         }
     return tolerant_jsonify([to_api_json(row) for row in rows])
 
