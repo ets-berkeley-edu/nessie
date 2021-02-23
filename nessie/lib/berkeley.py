@@ -265,18 +265,20 @@ def edl_demographics_to_json(row):
 
 
 def edl_registration_to_json(row):
-    def _flag_to_bool(key):
-        return (row[key] or '').upper() == 'Y'
+    def _edl_career_code_to_name(code):
+        return {
+            'UGRD': 'Undergraduate',
+            'UCBX': 'Extension',
+            'GRAD': 'Graduate',
+        }.get(code)
 
-    def _str(v):
-        return v and str(v)
     term_id = row['term_id']
     season, year = term_info_for_sis_term_id(term_id)
     career_code = row['academic_career_cd']
     # TODO: From EDL query results, what do we do with 'total_cumulative_gpa_nbr'?
     # TODO: All 'None' entries below need investigation. Does EDL provide?
     return {
-        'loadedAt': _str(row['edl_load_date']),
+        'loadedAt': str(row['edl_load_date']),
         'term': {
             'id': term_id,
             'name': f'{year} {season}',
@@ -285,22 +287,22 @@ def edl_registration_to_json(row):
                 'description': None,
             },
             'academicYear': year,
-            'beginDate': None,
-            'endDate': None,
+            'beginDate': _str(row['enrl_on_trans_dt']),
+            'endDate': _str(row['fully_graded_dt']),
         },
         'academicCareer': {
             'code': career_code,
-            'description': career_code_to_name(career_code),
+            'description': _edl_career_code_to_name(career_code),
         },
-        'eligibleToRegister': _flag_to_bool('eligible_to_enroll_flag'),
+        'eligibleToRegister': _flag_to_bool(row['eligible_to_enroll_flag']),
         'eligibilityStatus': {
             'code': row['registrn_eligibility_status_cd'],
             'description': row['eligibility_status_desc'],
         },
-        'registered': _flag_to_bool('registered_flag'),
+        'registered': _flag_to_bool(row['registered_flag']),
         'disabled': None,
         'athlete': None,
-        'intendsToGraduate': _flag_to_bool('intends_to_graduate_flag'),
+        'intendsToGraduate': _flag_to_bool(row['intends_to_graduate_flag']),
         'academicLevels': [
             {
                 'type': {
@@ -344,11 +346,11 @@ def edl_registration_to_json(row):
                 'unitsCumulative': None,
                 'unitsEnrolled': None,
                 'unitsIncomplete': None,
-                'unitsMax': _str(row['units_term_enrollment_max']),
-                'unitsMin': _str(row['units_term_enrollment_min']),
+                'unitsMax': _to_float(row['units_term_enrollment_max']),
+                'unitsMin': _to_float(row['units_term_enrollment_min']),
                 'unitsOther': None,
-                'unitsPassed': _str(row['units_term_completed']),
-                'unitsTaken': None,
+                'unitsPassed': _to_float(row['unt_passd_fa']),
+                'unitsTaken': _to_float(row['unt_taken_fa']),
                 'unitsTransferAccepted': None,
                 'unitsTransferEarned': None,
                 'unitsWaitlisted': None,
@@ -358,13 +360,13 @@ def edl_registration_to_json(row):
                     'code': 'For GPA',
                     'description': 'Units For GPA',
                 },
-                'unitsEnrolled': None,
+                'unitsEnrolled': _to_float(row['tot_inprog_gpa']),
                 'unitsIncomplete': None,
                 'unitsMax': None,
                 'unitsMin': None,
                 'unitsOther': None,
-                'unitsPassed': _str(row['unt_passd_gpa']),
-                'unitsTaken': _str(row['unt_taken_gpa']),
+                'unitsPassed': _to_float(row['unt_passd_gpa']),
+                'unitsTaken': _to_float(row['unt_taken_gpa']),
                 'unitsTransferAccepted': None,
                 'unitsTransferEarned': None,
                 'unitsWaitlisted': None,
@@ -374,13 +376,13 @@ def edl_registration_to_json(row):
                     'code': 'Not For GPA',
                     'description': 'Units Not For GPA',
                 },
-                'unitsEnrolled': _str(row['tot_inprog_gpa']),
+                'unitsEnrolled': _to_float(row['tot_inprog_nogpa']),
                 'unitsIncomplete': None,
-                'unitsMax': _str(row['max_nogpa_unit']),
+                'unitsMax': _to_float(row['max_nogpa_unit']),
                 'unitsMin': None,
                 'unitsOther': None,
-                'unitsPassed': _str(row['unt_passd_nogpa']),
-                'unitsTaken': _str(row['unt_taken_nogpa']),
+                'unitsPassed': _to_float(row['unt_passd_nogpa']),
+                'unitsTaken': _to_float(row['unt_taken_nogpa']),
                 'unitsTransferAccepted': None,
                 'unitsTransferEarned': None,
                 'unitsWaitlisted': None,
@@ -391,11 +393,11 @@ def edl_registration_to_json(row):
                 'code': 'TGPA',
                 'description': 'Term GPA',
             },
-            'average': _str(row['current_term_gpa']),
+            'average': _to_float(row['current_term_gpa']),
             'source': 'UCB',
         },
         'withdrawalCancel': {
-            'date': _str(row['withdraw_date']),
+            'date': _to_float(row['withdraw_date']),
             'reason': {
                 'code': row['withdraw_reason'],
                 'description': _withdraw_code_to_name(row['withdraw_reason']),
@@ -600,3 +602,15 @@ def _withdraw_code_to_name(code):
         'WDR': 'Withdrew',
     }
     return mappings.get(code) or code
+
+
+def _flag_to_bool(v):
+    return v and v.upper() == 'Y'
+
+
+def _str(v):
+    return v and str(v)
+
+
+def _to_float(v):
+    return v and float(v)
