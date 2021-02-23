@@ -425,7 +425,7 @@ def get_edl_student_registrations(sids):
                     s.unt_taken_fa_gpa,
                     s.unt_taken_gpa,
                     s.unt_taken_nogpa,
-                    s.unt_taken_prgrss as units_enrolled_in_term,
+                    s.unt_taken_prgrss,
                     s.unt_term_tot,
                     s.unt_test_credit,
                     s.unt_trnsfr,
