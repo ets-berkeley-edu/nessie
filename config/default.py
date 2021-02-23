@@ -23,7 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
 import logging
 import os
 
@@ -31,10 +30,11 @@ import os
 # Base directory for the application (one level up from this config file).
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
-TIMEZONE = 'America/Los_Angeles'
-
-SQLALCHEMY_DATABASE_URI = 'postgres://nessie:nessie@localhost:5432/nessie'
-SQLALCHEMY_TRACK_MODIFICATIONS = False
+# bConnected On-Premise (bCOP) SMTP server
+BCOP_SMTP_PASSWORD = None
+BCOP_SMTP_PORT = 587
+BCOP_SMTP_SERVER = 'bcop.berkeley.edu'
+BCOP_SMTP_USERNAME = None
 
 CAS_SERVER = 'https://auth-test.berkeley.edu/cas/'
 CAS_LOGOUT_URL = 'https://auth-test.berkeley.edu/cas/logout'
@@ -95,6 +95,12 @@ DEGREE_PROGRESS_API_PASSWORD = 'secretpassword'
 
 EARLIEST_LEGACY_TERM = 'Fall 2001'
 EARLIEST_TERM = 'Fall 2016'
+
+EMAIL_FEATURE_ENABLED = False
+EMAIL_FROM_ADDRESS = '__NESSIE_SUPPORT__at_berkeley.edu'
+EMAIL_REDIRECT_WHEN_TESTING = ['__EMAIL_REDIRECT_WHEN_TESTING__at_berkeley.edu']
+EMAIL_SYSTEM_ERRORS_TO = ['__NESSIE_at_berkeley.edu']
+EMAIL_TEST_MODE = True
 
 ENROLLMENTS_API_ID = 'secretid'
 ENROLLMENTS_API_KEY = 'secretkey'
@@ -279,9 +285,14 @@ STUDENT_API_MAX_THREADS = 5
 STUDENT_API_PWD = None
 STUDENT_API_USER = None
 
+SQLALCHEMY_DATABASE_URI = 'postgres://nessie:nessie@localhost:5432/nessie'
+SQLALCHEMY_TRACK_MODIFICATIONS = False
+
 TERMS_API_ID = 'secretid'
 TERMS_API_KEY = 'secretkey'
 TERMS_API_URL = 'https://secreturl.berkeley.edu/terms'
+
+TIMEZONE = 'America/Los_Angeles'
 
 VUE_LOCALHOST_BASE_URL = None
 

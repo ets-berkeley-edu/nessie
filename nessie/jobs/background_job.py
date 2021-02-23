@@ -32,6 +32,7 @@ import traceback
 from flask import current_app as app
 from nessie.externals import redshift
 from nessie.jobs.queue import get_job_queue
+from nessie.lib.berkeley import send_system_error_email
 from nessie.lib.metadata import create_background_job_status, update_background_job_status
 from nessie.models.util import advisory_lock
 
@@ -123,6 +124,10 @@ class BackgroundJob(object):
                 else:
                     status = 'failed'
                     details = error
+                    send_system_error_email(
+                        message=details,
+                        subject=f'Job failure: {type(self).__name__}',
+                    )
                 update_background_job_status(self.job_id, status, details=details)
             return result
 

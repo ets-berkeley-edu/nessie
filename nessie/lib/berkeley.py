@@ -28,6 +28,7 @@ import threading
 
 from flask import current_app as app
 from nessie.externals import rds
+from nessie.externals.b_connected import BConnected
 
 """A utility module collecting logic specific to the Berkeley campus."""
 
@@ -446,6 +447,23 @@ def reverse_term_ids(include_future_terms=False, include_legacy_terms=False):
         else sis_term_id_for_name(app.config['EARLIEST_TERM'])
     start_term_id = future_term_id() if include_future_terms else current_term_id()
     return _collect_terms(start_term_id, stop_term_id)
+
+
+def send_system_error_email(message, subject=None):
+    if subject is None:
+        subject = f'{message[:50]}...' if len(message) > 50 else message
+    config_value = app.config['EMAIL_SYSTEM_ERRORS_TO']
+    email_addresses = config_value if isinstance(config_value, list) else [config_value]
+    for email_address in email_addresses:
+        BConnected().send(
+            message=message,
+            recipient={
+                'email': email_address,
+                'name': 'Nessie',
+                'uid': '0',
+            },
+            subject_line=f'Alert: {subject}',
+        )
 
 
 def sis_term_id_for_name(term_name=None):
