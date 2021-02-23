@@ -91,10 +91,10 @@ class BConnected:
             smtp.quit()
 
         # Send email
-        if app.config['NESSIE_ENV'] == 'test':
-            app.logger.info("Email NOT sent because NESSIE_ENV == 'test'")
-        else:
+        if app.config['EMAIL_FEATURE_ENABLED']:
             _send()
+        else:
+            app.logger.info('Skipping send() because email feature is disabled.')
 
         return True
 
