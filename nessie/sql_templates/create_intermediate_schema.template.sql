@@ -314,7 +314,7 @@ AS (
  */
 
 CREATE TEMP TABLE staging_drop_dates AS (
-    SELECT sis_term_id, sis_section_id, ldap_uid, CURRENT_DATE AS date
+    SELECT sis_term_id::int, sis_section_id::int, ldap_uid, CURRENT_DATE AS date
     FROM {redshift_schema_intermediate}.sis_dropped_classes
     WHERE sis_term_id = '{current_term_id}'
 );
@@ -331,7 +331,7 @@ INSERT INTO {redshift_schema_sis_internal}.drop_dates
 DROP TABLE staging_drop_dates;
 
 CREATE TEMP TABLE staging_add_dates AS (
-    SELECT sis_term_id, sis_section_id, ldap_uid, CURRENT_DATE AS date
+    SELECT sis_term_id::int, sis_section_id::int, ldap_uid, CURRENT_DATE AS date
     FROM {redshift_schema_intermediate}.sis_enrollments
     WHERE sis_term_id = '{current_term_id}'
     AND sis_primary = 'true'
