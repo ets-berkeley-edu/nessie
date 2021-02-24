@@ -301,6 +301,7 @@ def get_edl_student_registrations(sids):
     count_per_chunk = 10000
     for chunk in range(0, len(sids), count_per_chunk):
         sids_subset = sids[chunk:chunk + count_per_chunk]
+        # TODO: This query must follow the 'as_of=near_future' logic used by _get_api_v2_registrations (see NS-1105).
         sql = f"""SELECT
                     r.academic_career_cd,
                     r.academic_level_beginning_of_term_cd,
