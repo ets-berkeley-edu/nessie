@@ -628,4 +628,4 @@ def _flag_to_bool(v):
 
 
 def _str(v):
-    return v and (float(v) if isinstance(v, Decimal) else str(v))
+    return (v is not None) and (float(v) if isinstance(v, Decimal) else str(v))

@@ -66,10 +66,11 @@
         <div v-if="!loading">
           <div v-if="jobs.all.length">
             <b-table
-              striped
+              :fields="jobs.fields"
               hover
               :items="jobs.all"
-              :fields="jobs.fields"
+              stacked="lg"
+              striped
             >
               <template #cell(status)="data">
                 <div class="align-items-center d-flex justify-content-center">
@@ -250,5 +251,14 @@ export default {
 .jobs-datepicker {
   text-align: center;
   width: 110px;
+}
+pre {
+  background-color: #f5c6cb;
+  border: 1px solid #ccc;
+  margin: 10px 0 10px 0;
+  max-width: 450px;
+  overflow: auto;
+  padding: 10px;
+  width: auto;
 }
 </style>
