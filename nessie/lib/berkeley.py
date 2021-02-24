@@ -23,6 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from decimal import Decimal
 import re
 import threading
 
@@ -292,12 +293,12 @@ def edl_registration_to_json(row):
             'endDate': _str(row['fully_graded_dt']),
         },
         'academicCareer': {
-            'code': career_code,
+            'code': _str(career_code),
             'description': _edl_career_code_to_name(career_code),
         },
         'eligibleToRegister': _flag_to_bool(row['eligible_to_enroll_flag']),
         'eligibilityStatus': {
-            'code': row['registrn_eligibility_status_cd'],
+            'code': _str(row['registrn_eligibility_status_cd']),
             'description': row['eligibility_status_desc'],
         },
         'registered': _flag_to_bool(row['registered_flag']),
@@ -311,7 +312,7 @@ def edl_registration_to_json(row):
                     'description': 'Beginning of Term',
                 },
                 'level': {
-                    'code': row['academic_level_beginning_of_term_cd'],
+                    'code': _str(row['academic_level_beginning_of_term_cd']),
                     'description': row['academic_level_beginning_of_term_desc'],
                 },
             },
@@ -321,7 +322,7 @@ def edl_registration_to_json(row):
                     'description': 'End of Term',
                 },
                 'level': {
-                    'code': row['academic_level_end_of_term_cd'],
+                    'code': _str(row['academic_level_end_of_term_cd']),
                     'description': row['academic_level_end_of_term_desc'],
                 },
             },
@@ -347,11 +348,11 @@ def edl_registration_to_json(row):
                 'unitsCumulative': None,
                 'unitsEnrolled': None,
                 'unitsIncomplete': None,
-                'unitsMax': _to_float(row['units_term_enrollment_max']),
-                'unitsMin': _to_float(row['units_term_enrollment_min']),
+                'unitsMax': _str(row['units_term_enrollment_max']),
+                'unitsMin': _str(row['units_term_enrollment_min']),
                 'unitsOther': None,
-                'unitsPassed': _to_float(row['unt_passd_fa']),
-                'unitsTaken': _to_float(row['unt_taken_fa']),
+                'unitsPassed': _str(row['unt_passd_fa']),
+                'unitsTaken': _str(row['unt_taken_fa']),
                 'unitsTransferAccepted': None,
                 'unitsTransferEarned': None,
                 'unitsWaitlisted': None,
@@ -361,13 +362,13 @@ def edl_registration_to_json(row):
                     'code': 'For GPA',
                     'description': 'Units For GPA',
                 },
-                'unitsEnrolled': _to_float(row['tot_inprog_gpa']),
+                'unitsEnrolled': _str(row['tot_inprog_gpa']),
                 'unitsIncomplete': None,
                 'unitsMax': None,
                 'unitsMin': None,
                 'unitsOther': None,
-                'unitsPassed': _to_float(row['unt_passd_gpa']),
-                'unitsTaken': _to_float(row['unt_taken_gpa']),
+                'unitsPassed': _str(row['unt_passd_gpa']),
+                'unitsTaken': _str(row['unt_taken_gpa']),
                 'unitsTransferAccepted': None,
                 'unitsTransferEarned': None,
                 'unitsWaitlisted': None,
@@ -377,13 +378,13 @@ def edl_registration_to_json(row):
                     'code': 'Not For GPA',
                     'description': 'Units Not For GPA',
                 },
-                'unitsEnrolled': _to_float(row['tot_inprog_nogpa']),
+                'unitsEnrolled': _str(row['tot_inprog_nogpa']),
                 'unitsIncomplete': None,
-                'unitsMax': _to_float(row['max_nogpa_unit']),
+                'unitsMax': _str(row['max_nogpa_unit']),
                 'unitsMin': None,
                 'unitsOther': None,
-                'unitsPassed': _to_float(row['unt_passd_nogpa']),
-                'unitsTaken': _to_float(row['unt_taken_nogpa']),
+                'unitsPassed': _str(row['unt_passd_nogpa']),
+                'unitsTaken': _str(row['unt_taken_nogpa']),
                 'unitsTransferAccepted': None,
                 'unitsTransferEarned': None,
                 'unitsWaitlisted': None,
@@ -394,17 +395,17 @@ def edl_registration_to_json(row):
                 'code': 'TGPA',
                 'description': 'Term GPA',
             },
-            'average': _to_float(row['current_term_gpa']),
+            'average': _str(row['current_term_gpa']),
             'source': 'UCB',
         },
         'withdrawalCancel': {
-            'date': _to_float(row['withdraw_date']),
+            'date': _str(row['withdraw_date']),
             'reason': {
                 'code': row['withdraw_reason'],
                 'description': _withdraw_code_to_name(row['withdraw_reason']),
             },
             'type': {
-                'code': row['withdraw_code'],
+                'code': _str(row['withdraw_code']),
                 'description': _withdraw_code_to_name(row['withdraw_code']),
             },
         },
@@ -627,8 +628,4 @@ def _flag_to_bool(v):
 
 
 def _str(v):
-    return v and str(v)
-
-
-def _to_float(v):
-    return v and float(v)
+    return v and (float(v) if isinstance(v, Decimal) else str(v))
