@@ -60,32 +60,27 @@ class BConnected:
             smtp.login(self.bcop_smtp_username, self.bcop_smtp_password)
 
             emails_sent_to = set()
+            from_address = f"Nessie Operations <{app.config['EMAIL_FROM_ADDRESS']}>"
 
-            if app.config['EMAIL_FEATURE_ENABLED']:
-                from_address = f"Nessie Operations <{app.config['EMAIL_FROM_ADDRESS']}>"
+            for email_address in self.get_email_addresses(user=recipient):
+                msg = MIMEMultipart('alternative')
+                msg['From'] = from_address
+                msg['To'] = email_address
 
-                for email_address in self.get_email_addresses(user=recipient):
-                    msg = MIMEMultipart('alternative')
-                    msg['From'] = from_address
-                    msg['To'] = email_address
+                if app.config['EMAIL_TEST_MODE']:
+                    # Append intended recipient email address to verify when testing.
+                    intended_email = recipient['email']
+                    msg['Subject'] = f'{subject_line} (To: {intended_email})'
+                else:
+                    msg['Subject'] = subject_line
 
-                    if app.config['EMAIL_TEST_MODE']:
-                        # Append intended recipient email address to verify when testing.
-                        intended_email = recipient['email']
-                        msg['Subject'] = f'{subject_line} (To: {intended_email})'
-                    else:
-                        msg['Subject'] = subject_line
+                # TODO: 'plain' text version of email?
+                msg.attach(MIMEText(message, 'plain'))
+                msg.attach(MIMEText(message, 'html'))
+                # Send
+                smtp.sendmail(from_addr=from_address, to_addrs=email_address, msg=msg.as_string())
 
-                    # TODO: 'plain' text version of email?
-                    msg.attach(MIMEText(message, 'plain'))
-                    msg.attach(MIMEText(message, 'html'))
-                    # Send
-                    smtp.sendmail(from_addr=from_address, to_addrs=email_address, msg=msg.as_string())
-
-                    emails_sent_to.add(email_address)
-            else:
-                _write_email_to_log(message=message, recipient=recipient, subject_line=subject_line)
-
+                emails_sent_to.add(email_address)
             app.logger.info(f'Email sent to {", ".join(list(emails_sent_to))} with subject: {subject_line}')
             # Disconnect
             smtp.quit()
@@ -94,6 +89,7 @@ class BConnected:
         if app.config['EMAIL_FEATURE_ENABLED']:
             _send()
         else:
+            _write_email_to_log(message=message, recipient=recipient, subject_line=subject_line)
             app.logger.info('Skipping send() because email feature is disabled.')
 
         return True
