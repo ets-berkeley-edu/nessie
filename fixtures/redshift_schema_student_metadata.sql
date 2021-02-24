@@ -110,7 +110,7 @@ VALUES
 ('8901234567', '123456', 'John David', 'Crossman', 'jdc@berkeley.edu', 'jdc@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
 ('890127492', '211159', 'Siegfried', 'Schlemiel', 'ss@berkeley.edu', 'ss@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
 ('9000000000', '300847', 'Wolfgang', 'Pauli-O''Rourke', 'wpo@berkeley.edu', 'wpo@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
-('9100000000', '300848', 'Nora Stanton', 'Barney', 'nsb@berkeley.edu', 'nsb@berkeley.edu', 'STUDENT-TYPE-REGISTERED');;
+('9100000000', '300848', 'Nora Stanton', 'Barney', 'nsb@berkeley.edu', 'nsb@berkeley.edu', 'STUDENT-TYPE-REGISTERED');
 
 INSERT INTO {redshift_schema_coe}.students
 (sid, advisor_ldap_uid, gender, ethnicity, minority, did_prep, prep_eligible, did_tprep, tprep_eligible,

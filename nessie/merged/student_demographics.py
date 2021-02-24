@@ -24,13 +24,16 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 from collections import defaultdict
 
+from flask import current_app as app
 from nessie.lib.util import write_to_tsv_file
 
 UNDERREPRESENTED_GROUPS = {'Black/African American', 'Hispanic/Latino', 'American Indian/Alaska Native'}
 
+GENDER_CODE_MAP = {'F': 'Female', 'M': 'Male', 'U': 'Decline to State', 'X': 'Nonbinary'}
+
 
 def add_demographics_rows(sid, feed, feed_files, feed_counts):
-    parsed = parse_sis_demographics_api(feed)
+    parsed = feed if app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE'] else parse_sis_demographics_api(feed)
     if parsed:
         filtered_ethnicities = parsed.pop('filtered_ethnicities', [])
         for ethn in filtered_ethnicities:
@@ -165,7 +168,7 @@ def merge_from_details(simpler_list, group, details):
             ['Other Spanish-American / Latino', {'default'}],
         ],
         'Asian': [
-            ['East Indian / Pakistani', {'Asian Indian', 'Pakistani'}],
+            ['East Indian / Pakistani', {'Asian Indian', 'Pakistani', 'East Indian/Pakistani'}],
             ['Chinese / Chinese-American', {'Chinese', 'Taiwanese'}],
             ['Filipino / Filipino-American', {'Filipino/Filipino American'}],
             ['Japanese / Japanese American', {'Japanese/Japanese American'}],

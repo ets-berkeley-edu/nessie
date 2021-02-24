@@ -283,6 +283,18 @@ def get_all_instructor_uids():
     return redshift.fetch(sql)
 
 
+def get_demographics(limit=10000, offset=0):
+    sql = f"""SELECT
+                i.sid, i.gender, e.ethnicity, e.ethnic_group, c.citizenship_country, v.visa_status, v.visa_type
+              FROM {student_schema()}.student_profile_index i
+              LEFT JOIN {student_schema()}.student_ethnicities e ON i.sid = e.sid
+              LEFT JOIN {student_schema()}.student_citizenships c ON i.sid = c.sid
+              LEFT JOIN {student_schema()}.student_visas v ON i.sid = v.sid
+              ORDER by i.sid, i.gender, e.ethnicity, e.ethnic_group, c.citizenship_country, v.visa_status, v.visa_type
+              LIMIT {limit} OFFSET {offset}"""
+    return redshift.fetch(sql)
+
+
 def get_edl_student_registrations(sids):
     # TODO: After move to EDL is done, compact the SQL below. For now, it is one column name per line, for readability.
     results = []
