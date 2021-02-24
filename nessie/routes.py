@@ -38,6 +38,7 @@ def register_routes(app):
 
     # Register API routes.
     import nessie.api.admin_controller
+    import nessie.api.analyze_edl_controller
     import nessie.api.user_controller
     import nessie.api.job_controller
     import nessie.api.schedule_controller
