@@ -285,12 +285,12 @@ def edl_registration_to_json(row):
             'id': term_id,
             'name': f'{year} {season}',
             'category': {
-                'code': None,
+                'code': None,  # TODO: SIS API has it. Do we care?
                 'description': None,
             },
-            'academicYear': year,
-            'beginDate': _str(row['enrl_on_trans_dt']),
-            'endDate': _str(row['fully_graded_dt']),
+            'academicYear': _str(row['acad_year']),
+            'beginDate': row['enrl_on_trans_dt'].strftime('%Y-%m-%d'),
+            'endDate': row['fully_graded_dt'].strftime('%Y-%m-%d'),
         },
         'academicCareer': {
             'code': _str(career_code),
@@ -298,12 +298,12 @@ def edl_registration_to_json(row):
         },
         'eligibleToRegister': _flag_to_bool(row['eligible_to_enroll_flag']),
         'eligibilityStatus': {
-            'code': _str(row['registrn_eligibility_status_cd']),
+            'code': _str(row['registrn_eligibility_status_cd']),  # TODO: SIS API does not always match. Do we care?
             'description': row['eligibility_status_desc'],
         },
         'registered': _flag_to_bool(row['registered_flag']),
-        'disabled': None,
-        'athlete': None,
+        'disabled': None,  # TODO: SIS API has it. Do we care?
+        'athlete': None,  # TODO: SIS API has it. Do we care?
         'intendsToGraduate': _flag_to_bool(row['intends_to_graduate_flag']),
         'academicLevels': [
             {
@@ -327,7 +327,7 @@ def edl_registration_to_json(row):
                 },
             },
         ],
-        'academicStanding': {
+        'academicStanding': {  # TODO: SIS API has it. Where in EDL is it?
             'standing': {
                 'code': None,
                 'description': None,
@@ -353,6 +353,7 @@ def edl_registration_to_json(row):
                 'unitsOther': None,
                 'unitsPassed': _str(row['unt_passd_fa']),
                 'unitsTaken': _str(row['unt_taken_fa']),
+                'unitsTest': _str(row['tot_test_credit']),
                 'unitsTransferAccepted': None,
                 'unitsTransferEarned': None,
                 'unitsWaitlisted': None,
@@ -385,6 +386,7 @@ def edl_registration_to_json(row):
                 'unitsOther': None,
                 'unitsPassed': _str(row['unt_passd_nogpa']),
                 'unitsTaken': _str(row['unt_taken_nogpa']),
+                'unitsTest': None,  # TODO: SIS API has it. Do we care?
                 'unitsTransferAccepted': None,
                 'unitsTransferEarned': None,
                 'unitsWaitlisted': None,
