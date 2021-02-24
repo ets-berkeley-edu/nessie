@@ -125,7 +125,13 @@ class BackgroundJob(object):
                     status = 'failed'
                     details = error
                     send_system_error_email(
-                        message=details,
+                        message=f"""
+                            job_id: {self.job_id}
+
+                            job_args: {self.job_args}
+
+                            {details or 'No details.'}
+                        """,
                         subject=f'Job failure: {type(self).__name__}',
                     )
                 update_background_job_status(self.job_id, status, details=details)
