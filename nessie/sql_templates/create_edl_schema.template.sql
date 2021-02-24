@@ -188,6 +188,26 @@ CREATE TABLE {redshift_schema_edl}.student_degree_progress
 DISTKEY (sid)
 SORTKEY (sid);
 
+CREATE TABLE {redshift_schema_edl}.student_demographics
+(
+    sid VARCHAR NOT NULL,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY(sid)
+SORTKEY(sid);
+
+CREATE TABLE {redshift_schema_edl}.student_ethnicities
+DISTKEY (sid)
+SORTKEY (sid, ethnicity)
+AS (
+  SELECT
+    student_id AS sid,
+    ethnic_desc AS ethnicity,
+    ethnic_rollup_desc AS ethnic_group,
+    load_dt AS edl_load_date
+  FROM {redshift_schema_edl_external}.student_ethnicity_data
+);
+
 -- TODO: EDL equivalent of 'sis_profiles'?
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.sis_profiles
 (
@@ -206,19 +226,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.sis_profiles_hist_enr
 )
 DISTKEY(sid)
 SORTKEY(sid);
-
-CREATE TABLE {redshift_schema_edl}.student_ethnicities
-DISTKEY (sid)
-SORTKEY (sid, ethnicity)
-AS (
-  SELECT
-    student_id AS sid,
-    ethnic_desc AS ethnicity,
-    ethnic_rollup_desc AS ethnicity_group,
-    ethnic_hispanic_latino_flg AS hispanic_latino,
-    load_dt AS edl_load_date
-  FROM {redshift_schema_edl_external}.student_ethnicity_data
-);
 
 CREATE TABLE {redshift_schema_edl}.student_majors
 DISTKEY (sid)
@@ -246,14 +253,6 @@ AS (
     WHERE academic_plan_type_cd = 'MIN'
     AND academic_program_status_cd = 'AC'
 );
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_demographics
-(
-    sid VARCHAR NOT NULL,
-    feed VARCHAR(max) NOT NULL
-)
-DISTKEY(sid)
-SORTKEY(sid);
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_last_registrations
 (
@@ -355,18 +354,6 @@ AS (
     )
 );
 
-CREATE TABLE {redshift_schema_edl}.student_visas
-SORTKEY(sid)
-AS (
-    SELECT
-      student_id AS sid,
-      visa_workpermit_status_cd AS visa_status,
-      visa_permit_type_cd AS visa_type,
-      load_dt AS edl_load_date
-    FROM {redshift_schema_edl_external}.student_visa_permit_data
-    WHERE country_cd = 'USA'
-);
-
 -- Equivalent to external table {redshift_schema_sis}.term_gpa. Distinct from student_term_gpas and hist_enr_term_gpas
 -- above, which mimic API-sourced data.
 
@@ -383,4 +370,17 @@ AS (
     -- TODO: Units taken for GPA are available in the staging schema only.
     LEFT JOIN {redshift_schema_edl_external_staging}.cs_ps_stdnt_car_term car_term
     ON reg.student_id = car_term.emplid AND reg.semester_year_term_cd = car_term.strm 
+);
+
+CREATE TABLE {redshift_schema_edl}.student_visas
+SORTKEY(sid)
+AS (
+    SELECT
+      student_id AS sid,
+      visa_workpermit_status_cd AS visa_status,
+      visa_permit_type_cd AS visa_type,
+      load_dt AS edl_load_date
+    FROM {redshift_schema_edl_external}.student_visa_permit_data
+    WHERE country_cd = 'USA'
+    AND visa_permit_type_cd IS NOT NULL
 );
