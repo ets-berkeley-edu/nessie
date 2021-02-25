@@ -29,6 +29,7 @@ from flask import current_app as app
 from nessie.api.auth_helper import auth_required
 from nessie.api.errors import BadRequestError
 from nessie.jobs.abstract.abstract_registrations_job import AbstractRegistrationsJob
+from nessie.jobs.generate_merged_hist_enr_feeds import GenerateMergedHistEnrFeeds
 from nessie.lib.berkeley import feature_flag_edl
 from nessie.lib.http import tolerant_jsonify
 
@@ -62,6 +63,27 @@ def analyze_edl_registration_data(sid):
 
     return tolerant_jsonify(result)
 
+
+@app.route('/api/analyze_edl/term_gpa/<term_id>/<sid>')
+@auth_required
+def analyze_term_gpa(term_id, sid):
+    _safety_check()
+    result = {}
+
+    class MockFeedFile:
+        def write(self, tsv):
+            result[key] = tsv
+    for key in ('edl', 'sis'):
+        with _override_edl_feature_flag(key == 'edl'):
+            GenerateMergedHistEnrFeeds().collect_merged_enrollments(
+                sids=[sid],
+                term_id=term_id,
+                feed_file=MockFeedFile(),
+            )
+    return tolerant_jsonify(result)
+
+
+# get_all_advisee_term_gpas
 
 @contextmanager
 def _override_edl_feature_flag(value):
