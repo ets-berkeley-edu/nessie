@@ -324,6 +324,16 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_holds
 DISTKEY (sid)
 SORTKEY (sid);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_names_hist_enr
+(
+    sid VARCHAR NOT NULL,
+    uid VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    last_name VARCHAR NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid);
+
 CREATE TABLE {redshift_schema_edl}.student_profile_index
 DISTKEY (units)
 INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name)
@@ -353,6 +363,31 @@ AS (
         WHERE max_reg.student_id = reg.student_id
     )
 );
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index_hist_enr
+(
+    sid VARCHAR NOT NULL,
+    uid VARCHAR NOT NULL,
+    first_name VARCHAR,
+    last_name VARCHAR,
+    level VARCHAR,
+    gpa DECIMAL(5,3),
+    units DECIMAL (6,3),
+    transfer BOOLEAN,
+    expected_grad_term VARCHAR(4),
+    terms_in_attendance INT
+)
+DISTKEY (units)
+INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles_hist_enr
+(
+    sid VARCHAR NOT NULL,
+    uid VARCHAR,
+    profile VARCHAR(max) NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid);
 
 -- Equivalent to external table {redshift_schema_sis}.term_gpa. Distinct from student_term_gpas and hist_enr_term_gpas
 -- above, which mimic API-sourced data.

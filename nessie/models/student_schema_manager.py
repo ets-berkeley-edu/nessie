@@ -175,16 +175,13 @@ def upload_to_staging(table, rows, term_id=None):
 
 
 def upload_file_to_staging(table, term_file, row_count, term_id):
-    if term_id:
-        tsv_filename = f'staging_{table}_{term_id}.tsv'
-    else:
-        tsv_filename = f'staging_{table}.tsv'
+    tsv_filename = f'staging_{table}_{term_id}.tsv' if term_id else f'staging_{table}.tsv'
     s3_key = f'{get_s3_sis_api_daily_path()}/{tsv_filename}'
     app.logger.info(f'Will stash {row_count} feeds in S3: {s3_key}')
     # Be kind; rewind
     term_file.seek(0)
     if not s3.upload_data(term_file, s3_key):
-        raise BackgroundJobError('Error on S3 upload: aborting job.')
+        raise BackgroundJobError(f'Failed upload {row_count} records to s3:{s3_key}. Aborting job.')
 
     app.logger.info('Will copy S3 feeds into Redshift...')
     query = resolve_sql_template_string(
