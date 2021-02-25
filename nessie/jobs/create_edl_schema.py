@@ -143,6 +143,7 @@ class CreateEdlSchema(BackgroundJob):
         df = pd.concat(df_chunks, ignore_index=True)
 
         with TemporaryFile() as feeds:
+            sids_with_multiple_visas = []
             for sid, student in df.groupby('sid'):
                 # TODO: Prefer gender identity once available (NS-1073)
                 gender = student['gender'].drop_duplicates().dropna()
@@ -153,7 +154,7 @@ class CreateEdlSchema(BackgroundJob):
                 nationalities = student['citizenship_country'].dropna().unique().tolist()
                 visa = student[['visa_type', 'visa_status']].drop_duplicates().to_dict('r')
                 if len(visa) > 1:
-                    app.logger.warn(f'Found more than one visa for SID {sid}; selecting only the first.')
+                    sids_with_multiple_visas.append(sid)
                 feed = {
                     'gender': GENDER_CODE_MAP[gender.iat[0]],
                     'ethnicities': ethnicities,
@@ -162,6 +163,8 @@ class CreateEdlSchema(BackgroundJob):
                     'visa': visa[0],
                 }
                 write_to_tsv_file(feeds, [sid, json.dumps(feed)])
+            if len(sids_with_multiple_visas):
+                app.logger.warn(f"SIDs with two or more visas: {', '.join(sids_with_multiple_visas)}")
             self._upload_file_to_staging('student_demographics', feeds)
 
     def simplified_ethnicities(self, ethnic_map):
