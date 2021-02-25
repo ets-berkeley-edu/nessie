@@ -82,6 +82,7 @@ def register_routes(app):
                 app.logger.error(log_message)
             elif response.status_code >= 400:
                 app.logger.warning(log_message)
-            else:
+            elif not request.full_path.startswith('/api/ping'):
+                # Do not litter the logs with 'pings'
                 app.logger.debug(log_message)
         return response

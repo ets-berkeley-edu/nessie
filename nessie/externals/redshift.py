@@ -205,6 +205,7 @@ def _execute(sql, operation, cursor, **kwargs):
     set to 'read', results are returned as an array of named tuples.
     """
     result = None
+    silent = kwargs.pop('silent', False)
     try:
         params = None
         if kwargs:
@@ -217,11 +218,13 @@ def _execute(sql, operation, cursor, **kwargs):
         if operation == 'read':
             result = [row for row in cursor]
             query_time = datetime.now().timestamp() - ts
-            app.logger.debug(f'Redshift query returned {len(result)} rows in {query_time} seconds:\n{sql_for_log}\n{params or ""}')
+            if not silent:
+                app.logger.debug(f'Redshift query returned {len(result)} rows in {query_time} seconds:\n{sql_for_log}\n{params or ""}')
         else:
             result = cursor.statusmessage
             query_time = datetime.now().timestamp() - ts
-            app.logger.debug(f'Redshift query returned status {result} in {query_time} seconds:\n{sql_for_log}\n{params or ""}')
+            if not silent:
+                app.logger.debug(f'Redshift query returned status {result} in {query_time} seconds:\n{sql_for_log}\n{params or ""}')
     except psycopg2.Error as e:
         error_str = str(e)
         if e.pgcode:

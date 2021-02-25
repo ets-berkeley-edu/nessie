@@ -75,7 +75,7 @@ def app_status():
             app.logger.exception('Failed to connect to RDS database')
             return False
 
-    redshift_row = redshift.fetch('SELECT 1')
+    redshift_row = redshift.fetch('SELECT 1', silent=True)
     resp = {
         'app': True,
         'rds': db_status(),
