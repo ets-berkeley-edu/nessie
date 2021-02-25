@@ -30,6 +30,7 @@ from nessie.api.auth_helper import auth_required
 from nessie.api.errors import BadRequestError
 from nessie.jobs.abstract.abstract_registrations_job import AbstractRegistrationsJob
 from nessie.jobs.generate_merged_hist_enr_feeds import GenerateMergedHistEnrFeeds
+from nessie.jobs.import_sis_student_api import ImportSisStudentApi
 from nessie.lib.berkeley import feature_flag_edl
 from nessie.lib.http import tolerant_jsonify
 
@@ -83,7 +84,21 @@ def analyze_term_gpa(term_id, sid):
     return tolerant_jsonify(result)
 
 
-# get_all_advisee_term_gpas
+@app.route('/api/analyze_edl/student/<sid>')
+@auth_required
+def analyze_student(sid):
+    _safety_check()
+    result = {}
+
+    for key in ('edl', 'sis'):
+        with _override_edl_feature_flag(key == 'edl'):
+            rows, failure_count = ImportSisStudentApi().load(all_sids=[sid])
+            result[key] = {
+                'failureCount': failure_count,
+                'rows': rows,
+            }
+    return tolerant_jsonify(result)
+
 
 @contextmanager
 def _override_edl_feature_flag(value):
