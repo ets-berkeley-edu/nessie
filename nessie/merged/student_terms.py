@@ -23,6 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from decimal import Decimal
 from itertools import groupby
 import operator
 
@@ -250,7 +251,7 @@ def merge_enrollment(enrollments, term_id, term_name):
         term_section_ids[section_id] = True
 
         section_feed = {
-            'ccn': enrollment['sis_section_id'],
+            'ccn': _to_str_cautiously(enrollment['sis_section_id']),
             'component': enrollment['sis_instruction_format'],
             'enrollmentStatus': enrollment['sis_enrollment_status'],
             'grade': enrollment['grade'],
@@ -259,7 +260,7 @@ def merge_enrollment(enrollments, term_id, term_name):
             'midtermGrade': enrollment['grade_midterm'],
             'primary': enrollment['sis_primary'],
             'sectionNumber': enrollment['sis_section_num'],
-            'units': enrollment['units'],
+            'units': _to_str_cautiously(enrollment['units']),
         }
 
         # The SIS enrollments API gives us no better unique identifier than the course display name.
@@ -297,7 +298,7 @@ def merge_enrollment(enrollments, term_id, term_name):
         'termId': term_id,
         'termName': term_name,
         'enrollments': enrollments_feed,
-        'enrolledUnits': enrolled_units,
+        'enrolledUnits': _to_str_cautiously(enrolled_units),
         'unmatchedCanvasSites': [],
     }
     return term_feed
@@ -328,3 +329,7 @@ def sort_sections(enrollments_feed):
         )
     for enrollment in enrollments_feed:
         enrollment['sections'].sort(key=section_key)
+
+
+def _to_str_cautiously(v):
+    return (v is not None) and (float(v) if isinstance(v, Decimal) else v)

@@ -298,7 +298,7 @@ def edl_registration_to_json(row):
         },
         'eligibleToRegister': _flag_to_bool(row['eligible_to_enroll_flag']),
         'eligibilityStatus': {
-            'code': _str(row['registrn_eligibility_status_cd']),  # TODO: SIS API does not always match. Do we care?
+            'code': _str(row['registrn_eligibility_status_cd']),  # TODO: SIS API and EDL have diff values.
             'description': row['eligibility_status_desc'],
         },
         'registered': _flag_to_bool(row['registered_flag']),
@@ -381,7 +381,7 @@ def edl_registration_to_json(row):
                 },
                 'unitsEnrolled': _str(row['tot_inprog_nogpa']),
                 'unitsIncomplete': None,
-                'unitsMax': _str(row['max_nogpa_unit']),
+                'unitsMax': _str(row['max_nogpa_unit']),  # TODO: SIS API and EDL have diff values. Do we care?
                 'unitsMin': None,
                 'unitsOther': None,
                 'unitsPassed': _str(row['unt_passd_nogpa']),
