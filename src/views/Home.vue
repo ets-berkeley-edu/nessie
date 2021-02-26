@@ -111,14 +111,16 @@
     <b-toast
       v-if="alert"
       v-model="starting"
+      no-auto-hide
       :title="alert.title"
       toaster="b-toaster-top-full"
       variant="success"
+      @close="closeAlert"
     >
       <template #toast-title>
         <div class="d-flex align-items-center">
           <div class="px-3">
-            <b-icon icon="three-dots" animation="cylon" font-scale="2"></b-icon>
+            <b-icon icon="check2" font-scale="2"></b-icon>
           </div>
           <h3>{{ alert.title }}</h3>
         </div>
@@ -163,7 +165,8 @@ export default {
     params: {},
     runnableJobs: [],
     selected: null,
-    starting: false
+    starting: false,
+    toastTimer: undefined
   }),
   computed: {
     selectedJob() {
@@ -181,6 +184,11 @@ export default {
     })
   },
   methods: {
+    closeAlert() {
+      this.starting = false
+      this.alert = null
+      clearTimeout(this.toastTimer)
+    },
     describeDuration(ms) {
       const d = this.$moment.duration(ms / 1000, 'seconds')
       const pad = n => `${n < 10 ? '0' : ''}${n}`
@@ -239,7 +247,7 @@ export default {
         runJob(apiPath).then(() => {
           this.selected = null
           this.refresh()
-          setTimeout(() => (this.starting = false), 30000)
+          this.toastTimer = setTimeout(this.closeAlert, 60000)
         })
       })
     }
