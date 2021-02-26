@@ -46,7 +46,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_edl} GRANT SELECT ON TABLES 
 -- Internal tables
 --------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.academic_standing
+CREATE TABLE {redshift_schema_edl}.academic_standing
 (
     sid VARCHAR NOT NULL,
     term_id VARCHAR NOT NULL,
@@ -93,6 +93,15 @@ AS (
   FROM edl_classes
 );
 
+CREATE TABLE {redshift_schema_edl}.demographics
+(
+    sid VARCHAR NOT NULL,
+    gender VARCHAR,
+    minority BOOLEAN
+)
+DISTKEY (sid)
+SORTKEY (sid);
+
 CREATE TABLE {redshift_schema_edl}.enrollments
 SORTKEY (sis_id)
 AS (
@@ -114,13 +123,38 @@ AS (
     ON psa.emplid = sed.student_id
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.intended_majors
+CREATE TABLE {redshift_schema_edl}.ethnicities
+(
+    sid VARCHAR NOT NULL,
+    ethnicity VARCHAR
+)
+DISTKEY (sid)
+SORTKEY (sid, ethnicity);
+
+CREATE TABLE {redshift_schema_edl}.intended_majors
 (
     sid VARCHAR NOT NULL,
     major VARCHAR NOT NULL
 )
 DISTKEY (sid)
 SORTKEY (sid, major);
+
+CREATE TABLE {redshift_schema_edl}.minors
+(
+    sid VARCHAR NOT NULL,
+    minor VARCHAR NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid, minor);
+
+CREATE TABLE {redshift_schema_edl}.visas
+(
+    sid VARCHAR NOT NULL,
+    visa_status VARCHAR,
+    visa_type VARCHAR
+)
+DISTKEY (sid)
+SORTKEY (sid);
 
 CREATE TABLE {redshift_schema_edl}.student_academic_plan_index
 SORTKEY (sid)
