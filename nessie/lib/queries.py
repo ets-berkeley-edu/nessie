@@ -164,7 +164,7 @@ def get_advisee_student_profile_elements():
               FROM {calnet_schema()}.advisees ldap
               LEFT JOIN {intermediate_schema()}.users us
                 ON us.uid = ldap.ldap_uid
-              LEFT JOIN {student_schema()}.{student_schema_table('sis_profile')} sis
+              LEFT JOIN {student_schema()}.{student_schema_table('sis_profiles')} sis
                 ON sis.sid = ldap.sid
               LEFT JOIN {student_schema()}.{student_schema_table('degree_progress')} deg
                 ON deg.sid = ldap.sid
