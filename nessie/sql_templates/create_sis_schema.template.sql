@@ -33,6 +33,8 @@ DATABASE '{redshift_schema_sis}'
 IAM_ROLE '{redshift_iam_role}'
 CREATE EXTERNAL DATABASE IF NOT EXISTS;
 
+GRANT USAGE ON SCHEMA {redshift_schema_sis} TO GROUP {redshift_dblink_group};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_sis} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
 GRANT USAGE ON SCHEMA {redshift_schema_sis} TO GROUP {redshift_dblink_group_diablo};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_sis} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group_diablo};
 
