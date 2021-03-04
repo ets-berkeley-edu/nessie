@@ -54,7 +54,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     rds_schema = app.config['RDS_SCHEMA_STUDENT']
     rds_dblink_to_redshift = app.config['REDSHIFT_DATABASE'] + '_redshift'
     redshift_schema_edl = app.config['REDSHIFT_SCHEMA_EDL']
-    redshift_schema_sis = app.config['REDSHIFT_SCHEMA_SIS']
+    redshift_schema_sis = app.config['REDSHIFT_SCHEMA_STUDENT']
 
     def run(self, term_id=None):
         app.logger.info('Starting merged profile generation job.')
