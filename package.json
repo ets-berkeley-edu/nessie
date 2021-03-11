@@ -61,6 +61,7 @@
   },
   "license": "SEE LICENSE IN LICENSE",
   "resolutions": {
+    "elliptic": "^6.5.4",
     "minimist": ">=1.2.3",
     "selfsigned": ">=1.10.8"
   }
