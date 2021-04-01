@@ -180,10 +180,18 @@ def schedule_all_jobs(force=False):
     )
     schedule_chained_job(
         sched,
-        'JOB_IMPORT_PIAZZA_API',
+        'JOB_IMPORT_PIAZZA_API_DAILY',
         [
             ImportPiazzaApiData,
             TransformPiazzaApiData,
+        ],
+        force,
+    )
+    schedule_chained_job(
+        sched,
+        'JOB_IMPORT_PIAZZA_API_MONTHLY',
+        [
+            ImportPiazzaApiData('monthly'),
         ],
         force,
     )
