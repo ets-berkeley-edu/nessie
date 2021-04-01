@@ -37,18 +37,21 @@ from nessie.lib.util import get_s3_piazza_data_path
 class TransformPiazzaApiData(BackgroundJob):
 
     def run(self, archive=None):
-        frequency, datestamp, archive, s3_prefix = get_s3_piazza_data_path(archive)
-        app.logger.info('Starting Piazza API data transform job...')
+        frequency, datestamp, archive, s3_source = get_s3_piazza_data_path(archive)
 
         s3_dest = app.config['LOCH_S3_PIAZZA_DATA_PATH'] + '/transformed'
 
-        message = self.transform(s3_prefix, s3_dest, self.job_id)
+        app.logger.info(f'Starting Piazza API data transform job... {s3_source} > {s3_dest}')
+        message = self.transform(s3_source, s3_dest, self.job_id)
         app.logger.info('Piazza data transform complete.')
-        return f'{s3_prefix}: {message}'
+        return f'{s3_source}: {message}'
 
     def transform(self, s3_source, s3_dest, job_id):
-        app.logger.info(f'Doing Piazza API data transform job... {s3_source} > {s3_dest}')
         objects = s3.get_keys_with_prefix(s3_source)
+        if len(objects) == 0:
+            message = f'Zero objects found in {s3_source}. Quitting.'
+            app.logger.info(message)
+            return message
         app.logger.info(f'Will transform {len(objects)} objects from {s3_source} and put results to {s3_dest}.')
         objects_updated = 0
         new_objects = 0
