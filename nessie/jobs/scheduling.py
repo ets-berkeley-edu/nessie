@@ -183,6 +183,13 @@ def schedule_all_jobs(force=False):
         'JOB_IMPORT_PIAZZA_API',
         [
             ImportPiazzaApiData,
+        ],
+        force,
+    )
+    schedule_chained_job(
+        sched,
+        'JOB_TRANSFORM_PIAZZA_DATA',
+        [
             TransformPiazzaApiData,
         ],
         force,
