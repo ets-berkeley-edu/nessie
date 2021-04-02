@@ -52,6 +52,7 @@ class CreateAscAdvisingNotesSchema(BackgroundJob):
         resolved_ddl = resolve_sql_template(
             'create_asc_advising_notes_schema.template.sql',
             asc_data_sftp_path=asc_data_sftp_path,
+            asc_note_body_cutoff_date=app.config['ASC_NOTE_BODY_CUTOFF_DATE'],
         )
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(external_schema, resolved_ddl)
