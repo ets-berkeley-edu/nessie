@@ -49,6 +49,8 @@ CREATE EXTERNAL TABLE {redshift_schema_asc_advising_notes}.advising_notes
       advisorUid: VARCHAR,
       advisorFirstName: VARCHAR,
       advisorLastName: VARCHAR,
+      note: VARCHAR(max),
+      overview: VARCHAR,
       topics: ARRAY<VARCHAR>,
       createdDate: VARCHAR,
       lastModifiedDate: VARCHAR
@@ -102,6 +104,8 @@ AS (
       n.advisorUid AS advisor_uid,
       n.advisorFirstName AS advisor_first_name,
       n.advisorLastName AS advisor_last_name,
+      CASE WHEN n.createdDate > '{asc_note_body_cutoff_date}' THEN n.overview ELSE NULL END AS subject,
+      CASE WHEN n.createdDate > '{asc_note_body_cutoff_date}' THEN n.note ELSE NULL END AS body,
       TO_TIMESTAMP({redshift_schema_asc_advising_notes_internal}.to_utc_iso_string(n.createdDate), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
       TO_TIMESTAMP({redshift_schema_asc_advising_notes_internal}.to_utc_iso_string(n.lastModifiedDate), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at
     FROM {redshift_schema_asc_advising_notes}.advising_notes a, a.notes n
