@@ -67,7 +67,6 @@ AWS_REGION = 'aws region'
 ASC_ATHLETES_API_URL = 'https://secreturl.berkeley.edu/intensives.php?AcadYr=2017-18'
 ASC_ATHLETES_API_KEY = 'secret'
 ASC_THIS_ACAD_YR = '2017-18'
-ASC_NOTE_BODY_CUTOFF_DATE = '2021-03-31'
 
 BOAC_REFRESHERS = [{'API_KEY': 'Regents of the University of California', 'URL': 'https://ets-boac.example.com/api/refresh_me'}]
 
