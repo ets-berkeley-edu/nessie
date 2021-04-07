@@ -56,6 +56,7 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_LOAD_LRS_INCREMENTALS': 3800,
     'JOB_LOAD_ADVISING_NOTES': 4000,
     'JOB_IMPORT_PIAZZA_API': 6000,
+    'JOB_TRANSFORM_PIAZZA_DATA': 6050,
     'JOB_IMPORT_EDL': 7000,
 }
 
@@ -178,22 +179,8 @@ def schedule_all_jobs(force=False):
         ],
         force,
     )
-    schedule_chained_job(
-        sched,
-        'JOB_IMPORT_PIAZZA_API',
-        [
-            ImportPiazzaApiData,
-        ],
-        force,
-    )
-    schedule_chained_job(
-        sched,
-        'JOB_TRANSFORM_PIAZZA_DATA',
-        [
-            TransformPiazzaApiData,
-        ],
-        force,
-    )
+    schedule_chained_job(sched, 'JOB_IMPORT_PIAZZA_API', ImportPiazzaApiData, force)
+    schedule_chained_job(sched, 'JOB_TRANSFORM_PIAZZA_DATA', TransformPiazzaApiData, force)
     schedule_job(sched, 'JOB_IMPORT_EDL', CreateEdlSchema, force)
 
 
