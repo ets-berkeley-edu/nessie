@@ -179,8 +179,8 @@ def schedule_all_jobs(force=False):
         ],
         force,
     )
-    schedule_chained_job(sched, 'JOB_IMPORT_PIAZZA_API', ImportPiazzaApiData, force)
-    schedule_chained_job(sched, 'JOB_TRANSFORM_PIAZZA_DATA', TransformPiazzaApiData, force)
+    schedule_job(sched, 'JOB_IMPORT_PIAZZA_API', ImportPiazzaApiData, force)
+    schedule_job(sched, 'JOB_TRANSFORM_PIAZZA_DATA', TransformPiazzaApiData, force)
     schedule_job(sched, 'JOB_IMPORT_EDL', CreateEdlSchema, force)
 
 
