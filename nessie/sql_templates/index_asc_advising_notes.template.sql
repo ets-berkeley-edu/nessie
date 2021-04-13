@@ -41,6 +41,8 @@ CREATE TABLE {rds_schema_asc}.advising_notes (
   advisor_uid VARCHAR,
   advisor_first_name VARCHAR,
   advisor_last_name VARCHAR,
+  subject VARCHAR,
+  body TEXT,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
   PRIMARY KEY (id)
@@ -50,7 +52,7 @@ INSERT INTO {rds_schema_asc}.advising_notes (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT DISTINCT id, asc_id, sid, student_first_name, student_last_name, meeting_date,
-      advisor_uid, advisor_first_name, advisor_last_name, created_at, updated_at
+      advisor_uid, advisor_first_name, advisor_last_name, subject, body, created_at, updated_at
     FROM {redshift_schema_asc_advising_notes_internal}.advising_notes N
     WHERE N.updated_at = (
         SELECT MAX(M.updated_at)
@@ -104,7 +106,15 @@ INSERT INTO {rds_schema_asc}.advising_note_topics (
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_asc}.advising_notes_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_asc}.advising_notes_search_index AS (
-  SELECT n.id, to_tsvector('english', COALESCE(t.topic || ' ', '') || n.advisor_first_name || ' ' || n.advisor_last_name) AS fts_index
+  SELECT
+    n.id,
+    to_tsvector(
+      'english',
+      CASE
+        WHEN n.note IS NOT NULL THEN COALESCE(n.subject || ' ', '') || n.body
+        ELSE COALESCE(t.topic || ' ', '') || n.advisor_first_name || ' ' || n.advisor_last_name
+      END
+    ) AS fts_index
   FROM {rds_schema_asc}.advising_notes n
   LEFT OUTER JOIN {rds_schema_asc}.advising_note_topics t
   ON n.id = t.id
