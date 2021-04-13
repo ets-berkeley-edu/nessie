@@ -113,7 +113,7 @@ CREATE MATERIALIZED VIEW {rds_schema_asc}.advising_notes_search_index AS (
     to_tsvector(
       'english',
       CASE
-        WHEN n.note IS NOT NULL THEN COALESCE(n.subject || ' ', '') || n.body
+        WHEN n.body IS NOT NULL THEN COALESCE(n.subject || ' ', '') || n.body
         ELSE COALESCE(t.topic || ' ', '') || n.advisor_first_name || ' ' || n.advisor_last_name
       END
     ) AS fts_index
