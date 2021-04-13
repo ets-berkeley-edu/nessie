@@ -116,20 +116,20 @@ CREATE TABLE {redshift_schema_asc_advising_notes_internal}.advising_notes
 SORTKEY (id)
 AS (
     SELECT
-      n.studentSid || '-' || n.id AS id,
-      n.id AS asc_id,
-      n.studentSid AS sid,
-      n.studentFirstName AS student_first_name,
-      n.studentLastName AS student_last_name,
-      n.meetingDate AS meeting_date,
-      n.advisorUid AS advisor_uid,
-      n.advisorFirstName AS advisor_first_name,
-      n.advisorLastName AS advisor_last_name,
+      annbn.studentSid || '-' || annbn.id AS id,
+      annbn.id AS asc_id,
+      annbn.studentSid AS sid,
+      annbn.studentFirstName AS student_first_name,
+      annbn.studentLastName AS student_last_name,
+      annbn.meetingDate AS meeting_date,
+      annbn.advisorUid AS advisor_uid,
+      annbn.advisorFirstName AS advisor_first_name,
+      annbn.advisorLastName AS advisor_last_name,
       NULL AS subject,
       NULL AS body,
-      TO_TIMESTAMP({redshift_schema_asc_advising_notes_internal}.to_utc_iso_string(n.createdDate), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
-      TO_TIMESTAMP({redshift_schema_asc_advising_notes_internal}.to_utc_iso_string(n.lastModifiedDate), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at
-    FROM {redshift_schema_asc_advising_notes}.advising_notes_no_bodies a, a.notes n
+      TO_TIMESTAMP({redshift_schema_asc_advising_notes_internal}.to_utc_iso_string(annbn.createdDate), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
+      TO_TIMESTAMP({redshift_schema_asc_advising_notes_internal}.to_utc_iso_string(annbn.lastModifiedDate), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at
+    FROM {redshift_schema_asc_advising_notes}.advising_notes_no_bodies annb, annb.notes annbn
     UNION
     SELECT
       n.studentSid || '-' || n.id AS id,

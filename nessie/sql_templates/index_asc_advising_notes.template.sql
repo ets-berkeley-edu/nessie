@@ -70,6 +70,8 @@ INSERT INTO {rds_schema_asc}.advising_notes (
     advisor_uid VARCHAR,
     advisor_first_name VARCHAR,
     advisor_last_name VARCHAR,
+    subject VARCHAR,
+    body TEXT,
     created_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE
   )
