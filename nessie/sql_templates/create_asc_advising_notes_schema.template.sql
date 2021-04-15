@@ -152,7 +152,7 @@ CREATE TABLE {redshift_schema_asc_advising_notes_internal}.advising_note_topics
 SORTKEY (id)
 AS (
     SELECT DISTINCT
-      annbn.studentSid || '-' || n.id AS id,
+      annbn.studentSid || '-' || annbn.id AS id,
       annbn.id AS asc_id,
       annbn.studentSid AS sid,
       annbnt AS topic
