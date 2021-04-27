@@ -91,5 +91,6 @@ class ImportRegistrationsHistEnr(AbstractRegistrationsJob):
                     raise BackgroundJobError('Error inserting staging entries into destination: aborting job.')
 
         redshift.execute('VACUUM; ANALYZE;')
-        app.logger.info(f'Finished import of historical registration data: {len(successes)} successes and {len(failures)} failures.')
-        return successes, failures
+        return (
+            f'Finished import of historical registration data: {len(successes)} successes and {len(failures)} failures.'
+        )
