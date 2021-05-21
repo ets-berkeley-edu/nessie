@@ -135,7 +135,7 @@ def get_s3_oua_daily_path(cutoff=None):
 
 
 def get_s3_piazza_data_path(archive=None):
-    # archive need to be, or become, one of the piazza zip file names, without .zip, i.e. type_yyyy-mm-dd
+    # archives need to be, or become, one of the piazza zip file names, without .zip, i.e. type_yyyy-mm-dd
     if archive == 'latest' or archive is None:
         # we have decided to use 'yesterday' (local time, as the default for 'latest')
         archive = (date.today() - timedelta(days=1)).strftime('daily_%Y-%m-%d')
