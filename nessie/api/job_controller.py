@@ -23,9 +23,9 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import datetime
 import json
 import re
-import time
 
 from flask import current_app as app, request
 from nessie.api.auth_helper import auth_required
@@ -305,10 +305,13 @@ def import_non_current_students():
 @app.route('/api/job/import_piazza_api_data/<archive>', methods=['POST'])
 @auth_required
 def import_piazza_api_data(archive='latest'):
-    todays_day = time.localtime()[2]
-    # if today is the last day of the month, fetch the monthly as latest instead of daily
+    today = datetime.date.today()
+    todays_day = today.day
+    first_of_the_month = today.replace(day=1)
+    last_month = first_of_the_month - datetime.timedelta(days=1)
+    # if today is the first day of the month, fetch the last month's monthly as latest instead of daily
     if (archive == 'monthly') or (archive == 'latest' and todays_day == 1):
-        archive = time.strftime('monthly_%Y-%m-01', time.localtime())
+        archive = last_month.strftime('monthly_%Y-%m-01')
     if (archive != 'latest') and not (re.match('(daily|monthly|full)', archive) and re.match(r'(\w+)_(\d{4}\-\d{2}\-\d{2})', archive)):
         raise BadRequestError(f"Incorrect archive parameter '{archive}', should be 'latest' or like 'daily_2020-09-12'.")
     job_started = ImportPiazzaApiData(archive=archive).run_async()
