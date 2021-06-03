@@ -39,9 +39,12 @@ class ImportRegistrationsHistEnr(AbstractRegistrationsJob):
     def run(self, load_mode='batch'):
         new_sids = [row['sid'] for row in get_non_advisees_without_registration_imports()]
 
-        # The size of the non-advisee population makes it unlikely that a one-shot load of all these slow feeds will
+        # Owing to the size of the non-advisee population makes, a one-shot load of all these slow feeds may not
         # finish successfully without interfering with other work. Therefore the default approach is to apply a strict
         # upper limit on the number of feeds loaded in any one job run, no matter how many SIDs remain to be processed.
+        #
+        # (With the logic change in NS-1155 to pre-screen SIDs for student affiliation in CalNet, the cutoff is less
+        # likely to be triggered.)
         if load_mode == 'new':
             sids = new_sids
         elif load_mode == 'batch':
@@ -58,9 +61,9 @@ class ImportRegistrationsHistEnr(AbstractRegistrationsJob):
             'term_gpas': [],
             'last_registrations': [],
         }
-        successes, failures = self.get_registration_data_per_sids(rows, sids, include_demographics=False)
-        if len(successes) > 0:
-            for key in rows.keys():
+        self.get_registration_data_per_sids(rows, sids, include_demographics=False)
+        for key in rows.keys():
+            if len(rows[key]) > 0:
                 s3_key = f'{get_s3_sis_api_daily_path(use_edl_if_feature_flag=True)}/{key}.tsv'
                 app.logger.info(f'Upload {key} data to s3:{s3_key}. The file represents {len(rows[key])} students.')
                 if not s3.upload_tsv_rows(rows[key], s3_key):
@@ -92,5 +95,6 @@ class ImportRegistrationsHistEnr(AbstractRegistrationsJob):
 
         redshift.execute('VACUUM; ANALYZE;')
         return (
-            f'Finished import of historical registration data: {len(successes)} successes and {len(failures)} failures.'
+            f"Finished import of historical registration data: {len(rows['last_registrations'])} successes "
+            f"and {len(sids) - len(rows['last_registrations'])} failures."
         )

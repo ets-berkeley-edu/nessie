@@ -506,33 +506,27 @@ def get_fetched_non_advisees():
 
 
 def get_unfetched_non_advisees():
-    sql = f"""SELECT DISTINCT(attrs.sid)
-              FROM (
-                SELECT sis_id AS sid FROM {sis_schema()}.enrollments WHERE sis_id IS NOT NULL
-                UNION SELECT sid FROM {sis_schema()}.basic_attributes WHERE sid IS NOT NULL
-              ) attrs
+    sql = f"""SELECT DISTINCT attrs.sid
+              FROM {sis_schema()}.basic_attributes attrs
               LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = attrs.sid
               LEFT JOIN {coe_schema()}.students coe ON coe.sid = attrs.sid
               LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = attrs.sid
               LEFT JOIN {student_schema()}.{student_schema_table('sis_profiles_hist_enr')} hist ON hist.sid = attrs.sid
               WHERE ascs.sid IS NULL AND coe.sid IS NULL AND ug.sid IS NULL AND hist.sid IS NULL
-                AND char_length(attrs.sid) < 12
+                AND attrs.affiliations LIKE '%STUDENT-TYPE%' AND char_length(attrs.sid) < 12
         """
     return redshift.fetch(sql)
 
 
 def get_non_advisees_without_registration_imports():
-    sql = f"""SELECT DISTINCT(attrs.sid)
-              FROM (
-                SELECT sis_id AS sid FROM {sis_schema()}.enrollments WHERE sis_id IS NOT NULL
-                UNION SELECT sid FROM {sis_schema()}.basic_attributes WHERE sid IS NOT NULL
-              ) attrs
+    sql = f"""SELECT DISTINCT attrs.sid
+              FROM {sis_schema()}.basic_attributes attrs
               LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = attrs.sid
               LEFT JOIN {coe_schema()}.students coe ON coe.sid = attrs.sid
               LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = attrs.sid
               LEFT JOIN {student_schema()}.hist_enr_last_registrations hist ON hist.sid = attrs.sid
               WHERE ascs.sid IS NULL AND coe.sid IS NULL AND ug.sid IS NULL AND hist.sid IS NULL
-                AND char_length(attrs.sid) < 12
+                AND attrs.affiliations LIKE '%STUDENT-TYPE%' AND char_length(attrs.sid) < 12
         """
     return redshift.fetch(sql)
 
