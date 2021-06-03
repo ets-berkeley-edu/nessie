@@ -29,6 +29,40 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_advisor} GRANT SELECT ON TABLES T
 
 BEGIN TRANSACTION;
 
+DROP TABLE IF EXISTS {rds_schema_advisor}.advisor_attributes CASCADE;
+
+CREATE TABLE {rds_schema_advisor}.advisor_attributes (
+    sid VARCHAR,
+    uid VARCHAR,
+    first_name VARCHAR,
+    last_name VARCHAR,
+    title VARCHAR,
+    dept_code VARCHAR,
+    email VARCHAR,
+    campus_email VARCHAR
+);
+
+INSERT INTO {rds_schema_advisor}.advisor_attributes (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+    SELECT csid, ldap_uid, first_name, last_name, NULLIF(title, ''), NULLIF(dept_code, ''), NULLIF(email, ''), campus_email
+    FROM {redshift_schema_advisor_internal}.advisor_attributes
+    ORDER BY ldap_uid
+  $REDSHIFT$)
+  AS redshift_advisor_attributes (
+    sid VARCHAR,
+    uid VARCHAR,
+    first_name VARCHAR,
+    last_name VARCHAR,
+    title VARCHAR,
+    dept_code VARCHAR,
+    email VARCHAR,
+    campus_email VARCHAR
+  )
+);
+
+CREATE INDEX idx_advisor_attributes_uid ON {rds_schema_advisor}.advisor_attributes(uid);
+
 DROP TABLE IF EXISTS {rds_schema_advisor}.advisor_roles CASCADE;
 
 CREATE TABLE {rds_schema_advisor}.advisor_roles (
