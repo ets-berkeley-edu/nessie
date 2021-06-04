@@ -103,7 +103,7 @@ class ImportSisStudentApiHistEnr(BackgroundJob):
                         remaining_sids.discard(sid)
                         saved_sids.append(sid)
                 if remaining_sids:
-                    failure_count = len(remaining_sids)
+                    failure_count = failure_count + len(remaining_sids)
                     app.logger.error(f'SIS student API import failed for non-advisees {remaining_sids}.')
 
         app.logger.info(f'Wanted {len(all_sids)} non-advisees; got {len(saved_sids)} in {timer() - start_loop} secs')

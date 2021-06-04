@@ -61,7 +61,7 @@ class ImportRegistrationsHistEnr(AbstractRegistrationsJob):
             'term_gpas': [],
             'last_registrations': [],
         }
-        self.get_registration_data_per_sids(rows, sids, include_demographics=False)
+        successes, failures = self.get_registration_data_per_sids(rows, sids, include_demographics=False)
         for key in rows.keys():
             if len(rows[key]) > 0:
                 s3_key = f'{get_s3_sis_api_daily_path(use_edl_if_feature_flag=True)}/{key}.tsv'
@@ -95,6 +95,5 @@ class ImportRegistrationsHistEnr(AbstractRegistrationsJob):
 
         redshift.execute('VACUUM; ANALYZE;')
         return (
-            f"Finished import of historical registration data: {len(rows['last_registrations'])} successes "
-            f"and {len(sids) - len(rows['last_registrations'])} failures."
+            f'Finished import of historical registration data: {successes} successes and {failures} failures.'
         )
