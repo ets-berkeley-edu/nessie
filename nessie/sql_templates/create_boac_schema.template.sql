@@ -244,7 +244,7 @@ AS (
          * but we may not have them stored for all terms. Use the API timestamp only when present and
          * more recent.
          */
-        GREATEST(MAX(ase.last_activity_at), MAX(api.last_activity_at), MAX(caliper.last_activity)) AS last_activity_at,
+        GREATEST(MAX(ase.last_activity_at), MAX(api.last_activity_at)) AS last_activity_at,
         MIN(ase.sis_enrollment_status) AS sis_enrollment_status,
         MAX(csf.current_score) AS current_score,
         MAX(csf.final_score) AS final_score
@@ -259,9 +259,6 @@ AS (
         LEFT JOIN {redshift_schema_student}.canvas_api_enrollments api
             ON ase.canvas_user_id = api.user_id
             AND ase.canvas_course_id = api.course_id
-        LEFT JOIN {redshift_schema_caliper_analytics}.last_activity_caliper caliper
-            ON ase.canvas_user_id = caliper.canvas_user_id
-            AND ase.canvas_course_id = caliper.canvas_course_id
     GROUP BY
         ase.uid,
         ase.canvas_user_id,
