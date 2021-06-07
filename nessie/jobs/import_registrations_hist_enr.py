@@ -95,5 +95,5 @@ class ImportRegistrationsHistEnr(AbstractRegistrationsJob):
 
         redshift.execute('VACUUM; ANALYZE;')
         return (
-            f'Finished import of historical registration data: {successes} successes and {failures} failures.'
+            f'Finished import of historical registration data: {len(successes)} successes and {len(failures)} failures.'
         )
