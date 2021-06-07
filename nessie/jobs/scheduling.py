@@ -89,13 +89,11 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
     from nessie.jobs.create_sis_schema import CreateSisSchema
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
-    from nessie.jobs.generate_canvas_caliper_analytics import GenerateCanvasCaliperAnalytics
     from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
     from nessie.jobs.generate_merged_hist_enr_feeds import GenerateMergedHistEnrFeeds
     from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
     from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
     from nessie.jobs.import_degree_progress import ImportDegreeProgress
-    from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
     from nessie.jobs.import_piazza_api_data import ImportPiazzaApiData
     from nessie.jobs.import_sis_student_api import ImportSisStudentApi
     from nessie.jobs.import_sis_student_api_hist_enr import ImportSisStudentApiHistEnr
@@ -103,13 +101,11 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.import_registrations_hist_enr import ImportRegistrationsHistEnr
     from nessie.jobs.index_advising_notes import IndexAdvisingNotes
     from nessie.jobs.index_enrollments import IndexEnrollments
-    from nessie.jobs.migrate_lrs_incrementals import MigrateLrsIncrementals
     from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
     from nessie.jobs.refresh_boac_cache import RefreshBoacCache
     from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
     from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
     from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
-    from nessie.jobs.transform_lrs_incrementals import TransformLrsIncrementals
     from nessie.jobs.transform_piazza_api_data import TransformPiazzaApiData
     from nessie.jobs.verify_sis_advising_note_attachments import VerifySisAdvisingNoteAttachments
 
@@ -133,17 +129,6 @@ def schedule_all_jobs(force=False):
     schedule_job(sched, 'JOB_IMPORT_REGISTRATIONS', ImportRegistrations, force, load_mode='batch')
     schedule_job(sched, 'JOB_IMPORT_SIS_DATA', CreateSisSchema, force)
     schedule_job(sched, 'JOB_IMPORT_CANVAS_ENROLLMENTS', ImportCanvasEnrollmentsApi, force)
-    schedule_chained_job(
-        sched,
-        'JOB_LOAD_LRS_INCREMENTALS',
-        [
-            ImportLrsIncrementals,
-            TransformLrsIncrementals,
-            MigrateLrsIncrementals,
-        ],
-        force,
-    )
-    schedule_job(sched, 'JOB_GENERATE_CANVAS_CALIPER_ANALYTICS', GenerateCanvasCaliperAnalytics, force)
     schedule_chained_job(
         sched,
         'JOB_GENERATE_ALL_TABLES',
