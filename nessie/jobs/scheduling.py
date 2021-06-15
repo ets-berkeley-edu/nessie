@@ -58,6 +58,7 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_IMPORT_PIAZZA_API': 6000,
     'JOB_TRANSFORM_PIAZZA_DATA': 6050,
     'JOB_IMPORT_EDL': 7000,
+    'JOB_IMPORT_YCBM': 7500,
 }
 
 
@@ -99,6 +100,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.import_sis_student_api_hist_enr import ImportSisStudentApiHistEnr
     from nessie.jobs.import_registrations import ImportRegistrations
     from nessie.jobs.import_registrations_hist_enr import ImportRegistrationsHistEnr
+    from nessie.jobs.import_ycbm_api import ImportYcbmApi
     from nessie.jobs.index_advising_notes import IndexAdvisingNotes
     from nessie.jobs.index_enrollments import IndexEnrollments
     from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
@@ -167,6 +169,7 @@ def schedule_all_jobs(force=False):
     schedule_job(sched, 'JOB_IMPORT_PIAZZA_API', ImportPiazzaApiData, force)
     schedule_job(sched, 'JOB_TRANSFORM_PIAZZA_DATA', TransformPiazzaApiData, force)
     schedule_job(sched, 'JOB_IMPORT_EDL', CreateEdlSchema, force)
+    schedule_job(sched, 'JOB_IMPORT_YCBM', ImportYcbmApi, force)
 
 
 def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):

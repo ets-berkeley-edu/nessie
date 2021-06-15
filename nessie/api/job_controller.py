@@ -69,6 +69,7 @@ from nessie.jobs.import_registrations_hist_enr import ImportRegistrationsHistEnr
 from nessie.jobs.import_sis_student_api import ImportSisStudentApi
 from nessie.jobs.import_sis_student_api_hist_enr import ImportSisStudentApiHistEnr
 from nessie.jobs.import_student_photos import ImportStudentPhotos
+from nessie.jobs.import_ycbm_api import ImportYcbmApi
 from nessie.jobs.index_advising_notes import IndexAdvisingNotes
 from nessie.jobs.index_enrollments import IndexEnrollments
 from nessie.jobs.migrate_lrs_incrementals import MigrateLrsIncrementals
@@ -315,6 +316,13 @@ def import_piazza_api_data(archive='latest'):
     if (archive != 'latest') and not (re.match('(daily|monthly|full)', archive) and re.match(r'(\w+)_(\d{4}\-\d{2}\-\d{2})', archive)):
         raise BadRequestError(f"Incorrect archive parameter '{archive}', should be 'latest' or like 'daily_2020-09-12'.")
     job_started = ImportPiazzaApiData(archive=archive).run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/import_ycbm_api', methods=['POST'])
+@auth_required
+def import_ycbm_api():
+    job_started = ImportYcbmApi().run_async()
     return respond_with_status(job_started)
 
 

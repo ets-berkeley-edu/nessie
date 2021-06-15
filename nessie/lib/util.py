@@ -66,7 +66,11 @@ def localize_datetime(dt):
 
 
 def localized_datestamp(date_to_stamp=None):
-    return localize_datetime(date_to_stamp or datetime.now()).strftime('%Y-%m-%d')
+    if not date_to_stamp:
+        date_to_stamp = datetime.now()
+    elif not hasattr(date_to_stamp, 'astimezone'):
+        date_to_stamp = datetime(date_to_stamp.year, date_to_stamp.month, date_to_stamp.day)
+    return localize_datetime(date_to_stamp).strftime('%Y-%m-%d')
 
 
 def hashed_datestamp(date_to_stamp=None):
@@ -179,6 +183,10 @@ def get_s3_sis_sysadm_daily_path(cutoff=None):
     return app.config['LOCH_S3_SIS_DATA_PATH'] + '/sis-sysadm/daily/' + hashed_datestamp(cutoff)
 
 
+def get_s3_ycbm_daily_path(cutoff=None):
+    return app.config['LOCH_S3_YCBM_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
+
+
 def resolve_sql_template_string(template_string, **kwargs):
     """Our DDL template files are simple enough to use standard Python string formatting."""
     s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
@@ -272,3 +280,7 @@ def to_float(s):
         return float(s)
     except (TypeError, ValueError):
         return None
+
+
+def utc_now():
+    return datetime.utcnow().replace(tzinfo=pytz.utc)
