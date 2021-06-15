@@ -199,6 +199,7 @@ LOCH_S3_OUA_DATA_PATH = 'oua-data'
 LOCH_S3_SLATE_DATA_SFTP_PATH = 'oua-data/slate-sftp'
 LOCH_S3_SIS_DATA_PATH = 'sis-data'
 LOCH_S3_SIS_API_DATA_PATH = 'sis-api-data'
+LOCH_S3_YCBM_DATA_PATH = 'ycbm-data'
 
 LOCH_CANVAS_DATA_REQUESTS_CUTOFF_DATE = '20180101'
 
@@ -305,3 +306,5 @@ WORKER_THREADS = 5
 YCBM_API_PASSWORD = 'some password'
 YCBM_API_USERNAME = 'some username'
 YCBM_BASE_URL = 'https://api.youcanbook.me/v1/some_account_id'
+YCBM_FETCH_DAYS_AHEAD = 7
+YCBM_FETCH_DAYS_BEHIND = 3
