@@ -301,3 +301,7 @@ WORKER_HOST = 'hard-working-nessie.berkeley.edu'
 # Thread queues will be ignored if "master" is embedded in the EB_ENVIRONMENT environment variable.
 WORKER_QUEUE_ENABLED = True
 WORKER_THREADS = 5
+
+YCBM_API_PASSWORD = 'some password'
+YCBM_API_USERNAME = 'some username'
+YCBM_BASE_URL = 'https://api.youcanbook.me/v1/some_account_id'

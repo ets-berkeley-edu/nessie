@@ -1,0 +1,76 @@
+[
+  {
+    "id": "b615c1ad-b78c-4a61-a2e4-a21428b20d44",
+    "title": "L&S Advising Appt:  Laverne DeFazio/Lenny Kosnowski",
+    "startsAt": "2021-06-04T07:30:00",
+    "endsAt": "2021-06-04T08:00:00",
+    "cancelled": true,
+    "cancellationReason": "Lost in elevator",
+    "teamMember": {
+      "id": "m10987",
+      "name": "Laverne DeFazio",
+      "email": "laverne@berkeley.edu"
+    },
+    "answers": [
+      {
+        "code": "FNAME",
+        "string": "Lenny Kosnowski"
+      },
+      {
+        "code": "SID",
+        "string": "123456"
+      },
+      {
+        "code": "EMAIL",
+        "string": "lenny@berkeley.edu"
+      },
+      {
+        "code": "Q5",
+        "string": "Video"
+      },
+      {
+        "code": "NEIGHBORHOOD",
+        "string": "Social Sciences A, Social Sciences B, Social Sciences C, Social Sciences D, Social Sciences E/Interdisciplinary Majors"
+      },
+      {
+        "code": "Q6",
+        "string": "Inquiries regarding course scheduling and cafeteria hours."
+      },
+      {
+        "code": "Q8",
+        "string": "yes"
+      }
+    ]
+  },
+  {
+    "id": "bf68134c-e80a-4752-a9c2-65cde40cdd9a",
+    "title": "L&S Advising Appt:  Shirley Feeney/Andrew Squiggman",
+    "startsAt": "2021-06-03T15:30:00",
+    "endsAt": "2021-06-03T16:00:00",
+    "cancelled": false,
+    "cancellationReason": "",
+    "teamMember": {
+      "id": "m77890",
+      "name": "Shirley Feeney",
+      "email": "shirley@berkeley.edu"
+    },
+    "answers": [
+      {
+        "code": "FNAME",
+        "string": "Andrew Squiggman"
+      },
+      {
+        "code": "SID",
+        "string": "987654"
+      },
+      {
+        "code": "EMAIL",
+        "string": "squiggy@gmail.com"
+      },
+      {
+        "code": "Q6",
+        "string": "Readmission after dismissal."
+      }
+    ]
+  }
+]
