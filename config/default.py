@@ -277,6 +277,7 @@ REDSHIFT_SCHEMA_SIS = 'External SIS schema name'
 REDSHIFT_SCHEMA_SIS_ADVISING_NOTES = 'External SIS Advising Notes schema name'
 REDSHIFT_SCHEMA_SIS_TERMS = 'External SIS Terms schema name'
 REDSHIFT_SCHEMA_UNDERGRADS_EXTERNAL = 'External Undergrads schema name'
+REDSHIFT_SCHEMA_YCBM = 'External YCBM schema name'
 
 STUDENT_API_ID = 'secretid'
 STUDENT_API_KEY = 'secretkey'

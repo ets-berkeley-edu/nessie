@@ -89,6 +89,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.create_oua_schema import CreateOUASchema
     from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
     from nessie.jobs.create_sis_schema import CreateSisSchema
+    from nessie.jobs.create_ycbm_schema import CreateYcbmSchema
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
     from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
     from nessie.jobs.generate_merged_hist_enr_feeds import GenerateMergedHistEnrFeeds
@@ -169,7 +170,15 @@ def schedule_all_jobs(force=False):
     schedule_job(sched, 'JOB_IMPORT_PIAZZA_API', ImportPiazzaApiData, force)
     schedule_job(sched, 'JOB_TRANSFORM_PIAZZA_DATA', TransformPiazzaApiData, force)
     schedule_job(sched, 'JOB_IMPORT_EDL', CreateEdlSchema, force)
-    schedule_job(sched, 'JOB_IMPORT_YCBM', ImportYcbmApi, force)
+    schedule_chained_job(
+        sched,
+        'JOB_IMPORT_YCBM',
+        [
+            ImportYcbmApi,
+            CreateYcbmSchema,
+        ],
+        force,
+    )
 
 
 def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):
