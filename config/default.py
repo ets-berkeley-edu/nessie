@@ -102,10 +102,6 @@ EMAIL_REDIRECT_WHEN_TESTING = ['__EMAIL_REDIRECT_WHEN_TESTING__at_berkeley.edu']
 EMAIL_SYSTEM_ERRORS_TO = ['__NESSIE_at_berkeley.edu']
 EMAIL_TEST_MODE = True
 
-ENROLLMENTS_API_ID = 'secretid'
-ENROLLMENTS_API_KEY = 'secretkey'
-ENROLLMENTS_API_URL = 'https://secreturl.berkeley.edu/enrollments'
-
 FEATURE_FLAG_ENTERPRISE_DATA_LAKE = False
 
 # True on master node, false on worker nodes.
