@@ -259,6 +259,7 @@ REDSHIFT_SCHEMA_SIS_INTERNAL = 'sis_data'
 REDSHIFT_SCHEMA_STUDENT = 'student'
 REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL = 'sis_advising_notes'
 REDSHIFT_SCHEMA_UNDERGRADS = 'boac_advising_undergrads'
+REDSHIFT_SCHEMA_YCBM_INTERNAL = 'ycbm_data'
 
 # The following external schemas vary between environments and do need to be overridden locally.
 REDSHIFT_SCHEMA_ADVISOR = 'External Advisor schema name'
