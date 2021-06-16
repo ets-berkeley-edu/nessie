@@ -60,7 +60,12 @@ def _put_booking_data_to_s3(date):
     serialized_data = ''
     for b in bookings:
         b['importedAt'] = imported_at
-        # JsonSerDe in Redshift schema creation requires one and only one JSON record per line in text file in S3.
+        # Make JsonSerDe schema creation easier in Redshift: transform arrays to dicts, and output one JSON record per line in text file in S3.
+        answers_dict = {}
+        for a in b.get('answers', []):
+            if 'code' in a and 'string' in a:
+                answers_dict[a['code'].lower()] = a['string']
+        b['answers'] = answers_dict
         serialized_data += json.dumps(b) + '\n'
     # Upload one copy to the daily path, which we keep for a few days in S3 in case something goes wrong and we need to
     # recover an earlier run.
