@@ -246,6 +246,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_schema_undergrads': app.config['REDSHIFT_SCHEMA_UNDERGRADS'],
         'redshift_schema_undergrads_external': app.config['REDSHIFT_SCHEMA_UNDERGRADS_EXTERNAL'],
         'redshift_schema_ycbm': app.config['REDSHIFT_SCHEMA_YCBM'],
+        'redshift_schema_ycbm_internal': app.config['REDSHIFT_SCHEMA_YCBM_INTERNAL'],
         'redshift_iam_role': app.config['REDSHIFT_IAM_ROLE'],
         'loch_s3_asc_data_path': s3_prefix + get_s3_asc_daily_path(),
         'loch_s3_boac_analytics_incremental_path': s3_prefix + get_s3_boac_analytics_incremental_path(),
