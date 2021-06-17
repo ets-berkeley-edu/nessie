@@ -287,10 +287,6 @@ STUDENT_API_USER = None
 SQLALCHEMY_DATABASE_URI = 'postgres://nessie:nessie@localhost:5432/nessie'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-TERMS_API_ID = 'secretid'
-TERMS_API_KEY = 'secretkey'
-TERMS_API_URL = 'https://secreturl.berkeley.edu/terms'
-
 TIMEZONE = 'America/Los_Angeles'
 
 VUE_LOCALHOST_BASE_URL = None
