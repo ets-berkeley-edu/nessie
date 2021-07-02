@@ -143,7 +143,6 @@ SORTKEY (sid)
 AS (
     SELECT DISTINCT
       I.ADVISOR_ID AS sid,
-      I.CAMPUS_ID AS uid,
       I.ADVISOR_TYPE AS advisor_type_code,
       I.ADVISOR_TYPE_DESCR AS advisor_type,
       I.ACADEMIC_PLAN AS plan_code,
@@ -156,7 +155,6 @@ AS (
     UNION
     SELECT DISTINCT
       S.ADVISOR_ID AS sid,
-      S.CAMPUS_ID AS uid,
       S.ADVISOR_ROLE AS advisor_type_code,
       S.ADVISOR_ROLE_DESCR AS advisor_type,
       S.ACADEMIC_PLAN AS plan_code,
