@@ -63,6 +63,45 @@ INSERT INTO {rds_schema_advisor}.advisor_attributes (
 
 CREATE INDEX idx_advisor_attributes_uid ON {rds_schema_advisor}.advisor_attributes(uid);
 
+DROP TABLE IF EXISTS {rds_schema_advisor}.advisor_departments CASCADE;
+
+CREATE TABLE {rds_schema_advisor}.advisor_departments (
+SORTKEY (sid)
+AS (
+   sid VARCHAR,
+   uid VARCHAR,
+   advisor_type_code VARCHAR,
+   advisor_type VARCHAR,
+   plan_code VARCHAR,
+   plan VARCHAR,
+   department_code VARCHAR,
+   department VARCHAR
+);
+
+INSERT INTO {rds_schema_advisor}.advisor_departments (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+    SELECT sid, uid, advisor_type_code, advisor_type, plan_code, plan,
+           department_code, department
+    FROM {redshift_schema_advisor_internal}.advisor_departments
+    ORDER BY uid, plan_code
+  $REDSHIFT$)
+  AS redshift_advisor_departments (
+    sid VARCHAR,
+    uid VARCHAR,
+    advisor_type_code VARCHAR,
+    advisor_type VARCHAR,
+    plan_code VARCHAR,
+    plan VARCHAR,
+    department_code VARCHAR,
+    department VARCHAR
+  )
+);
+
+CREATE INDEX idx_advisor_departments_uid ON {rds_schema_advisor}.advisor_departments(uid);
+CREATE INDEX idx_advisor_departments_plan_code ON {rds_schema_advisor}.advisor_departments(plan_code);
+CREATE INDEX idx_advisor_departments_department_code ON {rds_schema_advisor}.advisor_departments(department_code);
+
 DROP TABLE IF EXISTS {rds_schema_advisor}.advisor_roles CASCADE;
 
 CREATE TABLE {rds_schema_advisor}.advisor_roles (

@@ -143,8 +143,11 @@ SORTKEY (sid)
 AS (
     SELECT DISTINCT
       I.ADVISOR_ID AS sid,
+      I.CAMPUS_ID AS uid,
       I.ADVISOR_TYPE AS advisor_type_code,
       I.ADVISOR_TYPE_DESCR AS advisor_type,
+      I.ACADEMIC_PLAN AS plan_code,
+      I.ACADEMIC_PLAN_DESCR AS plan,
       O.ACADPLAN_OWNEDBY_CODE AS department_code,
       O.ACADPLAN_OWNEDBY_DESCR AS department
     FROM {redshift_schema_advisor}.instructor_advisor I
@@ -153,8 +156,11 @@ AS (
     UNION
     SELECT DISTINCT
       S.ADVISOR_ID AS sid,
+      S.CAMPUS_ID AS uid,
       S.ADVISOR_ROLE AS advisor_type_code,
       S.ADVISOR_ROLE_DESCR AS advisor_type,
+      S.ACADEMIC_PLAN AS plan_code,
+      S.ACADEMIC_PLAN_DESCR AS plan,
       O.ACADPLAN_OWNEDBY_CODE AS department_code,
       O.ACADPLAN_OWNEDBY_DESCR AS department
     FROM {redshift_schema_advisor}.student_advisor S
