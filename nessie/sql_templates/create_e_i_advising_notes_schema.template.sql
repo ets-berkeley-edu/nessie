@@ -49,7 +49,9 @@ CREATE EXTERNAL TABLE {redshift_schema_e_i_advising_notes}.advising_notes
       advisorUid: VARCHAR,
       advisorFirstName: VARCHAR,
       advisorLastName: VARCHAR,
+      overview: VARCHAR,
       topics: ARRAY<VARCHAR>,
+      note: VARCHAR(MAX),
       createdDate: VARCHAR,
       lastModifiedDate: VARCHAR
     >
@@ -102,6 +104,8 @@ AS (
       n.advisorUid AS advisor_uid,
       n.advisorFirstName AS advisor_first_name,
       n.advisorLastName AS advisor_last_name,
+      n.overview AS overview,
+      n.note AS note,
       TO_TIMESTAMP({redshift_schema_e_i_advising_notes_internal}.to_utc_iso_string(n.createdDate), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
       TO_TIMESTAMP({redshift_schema_e_i_advising_notes_internal}.to_utc_iso_string(n.lastModifiedDate), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at
     FROM {redshift_schema_e_i_advising_notes}.advising_notes a, a.notes n
