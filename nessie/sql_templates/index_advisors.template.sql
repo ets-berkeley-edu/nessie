@@ -66,8 +66,6 @@ CREATE INDEX idx_advisor_attributes_uid ON {rds_schema_advisor}.advisor_attribut
 DROP TABLE IF EXISTS {rds_schema_advisor}.advisor_departments CASCADE;
 
 CREATE TABLE {rds_schema_advisor}.advisor_departments (
-SORTKEY (sid)
-AS (
    sid VARCHAR,
    uid VARCHAR,
    advisor_type_code VARCHAR,
