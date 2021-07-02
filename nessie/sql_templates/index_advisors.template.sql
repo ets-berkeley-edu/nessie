@@ -67,7 +67,6 @@ DROP TABLE IF EXISTS {rds_schema_advisor}.advisor_departments CASCADE;
 
 CREATE TABLE {rds_schema_advisor}.advisor_departments (
    sid VARCHAR,
-   uid VARCHAR,
    advisor_type_code VARCHAR,
    advisor_type VARCHAR,
    plan_code VARCHAR,
@@ -79,14 +78,13 @@ CREATE TABLE {rds_schema_advisor}.advisor_departments (
 INSERT INTO {rds_schema_advisor}.advisor_departments (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT sid, uid, advisor_type_code, advisor_type, plan_code, plan,
+    SELECT sid, advisor_type_code, advisor_type, plan_code, plan,
            department_code, department
     FROM {redshift_schema_advisor_internal}.advisor_departments
-    ORDER BY uid, plan_code
+    ORDER BY sid, plan_code
   $REDSHIFT$)
   AS redshift_advisor_departments (
     sid VARCHAR,
-    uid VARCHAR,
     advisor_type_code VARCHAR,
     advisor_type VARCHAR,
     plan_code VARCHAR,
@@ -96,7 +94,7 @@ INSERT INTO {rds_schema_advisor}.advisor_departments (
   )
 );
 
-CREATE INDEX idx_advisor_departments_uid ON {rds_schema_advisor}.advisor_departments(uid);
+CREATE INDEX idx_advisor_departments_sid ON {rds_schema_advisor}.advisor_departments(sid);
 CREATE INDEX idx_advisor_departments_plan_code ON {rds_schema_advisor}.advisor_departments(plan_code);
 CREATE INDEX idx_advisor_departments_department_code ON {rds_schema_advisor}.advisor_departments(department_code);
 
