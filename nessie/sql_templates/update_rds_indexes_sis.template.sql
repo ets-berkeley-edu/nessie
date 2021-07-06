@@ -125,3 +125,58 @@ INSERT INTO {rds_schema_sis_internal}.sis_sections (
 );
 
 CREATE INDEX idx_sis_sections_term_id_section_id ON {rds_schema_sis_internal}.sis_sections(sis_term_id, sis_section_id);
+
+DROP TABLE IF EXISTS {rds_schema_sis_internal}.academic_plan_hierarchy CASCADE;
+
+CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.academic_plan_hierarchy
+(
+    plan_code VARCHAR,
+    plan_status VARCHAR,
+    plan_name VARCHAR,
+    major_code VARCHAR,
+    major_name VARCHAR,
+    plan_type_code VARCHAR,
+    department_code VARCHAR,
+    department_name VARCHAR,
+    division_code VARCHAR,
+    division_name VARCHAR,
+    college_code VARCHAR,
+    college_name VARCHAR,
+    career_code VARCHAR,
+    career_name VARCHAR,
+    program_code VARCHAR,
+    program_name VARCHAR,
+    degree_code VARCHAR,
+    degree_name VARCHAR
+);
+
+INSERT INTO {rds_schema_sis_internal}.academic_plan_hierarchy (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+    SELECT plan_code, plan_status, plan_name, major_code, major_name, plan_type_code,
+      department_code, department_name, division_code, division_name,
+      college_code, college_name, career_code, career_name,
+      program_code, program_name, degree_code, degree_name
+    FROM {redshift_schema_sis_internal}.academic_plan_hierarchy
+  $REDSHIFT$)
+  AS redshift_academic_plan_hierarchy (
+    plan_code VARCHAR,
+    plan_status VARCHAR,
+    plan_name VARCHAR,
+    major_code VARCHAR,
+    major_name VARCHAR,
+    plan_type_code VARCHAR,
+    department_code VARCHAR,
+    department_name VARCHAR,
+    division_code VARCHAR,
+    division_name VARCHAR,
+    college_code VARCHAR,
+    college_name VARCHAR,
+    career_code VARCHAR,
+    career_name VARCHAR,
+    program_code VARCHAR,
+    program_name VARCHAR,
+    degree_code VARCHAR,
+    degree_name VARCHAR
+  )
+);
