@@ -26,7 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from nessie.lib.http import tolerant_jsonify
 
 
-class JsonableException(Exception):
+class JsonableError(Exception):
     def __init__(self, message):
         Exception.__init__(self)
         self.message = message
@@ -38,13 +38,13 @@ class JsonableException(Exception):
             return ''
 
 
-class BadRequestError(JsonableException):
+class BadRequestError(JsonableError):
     pass
 
 
-class UnauthorizedRequestError(JsonableException):
+class UnauthorizedRequestError(JsonableError):
     pass
 
 
-class ResourceNotFoundError(JsonableException):
+class ResourceNotFoundError(JsonableError):
     pass
