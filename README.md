@@ -44,7 +44,7 @@ mkdir /Volumes/XYZ/nessie_config
 export NESSIE_LOCAL_CONFIGS=/Volumes/XYZ/nessie_config
 ```
 
-## Start it up!
+## Fire it up!
 
 1. Open up a terminal and start the Python app:
 ```
