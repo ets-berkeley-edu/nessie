@@ -83,7 +83,7 @@ REDSHIFT_SCHEMA_STUDENT = 'student_test'
 REDSHIFT_SCHEMA_UNDERGRADS = 'undergrads_test'
 REDSHIFT_SCHEMA_UNDERGRADS_EXTERNAL = 'undergrads_external_test'
 
-SQLALCHEMY_DATABASE_URI = 'postgres://nessie:nessie@localhost:5432/nessie_test'
+SQLALCHEMY_DATABASE_URI = 'postgresql://nessie:nessie@localhost:5432/nessie_test'
 
 STUDENT_API_MAX_THREADS = 1
 

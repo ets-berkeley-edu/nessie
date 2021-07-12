@@ -138,7 +138,7 @@ PIAZZA_API_PASSWORD = 'piazza_api_password'
 PIAZZA_API_SESSIONID = 'a_random_string'
 
 # Loch LRS configs
-LRS_DATABASE_URI = 'postgres://lrs:lrs@localhost:5432/lrs'
+LRS_DATABASE_URI = 'postgresql://lrs:lrs@localhost:5432/lrs'
 
 LRS_CANVAS_INCREMENTAL_REPLICATION_TASK_ID = 'task-id'
 LRS_CANVAS_INCREMENTAL_TRANSIENT_BUCKET = 'transient bucket'
@@ -284,7 +284,7 @@ STUDENT_API_MAX_THREADS = 5
 STUDENT_API_PWD = None
 STUDENT_API_USER = None
 
-SQLALCHEMY_DATABASE_URI = 'postgres://nessie:nessie@localhost:5432/nessie'
+SQLALCHEMY_DATABASE_URI = 'postgresql://nessie:nessie@localhost:5432/nessie'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 TIMEZONE = 'America/Los_Angeles'
