@@ -68,6 +68,10 @@ def edl_external_schema_staging():
     return app.config['REDSHIFT_SCHEMA_EDL_EXTERNAL_STAGING']
 
 
+def edl_schema():
+    return app.config['REDSHIFT_SCHEMA_EDL']
+
+
 def intermediate_schema():
     return app.config['REDSHIFT_SCHEMA_INTERMEDIATE']
 
@@ -276,8 +280,9 @@ def get_all_advisee_term_gpas():
 
 
 def get_all_instructor_uids():
+    course_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_SIS_VIEWS'] else sis_schema()
     sql = f"""SELECT DISTINCT instructor_uid
-              FROM {sis_schema()}.courses
+              FROM {course_schema}.courses
               WHERE instructor_uid IS NOT NULL AND instructor_uid != ''
         """
     return redshift.fetch(sql)
