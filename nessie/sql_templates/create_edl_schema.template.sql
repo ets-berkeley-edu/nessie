@@ -57,15 +57,18 @@ CREATE TABLE {redshift_schema_edl}.academic_standing
 DISTKEY (sid)
 SORTKEY (sid);
 
-CREATE TABLE {redshift_schema_edl}.courses
+CREATE TABLE edl_sis_data.courses
 SORTKEY (section_id)
 AS (
   WITH edl_classes AS (
-    SELECT class_number, semester_year_term_cd, instructional_format_nm, class_section_cd, course_nm, course_title_long_nm, graded_section_flg, instruction_mode_cd,
+    SELECT class_number, semester_year_term_cd, instructional_format_nm, class_section_cd,
+      course_nm, course_title_long_nm, graded_section_flg, instruction_mode_cd,
       -- TODO: We find the max units actually enrolled as a placeholder for SIS max allowable units (probably not entirely conformant)
-      MAX(units) AS max_units
+      MAX(units) AS max_units,
+      COUNT(*) AS enrollment_count
     FROM {redshift_schema_edl_external}.student_enrollment_data
-    GROUP BY class_number, semester_year_term_cd, instructional_format_nm, class_section_cd, course_nm, course_title_long_nm, graded_section_flg, instruction_mode_cd
+    GROUP BY class_number, semester_year_term_cd, instructional_format_nm, class_section_cd,
+      course_nm, course_title_long_nm, graded_section_flg, instruction_mode_cd
   )
   SELECT
     edl_classes.class_number AS section_id,
@@ -78,19 +81,41 @@ AS (
       'N', '0',
       'Y', '1'
     )::integer::boolean AS is_primary,
+    edl_classes.enrollment_count AS enrollment_count,
     edl_classes.max_units AS allowed_units,
     edl_classes.instruction_mode_cd AS instruction_mode,
-    -- TODO: placeholder columns for meeting and instructor info pending EDW-248 resolution
-    NULL AS instructor_uid,
-    NULL AS instructor_name,
-    NULL AS instructor_role_code,
-    NULL AS meeting_location,
-    NULL AS meeting_days,
-    NULL AS meeting_start_time,
-    NULL AS meeting_end_time,
-    NULL AS meeting_start_date,
-    NULL AS meeting_end_date
+    instr.instructor_calnet_uid AS instructor_uid,
+    instr.instructor_preferred_display_nm AS instructor_name,
+    instr.instructor_function_cd AS instructor_role_code,
+    meet.room_desc AS meeting_location,
+    -- TODO: While using a feature flag to toggle between sources, this crude but functional SQL snarl translates EDL
+    -- weekday patterns to the format we get from SISEDO.
+    replace(
+      replace(
+      replace(
+      replace(
+      replace(
+      replace(
+      replace(meet.meeting_days_cd, 'S', 'SA'),
+      'U', 'SU'),
+      'M', 'MO'),
+      'T', 'TU'),
+      'W', 'WE'),
+      'R', 'TH'),
+      'F', 'FR'
+    ) AS meeting_days,
+    meet.meeting_start_time AS meeting_start_time,
+    meet.meeting_end_time AS meeting_end_time,
+    meet.meeting_start_date AS meeting_start_date,
+    meet.meeting_end_date AS meeting_end_date
   FROM edl_classes
+  LEFT JOIN {redshift_schema_edl_external}.student_class_instructor_data instr
+    ON edl_classes.class_number = instr.class_number
+    AND edl_classes.semester_year_term_cd = instr.semester_year_term_cd
+  LEFT JOIN {redshift_schema_edl_external}.student_class_meeting_pattern_data meet
+    ON edl_classes.class_number = meet.class_number
+    AND edl_classes.semester_year_term_cd = meet.semester_year_term_cd
+    AND (meet.class_meeting_number = instr.class_meeting_number OR instr.class_meeting_number IS NULL)
 );
 
 CREATE TABLE {redshift_schema_edl}.demographics
@@ -102,25 +127,25 @@ CREATE TABLE {redshift_schema_edl}.demographics
 DISTKEY (sid)
 SORTKEY (sid);
 
-CREATE TABLE {redshift_schema_edl}.enrollments
+CREATE TABLE edl_sis_data.enrollments
 SORTKEY (sis_id)
 AS (
   SELECT
     sed.class_number AS section_id,
     sed.semester_year_term_cd AS term_id,
-    psa.campus_id AS ldap_uid,
+    spd.calnet_uid AS ldap_uid,
     sed.student_id AS sis_id,
     sed.enrollment_action_cd AS enrollment_status,
     sed.wait_list_position_cd AS waitlist_position,
+    sed.enrollment_drop_dt AS drop_date,
     sed.units AS units,
     sed.grd AS grade,
     sed.final_grade_points AS grade_points,
     sed.grading_basis_enrollment_cd AS grading_basis,
     sed.midterm_course_grade_input_cd AS grade_midterm
   FROM {redshift_schema_edl_external}.student_enrollment_data sed
-  -- TODO: temporarily attempting UID join from staging tables pending EDW-246 resolution
-  LEFT JOIN {redshift_schema_edl_external_staging}.cs_ps_person_sa psa
-    ON psa.emplid = sed.student_id
+  LEFT JOIN {redshift_schema_edl_external}.student_personal_data spd
+    ON spd.student_id = sed.student_id
 );
 
 CREATE TABLE {redshift_schema_edl}.ethnicities
