@@ -26,7 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.berkeley import current_term_id, feature_flag_edl
+from nessie.lib.berkeley import current_term_id
 from nessie.lib.util import resolve_sql_template
 
 """Logic for intermediate table generation job."""
@@ -37,7 +37,7 @@ class GenerateIntermediateTables(BackgroundJob):
     def run(self):
         app.logger.info('Starting intermediate table generation job...')
 
-        sis_source_schema = app.config['REDSHIFT_SCHEMA_EDL'] if feature_flag_edl() else app.config['REDSHIFT_SCHEMA_SIS']
+        sis_source_schema = app.config['REDSHIFT_SCHEMA_EDL'] if app.config['FEATURE_FLAG_EDL_SIS_VIEWS'] else app.config['REDSHIFT_SCHEMA_SIS']
 
         resolved_ddl_redshift = resolve_sql_template(
             'create_intermediate_schema.template.sql',

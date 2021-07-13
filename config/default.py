@@ -102,7 +102,15 @@ EMAIL_REDIRECT_WHEN_TESTING = ['__EMAIL_REDIRECT_WHEN_TESTING__at_berkeley.edu']
 EMAIL_SYSTEM_ERRORS_TO = ['__NESSIE_at_berkeley.edu']
 EMAIL_TEST_MODE = True
 
+# Broad-based EDL feature flag.
 FEATURE_FLAG_ENTERPRISE_DATA_LAKE = False
+
+# And more granular EDL feature flags.
+FEATURE_FLAG_EDL_DEGREE_PROGRESS = False
+FEATURE_FLAG_EDL_DEMOGRAPHICS = False
+FEATURE_FLAG_EDL_REGISTRATIONS = False
+FEATURE_FLAG_EDL_SIS_VIEWS = False
+FEATURE_FLAG_EDL_STUDENT_PROFILES = False
 
 # True on master node, false on worker nodes.
 # Override by embedding "master" or "worker" in the EB_ENVIRONMENT environment variable.

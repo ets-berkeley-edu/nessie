@@ -457,13 +457,10 @@ AS (
     SELECT
       reg.student_id AS sid,
       reg.semester_year_term_cd AS term_id,
-      reg.term_enrolled_units AS units_total,
-      car_term.unt_taken_gpa AS units_taken_for_gpa,
+      reg.term_berkeley_completed_total_units AS units_total,
+      reg.term_berkeley_completed_gpa_units AS units_taken_for_gpa,
       reg.current_term_gpa_nbr AS gpa
     FROM {redshift_schema_edl_external}.student_registration_term_data reg
-    -- TODO: Units taken for GPA are available in the staging schema only.
-    LEFT JOIN {redshift_schema_edl_external_staging}.cs_ps_stdnt_car_term car_term
-    ON reg.student_id = car_term.emplid AND reg.semester_year_term_cd = car_term.strm 
 );
 
 CREATE TABLE {redshift_schema_edl}.student_visas
