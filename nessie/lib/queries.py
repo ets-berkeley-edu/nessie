@@ -112,10 +112,22 @@ def undergrads_schema():
 
 
 def get_all_student_ids():
-    sql = f"""SELECT sid FROM {asc_schema()}.students
-        UNION SELECT sid FROM {coe_schema()}.students
-        UNION SELECT sid FROM {undergrads_schema()}.students
-        UNION SELECT sid FROM {advisee_schema()}.non_current_students"""
+    if app.config['FEATURE_FLAG_EDL_SIS_VIEWS']:
+        sql = f"""SELECT DISTINCT student_id AS sid
+            FROM {edl_external_schema()}.student_academic_plan_data
+            WHERE
+                academic_career_cd='UGRD'
+                AND academic_program_status_cd='AC'
+                AND academic_plan_type_cd != 'MIN'
+            UNION SELECT sid FROM {asc_schema()}.students
+            UNION SELECT sid FROM {coe_schema()}.students
+            UNION SELECT sid FROM {advisee_schema()}.non_current_students
+        """
+    else:
+        sql = f"""SELECT sid FROM {asc_schema()}.students
+            UNION SELECT sid FROM {coe_schema()}.students
+            UNION SELECT sid FROM {undergrads_schema()}.students
+            UNION SELECT sid FROM {advisee_schema()}.non_current_students"""
     return redshift.fetch(sql)
 
 
