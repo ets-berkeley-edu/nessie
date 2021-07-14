@@ -1,7 +1,7 @@
 Flask==2.0.0
 Flask-Login==0.5.0
 Flask-SQLAlchemy==2.5.1
-SQLAlchemy==1.4.20
+SQLAlchemy==1.4.21
 Werkzeug==2.0.0
 apscheduler==3.7.0
 boto3==1.9.86

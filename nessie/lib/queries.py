@@ -513,11 +513,21 @@ def get_enrolled_primary_sections(term_id=None):
 
 
 def get_fetched_non_advisees():
+    if app.config['FEATURE_FLAG_EDL_SIS_VIEWS']:
+        left_join_undergrads = f"""
+            LEFT JOIN {edl_external_schema()}.student_academic_plan_data ug ON ug.student_id = hist.sid
+              AND ug.academic_career_cd = 'UGRD'
+              AND ug.academic_program_status_cd = 'AC'
+              AND ug.academic_plan_type_cd != 'MIN'
+        """
+    else:
+        left_join_undergrads = f'LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = hist.sid'
+
     sql = f"""SELECT DISTINCT(hist.sid) AS sid
               FROM {student_schema()}.{student_schema_table('sis_profiles_hist_enr')} hist
               LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = hist.sid
               LEFT JOIN {coe_schema()}.students coe ON coe.sid = hist.sid
-              LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = hist.sid
+              {left_join_undergrads}
               WHERE ascs.sid IS NULL AND coe.sid IS NULL AND ug.sid IS NULL
         """
     return redshift.fetch(sql)
