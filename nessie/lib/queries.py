@@ -165,6 +165,7 @@ def get_advisee_advisor_mappings():
 
 @fixture('query_advisee_student_profile_feeds.csv')
 def get_advisee_student_profile_elements():
+    intended_major_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_SIS_VIEWS'] else sis_schema()
     sql = f"""SELECT DISTINCT ldap.ldap_uid, ldap.sid, ldap.first_name, ldap.last_name,
                 us.canvas_id AS canvas_user_id, us.name AS canvas_user_name,
                 sis.feed AS sis_profile_feed,
@@ -173,7 +174,7 @@ def get_advisee_student_profile_elements():
                 reg.feed AS last_registration_feed,
                 (
                   SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(apo.acadplan_descr, ''), ' || ')
-                  FROM {sis_schema()}.intended_majors im
+                  FROM {intended_major_schema}.intended_majors im
                   LEFT JOIN {advisor_schema()}.academic_plan_owners apo ON im.plan_code = apo.acadplan_code
                   WHERE im.sid = ldap.sid
                 ) AS intended_majors
