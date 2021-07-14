@@ -57,7 +57,7 @@ CREATE TABLE {redshift_schema_edl}.academic_standing
 DISTKEY (sid)
 SORTKEY (sid);
 
-CREATE TABLE edl_sis_data.courses
+CREATE TABLE {redshift_schema_edl}.courses
 SORTKEY (section_id)
 AS (
   WITH edl_classes AS (
@@ -127,7 +127,7 @@ CREATE TABLE {redshift_schema_edl}.demographics
 DISTKEY (sid)
 SORTKEY (sid);
 
-CREATE TABLE edl_sis_data.enrollments
+CREATE TABLE {redshift_schema_edl}.enrollments
 SORTKEY (sis_id)
 AS (
   SELECT
