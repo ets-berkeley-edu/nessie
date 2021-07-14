@@ -157,12 +157,23 @@ DISTKEY (sid)
 SORTKEY (sid, ethnicity);
 
 CREATE TABLE {redshift_schema_edl}.intended_majors
-(
-    sid VARCHAR NOT NULL,
-    major VARCHAR NOT NULL
-)
 DISTKEY (sid)
-SORTKEY (sid, major);
+SORTKEY (sid, plan_code)
+AS (
+    SELECT
+      student_id AS sid,
+      intended_academic_plan_cd_1 AS plan_code
+      FROM {redshift_schema_edl_external}.student_academic_plan_data
+      WHERE intended_academic_plan_cd_1 IS NOT NULL
+      GROUP BY student_id, intended_academic_plan_cd_1
+    UNION
+    SELECT
+      student_id AS sid,
+      intended_academic_plan_cd_2 AS plan_code
+      FROM {redshift_schema_edl_external}.student_academic_plan_data
+      WHERE intended_academic_plan_cd_2 IS NOT NULL
+      GROUP BY student_id, intended_academic_plan_cd_2
+);
 
 CREATE TABLE {redshift_schema_edl}.minors
 (
