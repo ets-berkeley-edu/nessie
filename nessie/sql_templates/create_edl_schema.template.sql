@@ -71,7 +71,7 @@ AS (
       course_nm, course_title_long_nm, graded_section_flg, instruction_mode_cd
   )
   SELECT
-    edl_classes.class_number AS section_id,
+    edl_classes.class_number::int AS section_id,
     edl_classes.semester_year_term_cd AS term_id,
     edl_classes.instructional_format_nm AS instruction_format,
     edl_classes.class_section_cd AS section_num,
@@ -131,7 +131,7 @@ CREATE TABLE {redshift_schema_edl}.enrollments
 SORTKEY (sis_id)
 AS (
   SELECT
-    sed.class_number AS section_id,
+    sed.class_number::int AS section_id,
     sed.semester_year_term_cd AS term_id,
     spd.calnet_uid AS ldap_uid,
     sed.student_id AS sis_id,
