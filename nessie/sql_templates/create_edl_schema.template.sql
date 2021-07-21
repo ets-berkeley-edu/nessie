@@ -57,6 +57,57 @@ CREATE TABLE {redshift_schema_edl}.academic_standing
 DISTKEY (sid)
 SORTKEY (sid);
 
+CREATE TABLE {redshift_schema_edl}.advising_notes
+SORTKEY (id)
+AS (
+    SELECT DISTINCT
+      student_id || '-' || note_id AS id,
+      student_id AS sid,
+      note_id AS student_note_nr,
+      advisor_id AS advisor_sid,
+      appointment_id,
+      note_type_desc AS note_category,
+      note_subtype_desc AS note_subcategory,
+      note_text AS note_body,
+      created_by_uid AS created_by,
+      DATE_TRUNC('second', create_tmsp AT TIME ZONE 'America/Los_Angeles') AS created_at,
+      updated_by_uid AS updated_by,
+      DATE_TRUNC('second', update_tmsp AT TIME ZONE 'America/Los_Angeles') AS updated_at,
+      load_dt AS edl_load_date
+    FROM
+      {redshift_schema_edl_external}.student_advising_notes_data
+);
+
+CREATE TABLE {redshift_schema_edl}.advising_note_attachments
+INTERLEAVED SORTKEY (advising_note_id, sis_file_name)
+AS (
+    SELECT
+      A.student_id || '-' || N.note_id AS advising_note_id,
+      A.student_id AS sid,
+      A.note_id AS student_note_nr,
+      N.created_by_uid AS created_by,
+      A.note_attachment_upload_filename AS user_file_name,
+      A.note_attachment_derived_filename AS sis_file_name,
+      A.load_dt AS edl_load_date
+    FROM
+        {redshift_schema_edl_external}.student_advising_note_attachments_data A
+    JOIN
+        {redshift_schema_edl_external}.student_advising_notes_data N
+    ON A.student_id = N.student_id
+    AND A.note_id = N.note_id
+);
+
+CREATE TABLE {redshift_schema_edl}.advising_note_topics
+SORTKEY (advising_note_id)
+AS (
+  SELECT
+    student_id || '-' || note_id AS advising_note_id,
+    student_id AS sid,
+    note_id AS student_note_nr,
+    note_topic_cd AS note_topic
+  FROM {redshift_schema_edl_external}.student_advising_notes_data
+);
+
 CREATE TABLE {redshift_schema_edl}.courses
 SORTKEY (section_id)
 AS (
