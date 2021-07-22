@@ -23,6 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import calendar
 import datetime
 import json
 import re
@@ -308,10 +309,11 @@ def import_non_current_students():
 def import_piazza_api_data(archive='latest'):
     today = datetime.date.today()
     todays_day = today.day
+    last_day = calendar.monthrange(today.year, today.month)[1]
     first_of_the_month = today.replace(day=1)
     last_month = first_of_the_month - datetime.timedelta(days=1)
     # if today is the first day of the month, fetch the last month's monthly as latest instead of daily
-    if (archive == 'monthly') or (archive == 'latest' and todays_day == 1):
+    if (archive == 'monthly') or (archive == 'latest' and todays_day == last_day):
         archive = last_month.strftime('monthly_%Y-%m-01')
     if (archive != 'latest') and not (re.match('(daily|monthly|full)', archive) and re.match(r'(\w+)_(\d{4}\-\d{2}\-\d{2})', archive)):
         raise BadRequestError(f"Incorrect archive parameter '{archive}', should be 'latest' or like 'daily_2020-09-12'.")
