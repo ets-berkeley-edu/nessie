@@ -66,21 +66,63 @@ class TestCreateSisTermsSchema:
 
     @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
     def test_early_spring(self, mock_datetime, app, term_definitions):
-        mock_datetime.now.return_value = datetime(year=2018, month=1, day=16, hour=5, minute=21)
+        mock_datetime.now.return_value = datetime(year=2018, month=1, day=9, hour=12, minute=21)
         terms = self.refresh_term_index(app)
         assert terms['current_term_name'] == 'Spring 2018'
         assert terms['future_term_name'] == 'Spring 2018'
 
     @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
     def test_mid_spring(self, mock_datetime, app, term_definitions):
-        mock_datetime.now.return_value = datetime(year=2018, month=3, day=13, hour=5, minute=21)
+        mock_datetime.now.return_value = datetime(year=2018, month=3, day=13, hour=12, minute=21)
         terms = self.refresh_term_index(app)
         assert terms['current_term_name'] == 'Spring 2018'
         assert terms['future_term_name'] == 'Summer 2018'
 
     @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
     def test_late_spring(self, mock_datetime, app, term_definitions):
-        mock_datetime.now.return_value = datetime(year=2018, month=4, day=13, hour=5, minute=21)
+        mock_datetime.now.return_value = datetime(year=2018, month=5, day=11, hour=12, minute=21)
         terms = self.refresh_term_index(app)
         assert terms['current_term_name'] == 'Spring 2018'
         assert terms['future_term_name'] == 'Fall 2018'
+
+    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    def test_post_spring_grace_period(self, mock_datetime, app, term_definitions):
+        mock_datetime.now.return_value = datetime(year=2018, month=5, day=20, hour=12, minute=21)
+        terms = self.refresh_term_index(app)
+        assert terms['current_term_name'] == 'Spring 2018'
+        assert terms['future_term_name'] == 'Fall 2018'
+
+    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    def test_early_summer(self, mock_datetime, app, term_definitions):
+        mock_datetime.now.return_value = datetime(year=2018, month=5, day=21, hour=12, minute=21)
+        terms = self.refresh_term_index(app)
+        assert terms['current_term_name'] == 'Summer 2018'
+        assert terms['future_term_name'] == 'Fall 2018'
+
+    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    def test_post_summer_grace_period(self, mock_datetime, app, term_definitions):
+        mock_datetime.now.return_value = datetime(year=2018, month=8, day=14, hour=12, minute=21)
+        terms = self.refresh_term_index(app)
+        assert terms['current_term_name'] == 'Summer 2018'
+        assert terms['future_term_name'] == 'Fall 2018'
+
+    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    def test_early_fall(self, mock_datetime, app, term_definitions):
+        mock_datetime.now.return_value = datetime(year=2018, month=8, day=15, hour=12, minute=21)
+        terms = self.refresh_term_index(app)
+        assert terms['current_term_name'] == 'Fall 2018'
+        assert terms['future_term_name'] == 'Fall 2018'
+
+    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    def test_mid_fall(self, mock_datetime, app, term_definitions):
+        mock_datetime.now.return_value = datetime(year=2018, month=10, day=13, hour=12, minute=21)
+        terms = self.refresh_term_index(app)
+        assert terms['current_term_name'] == 'Fall 2018'
+        assert terms['future_term_name'] == 'Spring 2019'
+
+    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    def test_post_fall_grace_period(self, mock_datetime, app, term_definitions):
+        mock_datetime.now.return_value = datetime(year=2018, month=12, day=24, hour=12, minute=21)
+        terms = self.refresh_term_index(app)
+        assert terms['current_term_name'] == 'Fall 2018'
+        assert terms['future_term_name'] == 'Spring 2019'

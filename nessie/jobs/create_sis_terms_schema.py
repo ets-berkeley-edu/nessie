@@ -112,9 +112,14 @@ class CreateSisTermsSchema(BackgroundJob):
                     raise BackgroundJobError('Error refreshing RDS current term index.')
 
     def get_sis_current_term(self, for_date):
-        sql = f"SELECT * FROM {rds_schema}.term_definitions WHERE term_ends > '{for_date}' ORDER BY term_id ASC LIMIT 1"
-        rows = rds.fetch(sql)
-        return rows and rows[0]
+        rows = rds.fetch(
+            f"""SELECT *, DATE(term_ends + INTERVAL '10 DAYS') AS grace_period_ends
+                FROM {rds_schema}.term_definitions
+                WHERE DATE(term_ends + INTERVAL '10 DAYS') >= '{for_date}'
+                ORDER BY term_id ASC LIMIT 2""",
+        )
+        if rows:
+            return rows[1] if (for_date >= rows[1]['term_begins'] or for_date > rows[0]['grace_period_ends']) else rows[0]
 
     def get_sis_term_for_id(self, term_id):
         sql = f"SELECT * FROM {rds_schema}.term_definitions WHERE term_id = '{term_id}' LIMIT 1"
