@@ -52,7 +52,7 @@ INSERT INTO {rds_schema_sis_advising_notes}.advising_notes (
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT id, sid, student_note_nr, advisor_sid, appointment_id, note_category, note_subcategory, note_body,
            created_by, updated_by, created_at, updated_at
-    FROM {redshift_schema_sis_advising_notes_internal}.advising_notes
+    FROM {redshift_schema}.advising_notes
     ORDER BY updated_at DESC
   $REDSHIFT$)
   AS redshift_notes (
@@ -94,7 +94,7 @@ INSERT INTO {rds_schema_sis_advising_notes}.advising_note_attachments (
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT advising_note_id, sid, student_note_nr, created_by, user_file_name,
       sis_file_name, is_historical
-    FROM {redshift_schema_sis_advising_notes_internal}.advising_note_attachments
+    FROM {redshift_schema}.advising_note_attachments
   $REDSHIFT$)
   AS redshift_notes (
     advising_note_id VARCHAR,
@@ -124,7 +124,7 @@ INSERT INTO {rds_schema_sis_advising_notes}.advising_note_topics (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT DISTINCT advising_note_id, sid, student_note_nr, note_topic
-    FROM {redshift_schema_sis_advising_notes_internal}.advising_note_topics
+    FROM {redshift_schema}.advising_note_topics
     WHERE note_topic IS NOT NULL
   $REDSHIFT$)
   AS redshift_notes (
