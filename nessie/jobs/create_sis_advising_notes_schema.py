@@ -75,7 +75,11 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
             raise BackgroundJobError('SIS Advising Notes schema creation job failed to load incremental data and create internal schema.')
 
     def create_indexes(self):
-        resolved_ddl = resolve_sql_template('index_sis_advising_notes.template.sql')
+        resolved_ddl = resolve_sql_template(
+            'index_sis_advising_notes.template.sql',
+            redshift_schema=app.config['REDSHIFT_SCHEMA_EDL'] if app.config['FEATURE_FLAG_EDL_SIS_VIEWS']
+            else app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL'],
+        )
         if rds.execute(resolved_ddl):
             app.logger.info('Created SIS Advising Notes RDS indexes.')
         else:
