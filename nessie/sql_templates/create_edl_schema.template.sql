@@ -27,6 +27,12 @@
 -- External schema
 --------------------------------------------------------------------
 
+DROP SCHEMA IF EXISTS {redshift_schema_edl_external_staging};
+CREATE EXTERNAL SCHEMA {redshift_schema_edl_external_staging}
+FROM data catalog
+DATABASE 'cs_staging'
+IAM_ROLE '{redshift_iam_role},{edl_iam_role}';
+
 DROP SCHEMA IF EXISTS {redshift_schema_edl_external};
 CREATE EXTERNAL SCHEMA {redshift_schema_edl_external}
 FROM data catalog
