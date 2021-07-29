@@ -84,6 +84,10 @@ def sis_schema():
     return app.config['REDSHIFT_SCHEMA_SIS']
 
 
+def sis_schema_internal():
+    return app.config['REDSHIFT_SCHEMA_SIS_INTERNAL']
+
+
 def student_schema():
     return app.config['REDSHIFT_SCHEMA_EDL'] if feature_flag_edl() else app.config['REDSHIFT_SCHEMA_STUDENT']
 
@@ -271,10 +275,14 @@ def get_all_advisee_sis_enrollments():
 
 @fixture('query_advisee_enrollment_drops.csv')
 def get_all_advisee_enrollment_drops():
-    sql = f"""SELECT dr.*
+    sql = f"""SELECT dr.*, drp.date AS drop_date
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
               JOIN {calnet_schema()}.advisees ldap
                 ON dr.sid = ldap.sid
+              LEFT JOIN {sis_schema_internal()}.drop_dates drp
+                ON ldap.ldap_uid = drp.ldap_uid
+                AND dr.sis_term_id = drp.sis_term_id
+                AND dr.sis_section_id = drp.sis_section_id
               WHERE dr.sis_term_id=ANY('{{{','.join(reverse_term_ids(include_legacy_terms=True))}}}')
               ORDER BY dr.sis_term_id DESC, dr.sid, dr.sis_course_name
             """
