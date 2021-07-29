@@ -72,7 +72,7 @@ class VerifySisAdvisingNoteAttachments(BackgroundJob):
         dest_attachments = sorted(s3.get_keys_with_prefix(dest_prefix, False, bucket))
 
         for source_key in source_attachments:
-            file_name = normalize_sis_note_attachment_file_name(source_key)
+            file_name = source_key.split('/')[-1] if app.config['FEATURE_FLAG_EDL_SIS_VIEWS'] else normalize_sis_note_attachment_file_name(source_key)
             sid = file_name.split('_')[0]
             dest_key = f'{dest_prefix}/{sid}/{file_name}'
 
@@ -88,7 +88,8 @@ class VerifySisAdvisingNoteAttachments(BackgroundJob):
         return s3_attachment_sync_failures
 
     def get_all_notes_attachments(self):
-        schema = app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL']
+        schema = app.config['REDSHIFT_SCHEMA_EDL'] if app.config['FEATURE_FLAG_EDL_SIS_VIEWS']\
+            else app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL']
         sis_notes_attachments = set(
             [r['sis_file_name'] for r in redshift.fetch(f'SELECT DISTINCT sis_file_name FROM {schema}.advising_note_attachments')],
         )
