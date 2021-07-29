@@ -39,6 +39,7 @@ class TestMergedSisEnrollments:
         assert drops[0] == {
             'component': 'STD',
             'displayName': 'ENV,RES C9',
+            'dropDate': None,
             'instructionMode': 'P',
             'sectionNumber': '001',
             'withdrawAfterDeadline': True,
@@ -46,6 +47,7 @@ class TestMergedSisEnrollments:
         assert drops[1] == {
             'component': 'LEC',
             'displayName': 'HISTORY 10CH',
+            'dropDate': '2021-07-29',
             'instructionMode': 'P',
             'sectionNumber': '003',
             'withdrawAfterDeadline': False,
