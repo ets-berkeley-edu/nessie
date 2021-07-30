@@ -600,8 +600,12 @@ def get_non_advisee_sis_enrollments(sids, term_id):
 
 
 def get_non_advisee_enrollment_drops(sids, term_id):
-    sql = f"""SELECT dr.*
+    sql = f"""SELECT dr.*, dd.date AS drop_date
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
+              LEFT JOIN {sis_schema_internal()}.drop_dates dd
+                ON dr.ldap_uid = dd.ldap_uid
+                AND dr.sis_term_id = dd.sis_term_id
+                AND dr.sis_section_id = dd.sis_section_id
               WHERE dr.sid = ANY(%s)
                 AND dr.sis_term_id = '{term_id}'
               ORDER BY dr.sid, dr.sis_course_name

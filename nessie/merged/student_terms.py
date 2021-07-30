@@ -87,7 +87,7 @@ def merge_dropped_classes(student_enrollments_map, all_drops=None):
                     drops.append({
                         'component': row['sis_instruction_format'],
                         'displayName': row['sis_course_name'],
-                        'dropDate': row['drop_date'],
+                        'dropDate': str(row['drop_date']) if row['drop_date'] else None,
                         'instructionMode': row['sis_instruction_mode'],
                         'sectionNumber': row['sis_section_num'],
                         'withdrawAfterDeadline': (row['grade'] == 'W'),
