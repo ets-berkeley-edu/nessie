@@ -161,4 +161,18 @@ TRUNCATE TABLE {rds_schema_sis_advising_notes}.advising_appointment_advisors;
 TRUNCATE TABLE {rds_schema_sis_advising_notes}.advising_appointment_advisor_names;
 TRUNCATE TABLE {rds_schema_sis_advising_notes}.advising_appointments;
 
+DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_appointment_advisors CASCADE;
+
+CREATE TABLE {rds_schema_sis_advising_notes}.advising_appointment_advisors
+(
+    uid VARCHAR NOT NULL,
+    sid VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    last_name VARCHAR NOT NULL,
+    PRIMARY KEY (uid)
+);
+
+CREATE INDEX IF NOT EXISTS advising_appointment_advisors_sid_idx
+ON {rds_schema_sis_advising_notes}.advising_appointment_advisors (sid);
+
 COMMIT TRANSACTION;
