@@ -140,6 +140,24 @@ CREATE INDEX idx_sis_advising_note_topics_note_id ON {rds_schema_sis_advising_no
 CREATE INDEX idx_sis_advising_note_topics_sid ON {rds_schema_sis_advising_notes}.advising_note_topics(sid);
 CREATE INDEX idx_sis_advising_note_topics_topic ON {rds_schema_sis_advising_notes}.advising_note_topics(note_topic);
 
+DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.advising_notes_search_index CASCADE;
+
+CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.advising_notes_search_index AS (
+  SELECT id, to_tsvector(
+    'english',
+    CASE
+      WHEN note_body IS NOT NULL and TRIM(note_body) != '' THEN note_body
+      WHEN note_subcategory IS NOT NULL THEN note_category || ' ' || note_subcategory
+      ELSE note_category
+    END
+  ) AS fts_index
+  FROM {rds_schema_sis_advising_notes}.advising_notes
+);
+
+CREATE INDEX idx_advising_notes_ft_search
+ON {rds_schema_sis_advising_notes}.advising_notes_search_index
+USING gin(fts_index);
+
 DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_appointments CASCADE;
 
 CREATE TABLE {rds_schema_sis_advising_notes}.advising_appointments (
@@ -189,28 +207,6 @@ CREATE INDEX idx_sis_advising_appointments_created_by ON {rds_schema_sis_advisin
 CREATE INDEX idx_sis_advising_appointments_sid ON {rds_schema_sis_advising_notes}.advising_appointments(sid);
 CREATE INDEX idx_sis_advising_appointments_updated_at ON {rds_schema_sis_advising_notes}.advising_appointments(updated_at);
 
-DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.advising_notes_search_index CASCADE;
-
-CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.advising_notes_search_index AS (
-  SELECT id, to_tsvector(
-    'english',
-    CASE
-      WHEN note_body IS NOT NULL and TRIM(note_body) != '' THEN note_body
-      WHEN note_subcategory IS NOT NULL THEN note_category || ' ' || note_subcategory
-      ELSE note_category
-    END
-  ) AS fts_index
-  FROM {rds_schema_sis_advising_notes}.advising_notes
-);
-
-CREATE INDEX idx_advising_notes_ft_search
-ON {rds_schema_sis_advising_notes}.advising_notes_search_index
-USING gin(fts_index);
-
-TRUNCATE TABLE {rds_schema_sis_advising_notes}.advising_appointment_advisors;
-TRUNCATE TABLE {rds_schema_sis_advising_notes}.advising_appointment_advisor_names;
-TRUNCATE TABLE {rds_schema_sis_advising_notes}.advising_appointments;
-
 DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_appointment_advisors CASCADE;
 
 CREATE TABLE {rds_schema_sis_advising_notes}.advising_appointment_advisors
@@ -224,6 +220,8 @@ CREATE TABLE {rds_schema_sis_advising_notes}.advising_appointment_advisors
 
 CREATE INDEX IF NOT EXISTS advising_appointment_advisors_sid_idx
 ON {rds_schema_sis_advising_notes}.advising_appointment_advisors (sid);
+
+DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.advising_appointments_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.advising_appointments_search_index AS (
   SELECT id, to_tsvector(
