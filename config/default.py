@@ -215,6 +215,7 @@ LOGGING_LEVEL = logging.DEBUG
 LOGGING_PROPAGATION_LEVEL = logging.INFO
 
 # These RDS schemas are copied from the Redshift schemas below and contain a subset of index tables.
+RDS_SCHEMA_ADVISING_APPOINTMENTS = 'boac_advising_appointments'
 RDS_SCHEMA_ADVISING_NOTES = 'boac_advising_notes'
 RDS_SCHEMA_ADVISOR = 'boac_advisor'
 RDS_SCHEMA_ASC = 'boac_advising_asc'
