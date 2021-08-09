@@ -103,11 +103,12 @@ CREATE INDEX idx_advising_notes_ft_search
 ON {rds_schema_advising_notes}.advising_notes_search_index
 USING gin(fts_index);
 
-DROP TABLE IF EXISTS {rds_schema_advising_notes}.ycbm_advising_appointments CASCADE;
+DROP TABLE IF EXISTS {rds_schema_advising_appointments}.ycbm_advising_appointments CASCADE;
 
 CREATE TABLE {rds_schema_advising_appointments}.ycbm_advising_appointments (
   id VARCHAR NOT NULL,
   student_uid VARCHAR,
+  student_sid VARCHAR,  
   title VARCHAR,
   starts_at TIMESTAMP WITH TIME ZONE,
   ends_at TIMESTAMP WITH TIME ZONE,
@@ -125,6 +126,7 @@ INSERT INTO {rds_schema_advising_appointments}.ycbm_advising_appointments (
     SELECT
       id,
       ldap_uid AS student_uid,
+      ycbm_sid AS student_sid,
       title,
       starts_at,
       ends_at,
@@ -139,6 +141,7 @@ INSERT INTO {rds_schema_advising_appointments}.ycbm_advising_appointments (
   AS redshift_appointments (
     id VARCHAR,
     student_uid VARCHAR,
+    student_sid VARCHAR,
     title VARCHAR,
     starts_at TIMESTAMP WITH TIME ZONE,
     ends_at TIMESTAMP WITH TIME ZONE,
@@ -150,6 +153,7 @@ INSERT INTO {rds_schema_advising_appointments}.ycbm_advising_appointments (
   )
 );
 
-CREATE INDEX idx_ycbm_advising_appointments_sid ON {rds_schema_advising_appointments}.advising_appointments(sid);
+CREATE INDEX idx_ycbm_advising_appointments_student_sid ON {rds_schema_advising_appointments}.ycbm_advising_appointments(student_sid);
+CREATE INDEX idx_ycbm_advising_appointments_starts_at ON {rds_schema_advising_appointments}.ycbm_advising_appointments(starts_at);
 
 COMMIT TRANSACTION;
