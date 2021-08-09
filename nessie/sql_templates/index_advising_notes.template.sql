@@ -27,6 +27,10 @@ CREATE SCHEMA IF NOT EXISTS {rds_schema_advising_notes};
 GRANT USAGE ON SCHEMA {rds_schema_advising_notes} TO {rds_app_boa_user};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_advising_notes} GRANT SELECT ON TABLES TO {rds_app_boa_user};
 
+CREATE SCHEMA IF NOT EXISTS {rds_schema_advising_appointments};
+GRANT USAGE ON SCHEMA {rds_schema_advising_appointments} TO {rds_app_boa_user};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_advising_appointments} GRANT SELECT ON TABLES TO {rds_app_boa_user};
+
 BEGIN TRANSACTION;
 
 DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_note_author_names CASCADE;
@@ -98,5 +102,54 @@ CREATE MATERIALIZED VIEW {rds_schema_advising_notes}.advising_notes_search_index
 CREATE INDEX idx_advising_notes_ft_search
 ON {rds_schema_advising_notes}.advising_notes_search_index
 USING gin(fts_index);
+
+DROP TABLE IF EXISTS {rds_schema_advising_notes}.ycbm_advising_appointments CASCADE;
+
+CREATE TABLE {rds_schema_advising_appointments}.ycbm_advising_appointments (
+  id VARCHAR NOT NULL,
+  student_uid VARCHAR,
+  title VARCHAR,
+  starts_at TIMESTAMP WITH TIME ZONE,
+  ends_at TIMESTAMP WITH TIME ZONE,
+  cancelled BOOLEAN,
+  cancellation_reason TEXT,
+  advisor_name VARCHAR,
+  appointment_type VARCHAR,
+  details VARCHAR,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO {rds_schema_advising_appointments}.ycbm_advising_appointments (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+    SELECT
+      id,
+      ldap_uid AS student_uid,
+      title,
+      starts_at,
+      ends_at,
+      cancelled,
+      cancellation_reason,
+      advisor_name,
+      q5 AS appointment_type,
+      q6 AS details
+    FROM {redshift_schema_ycbm_internal}.bookings
+    ORDER BY starts_at DESC
+  $REDSHIFT$)
+  AS redshift_appointments (
+    id VARCHAR,
+    student_uid VARCHAR,
+    title VARCHAR,
+    starts_at TIMESTAMP WITH TIME ZONE,
+    ends_at TIMESTAMP WITH TIME ZONE,
+    cancelled BOOLEAN,
+    cancellation_reason TEXT,
+    advisor_name VARCHAR,
+    appointment_type VARCHAR,
+    details VARCHAR
+  )
+);
+
+CREATE INDEX idx_ycbm_advising_appointments_sid ON {rds_schema_advising_appointments}.advising_appointments(sid);
 
 COMMIT TRANSACTION;
