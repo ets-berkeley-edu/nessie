@@ -327,17 +327,6 @@ def edl_registration_to_json(row):
                 },
             },
         ],
-        'academicStanding': {  # TODO: SIS API has it. Where in EDL is it?
-            'standing': {
-                'code': None,
-                'description': None,
-            },
-            'status': {
-                'code': None,
-                'description': None,
-            },
-            'fromDate': None,
-        },
         'termUnits': [
             # What to do with row['units_term_enrolled']?
             {
