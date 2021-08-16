@@ -77,7 +77,7 @@ def get_next_page(response):
         return None
 
 
-def request(url, headers={}, method='get', auth=None, auth_params=None, data=None, log_404s=True, **kwargs):
+def request(url, headers={}, method='get', auth=None, auth_params=None, data=None, log_404s=True, timeout=None, **kwargs):
     """Exception and error catching wrapper for outgoing HTTP requests.
 
     :param url:
@@ -99,7 +99,8 @@ def request(url, headers={}, method='get', auth=None, auth_params=None, data=Non
             saved_level = urllib_logger.level
             urllib_logger.setLevel(logging.INFO)
         http_method = getattr(requests, method)
-        response = http_method(url, headers=headers, auth=auth, params=auth_params, json=data, **kwargs)
+        timeout = timeout or 60
+        response = http_method(url, headers=headers, auth=auth, params=auth_params, json=data, timeout=timeout, **kwargs)
         if auth_params:
             urllib_logger.setLevel(saved_level)
         response.raise_for_status()
