@@ -73,6 +73,8 @@ BOAC_REFRESHERS = [{'API_KEY': 'Regents of the University of California', 'URL':
 CAL1CARD_PHOTO_API_URL = 'https://secreturl.berkeley.edu/photos'
 CAL1CARD_PHOTO_API_USERNAME = 'secretuser'
 CAL1CARD_PHOTO_API_PASSWORD = 'secretpassword'
+CAL1CARD_PHOTO_API_THROTTLE = 0.5
+CAL1CARD_PHOTO_API_TIMEOUT = 15
 
 CANVAS_DATA_API_KEY = 'some key'
 CANVAS_DATA_API_SECRET = 'some secret'
