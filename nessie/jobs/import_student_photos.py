@@ -23,6 +23,8 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from time import sleep
+
 from flask import current_app as app
 from nessie.externals import s3
 from nessie.externals.cal1card_photo_api import get_cal1card_photo
@@ -73,6 +75,8 @@ class ImportStudentPhotos(BackgroundJob):
             elif photo is None:
                 app.logger.error(f'Photo import failed for SID {csid}.')
                 failures.append(csid)
+
+            sleep(app.config['CAL1CARD_PHOTO_API_THROTTLE'])
 
         if (len(successes) == 0) and (len(photo_not_found) == 0) and (len(failures) > 0):
             raise BackgroundJobError('Failed to import student photos.')
