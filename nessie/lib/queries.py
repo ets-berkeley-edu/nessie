@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import rds, redshift, s3
-from nessie.lib.berkeley import canvas_terms, feature_flag_edl, reverse_term_ids, term_name_for_sis_id
+from nessie.lib.berkeley import canvas_terms, reverse_term_ids, term_name_for_sis_id
 from nessie.lib.mockingdata import fixture
 
 # Lazy init to support testing.
@@ -89,25 +89,23 @@ def sis_schema_internal():
 
 
 def student_schema():
-    return app.config['REDSHIFT_SCHEMA_EDL'] if feature_flag_edl() else app.config['REDSHIFT_SCHEMA_STUDENT']
+    return app.config['REDSHIFT_SCHEMA_EDL'] if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES'] else app.config['REDSHIFT_SCHEMA_STUDENT']
 
 
 # TODO: Remove this method when the EDL cutover is complete.
 def sis_schema_table(key):
-    use_edl = feature_flag_edl()
     return {
-        'minors': 'student_minors' if use_edl else 'minors',
+        'minors': 'student_minors' if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES'] else 'minors',
     }.get(key, key)
 
 
 # TODO: Remove this method when the EDL cutover is complete.
 def student_schema_table(key):
-    use_edl = feature_flag_edl()
     return {
-        'degree_progress': 'student_degree_progress' if use_edl else 'sis_api_degree_progress',
-        'sis_profiles': 'sis_profiles' if use_edl else 'sis_api_profiles',
-        'sis_profiles_hist_enr': 'sis_profiles_hist_enr' if use_edl else 'sis_api_profiles_hist_enr',
-        'student_demographics': 'student_demographics' if use_edl else 'student_api_demographics',
+        'degree_progress': 'student_degree_progress' if app.config['FEATURE_FLAG_EDL_DEGREE_PROGRESS'] else 'sis_api_degree_progress',
+        'sis_profiles': 'sis_profiles' if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES'] else 'sis_api_profiles',
+        'sis_profiles_hist_enr': 'sis_profiles_hist_enr' if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES'] else 'sis_api_profiles_hist_enr',
+        'student_demographics': 'student_demographics' if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS'] else 'student_api_demographics',
     }.get(key, key)
 
 

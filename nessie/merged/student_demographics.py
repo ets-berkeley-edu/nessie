@@ -33,7 +33,7 @@ GENDER_CODE_MAP = {'F': 'Female', 'M': 'Male', 'U': 'Decline to State', 'X': 'No
 
 
 def add_demographics_rows(sid, feed, feed_files, feed_counts):
-    parsed = feed if app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE'] else parse_sis_demographics_api(feed)
+    parsed = feed if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS'] else parse_sis_demographics_api(feed)
     if parsed:
         filtered_ethnicities = parsed.pop('filtered_ethnicities', [])
         for ethn in filtered_ethnicities:

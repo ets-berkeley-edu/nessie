@@ -403,10 +403,6 @@ def edl_registration_to_json(row):
     }
 
 
-def feature_flag_edl():
-    return app.config['FEATURE_FLAG_ENTERPRISE_DATA_LAKE']
-
-
 def future_term_ids():
     return _collect_terms(start_term_id=future_term_id(), stop_term_id=current_term_id(), include_stop=False)
 

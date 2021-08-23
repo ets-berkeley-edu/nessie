@@ -30,7 +30,7 @@ import re
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
-from nessie.lib.berkeley import feature_flag_edl, reverse_term_ids
+from nessie.lib.berkeley import reverse_term_ids
 from nessie.lib.util import get_s3_sis_daily_path, resolve_sql_template
 
 """Logic for SIS schema creation job."""
@@ -50,7 +50,7 @@ class CreateSisSchema(BackgroundJob):
         redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template('create_sis_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
-            verify_external_schema(external_schema, resolved_ddl, is_zero_count_acceptable=feature_flag_edl())
+            verify_external_schema(external_schema, resolved_ddl, is_zero_count_acceptable=app.config['FEATURE_FLAG_EDL_SIS_VIEWS'])
         else:
             raise BackgroundJobError('SIS schema creation job failed.')
         return 'SIS schema creation job completed.'

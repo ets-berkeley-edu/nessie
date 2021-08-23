@@ -35,9 +35,10 @@ class TestCreateEdlSchema:
     def test_generate_demographics_feeds(self, app, student_tables):
         """Builds JSON feeds and uploads to S3."""
         from nessie.jobs.create_edl_schema import CreateEdlSchema
-        with override_config(app, 'FEATURE_FLAG_ENTERPRISE_DATA_LAKE', True):
-            with mock_s3(app):
-                CreateEdlSchema().generate_demographics_feeds()
+        with override_config(app, 'FEATURE_FLAG_EDL_STUDENT_PROFILES', True):
+            with override_config(app, 'FEATURE_FLAG_EDL_DEMOGRAPHICS', True):
+                with mock_s3(app):
+                    CreateEdlSchema().generate_demographics_feeds()
 
             rows = redshift.fetch(f'SELECT * FROM {student_schema()}.student_demographics')
             assert len(rows) == 11

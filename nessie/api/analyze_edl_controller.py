@@ -31,7 +31,6 @@ from nessie.api.errors import BadRequestError
 from nessie.jobs.abstract.abstract_registrations_job import AbstractRegistrationsJob
 from nessie.jobs.generate_merged_hist_enr_feeds import GenerateMergedHistEnrFeeds
 from nessie.jobs.import_sis_student_api import ImportSisStudentApi
-from nessie.lib.berkeley import feature_flag_edl
 from nessie.lib.http import tolerant_jsonify
 
 #
@@ -51,10 +50,10 @@ def analyze_edl_registration_data(sid):
             pass
 
     job = MockRegistrationsJob()
-    demographics_key = 'demographics' if feature_flag_edl() else 'api_demographics'
+    demographics_key = 'demographics' if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS'] else 'api_demographics'
 
     for key in ('edl', 'sis'):
-        with _override_edl_feature_flag(key == 'edl'):
+        with _override_feature_flag('FEATURE_FLAG_EDL_REGISTRATIONS', key == 'edl'):
             result[key] = {
                 'term_gpas': [],
                 'last_registrations': [],
@@ -75,7 +74,7 @@ def analyze_term_gpa(term_id, sid):
         def write(self, tsv):
             result[key] = tsv
     for key in ('edl', 'sis'):
-        with _override_edl_feature_flag(key == 'edl'):
+        with _override_feature_flag('FEATURE_FLAG_EDL_REGISTRATIONS', key == 'edl'):
             GenerateMergedHistEnrFeeds().collect_merged_enrollments(
                 sids=[sid],
                 term_id=term_id,
@@ -91,7 +90,7 @@ def analyze_student(sid):
     result = {}
 
     for key in ('edl', 'sis'):
-        with _override_edl_feature_flag(key == 'edl'):
+        with _override_feature_flag('FEATURE_FLAG_EDL_STUDENT_PROFILES', key == 'edl'):
             rows, failure_count = ImportSisStudentApi().load(all_sids=[sid])
             result[key] = {
                 'failureCount': failure_count,
@@ -101,11 +100,10 @@ def analyze_student(sid):
 
 
 @contextmanager
-def _override_edl_feature_flag(value):
+def _override_feature_flag(key, value):
     """Temporarily override."""
-    key = 'FEATURE_FLAG_ENTERPRISE_DATA_LAKE'
     old_value = app.config[key]
-    app.config[key] = value
+    app.config[key] = True
     yield
     app.config[key] = old_value
 

@@ -33,7 +33,7 @@ from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.externals.sis_student_api import get_v2_by_sids_list
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.berkeley import current_term_id, feature_flag_edl
+from nessie.lib.berkeley import current_term_id
 from nessie.lib.queries import get_all_student_ids, student_schema, student_schema_table
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string
 
@@ -93,7 +93,7 @@ class ImportSisStudentApi(BackgroundJob):
         return f'SIS student API import job completed: {len(rows)} succeeded, {failure_count} failed.'
 
     def load(self, all_sids):
-        return self._load_from_edl(all_sids) if feature_flag_edl() else self._load_from_student_api(all_sids)
+        return self._load_from_edl(all_sids) if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES'] else self._load_from_student_api(all_sids)
 
     def _load_from_student_api(self, all_sids):
         # Students API will not return 'unitsTransferEarned' and 'unitsTransferAccepted' data
