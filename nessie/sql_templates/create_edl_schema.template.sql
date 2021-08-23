@@ -119,30 +119,20 @@ AS (
 CREATE TABLE {redshift_schema_edl}.courses
 SORTKEY (section_id)
 AS (
-  WITH edl_classes AS (
-    SELECT class_number, semester_year_term_cd, instructional_format_nm, class_section_cd,
-      course_nm, course_title_long_nm, graded_section_flg, instruction_mode_cd,
-      -- TODO: We find the max units actually enrolled as a placeholder for SIS max allowable units (probably not entirely conformant)
-      MAX(units) AS max_units,
-      COUNT(*) AS enrollment_count
-    FROM {redshift_schema_edl_external}.student_enrollment_data
-    GROUP BY class_number, semester_year_term_cd, instructional_format_nm, class_section_cd,
-      course_nm, course_title_long_nm, graded_section_flg, instruction_mode_cd
-  )
   SELECT
-    edl_classes.class_number::int AS section_id,
-    edl_classes.semester_year_term_cd AS term_id,
-    edl_classes.instructional_format_nm AS instruction_format,
-    edl_classes.class_section_cd AS section_num,
-    edl_classes.course_nm AS course_display_name,
-    edl_classes.course_title_long_nm AS course_title,
-    DECODE(edl_classes.graded_section_flg,
+    class.class_number::int AS section_id,
+    class.semester_year_term_cd AS term_id,
+    class.instructional_format_nm AS instruction_format,
+    class.class_section_cd AS section_num,
+    class.course_id_display_desc AS course_display_name,
+    class.course_title_long AS course_title,
+    DECODE(class.graded_section_flg,
       'N', '0',
       'Y', '1'
     )::integer::boolean AS is_primary,
-    edl_classes.enrollment_count AS enrollment_count,
-    edl_classes.max_units AS allowed_units,
-    edl_classes.instruction_mode_cd AS instruction_mode,
+    class.enrollment_total_nbr AS enrollment_count,
+    class.units_maximum_nbr AS allowed_units,
+    class.instructional_format_nm AS instruction_mode,
     instr.instructor_calnet_uid AS instructor_uid,
     instr.instructor_preferred_display_nm AS instructor_name,
     instr.instructor_function_cd AS instructor_role_code,
@@ -168,13 +158,13 @@ AS (
     left(right(meet.meeting_end_time, 8), 5) AS meeting_end_time,
     meet.meeting_start_date AS meeting_start_date,
     meet.meeting_end_date AS meeting_end_date
-  FROM edl_classes
+  FROM {redshift_schema_edl_external}.student_class_data class
   LEFT JOIN {redshift_schema_edl_external}.student_class_instructor_data instr
-    ON edl_classes.class_number = instr.class_number
-    AND edl_classes.semester_year_term_cd = instr.semester_year_term_cd
+    ON class.class_number = instr.class_number
+    AND class.semester_year_term_cd = instr.semester_year_term_cd
   LEFT JOIN {redshift_schema_edl_external}.student_class_meeting_pattern_data meet
-    ON edl_classes.class_number = meet.class_number
-    AND edl_classes.semester_year_term_cd = meet.semester_year_term_cd
+    ON class.class_number = meet.class_number
+    AND class.semester_year_term_cd = meet.semester_year_term_cd
     AND (meet.class_meeting_number = instr.class_meeting_number OR instr.class_meeting_number IS NULL)
 );
 
