@@ -163,8 +163,9 @@ AS (
       'R', 'TH'),
       'F', 'FR'
     ) AS meeting_days,
-    meet.meeting_start_time AS meeting_start_time,
-    meet.meeting_end_time AS meeting_end_time,
+    -- Throw away meaningless date and second-precision data from EDL meeting times.
+    left(right(meet.meeting_start_time, 8), 5) AS meeting_start_time,
+    left(right(meet.meeting_end_time, 8), 5) AS meeting_end_time,
     meet.meeting_start_date AS meeting_start_date,
     meet.meeting_end_date AS meeting_end_date
   FROM edl_classes
