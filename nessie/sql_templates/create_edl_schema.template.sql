@@ -58,8 +58,8 @@ AS (
     SELECT
         student_id AS sid,
         semester_year_term_cd AS term_id,
-        academic_standing_category_desc AS acad_standing_action,
-        academic_standing_cd AS acad_standing_status,
+        academic_standing_cd AS acad_standing_action,
+        academic_standing_category_cd AS acad_standing_status,
         action_dt AS action_date
     FROM {redshift_schema_edl_external}.student_academic_standing_data
 );
