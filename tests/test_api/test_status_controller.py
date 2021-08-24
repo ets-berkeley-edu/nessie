@@ -34,7 +34,6 @@ class TestStatusController:
         api_json = response.json
         assert api_json['ebEnvironment'] is None
         assert api_json['featureFlagEdlSisViews'] is False
-        assert api_json['featureFlagEnterpriseDataLake'] is False
         assert api_json['jobSchedulingEnabled'] is True
         assert api_json['nessieEnv'] == 'test'
 

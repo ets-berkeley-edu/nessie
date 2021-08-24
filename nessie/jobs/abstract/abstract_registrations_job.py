@@ -31,7 +31,7 @@ from timeit import default_timer as timer
 from flask import current_app as app
 from nessie.externals import sis_student_api
 from nessie.jobs.background_job import BackgroundJob
-from nessie.lib.berkeley import edl_demographics_to_json, edl_registration_to_json, feature_flag_edl
+from nessie.lib.berkeley import edl_demographics_to_json, edl_registration_to_json
 from nessie.lib.queries import get_edl_student_registrations
 from nessie.lib.util import encoded_tsv_row
 import numpy as np
@@ -39,7 +39,7 @@ import numpy as np
 
 class AbstractRegistrationsJob(BackgroundJob):
 
-    demographics_key = 'demographics' if feature_flag_edl() else 'api_demographics'
+    demographics_key = 'demographics' if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS'] else 'api_demographics'
     include_demographics = True
 
     @abstractmethod
@@ -48,7 +48,7 @@ class AbstractRegistrationsJob(BackgroundJob):
 
     def get_registration_data_per_sids(self, rows, sids, include_demographics=True):
         self.include_demographics = include_demographics
-        return self._query_edl(rows, sids) if feature_flag_edl() else self._query_student_api(rows, sids)
+        return self._query_edl(rows, sids) if app.config['FEATURE_FLAG_EDL_REGISTRATIONS'] else self._query_student_api(rows, sids)
 
     def _query_edl(self, rows, sids):
         successes = []

@@ -31,7 +31,7 @@ from tempfile import TemporaryFile
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.berkeley import degree_program_url_for_major, feature_flag_edl
+from nessie.lib.berkeley import degree_program_url_for_major
 from nessie.lib.queries import get_demographics
 from nessie.lib.util import get_s3_edl_daily_path, resolve_sql_template, write_to_tsv_file
 from nessie.merged.student_demographics import GENDER_CODE_MAP, merge_from_details, UNDERREPRESENTED_GROUPS
@@ -48,10 +48,7 @@ class CreateEdlSchema(BackgroundJob):
     def run(self):
         app.logger.info('Starting EDL schema creation job...')
         self.create_schema()
-        if feature_flag_edl():
-            self.generate_feeds()
-        else:
-            app.logger.info('Skipping generate-feeds portion of EDL schema creation job because feature flag is false.')
+        self.generate_feeds()
         return 'EDL schema creation job completed.'
 
     def create_schema(self):
@@ -73,9 +70,12 @@ class CreateEdlSchema(BackgroundJob):
         app.logger.info('Redshift EDL schema created.')
 
     def generate_feeds(self):
-        self.generate_academic_plans_feeds()
-        self.generate_degree_progress_feeds()
-        self.generate_demographics_feeds()
+        if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES']:
+            self.generate_academic_plans_feeds()
+        if app.config['FEATURE_FLAG_EDL_DEGREE_PROGRESS']:
+            self.generate_degree_progress_feeds()
+        if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS']:
+            self.generate_demographics_feeds()
 
     def generate_academic_plans_feeds(self):
         app.logger.info('Staging academic plans feeds...')

@@ -30,7 +30,7 @@ import re
 
 from dateutil.rrule import DAILY, rrule
 from flask import current_app as app
-from nessie.lib.berkeley import earliest_term_id, feature_flag_edl
+from nessie.lib.berkeley import earliest_term_id
 import pytz
 
 """Generic utilities."""
@@ -170,7 +170,7 @@ def get_s3_sis_attachment_path(datestamp):
 
 def get_s3_sis_api_daily_path(cutoff=None, use_edl_if_feature_flag=False):
     # Path for stashed SIS API data that doesn't need to be queried by Redshift Spectrum.
-    use_edl = feature_flag_edl() and use_edl_if_feature_flag
+    use_edl = app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES'] and use_edl_if_feature_flag
     key = 'LOCH_S3_EDL_DATA_PATH' if use_edl else 'LOCH_S3_SIS_API_DATA_PATH'
     return f'{app.config[key]}/daily/{hashed_datestamp(cutoff)}'
 
