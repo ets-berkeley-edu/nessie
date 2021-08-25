@@ -215,8 +215,11 @@ AS (
         ON crs.sis_section_id = en.section_id
         AND crs.sis_term_id = en.term_id
     WHERE
+        /* No dropped or withdrawn enrollments. */
         en.enrollment_status != 'D'
         AND en.grade != 'W'
+        /* No waitlisted enrollments from past terms. */
+        AND (en.enrollment_status != 'W' OR en.term_id >= '{current_term_id}')
 );
 
 /*
