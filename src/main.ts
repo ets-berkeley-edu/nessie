@@ -15,8 +15,8 @@ axios.defaults.withCredentials = true
 axios.interceptors.response.use(response => response, function(error) {
   store.commit('context/reportError', {
     message: error.message,
-    text: error.response.text,
-    status: error.response.status,
+    text: _.get(error.response, 'text'),
+    status: _.get(error.response, 'status'),
     stack: error.stack
   })
   return Promise.reject(error)
@@ -44,5 +44,7 @@ axios.get(`${apiBaseUrl}/api/config`).then(response => {
       store,
       render: h => h(App)
     }).$mount('#app')
+
+    store.dispatch('context/init').then(_.noop)
   })
 })

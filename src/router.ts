@@ -7,31 +7,6 @@ import VueRouter from 'vue-router'
 
 Vue.use(VueRouter)
 
-const beforeEach = (to: any, from: any, next: Function) => {
-  store.dispatch('context/loadingStart').then(() => {
-    store.dispatch('context/init').then(() => {
-      store.dispatch('context/clearErrors').then(() => {
-        const safeNext = (to: any, next: Function) => {
-          if (to.matched.length) {
-            next()
-          } else {
-            next('/home')
-          }
-        }
-        safeNext(to, next)
-      })
-    })
-  })
-}
-
-const requiresAuth = (to: any, from: any, next: Function) => {
-  if (Vue.prototype.$currentUser) {
-    next()
-  } else {
-    next('/login')
-  }
-}
-
 const router = new VueRouter({
   mode: 'history',
   routes: [
@@ -42,22 +17,27 @@ const router = new VueRouter({
     {
       path: '/home',
       name: 'home',
-      component: Home,
-      beforeEnter: requiresAuth
+      component: Home
     },
     {
       path: '/schedule',
-      component: Schedule,
-      beforeEnter: requiresAuth
+      component: Schedule
     },
     {
       path: '/status',
-      component: Status,
-      beforeEnter: requiresAuth
+      component: Status
+    },
+    {
+      path: '*',
+      redirect: '/home'
     }
   ]
 })
 
-router.beforeEach(beforeEach)
+router.beforeEach((to: any, from: any, next: Function) => {
+  store.commit('context/loadingStart')
+  store.commit('context/clearErrors')
+  next()
+})
 
 export default router

@@ -8,13 +8,6 @@ export function getConfig() {
     .then(response => response.data, err => err.response)
 }
 
-export function getPing() {
-  const apiBaseUrl = store.getters['context/apiBaseUrl']
-  return axios
-    .get(`${apiBaseUrl}/api/ping`)
-    .then(response => response.data, err => err.response)
-}
-
 export function getVersion() {
   const apiBaseUrl = store.getters['context/apiBaseUrl']
   return axios
