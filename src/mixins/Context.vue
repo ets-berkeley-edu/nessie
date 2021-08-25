@@ -8,7 +8,6 @@ export default {
       'apiBaseUrl',
       'errors',
       'loading',
-      'ping',
       'version'
     ])
   }

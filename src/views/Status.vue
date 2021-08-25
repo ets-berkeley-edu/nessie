@@ -11,22 +11,11 @@
         {{ $config[key] }}
       </b-list-group-item>
     </b-list-group>
-    <div class="py-3">
-      <h2>Ping</h2>
-      <ul>
-        <li>App: {{ ping.app }}</li>
-        <li>RDS: {{ ping.rds }}</li>
-        <li>Redshift: {{ ping.redshift }}</li>
-      </ul>
-    </div>
   </div>
 </template>
 
 <script>
-import Context from '@/mixins/Context'
-
 export default {
-  mixins: [Context],
   data: () => ({
     gitCommit: undefined
   }),

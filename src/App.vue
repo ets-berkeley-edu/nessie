@@ -35,9 +35,15 @@
           img-width="1024"
           img-height="480"
         >
-          <b-carousel-slide img-src="https://images.snaptrip.com/wp-content/uploads/2019/09/25160842/Webp.net-resizeimage-2019-09-25T170259.153-1.jpg" />
-          <b-carousel-slide img-src="https://images.snaptrip.com/wp-content/uploads/2019/09/25161806/lochness_1280p.jpg" />
-          <b-carousel-slide img-src="https://images.snaptrip.com/wp-content/uploads/2019/09/26083649/Webp.net-resizeimage-2019-09-26T093602.246-1.jpg" />
+          <b-carousel-slide v-for="slide in slides" :key="slide">
+            <template #img>
+              <img
+                alt="Image of Loch Ness, in Scotland"
+                class="d-block img-fluid w-100"
+                :src="slide"
+              />
+            </template>
+          </b-carousel-slide>
         </b-carousel>
       </b-col>
     </b-row>
@@ -68,6 +74,11 @@ export default {
   },
   data: () => ({
     isToggling: false,
+    slides: [
+      require('@/assets/loch-ness-castle-on-shore.jpg'),
+      require('@/assets/loch-ness-monster.jpg'),
+      require('@/assets/loch-ness-view-from-mountains.jpg')
+    ],
     tabIndex: undefined
   }),
   methods: {
