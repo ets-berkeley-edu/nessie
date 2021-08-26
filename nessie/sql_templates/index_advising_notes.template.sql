@@ -124,18 +124,20 @@ INSERT INTO {rds_schema_advising_appointments}.ycbm_advising_appointments (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT
-      id,
-      ldap_uid AS student_uid,
-      ycbm_sid AS student_sid,
-      title,
-      starts_at,
-      ends_at,
-      cancelled,
-      cancellation_reason,
-      advisor_name,
-      q5 AS appointment_type,
-      q6 AS details
-    FROM {redshift_schema_ycbm_internal}.bookings
+      b.id,
+      b.ldap_uid AS student_uid,
+      b.ycbm_sid AS student_sid,
+      b.title,
+      b.starts_at,
+      b.ends_at,
+      b.cancelled,
+      b.cancellation_reason,
+      b.advisor_name,
+      b.q5 AS appointment_type,
+      b.q6 AS details
+    FROM {redshift_schema_ycbm_internal}.bookings b
+    JOIN (SELECT b2.id, MAX(b2.imported_at) AS imported_at FROM ycbm_data.bookings b2 GROUP BY b2.id) latest
+      ON b.id = latest.id and b.imported_at = latest.imported_at
     ORDER BY starts_at DESC
   $REDSHIFT$)
   AS redshift_appointments (
