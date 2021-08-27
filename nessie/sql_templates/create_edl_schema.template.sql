@@ -212,17 +212,21 @@ SORTKEY (sid, plan_code)
 AS (
     SELECT
       student_id AS sid,
-      intended_academic_plan_cd_1 AS plan_code
+      intended_academic_plan_cd_1 AS plan_code,
+      academic_program_status_cd AS academic_program_status_code,
+      academic_program_effective_dt AS effective_date
       FROM {redshift_schema_edl_external}.student_academic_plan_data
       WHERE intended_academic_plan_cd_1 IS NOT NULL
-      GROUP BY student_id, intended_academic_plan_cd_1
+      GROUP BY student_id, intended_academic_plan_cd_1, academic_program_status_cd, academic_program_effective_dt
     UNION
     SELECT
       student_id AS sid,
-      intended_academic_plan_cd_2 AS plan_code
+      intended_academic_plan_cd_1 AS plan_code,
+      academic_program_status_cd AS academic_program_status_code,
+      academic_program_effective_dt AS effective_date
       FROM {redshift_schema_edl_external}.student_academic_plan_data
       WHERE intended_academic_plan_cd_2 IS NOT NULL
-      GROUP BY student_id, intended_academic_plan_cd_2
+      GROUP BY student_id, intended_academic_plan_cd_2, academic_program_status_cd, academic_program_effective_dt
 );
 
 CREATE TABLE {redshift_schema_edl}.minors

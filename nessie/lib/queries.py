@@ -167,7 +167,12 @@ def get_advisee_advisor_mappings():
 
 @fixture('query_advisee_student_profile_feeds.csv')
 def get_advisee_student_profile_elements():
-    intended_major_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_SIS_VIEWS'] else sis_schema()
+    use_edl = app.config['FEATURE_FLAG_EDL_SIS_VIEWS']
+    intended_major_schema = edl_schema() if use_edl else sis_schema()
+    intended_majors_where_clause = 'im.sid = ldap.sid'
+    if use_edl:
+        intended_majors_where_clause += " AND im.academic_program_status_code = 'AC'"
+
     sql = f"""SELECT DISTINCT ldap.ldap_uid, ldap.sid, ldap.first_name, ldap.last_name,
                 us.canvas_id AS canvas_user_id, us.name AS canvas_user_name,
                 sis.feed AS sis_profile_feed,
@@ -178,7 +183,7 @@ def get_advisee_student_profile_elements():
                   SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(apo.acadplan_descr, ''), ' || ')
                   FROM {intended_major_schema}.intended_majors im
                   LEFT JOIN {advisor_schema()}.academic_plan_owners apo ON im.plan_code = apo.acadplan_code
-                  WHERE im.sid = ldap.sid
+                  WHERE {intended_majors_where_clause}
                 ) AS intended_majors
               FROM {calnet_schema()}.advisees ldap
               LEFT JOIN {intermediate_schema()}.users us
