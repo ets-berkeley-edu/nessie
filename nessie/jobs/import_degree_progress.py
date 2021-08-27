@@ -85,7 +85,7 @@ class ImportDegreeProgress(BackgroundJob):
                 CREATE EXTERNAL DATABASE IF NOT EXISTS;
             CREATE EXTERNAL TABLE {redshift_schema_student}_staging_ext_tmp.sis_api_degree_progress (
                 sid VARCHAR,
-                feed VARCHAR
+                feed VARCHAR(MAX)
             )
             ROW FORMAT DELIMITED
             FIELDS TERMINATED BY '\\t'
