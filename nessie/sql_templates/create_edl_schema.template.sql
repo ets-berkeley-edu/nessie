@@ -221,7 +221,7 @@ AS (
     UNION
     SELECT
       student_id AS sid,
-      intended_academic_plan_cd_1 AS plan_code,
+      intended_academic_plan_cd_2 AS plan_code,
       academic_program_status_cd AS academic_program_status_code,
       academic_program_effective_dt AS effective_date
       FROM {redshift_schema_edl_external}.student_academic_plan_data
