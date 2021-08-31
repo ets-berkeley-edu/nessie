@@ -35,9 +35,15 @@ class CreateYcbmSchema(BackgroundJob):
 
     def run(self):
         app.logger.info('Starting YCBM schema creation job...')
+
         external_schema = app.config['REDSHIFT_SCHEMA_YCBM']
         redshift.drop_external_schema(external_schema)
-        resolved_ddl = resolve_sql_template('create_ycbm_schema.template.sql')
+
+        sis_source_schema = app.config['REDSHIFT_SCHEMA_EDL'] if app.config['FEATURE_FLAG_EDL_SIS_VIEWS'] else app.config['REDSHIFT_SCHEMA_SIS']
+        resolved_ddl = resolve_sql_template(
+            'create_intermediate_schema.template.sql',
+            redshift_schema_sis=sis_source_schema,
+        )
 
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(external_schema, resolved_ddl)

@@ -548,8 +548,9 @@ def get_fetched_non_advisees():
 
 
 def get_unfetched_non_advisees():
+    attrs_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_SIS_VIEWS'] else sis_schema()
     sql = f"""SELECT DISTINCT attrs.sid
-              FROM {sis_schema()}.basic_attributes attrs
+              FROM {attrs_schema}.basic_attributes attrs
               LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = attrs.sid
               LEFT JOIN {coe_schema()}.students coe ON coe.sid = attrs.sid
               LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = attrs.sid
@@ -566,8 +567,9 @@ def get_unfetched_non_advisees():
 
 
 def get_non_advisees_without_registration_imports():
+    attrs_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_SIS_VIEWS'] else sis_schema()
     sql = f"""SELECT DISTINCT attrs.sid
-              FROM {sis_schema()}.basic_attributes attrs
+              FROM {attrs_schema}.basic_attributes attrs
               LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = attrs.sid
               LEFT JOIN {coe_schema()}.students coe ON coe.sid = attrs.sid
               LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = attrs.sid
