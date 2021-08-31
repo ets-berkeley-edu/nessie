@@ -332,6 +332,34 @@ AS (
   FROM {redshift_schema_edl_external}.student_ethnicity_data
 );
 
+CREATE TABLE {redshift_schema_edl}.student_late_drop_eforms
+DISTKEY (eform_id)
+SORTKEY (sid, term_id)
+AS (
+  SELECT
+    academic_career_cd AS career_code,
+    class_number::int AS section_id,
+    class_section_cd AS section_num,
+    course_id_display_desc AS course_display_name,
+    course_title_nm AS course_title,
+    g3form_id AS eform_id,
+    g3form_last_update_tmsp AS eform_updated_at,
+    g3form_origination_dt AS eform_created_at,
+    g3form_status_desc AS eform_status,
+    g3form_type_cd AS eform_type,
+    grading_basis_enrollment_cd AS grading_basis_code,
+    grading_basis_enrollment_desc AS grading_basis_description,
+    load_dt AS edl_load_date,
+    semester_year_term_cd AS term_id,
+    student_id AS sid,
+    person_display_nm AS student_name,
+    requested_action_desc AS requested_action,
+    requested_grading_basis_cd AS requested_grading_basis_code,
+    requested_grading_basis_desc AS requested_grading_basis_description,
+    units_taken
+  FROM {redshift_schema_edl_external}.student_late_drop_eform_data
+);
+
 -- TODO: EDL equivalent of 'sis_profiles'?
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.sis_profiles
 (
