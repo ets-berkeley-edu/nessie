@@ -78,6 +78,8 @@ CREATE INDEX idx_sis_advising_notes_created_by ON {rds_schema_sis_advising_notes
 CREATE INDEX idx_sis_advising_notes_sid ON {rds_schema_sis_advising_notes}.advising_notes(sid);
 CREATE INDEX idx_sis_advising_notes_updated_at ON {rds_schema_sis_advising_notes}.advising_notes(updated_at);
 
+--
+
 DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_note_attachments CASCADE;
 
 CREATE TABLE {rds_schema_sis_advising_notes}.advising_note_attachments (
@@ -111,6 +113,8 @@ INSERT INTO {rds_schema_sis_advising_notes}.advising_note_attachments (
 CREATE INDEX idx_sis_advising_note_attachments_advising_note_id
 ON {rds_schema_sis_advising_notes}.advising_note_attachments(advising_note_id);
 
+--
+
 DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_note_topics CASCADE;
 
 CREATE TABLE {rds_schema_sis_advising_notes}.advising_note_topics (
@@ -140,6 +144,8 @@ CREATE INDEX idx_sis_advising_note_topics_note_id ON {rds_schema_sis_advising_no
 CREATE INDEX idx_sis_advising_note_topics_sid ON {rds_schema_sis_advising_notes}.advising_note_topics(sid);
 CREATE INDEX idx_sis_advising_note_topics_topic ON {rds_schema_sis_advising_notes}.advising_note_topics(note_topic);
 
+--
+
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.advising_notes_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.advising_notes_search_index AS (
@@ -157,6 +163,76 @@ CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.advising_notes_search_i
 CREATE INDEX idx_advising_notes_ft_search
 ON {rds_schema_sis_advising_notes}.advising_notes_search_index
 USING gin(fts_index);
+
+--
+
+DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.student_late_drop_eforms CASCADE;
+
+CREATE TABLE {rds_schema_sis_advising_notes}.student_late_drop_eforms
+(
+    id SERIAL PRIMARY KEY,
+    career_code VARCHAR,
+    course_display_name VARCHAR,
+    course_title VARCHAR,
+    created_at TIMESTAMP WITH TIME ZONE,
+    edl_load_date VARCHAR,
+    eform_id INTEGER,
+    eform_status VARCHAR,
+    eform_type VARCHAR,
+    grading_basis_code VARCHAR,
+    grading_basis_description VARCHAR,
+    requested_action VARCHAR,
+    requested_grading_basis_code VARCHAR,
+    requested_grading_basis_description VARCHAR,
+    section_id INTEGER,
+    section_num VARCHAR,
+    sid VARCHAR NOT NULL,
+    student_name VARCHAR,
+    term_id VARCHAR(4),
+    units_taken VARCHAR,
+    updated_at TIMESTAMP WITH TIME ZONE
+);
+
+INSERT INTO {rds_schema_sis_advising_notes}.student_late_drop_eforms (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+    SELECT
+        career_code, course_display_name, course_title, created_at, edl_load_date, eform_id, eform_status, eform_type,
+        grading_basis_code, grading_basis_description, requested_action, requested_grading_basis_code,
+        requested_grading_basis_description, section_id, section_num, sid, student_name, term_id, units_taken,
+        updated_at
+    FROM {redshift_schema_edl}.student_late_drop_eforms
+    ORDER BY created_at
+  $REDSHIFT$)
+  AS redshift_student_late_drop_eforms (
+    career_code VARCHAR,
+    course_display_name VARCHAR,
+    course_title VARCHAR,
+    created_at TIMESTAMP WITH TIME ZONE,
+    edl_load_date VARCHAR,
+    eform_id INTEGER,
+    eform_status VARCHAR,
+    eform_type VARCHAR,
+    grading_basis_code VARCHAR,
+    grading_basis_description VARCHAR,
+    requested_action VARCHAR,
+    requested_grading_basis_code VARCHAR,
+    requested_grading_basis_description VARCHAR,
+    section_id INTEGER,
+    section_num VARCHAR,
+    sid VARCHAR NOT NULL,
+    student_name VARCHAR,
+    term_id VARCHAR(4),
+    units_taken VARCHAR,
+    updated_at TIMESTAMP WITH TIME ZONE
+  )
+);
+
+CREATE INDEX idx_student_late_drop_eforms_created_at ON {rds_schema_sis_advising_notes}.student_late_drop_eforms(created_at);
+CREATE INDEX idx_student_late_drop_eforms_sid ON {rds_schema_sis_advising_notes}.student_late_drop_eforms(sid);
+CREATE INDEX idx_student_late_drop_eforms_updated_at ON {rds_schema_sis_advising_notes}.student_late_drop_eforms(updated_at);
+
+--
 
 DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_appointments CASCADE;
 
@@ -206,6 +282,8 @@ CREATE INDEX idx_sis_advising_appointments_created_at ON {rds_schema_sis_advisin
 CREATE INDEX idx_sis_advising_appointments_created_by ON {rds_schema_sis_advising_notes}.advising_appointments(created_by);
 CREATE INDEX idx_sis_advising_appointments_sid ON {rds_schema_sis_advising_notes}.advising_appointments(sid);
 CREATE INDEX idx_sis_advising_appointments_updated_at ON {rds_schema_sis_advising_notes}.advising_appointments(updated_at);
+
+--
 
 DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_appointment_advisors CASCADE;
 

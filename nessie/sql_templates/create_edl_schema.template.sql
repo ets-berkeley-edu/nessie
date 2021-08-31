@@ -43,6 +43,22 @@ IAM_ROLE '{redshift_iam_role},{edl_iam_role}';
 -- Internal schema
 --------------------------------------------------------------------
 
+CREATE OR REPLACE FUNCTION {redshift_schema_edl}.to_utc_iso_string(date_string VARCHAR)
+RETURNS VARCHAR
+STABLE
+AS $$
+  from datetime import datetime
+  import pytz
+
+  d = datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S')
+  d = pytz.timezone('America/Los_Angeles').localize(d)
+  return d.astimezone(pytz.utc).isoformat()
+$$ language plpythonu;
+
+GRANT EXECUTE
+ON function {redshift_schema_edl}.to_utc_iso_string(VARCHAR)
+TO GROUP {redshift_app_boa_user}_group;
+
 DROP SCHEMA IF EXISTS {redshift_schema_edl} CASCADE;
 CREATE SCHEMA {redshift_schema_edl};
 GRANT USAGE ON SCHEMA {redshift_schema_edl} TO GROUP {redshift_dblink_group};
@@ -342,9 +358,9 @@ AS (
     class_section_cd AS section_num,
     course_id_display_desc AS course_display_name,
     course_title_nm AS course_title,
-    g3form_id AS eform_id,
-    g3form_last_update_tmsp AS eform_updated_at,
-    g3form_origination_dt AS eform_created_at,
+    g3form_id::int AS eform_id,
+    TO_TIMESTAMP({redshift_schema_edl}.to_utc_iso_string(g3form_last_update_tmsp), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at,
+    TO_TIMESTAMP({redshift_schema_edl}.to_utc_iso_string(g3form_origination_dt), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
     g3form_status_desc AS eform_status,
     g3form_type_cd AS eform_type,
     grading_basis_enrollment_cd AS grading_basis_code,
@@ -568,3 +584,5 @@ AS (
     WHERE country_cd = 'USA'
     AND visa_permit_type_cd IS NOT NULL
 );
+
+DROP FUNCTION {redshift_schema_edl}.to_utc_iso_string(VARCHAR);
