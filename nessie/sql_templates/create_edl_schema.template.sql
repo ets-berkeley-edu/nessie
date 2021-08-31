@@ -39,6 +39,12 @@ FROM data catalog
 DATABASE 'cs_analytics'
 IAM_ROLE '{redshift_iam_role},{edl_iam_role}';
 
+DROP SCHEMA IF EXISTS {redshift_schema_edl_external_edw};
+CREATE EXTERNAL SCHEMA {redshift_schema_edl_external_edw}
+FROM data catalog
+DATABASE 'edw_analytics'
+IAM_ROLE '{redshift_iam_role},{edl_iam_role}';
+
 --------------------------------------------------------------------
 -- Internal schema
 --------------------------------------------------------------------
@@ -130,6 +136,24 @@ AS (
     note_id AS student_note_nr,
     note_topic_cd AS note_topic
   FROM {redshift_schema_edl_external}.student_advising_notes_data
+);
+
+CREATE TABLE {redshift_schema_edl}.basic_attributes
+SORTKEY (ldap_uid)
+AS (
+  SELECT
+    calnet_uid AS ldap_uid,
+    givenname AS first_name,
+    sn AS last_name,
+    officialemail AS email_address,
+    stuid AS sid,
+    affiliations,
+    CASE ou
+      WHEN 'people' THEN 'S'
+      WHEN 'advcon people' THEN 'A'
+      WHEN 'guests' THEN 'G'
+      ELSE NULL END AS person_type
+  FROM {redshift_schema_edl_external_edw}.edw_caldap_person
 );
 
 CREATE TABLE {redshift_schema_edl}.courses
