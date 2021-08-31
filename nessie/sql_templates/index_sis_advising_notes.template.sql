@@ -170,7 +170,7 @@ DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.student_late_drop_eforms CA
 
 CREATE TABLE {rds_schema_sis_advising_notes}.student_late_drop_eforms
 (
-    id SERIAL PRIMARY KEY,
+    id VARCHAR,
     career_code VARCHAR,
     course_display_name VARCHAR,
     course_title VARCHAR,
@@ -190,14 +190,15 @@ CREATE TABLE {rds_schema_sis_advising_notes}.student_late_drop_eforms
     student_name VARCHAR,
     term_id VARCHAR(4),
     units_taken VARCHAR,
-    updated_at TIMESTAMP WITH TIME ZONE
+    updated_at TIMESTAMP WITH TIME ZONE,
+    PRIMARY KEY (id)
 );
 
 INSERT INTO {rds_schema_sis_advising_notes}.student_late_drop_eforms (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT
-        career_code, course_display_name, course_title, created_at, edl_load_date, eform_id, eform_status, eform_type,
+        id, career_code, course_display_name, course_title, created_at, edl_load_date, eform_id, eform_status, eform_type,
         grading_basis_code, grading_basis_description, requested_action, requested_grading_basis_code,
         requested_grading_basis_description, section_id, section_num, sid, student_name, term_id, units_taken,
         updated_at
@@ -205,6 +206,7 @@ INSERT INTO {rds_schema_sis_advising_notes}.student_late_drop_eforms (
     ORDER BY created_at
   $REDSHIFT$)
   AS redshift_student_late_drop_eforms (
+    id VARCHAR,
     career_code VARCHAR,
     course_display_name VARCHAR,
     course_title VARCHAR,
@@ -228,9 +230,23 @@ INSERT INTO {rds_schema_sis_advising_notes}.student_late_drop_eforms (
   )
 );
 
+CREATE INDEX idx_student_late_drop_eforms_id ON {rds_schema_sis_advising_notes}.student_late_drop_eforms(id);
 CREATE INDEX idx_student_late_drop_eforms_created_at ON {rds_schema_sis_advising_notes}.student_late_drop_eforms(created_at);
 CREATE INDEX idx_student_late_drop_eforms_sid ON {rds_schema_sis_advising_notes}.student_late_drop_eforms(sid);
 CREATE INDEX idx_student_late_drop_eforms_updated_at ON {rds_schema_sis_advising_notes}.student_late_drop_eforms(updated_at);
+
+--
+
+DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.student_late_drop_eforms_search_index CASCADE;
+
+CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.student_late_drop_eforms_search_index AS (
+  SELECT id, to_tsvector('english', COALESCE(requested_action || ' ' || requested_grading_basis_description, '')) AS fts_index
+  FROM {rds_schema_sis_advising_notes}.student_late_drop_eforms
+);
+
+CREATE INDEX idx_student_late_drop_eforms_ft_search
+ON {rds_schema_sis_advising_notes}.student_late_drop_eforms_search_index
+USING gin(fts_index);
 
 --
 
