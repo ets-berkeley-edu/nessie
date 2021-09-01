@@ -593,3 +593,18 @@ AS (
     WHERE country_cd = 'USA'
     AND visa_permit_type_cd IS NOT NULL
 );
+
+-- Follow-up correction for a small number of past courses that are marked as non-primary (i.e. non-graded sections) in EDL
+-- although enrollments did receive grades.
+
+UPDATE edl_sis_data.courses
+SET is_primary = TRUE
+WHERE term_id || '-' || section_id IN
+(
+  SELECT c.term_id || '-' || c.section_id
+  FROM edl_sis_data.courses c
+  JOIN edl_sis_data.enrollments e
+  ON c.term_id = e.term_id AND c.section_id = e.section_id
+  AND c.is_primary IS FALSE
+  AND e.grade != '' and e.grade != 'W'
+);
