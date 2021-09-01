@@ -16,11 +16,7 @@
 
 <script>
 export default {
-  data: () => ({
-    gitCommit: undefined
-  }),
   created() {
-    this.gitCommit = this.$_.get(this.version.build, 'gitCommit')
     this.$ready()
   },
   methods: {
