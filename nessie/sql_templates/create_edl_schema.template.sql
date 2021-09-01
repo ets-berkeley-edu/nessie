@@ -361,7 +361,7 @@ DISTKEY (eform_id)
 SORTKEY (sid, term_id)
 AS (
   SELECT
-    student_id || '-eform:' || g3form_id || '-' || replace(g3form_last_update_tmsp, ' ', '_') AS id,
+    'eform-' || ROW_NUMBER() OVER (ORDER BY g3form_origination_dt) AS id,
     academic_career_cd AS career_code,
     class_number::int AS section_id,
     class_section_cd AS section_num,
