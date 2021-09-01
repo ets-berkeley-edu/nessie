@@ -222,7 +222,7 @@ INSERT INTO {rds_schema_sis_advising_notes}.student_late_drop_eforms (
     requested_grading_basis_description VARCHAR,
     section_id INTEGER,
     section_num VARCHAR,
-    sid VARCHAR NOT NULL,
+    sid VARCHAR,
     student_name VARCHAR,
     term_id VARCHAR(4),
     units_taken VARCHAR,
