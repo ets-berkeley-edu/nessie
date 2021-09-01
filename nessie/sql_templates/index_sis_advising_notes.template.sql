@@ -240,7 +240,7 @@ CREATE INDEX idx_student_late_drop_eforms_updated_at ON {rds_schema_sis_advising
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.student_late_drop_eforms_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.student_late_drop_eforms_search_index AS (
-  SELECT id, to_tsvector('english', COALESCE(requested_action || ' ' || requested_grading_basis_description, '')) AS fts_index
+  SELECT id, to_tsvector('english', COALESCE(course_display_name || ' ' || course_title || ' ' || eform_type || ' ' || requested_action, '')) AS fts_index
   FROM {rds_schema_sis_advising_notes}.student_late_drop_eforms
 );
 
