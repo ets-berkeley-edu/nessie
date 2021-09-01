@@ -126,11 +126,11 @@ CREATE TABLE {redshift_schema_edl}.basic_attributes
 SORTKEY (ldap_uid)
 AS (
   SELECT
-    calnet_uid AS ldap_uid,
+    calnet_uid::varchar AS ldap_uid,
     givenname AS first_name,
     sn AS last_name,
     officialemail AS email_address,
-    stuid AS sid,
+    stuid::varchar AS sid,
     affiliations,
     CASE ou
       WHEN 'people' THEN 'S'
