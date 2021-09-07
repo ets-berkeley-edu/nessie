@@ -325,12 +325,12 @@ ON {rds_schema_sis_internal}.enrolled_primary_sections (sis_subject_area_compres
 CREATE INDEX IF NOT EXISTS enrolled_primary_sections_sis_catalog_id_idx
 ON {rds_schema_sis_internal}.enrolled_primary_sections (sis_catalog_id);
 
-CREATE SCHEMA IF NOT EXISTS {rds_schema_sis_terms};
-GRANT USAGE ON SCHEMA {rds_schema_sis_terms} TO {rds_app_boa_user};
-GRANT SELECT ON ALL TABLES IN SCHEMA {rds_schema_sis_terms} TO {rds_app_boa_user};
-ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_sis_terms} GRANT SELECT ON TABLES TO {rds_app_boa_user};
+CREATE SCHEMA IF NOT EXISTS {rds_schema_terms};
+GRANT USAGE ON SCHEMA {rds_schema_terms} TO {rds_app_boa_user};
+GRANT SELECT ON ALL TABLES IN SCHEMA {rds_schema_terms} TO {rds_app_boa_user};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_terms} GRANT SELECT ON TABLES TO {rds_app_boa_user};
 
-CREATE TABLE IF NOT EXISTS {rds_schema_sis_terms}.term_definitions
+CREATE TABLE IF NOT EXISTS {rds_schema_terms}.term_definitions
 (
     term_id VARCHAR(4) NOT NULL,
     term_name VARCHAR NOT NULL,
@@ -339,9 +339,9 @@ CREATE TABLE IF NOT EXISTS {rds_schema_sis_terms}.term_definitions
 );
 
 CREATE INDEX IF NOT EXISTS term_definitions_term_id_idx
-ON {rds_schema_sis_terms}.term_definitions (term_id);
+ON {rds_schema_terms}.term_definitions (term_id);
 
-CREATE TABLE IF NOT EXISTS {rds_schema_sis_terms}.current_term_index
+CREATE TABLE IF NOT EXISTS {rds_schema_terms}.current_term_index
 (
     current_term_name VARCHAR NOT NULL,
     future_term_name VARCHAR NOT NULL

@@ -34,29 +34,32 @@ import pytz
 
 """Logic for SIS Terms schema creation job."""
 
-external_schema = app.config['REDSHIFT_SCHEMA_SIS_TERMS']
-rds_schema = app.config['RDS_SCHEMA_SIS_TERMS']
+feature_flag_edl = app.config['FEATURE_FLAG_EDL_SIS_VIEWS']
+rds_schema = app.config['RDS_SCHEMA_TERMS']
+redshift_schema = app.config['REDSHIFT_SCHEMA_TERMS']
 
 
-class CreateSisTermsSchema(BackgroundJob):
+class CreateTermsSchema(BackgroundJob):
+
     def run(self):
         app.logger.info('Starting SIS terms schema creation job...')
-        self.create_schema()
+        self.create_external_schema()
         self.refresh_sis_term_definitions()
         self.refresh_current_term_index()
         return 'SIS terms schema creation job completed.'
 
-    def create_schema(self):
+    def create_external_schema(self):
         app.logger.info('Executing SQL...')
-        redshift.drop_external_schema(external_schema)
-        resolved_ddl = resolve_sql_template('create_sis_terms_schema.template.sql')
+        redshift.drop_external_schema(redshift_schema)
+        sql_template = 'create_terms_schema.template.sql' if feature_flag_edl else 'create_terms_schema_per_edo_db.template.sql'
+        resolved_ddl = resolve_sql_template(sql_template)
         if redshift.execute_ddl_script(resolved_ddl):
-            verify_external_schema(external_schema, resolved_ddl)
+            verify_external_schema(redshift_schema, resolved_ddl)
         else:
             raise BackgroundJobError('SIS terms schema creation job failed.')
 
     def refresh_sis_term_definitions(self):
-        rows = redshift.fetch(f'SELECT * FROM {external_schema}.term_definitions')
+        rows = redshift.fetch(f'SELECT * FROM {redshift_schema}.term_definitions')
         if len(rows):
             with rds.transaction() as transaction:
                 if self.refresh_rds(rows, transaction):

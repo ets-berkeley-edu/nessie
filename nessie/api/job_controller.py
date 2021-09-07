@@ -47,7 +47,7 @@ from nessie.jobs.create_lrs_glue_jobs import CreateLrsGlueJobs
 from nessie.jobs.create_oua_schema import CreateOUASchema
 from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
 from nessie.jobs.create_sis_schema import CreateSisSchema
-from nessie.jobs.create_sis_terms_schema import CreateSisTermsSchema
+from nessie.jobs.create_terms_schema import CreateTermsSchema
 from nessie.jobs.create_undergrads_schema import CreateUndergradsSchema
 from nessie.jobs.delete_lrs_glue_jobs import DeleteLrsGlueJobs
 from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
@@ -179,10 +179,10 @@ def create_sis_schema():
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/create_sis_terms_schema', methods=['POST'])
+@app.route('/api/job/create_terms_schema', methods=['POST'])
 @auth_required
-def create_sis_terms_schema():
-    job_started = CreateSisTermsSchema().run_async()
+def create_terms_schema():
+    job_started = CreateTermsSchema().run_async()
     return respond_with_status(job_started)
 
 
