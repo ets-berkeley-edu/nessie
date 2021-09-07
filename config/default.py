@@ -95,6 +95,7 @@ DEGREE_PROGRESS_API_URL = 'https://secreturl.berkeley.edu/PSFT_CS'
 DEGREE_PROGRESS_API_USERNAME = 'secretuser'
 DEGREE_PROGRESS_API_PASSWORD = 'secretpassword'
 
+EARLIEST_ACADEMIC_HISTORY_TERM_ID = 2102
 EARLIEST_LEGACY_TERM = 'Fall 2001'
 EARLIEST_TERM = 'Fall 2016'
 
@@ -226,8 +227,8 @@ RDS_SCHEMA_OUA = 'boac_advising_oua'
 RDS_SCHEMA_METADATA = 'metadata'
 RDS_SCHEMA_SIS_ADVISING_NOTES = 'sis_advising_notes'
 RDS_SCHEMA_SIS_INTERNAL = 'sis_data'
-RDS_SCHEMA_SIS_TERMS = 'sis_terms'
 RDS_SCHEMA_STUDENT = 'student'
+RDS_SCHEMA_TERMS = 'terms'
 RDS_SCHEMA_UNDERGRADS = 'undergrads'
 
 REDSHIFT_DATABASE = 'database'
@@ -280,7 +281,7 @@ REDSHIFT_SCHEMA_LRS = 'External LRS schema name'
 REDSHIFT_SCHEMA_OUA = 'External OUA schema name'
 REDSHIFT_SCHEMA_SIS = 'External SIS schema name'
 REDSHIFT_SCHEMA_SIS_ADVISING_NOTES = 'External SIS Advising Notes schema name'
-REDSHIFT_SCHEMA_SIS_TERMS = 'External SIS Terms schema name'
+REDSHIFT_SCHEMA_TERMS = 'External Terms schema name'
 REDSHIFT_SCHEMA_UNDERGRADS_EXTERNAL = 'External Undergrads schema name'
 REDSHIFT_SCHEMA_YCBM = 'External YCBM schema name'
 

@@ -192,6 +192,7 @@ def resolve_sql_template_string(template_string, **kwargs):
     s3_prefix = 's3://' + app.config['LOCH_S3_BUCKET'] + '/'
     s3_protected_prefix = 's3://' + app.config['LOCH_S3_PROTECTED_BUCKET'] + '/'
     template_data = {
+        'earliest_academic_history_term_id': app.config['EARLIEST_ACADEMIC_HISTORY_TERM_ID'],
         'earliest_term_id': earliest_term_id(),
         'edl_iam_role': app.config['AWS_EDL_ROLE_ARN'],
         'rds_app_boa_user': app.config['RDS_APP_BOA_USER'],
@@ -208,7 +209,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'rds_schema_metadata': app.config['RDS_SCHEMA_METADATA'],
         'rds_schema_sis_advising_notes': app.config['RDS_SCHEMA_SIS_ADVISING_NOTES'],
         'rds_schema_sis_internal': app.config['RDS_SCHEMA_SIS_INTERNAL'],
-        'rds_schema_sis_terms': app.config['RDS_SCHEMA_SIS_TERMS'],
+        'rds_schema_terms': app.config['RDS_SCHEMA_TERMS'],
         'rds_schema_student': app.config['RDS_SCHEMA_STUDENT'],
         'rds_schema_undergrads': app.config['RDS_SCHEMA_UNDERGRADS'],
         'redshift_app_boa_user': app.config['REDSHIFT_APP_BOA_USER'],
@@ -242,8 +243,8 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_schema_sis_advising_notes': app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES'],
         'redshift_schema_sis_advising_notes_internal': app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL'],
         'redshift_schema_sis_internal': app.config['REDSHIFT_SCHEMA_SIS_INTERNAL'],
-        'redshift_schema_sis_terms': app.config['REDSHIFT_SCHEMA_SIS_TERMS'],
         'redshift_schema_student': app.config['REDSHIFT_SCHEMA_STUDENT'],
+        'redshift_schema_terms': app.config['REDSHIFT_SCHEMA_TERMS'],
         'redshift_schema_undergrads': app.config['REDSHIFT_SCHEMA_UNDERGRADS'],
         'redshift_schema_undergrads_external': app.config['REDSHIFT_SCHEMA_UNDERGRADS_EXTERNAL'],
         'redshift_schema_ycbm': app.config['REDSHIFT_SCHEMA_YCBM'],

@@ -27,9 +27,9 @@
 -- CREATE EXTERNAL SCHEMA
 --------------------------------------------------------------------
 
-CREATE EXTERNAL SCHEMA {redshift_schema_sis_terms}
+CREATE EXTERNAL SCHEMA {redshift_schema_terms}
 FROM data catalog
-DATABASE '{redshift_schema_sis_terms}'
+DATABASE '{redshift_schema_terms}'
 IAM_ROLE '{redshift_iam_role}'
 CREATE EXTERNAL DATABASE IF NOT EXISTS;
 
@@ -37,19 +37,40 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 -- External Tables
 --------------------------------------------------------------------
 
--- SIS Term Definitions
-CREATE EXTERNAL TABLE {redshift_schema_sis_terms}.term_definitions
-(
-    term_id VARCHAR(4),
-    term_name VARCHAR,
-    term_begins DATE,
-    term_ends DATE
-)
-ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
-WITH SERDEPROPERTIES (
-  'separatorChar' = ',',
-  'quoteChar' = '\"',
-  'escapeChar' = '\\'
-)
-STORED AS TEXTFILE
-LOCATION '{loch_s3_sis_data_path}/term_definitions/';
+CREATE OR REPLACE FUNCTION {redshift_schema_terms}.deduce_term_name(term_id VARCHAR)
+RETURNS VARCHAR
+STABLE
+AS $$
+    term_id = str(term_id)
+    year = f'19{term_id[1:3]}' if term_id.startswith('1') else f'20{term_id[1:3]}'
+    terms = {
+        '2': 'Spring',
+        '5': 'Summer',
+        '8': 'Fall',
+        '0': 'Winter',
+    }
+    return f'{terms[term_id[3:4]]} {year}'
+$$ language plpythonu;
+
+GRANT EXECUTE
+ON function {redshift_schema_terms}.deduce_term_name(VARCHAR)
+TO GROUP {redshift_app_boa_user}_group;
+
+-- Terms
+CREATE EXTERNAL TABLE {redshift_schema_terms}.term_definitions
+SORTKEY (term_id)
+AS (
+    SELECT
+      semester_year_term_cd AS term_id,
+      {redshift_schema_terms}.deduce_term_name(semester_year_term_cd) AS term_name,
+      session_begin_dt AS term_begins,
+      session_end_dt AS term_ends,
+      load_dt AS edl_load_date
+    FROM {redshift_schema_edl_external}.student_academic_terms_session_data
+    WHERE
+      semester_year_term_cd >= {earliest_academic_history_term_id}
+      AND academic_career_cd = 'UGRD'
+    ORDER BY semester_year_term_cd, session_begin_dt
+);
+
+DROP FUNCTION {redshift_schema_terms}.deduce_term_name(VARCHAR);

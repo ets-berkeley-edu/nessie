@@ -230,8 +230,8 @@ def run_startup_jobs(_app):
     from nessie.jobs.create_asc_schema import CreateAscSchema
     from nessie.jobs.create_metadata_schema import CreateMetadataSchema
     from nessie.jobs.create_rds_indexes import CreateRdsIndexes
-    from nessie.jobs.create_sis_terms_schema import CreateSisTermsSchema
     from nessie.jobs.create_student_schema import CreateStudentSchema
+    from nessie.jobs.create_terms_schema import CreateTermsSchema
 
     if _app.config['JOB_SCHEDULING_ENABLED'] and os.environ.get('NESSIE_ENV') != 'test':
         _app.logger.info('Checking for required schemas...')
@@ -239,7 +239,7 @@ def run_startup_jobs(_app):
         CreateAscSchema().run()
         CreateMetadataSchema().run()
         CreateRdsIndexes().run()
-        CreateSisTermsSchema().run()
+        CreateTermsSchema().run()
         CreateStudentSchema().run()
 
 

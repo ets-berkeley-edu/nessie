@@ -33,7 +33,7 @@ import pytest
 
 @pytest.fixture
 def term_definitions(app):
-    rds_schema = app.config['RDS_SCHEMA_SIS_TERMS']
+    rds_schema = app.config['RDS_SCHEMA_TERMS']
     rds.execute(f'DROP SCHEMA {rds_schema} CASCADE')
     rds.execute(resolve_sql_template('create_rds_indexes.template.sql'))
     rds.execute(f"""INSERT INTO {rds_schema}.term_definitions
@@ -57,70 +57,71 @@ def term_definitions(app):
 class TestCreateSisTermsSchema:
 
     def refresh_term_index(self, app):
-        from nessie.jobs.create_sis_terms_schema import CreateSisTermsSchema
-        CreateSisTermsSchema().refresh_current_term_index()
-        rds_schema = app.config['RDS_SCHEMA_SIS_TERMS']
+        from nessie.jobs.create_terms_schema import CreateTermsSchema
+
+        CreateTermsSchema().refresh_current_term_index()
+        rds_schema = app.config['RDS_SCHEMA_TERMS']
         rows = rds.fetch(f'SELECT * FROM {rds_schema}.current_term_index')
         assert len(rows) == 1
         return rows[0]
 
-    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    @mock.patch('nessie.jobs.create_terms_schema.datetime', autospec=True)
     def test_early_spring(self, mock_datetime, app, term_definitions):
         mock_datetime.now.return_value = datetime(year=2018, month=1, day=9, hour=12, minute=21)
         terms = self.refresh_term_index(app)
         assert terms['current_term_name'] == 'Spring 2018'
         assert terms['future_term_name'] == 'Spring 2018'
 
-    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    @mock.patch('nessie.jobs.create_terms_schema.datetime', autospec=True)
     def test_mid_spring(self, mock_datetime, app, term_definitions):
         mock_datetime.now.return_value = datetime(year=2018, month=3, day=13, hour=12, minute=21)
         terms = self.refresh_term_index(app)
         assert terms['current_term_name'] == 'Spring 2018'
         assert terms['future_term_name'] == 'Summer 2018'
 
-    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    @mock.patch('nessie.jobs.create_terms_schema.datetime', autospec=True)
     def test_late_spring(self, mock_datetime, app, term_definitions):
         mock_datetime.now.return_value = datetime(year=2018, month=5, day=11, hour=12, minute=21)
         terms = self.refresh_term_index(app)
         assert terms['current_term_name'] == 'Spring 2018'
         assert terms['future_term_name'] == 'Fall 2018'
 
-    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    @mock.patch('nessie.jobs.create_terms_schema.datetime', autospec=True)
     def test_post_spring_grace_period(self, mock_datetime, app, term_definitions):
         mock_datetime.now.return_value = datetime(year=2018, month=5, day=20, hour=12, minute=21)
         terms = self.refresh_term_index(app)
         assert terms['current_term_name'] == 'Spring 2018'
         assert terms['future_term_name'] == 'Fall 2018'
 
-    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    @mock.patch('nessie.jobs.create_terms_schema.datetime', autospec=True)
     def test_early_summer(self, mock_datetime, app, term_definitions):
         mock_datetime.now.return_value = datetime(year=2018, month=5, day=21, hour=12, minute=21)
         terms = self.refresh_term_index(app)
         assert terms['current_term_name'] == 'Summer 2018'
         assert terms['future_term_name'] == 'Fall 2018'
 
-    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    @mock.patch('nessie.jobs.create_terms_schema.datetime', autospec=True)
     def test_post_summer_grace_period(self, mock_datetime, app, term_definitions):
         mock_datetime.now.return_value = datetime(year=2018, month=8, day=14, hour=12, minute=21)
         terms = self.refresh_term_index(app)
         assert terms['current_term_name'] == 'Summer 2018'
         assert terms['future_term_name'] == 'Fall 2018'
 
-    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    @mock.patch('nessie.jobs.create_terms_schema.datetime', autospec=True)
     def test_early_fall(self, mock_datetime, app, term_definitions):
         mock_datetime.now.return_value = datetime(year=2018, month=8, day=15, hour=12, minute=21)
         terms = self.refresh_term_index(app)
         assert terms['current_term_name'] == 'Fall 2018'
         assert terms['future_term_name'] == 'Fall 2018'
 
-    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    @mock.patch('nessie.jobs.create_terms_schema.datetime', autospec=True)
     def test_mid_fall(self, mock_datetime, app, term_definitions):
         mock_datetime.now.return_value = datetime(year=2018, month=10, day=13, hour=12, minute=21)
         terms = self.refresh_term_index(app)
         assert terms['current_term_name'] == 'Fall 2018'
         assert terms['future_term_name'] == 'Spring 2019'
 
-    @mock.patch('nessie.jobs.create_sis_terms_schema.datetime', autospec=True)
+    @mock.patch('nessie.jobs.create_terms_schema.datetime', autospec=True)
     def test_post_fall_grace_period(self, mock_datetime, app, term_definitions):
         mock_datetime.now.return_value = datetime(year=2018, month=12, day=24, hour=12, minute=21)
         terms = self.refresh_term_index(app)

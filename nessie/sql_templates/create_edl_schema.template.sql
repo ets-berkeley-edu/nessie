@@ -501,7 +501,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_holds
 DISTKEY (sid)
 SORTKEY (sid);
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_names_hist_enr
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_names_hist_enr
 (
     sid VARCHAR NOT NULL,
     uid VARCHAR NOT NULL,
@@ -557,7 +557,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index_hist_
 DISTKEY (units)
 INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name);
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles_hist_enr
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_profiles_hist_enr
 (
     sid VARCHAR NOT NULL,
     uid VARCHAR,
