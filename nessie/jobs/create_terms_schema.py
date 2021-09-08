@@ -53,7 +53,7 @@ class CreateTermsSchema(BackgroundJob):
         if not feature_flag_edl:
             # External schema is necessary when pulling term definitions from S3.
             redshift.drop_external_schema(redshift_schema)
-            sql_template = 'create_terms_schema_per_edo_db.template.sql'
+            sql_template = 'create_terms_schema.template.sql'
             app.logger.info(f'Executing {sql_template}...')
             resolved_ddl = resolve_sql_template(sql_template)
             if redshift.execute_ddl_script(resolved_ddl):
