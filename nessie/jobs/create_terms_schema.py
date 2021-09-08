@@ -49,9 +49,9 @@ class CreateTermsSchema(BackgroundJob):
         return 'SIS terms schema creation job completed.'
 
     def create_external_schema(self):
-        app.logger.info('Executing SQL...')
         redshift.drop_external_schema(redshift_schema)
         sql_template = 'create_terms_schema.template.sql' if feature_flag_edl else 'create_terms_schema_per_edo_db.template.sql'
+        app.logger.info(f'Executing {sql_template}...')
         resolved_ddl = resolve_sql_template(sql_template)
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(redshift_schema, resolved_ddl)
