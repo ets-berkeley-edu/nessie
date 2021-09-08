@@ -31,6 +31,8 @@ TESTING = True
 
 EARLIEST_LEGACY_TERM = 'Summer 1995'
 
+EDL_SCHEMA_MAX_THREADS = 1
+
 LOCH_S3_BUCKET = 'mock-bucket'
 LOCH_S3_PUBLIC_BUCKET = 'mock-bucket'
 

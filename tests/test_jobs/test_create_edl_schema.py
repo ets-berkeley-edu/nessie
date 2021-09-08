@@ -48,8 +48,8 @@ class TestCreateEdlSchema:
             assert feed['ethnicities'] == ['African-American / Black', 'Chinese / Chinese-American', 'East Indian / Pakistani']
             assert feed['nationalities'] == ['Singapore']
             assert feed['underrepresented'] is True
-            assert feed['visa']['visa_type'] == 'PR'
-            assert feed['visa']['visa_status'] == 'A'
+            assert feed['visa']['type'] == 'PR'
+            assert feed['visa']['status'] == 'A'
 
             assert rows[1]['sid'] == '1234567890'
             feed = json.loads(rows[1]['feed'])
@@ -57,8 +57,8 @@ class TestCreateEdlSchema:
             assert feed['ethnicities'] == ['Mexican / Mexican-American / Chicano', 'White']
             assert feed['nationalities'] == ['Iran (Islamic Republic Of)']
             assert feed['underrepresented'] is True
-            assert feed['visa']['visa_type'] == 'F1'
-            assert feed['visa']['visa_status'] == 'A'
+            assert feed['visa']['type'] == 'F1'
+            assert feed['visa']['status'] == 'A'
 
             assert rows[2]['sid'] == '2345678901'
             feed = json.loads(rows[2]['feed'])
@@ -66,8 +66,7 @@ class TestCreateEdlSchema:
             assert feed['ethnicities'] == ['White']
             assert feed['nationalities'] == ['Taiwan']
             assert feed['underrepresented'] is False
-            assert feed['visa']['visa_type'] is None
-            assert feed['visa']['visa_status'] is None
+            assert feed['visa'] is None
 
             assert rows[3]['sid'] == '3456789012'
             feed = json.loads(rows[3]['feed'])
@@ -75,8 +74,8 @@ class TestCreateEdlSchema:
             assert feed['ethnicities'] == ['American Indian / Alaska Native', 'Filipino / Filipino-American']
             assert feed['nationalities'] == ['Korea, Republic of']
             assert feed['underrepresented'] is True
-            assert feed['visa']['visa_type'] == 'J1'
-            assert feed['visa']['visa_status'] == 'G'
+            assert feed['visa']['type'] == 'J1'
+            assert feed['visa']['status'] == 'G'
 
             assert rows[4]['sid'] == '5000000000'
             feed = json.loads(rows[4]['feed'])
@@ -84,8 +83,7 @@ class TestCreateEdlSchema:
             assert feed['ethnicities'] == ['Not Specified']
             assert feed['nationalities'] == []
             assert feed['underrepresented'] is False
-            assert feed['visa']['visa_type'] is None
-            assert feed['visa']['visa_status'] is None
+            assert feed['visa'] is None
 
             assert rows[7]['sid'] == '8901234567'
             feed = json.loads(rows[7]['feed'])
@@ -93,8 +91,7 @@ class TestCreateEdlSchema:
             assert feed['ethnicities'] == ['Not Specified']
             assert feed['nationalities'] == []
             assert feed['underrepresented'] is False
-            assert feed['visa']['visa_type'] is None
-            assert feed['visa']['visa_status'] is None
+            assert feed['visa'] is None
 
             assert rows[9]['sid'] == '9000000000'
             feed = json.loads(rows[9]['feed'])
@@ -102,5 +99,4 @@ class TestCreateEdlSchema:
             assert feed['ethnicities'] == ['African-American / Black', 'Other Asian', 'Pacific Islander']
             assert feed['nationalities'] == ["Lao People's Democratic Rep", 'Saint Kitts and Nevis']
             assert feed['underrepresented'] is True
-            assert feed['visa']['visa_type'] is None
-            assert feed['visa']['visa_status'] is None
+            assert feed['visa'] is None
