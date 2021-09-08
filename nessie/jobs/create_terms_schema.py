@@ -29,6 +29,7 @@ from flask import current_app as app
 from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.berkeley import next_term_id, term_name_for_sis_id
+from nessie.lib.queries import edl_external_schema
 from nessie.lib.util import resolve_sql_template
 import pytz
 
@@ -49,17 +50,23 @@ class CreateTermsSchema(BackgroundJob):
         return 'SIS terms schema creation job completed.'
 
     def create_external_schema(self):
-        redshift.drop_external_schema(redshift_schema)
-        sql_template = 'create_terms_schema.template.sql' if feature_flag_edl else 'create_terms_schema_per_edo_db.template.sql'
-        app.logger.info(f'Executing {sql_template}...')
-        resolved_ddl = resolve_sql_template(sql_template)
-        if redshift.execute_ddl_script(resolved_ddl):
-            verify_external_schema(redshift_schema, resolved_ddl)
-        else:
-            raise BackgroundJobError('SIS terms schema creation job failed.')
+        if not feature_flag_edl:
+            # External schema is necessary when pulling term definitions from S3.
+            redshift.drop_external_schema(redshift_schema)
+            sql_template = 'create_terms_schema_per_edo_db.template.sql'
+            app.logger.info(f'Executing {sql_template}...')
+            resolved_ddl = resolve_sql_template(sql_template)
+            if redshift.execute_ddl_script(resolved_ddl):
+                verify_external_schema(redshift_schema, resolved_ddl)
+            else:
+                raise BackgroundJobError('SIS terms schema creation job failed.')
 
     def refresh_sis_term_definitions(self):
-        rows = redshift.fetch(f'SELECT * FROM {redshift_schema}.term_definitions')
+        if feature_flag_edl:
+            rows = self.fetch_edl_term_definition_rows()
+        else:
+            rows = redshift.fetch(f'SELECT * FROM {redshift_schema}.term_definitions')
+
         if len(rows):
             with rds.transaction() as transaction:
                 if self.refresh_rds(rows, transaction):
@@ -113,6 +120,27 @@ class CreateTermsSchema(BackgroundJob):
                 else:
                     transaction.rollback()
                     raise BackgroundJobError('Error refreshing RDS current term index.')
+
+    def fetch_edl_term_definition_rows(self):
+        rows = redshift.fetch(f"""
+            SELECT
+              semester_year_term_cd AS term_id,
+              session_begin_dt AS term_begins,
+              session_end_dt AS term_ends,
+              load_dt AS edl_load_date
+            FROM {edl_external_schema()}.student_academic_terms_session_data
+            WHERE
+              semester_year_term_cd >= {app.config['EARLIEST_ACADEMIC_HISTORY_TERM_ID']}
+              AND academic_career_cd = 'UGRD'
+            ORDER BY semester_year_term_cd, session_begin_dt
+        """)
+        decorated_rows = []
+        for row in rows:
+            decorated_rows.append({
+                **row,
+                **{'term_name': term_name_for_sis_id(row['term_id'])},
+            })
+        return decorated_rows
 
     def get_sis_current_term(self, for_date):
         rows = rds.fetch(
