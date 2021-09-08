@@ -23,19 +23,20 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from itertools import groupby
+from concurrent.futures import ThreadPoolExecutor
+from itertools import groupby, islice, repeat
 import json
 from operator import itemgetter
 from tempfile import TemporaryFile
+from threading import current_thread
 
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import degree_program_url_for_major
-from nessie.lib.queries import get_demographics
+from nessie.lib.queries import get_edl_demographics
 from nessie.lib.util import get_s3_edl_daily_path, resolve_sql_template, write_to_tsv_file
 from nessie.merged.student_demographics import GENDER_CODE_MAP, merge_from_details, UNDERREPRESENTED_GROUPS
-import pandas as pd
 
 """Logic for EDL SIS schema creation job."""
 
@@ -44,6 +45,9 @@ class CreateEdlSchema(BackgroundJob):
 
     external_schema = app.config['REDSHIFT_SCHEMA_EDL_EXTERNAL']
     internal_schema = app.config['REDSHIFT_SCHEMA_EDL']
+
+    batch_size = app.config['EDL_SCHEMA_BATCH_SIZE']
+    max_threads = app.config['EDL_SCHEMA_MAX_THREADS']
 
     def run(self):
         app.logger.info('Starting EDL schema creation job...')
@@ -131,49 +135,29 @@ class CreateEdlSchema(BackgroundJob):
 
     def generate_demographics_feeds(self):
         app.logger.info('Staging demographics feeds...')
-        df_chunks = []
-        limit = 10000
-        offset = 0
+        demographics_results = get_edl_demographics()
+
+        chunked_demographics = []
+        demographics_by_sid_iterator = iter(groupby(demographics_results, lambda r: r['sid']))
         while True:
-            rows = get_demographics(limit=limit, offset=offset)
-            df_chunks.append(pd.DataFrame(rows))
-            if len(rows) < limit:
+            chunk = {sid: list(demographics_for_sid) for sid, demographics_for_sid in islice(demographics_by_sid_iterator, self.batch_size)}
+            if not chunk:
                 break
-            offset += limit
-        df = pd.concat(df_chunks, ignore_index=True)
+            chunked_demographics.append(chunk)
 
-        with TemporaryFile() as feeds:
-            sids_with_multiple_visas = []
-            for sid, student in df.groupby('sid'):
-                # TODO: Prefer gender identity once available (NS-1073)
-                gender = student['gender'].drop_duplicates().dropna()
-                if gender.count() > 1:
-                    app.logger.warn(f'Found more than one gender for SID {sid}; selecting only the first.')
-                ethnic_map = student.groupby(['ethnic_group'])['ethnicity'].agg(set).to_dict()
-                ethnicities = self.simplified_ethnicities(ethnic_map)
-                nationalities = student['citizenship_country'].dropna().unique().tolist()
-                visa = student[['visa_type', 'visa_status']].drop_duplicates().to_dict('r')
-                if len(visa) > 1:
-                    sids_with_multiple_visas.append(sid)
-                feed = {
-                    'gender': GENDER_CODE_MAP[gender.iat[0]],
-                    'ethnicities': ethnicities,
-                    'nationalities': nationalities,
-                    'underrepresented': not UNDERREPRESENTED_GROUPS.isdisjoint(ethnic_map.keys()),
-                    'visa': visa[0],
-                }
-                write_to_tsv_file(feeds, [sid, json.dumps(feed)])
-            if len(sids_with_multiple_visas):
-                app.logger.warn(f"SIDs with two or more visas: {', '.join(sids_with_multiple_visas)}")
-            self._upload_file_to_staging('student_demographics', feeds)
+        tempfiles = []
+        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
+            app_obj = app._get_current_object()
+            for result in executor.map(_process_demographics_feeds, repeat(app_obj), chunked_demographics):
+                tempfiles.append(result)
 
-    def simplified_ethnicities(self, ethnic_map):
-        simpler_list = []
-        for group in ethnic_map.keys():
-            merge_from_details(simpler_list, group, ethnic_map[group])
-        if not simpler_list:
-            simpler_list.append('Not Specified')
-        return sorted(simpler_list)
+        with TemporaryFile() as all_feeds:
+            for t in tempfiles:
+                t.seek(0)
+                for line in t:
+                    all_feeds.write(line)
+                t.close()
+            self._upload_file_to_staging('student_demographics', all_feeds)
 
     def _upload_file_to_staging(self, table, _file):
         tsv_filename = f'staging_{table}.tsv'
@@ -186,3 +170,44 @@ class CreateEdlSchema(BackgroundJob):
         app.logger.info('Will copy S3 feeds into Redshift...')
         if not redshift.copy_tsv_from_s3(f'{self.internal_schema}.{table}', s3_key):
             raise BackgroundJobError('Error on Redshift copy: aborting job.')
+
+
+def _process_demographics_feeds(app_arg, chunk):
+    with app_arg.app_context():
+        app_arg.logger.debug(f'{current_thread().name} will process demographics feeds chunk ({len(chunk)} records)')
+        feeds = TemporaryFile()
+        for sid, rows in chunk.items():
+            gender = None
+            visa = None
+            nationalities = set()
+            ethnic_map = {}
+            for r in rows:
+                # TODO: Prefer gender identity once available (NS-1073)
+                gender = r['gender']
+                if r['visa_type']:
+                    visa = {'status': r['visa_status'], 'type': r['visa_type']}
+                if r['citizenship_country']:
+                    nationalities.add(r['citizenship_country'])
+                if r['ethnic_group']:
+                    if r['ethnic_group'] not in ethnic_map:
+                        ethnic_map[r['ethnic_group']] = set()
+                    ethnic_map[r['ethnic_group']].add(r['ethnicity'])
+            feed = {
+                'gender': GENDER_CODE_MAP[gender],
+                'ethnicities': _simplified_ethnicities(ethnic_map),
+                'nationalities': sorted(nationalities),
+                'underrepresented': not UNDERREPRESENTED_GROUPS.isdisjoint(ethnic_map.keys()),
+                'visa': visa,
+            }
+            write_to_tsv_file(feeds, [sid, json.dumps(feed)])
+        app_arg.logger.debug(f'{current_thread().name} wrote all feeds, returning TSV tempfile')
+        return feeds
+
+
+def _simplified_ethnicities(ethnic_map):
+    simpler_list = []
+    for group in ethnic_map.keys():
+        merge_from_details(simpler_list, group, ethnic_map[group])
+    if not simpler_list:
+        simpler_list.append('Not Specified')
+    return sorted(simpler_list)

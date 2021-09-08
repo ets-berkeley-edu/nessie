@@ -312,15 +312,18 @@ def get_all_instructor_uids():
     return redshift.fetch(sql)
 
 
-def get_demographics(limit=10000, offset=0):
+def get_edl_demographics(limit=None, offset=None):
     sql = f"""SELECT
                 i.sid, i.gender, e.ethnicity, e.ethnic_group, c.citizenship_country, v.visa_status, v.visa_type
-              FROM {student_schema()}.student_profile_index i
-              LEFT JOIN {student_schema()}.student_ethnicities e ON i.sid = e.sid
-              LEFT JOIN {student_schema()}.student_citizenships c ON i.sid = c.sid
-              LEFT JOIN {student_schema()}.student_visas v ON i.sid = v.sid
-              ORDER by i.sid, i.gender, e.ethnicity, e.ethnic_group, c.citizenship_country, v.visa_status, v.visa_type
-              LIMIT {limit} OFFSET {offset}"""
+              FROM {edl_schema()}.student_profile_index i
+              LEFT JOIN {edl_schema()}.student_ethnicities e ON i.sid = e.sid
+              LEFT JOIN {edl_schema()}.student_citizenships c ON i.sid = c.sid
+              LEFT JOIN {edl_schema()}.student_visas v ON i.sid = v.sid
+              ORDER by i.sid, i.gender, e.ethnicity, e.ethnic_group, c.citizenship_country, v.visa_status, v.visa_type"""
+    if limit:
+        sql += f' LIMIT {limit}'
+    if offset:
+        sql += f' OFFSET {offset}'
     return redshift.fetch(sql)
 
 
