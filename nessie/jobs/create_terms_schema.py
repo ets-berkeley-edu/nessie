@@ -63,7 +63,18 @@ class CreateTermsSchema(BackgroundJob):
 
     def refresh_sis_term_definitions(self):
         if feature_flag_edl:
-            rows = self.fetch_edl_term_definition_rows()
+            rows = redshift.fetch(f"""
+                SELECT
+                  semester_year_term_cd AS term_id,
+                  semester_year_name_concat_2 as term_name,
+                  TO_CHAR(semester_first_day_of_insr_dt, 'YYYY-MM-DD') AS term_begins,
+                  TO_CHAR(term_end_dt, 'YYYY-MM-DD') AS term_ends
+                FROM {edl_external_schema()}.student_academic_terms_data
+                WHERE
+                  semester_year_term_cd >= {app.config['EARLIEST_ACADEMIC_HISTORY_TERM_ID']}
+                  AND academic_career_cd = 'UGRD'
+                ORDER BY semester_year_term_cd
+            """)
         else:
             rows = redshift.fetch(f'SELECT * FROM {redshift_schema}.term_definitions')
 
@@ -120,27 +131,6 @@ class CreateTermsSchema(BackgroundJob):
                 else:
                     transaction.rollback()
                     raise BackgroundJobError('Error refreshing RDS current term index.')
-
-    def fetch_edl_term_definition_rows(self):
-        rows = redshift.fetch(f"""
-            SELECT
-              semester_year_term_cd AS term_id,
-              session_begin_dt AS term_begins,
-              session_end_dt AS term_ends,
-              load_dt AS edl_load_date
-            FROM {edl_external_schema()}.student_academic_terms_session_data
-            WHERE
-              semester_year_term_cd >= {app.config['EARLIEST_ACADEMIC_HISTORY_TERM_ID']}
-              AND academic_career_cd = 'UGRD'
-            ORDER BY semester_year_term_cd, session_begin_dt
-        """)
-        decorated_rows = []
-        for row in rows:
-            decorated_rows.append({
-                **row,
-                **{'term_name': term_name_for_sis_id(row['term_id'])},
-            })
-        return decorated_rows
 
     def get_sis_current_term(self, for_date):
         rows = rds.fetch(
