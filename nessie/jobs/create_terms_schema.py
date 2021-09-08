@@ -125,14 +125,14 @@ class CreateTermsSchema(BackgroundJob):
         rows = redshift.fetch(f"""
             SELECT
               semester_year_term_cd AS term_id,
-              session_begin_dt AS term_begins,
-              session_end_dt AS term_ends,
-              load_dt AS edl_load_date
+              TO_CHAR(MIN(session_begin_dt), 'YYYY-MM-DD') AS term_begins,
+              TO_CHAR(MAX(session_end_dt), 'YYYY-MM-DD') AS term_ends
             FROM {edl_external_schema()}.student_academic_terms_session_data
             WHERE
               semester_year_term_cd >= {app.config['EARLIEST_ACADEMIC_HISTORY_TERM_ID']}
               AND academic_career_cd = 'UGRD'
-            ORDER BY semester_year_term_cd, session_begin_dt
+            GROUP BY semester_year_term_cd
+            ORDER BY semester_year_term_cd
         """)
         decorated_rows = []
         for row in rows:
