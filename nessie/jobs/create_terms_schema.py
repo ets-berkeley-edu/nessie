@@ -35,12 +35,12 @@ import pytz
 
 """Logic for SIS Terms schema creation job."""
 
-feature_flag_edl = app.config['FEATURE_FLAG_EDL_SIS_VIEWS']
-rds_schema = app.config['RDS_SCHEMA_TERMS']
-redshift_schema = app.config['REDSHIFT_SCHEMA_TERMS']
-
 
 class CreateTermsSchema(BackgroundJob):
+
+    feature_flag_edl = app.config['FEATURE_FLAG_EDL_SIS_VIEWS']
+    rds_schema = app.config['RDS_SCHEMA_TERMS']
+    redshift_schema = app.config['REDSHIFT_SCHEMA_TERMS']
 
     def run(self):
         app.logger.info('Starting SIS terms schema creation job...')
@@ -50,19 +50,19 @@ class CreateTermsSchema(BackgroundJob):
         return 'SIS terms schema creation job completed.'
 
     def create_external_schema(self):
-        if not feature_flag_edl:
+        if not self.feature_flag_edl:
             # External schema is necessary when pulling term definitions from S3.
-            redshift.drop_external_schema(redshift_schema)
+            redshift.drop_external_schema(self.redshift_schema)
             sql_template = 'create_terms_schema.template.sql'
             app.logger.info(f'Executing {sql_template}...')
             resolved_ddl = resolve_sql_template(sql_template)
             if redshift.execute_ddl_script(resolved_ddl):
-                verify_external_schema(redshift_schema, resolved_ddl)
+                verify_external_schema(self.redshift_schema, resolved_ddl)
             else:
                 raise BackgroundJobError('SIS terms schema creation job failed.')
 
     def refresh_sis_term_definitions(self):
-        if feature_flag_edl:
+        if self.feature_flag_edl:
             rows = redshift.fetch(f"""
                 SELECT
                   semester_year_term_cd AS term_id,
@@ -76,7 +76,7 @@ class CreateTermsSchema(BackgroundJob):
                 ORDER BY semester_year_term_cd
             """)
         else:
-            rows = redshift.fetch(f'SELECT * FROM {redshift_schema}.term_definitions')
+            rows = redshift.fetch(f'SELECT * FROM {self.redshift_schema}.term_definitions')
 
         if len(rows):
             with rds.transaction() as transaction:
@@ -88,12 +88,12 @@ class CreateTermsSchema(BackgroundJob):
                     raise BackgroundJobError('Error refreshing RDS term definitions.')
 
     def refresh_rds(self, rows, transaction):
-        result = transaction.execute(f'TRUNCATE {rds_schema}.term_definitions')
+        result = transaction.execute(f'TRUNCATE {self.rds_schema}.term_definitions')
         if not result:
             return False
         columns = ['term_id', 'term_name', 'term_begins', 'term_ends']
         result = transaction.insert_bulk(
-            f'INSERT INTO {rds_schema}.term_definitions ({", ".join(columns)}) VALUES %s',
+            f'INSERT INTO {self.rds_schema}.term_definitions ({", ".join(columns)}) VALUES %s',
             [tuple([r[c] for c in columns]) for r in rows],
         )
         if not result:
@@ -123,10 +123,10 @@ class CreateTermsSchema(BackgroundJob):
                     future_term_id = term_id
 
             with rds.transaction() as transaction:
-                transaction.execute(f'TRUNCATE {rds_schema}.current_term_index')
+                transaction.execute(f'TRUNCATE {self.rds_schema}.current_term_index')
                 columns = ['current_term_name', 'future_term_name']
                 values = tuple([current_term['term_name'], term_name_for_sis_id(future_term_id)])
-                if transaction.execute(f'INSERT INTO {rds_schema}.current_term_index ({", ".join(columns)}) VALUES {values} '):
+                if transaction.execute(f'INSERT INTO {self.rds_schema}.current_term_index ({", ".join(columns)}) VALUES {values} '):
                     transaction.commit()
                 else:
                     transaction.rollback()
@@ -135,7 +135,7 @@ class CreateTermsSchema(BackgroundJob):
     def get_sis_current_term(self, for_date):
         rows = rds.fetch(
             f"""SELECT *, DATE(term_ends + INTERVAL '10 DAYS') AS grace_period_ends
-                FROM {rds_schema}.term_definitions
+                FROM {self.rds_schema}.term_definitions
                 WHERE DATE(term_ends + INTERVAL '10 DAYS') >= '{for_date}'
                 ORDER BY term_id ASC LIMIT 2""",
         )
@@ -143,6 +143,6 @@ class CreateTermsSchema(BackgroundJob):
             return rows[1] if (for_date >= rows[1]['term_begins'] or for_date > rows[0]['grace_period_ends']) else rows[0]
 
     def get_sis_term_for_id(self, term_id):
-        sql = f"SELECT * FROM {rds_schema}.term_definitions WHERE term_id = '{term_id}' LIMIT 1"
+        sql = f"SELECT * FROM {self.rds_schema}.term_definitions WHERE term_id = '{term_id}' LIMIT 1"
         rows = rds.fetch(sql)
         return rows and rows[0]
