@@ -42,14 +42,14 @@ RETURNS VARCHAR
 STABLE
 AS $$
     term_id = str(term_id)
-    year = f'19{term_id[1:3]}' if term_id.startswith('1') else f'20{term_id[1:3]}'
+    year = ('19' + term_id[1:3]) if term_id.startswith('1') else ('20' + term_id[1:3])
     terms = {
         '2': 'Spring',
         '5': 'Summer',
         '8': 'Fall',
         '0': 'Winter',
     }
-    return f'{terms[term_id[3:4]]} {year}'
+    return (terms[term_id[3:4]] + ' ' + year)
 $$ language plpythonu;
 
 GRANT EXECUTE
