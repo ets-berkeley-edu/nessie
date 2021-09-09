@@ -281,14 +281,23 @@ def get_all_advisee_sis_enrollments():
 
 @fixture('query_advisee_enrollment_drops.csv')
 def get_all_advisee_enrollment_drops():
-    sql = f"""SELECT dr.*, drp.date AS drop_date
+    if app.config['FEATURE_FLAG_EDL_SIS_VIEWS']:
+        select = 'SELECT dr.*, LEFT(e.drop_date, 10) AS drop_date'
+        drop_date_join = f"""LEFT JOIN {edl_schema()}.enrollments e
+            ON ldap.ldap_uid = e.ldap_uid
+            AND dr.sis_term_id = e.term_id
+            AND dr.sis_section_id = e.section_id"""
+    else:
+        select = 'SELECT dr.*, drp.date AS drop_date'
+        drop_date_join = f"""LEFT JOIN {sis_schema_internal()}.drop_dates drp
+            ON ldap.ldap_uid = drp.ldap_uid
+            AND dr.sis_term_id = drp.sis_term_id
+            AND dr.sis_section_id = drp.sis_section_id"""
+    sql = f"""{select}
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
               JOIN {calnet_schema()}.advisees ldap
                 ON dr.sid = ldap.sid
-              LEFT JOIN {sis_schema_internal()}.drop_dates drp
-                ON ldap.ldap_uid = drp.ldap_uid
-                AND dr.sis_term_id = drp.sis_term_id
-                AND dr.sis_section_id = drp.sis_section_id
+              {drop_date_join}
               WHERE dr.sis_term_id=ANY('{{{','.join(reverse_term_ids(include_legacy_terms=True))}}}')
               ORDER BY dr.sis_term_id DESC, dr.sid, dr.sis_course_name
             """
