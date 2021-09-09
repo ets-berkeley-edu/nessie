@@ -33,9 +33,13 @@ GENDER_CODE_MAP = {'F': 'Female', 'M': 'Male', 'U': 'Decline to State', 'X': 'No
 
 
 def add_demographics_rows(sid, feed, feed_files, feed_counts):
-    parsed = feed if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS'] else parse_sis_demographics_api(feed)
+    use_edl = app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS']
+    parsed = feed if use_edl else parse_sis_demographics_api(feed)
     if parsed:
-        filtered_ethnicities = parsed.pop('filtered_ethnicities', [])
+        if use_edl:
+            filtered_ethnicities = filter_ethnicities(parsed.get('ethnicities', []))
+        else:
+            filtered_ethnicities = parsed.pop('filtered_ethnicities', [])
         for ethn in filtered_ethnicities:
             feed_counts['ethnicities'] += write_to_tsv_file(feed_files['ethnicities'], [sid, ethn])
 
@@ -126,14 +130,16 @@ def simplified_countries(feed):
 
 
 def ethnicity_filter_values(feed):
-    """Return ethnicities found by search filters.
-
-    Most notably, a search for White should find White-only ethnicities rather than multi-ethnic values.
-    """
+    """Return ethnicities found by search filters."""
     values = simplified_ethnicities(feed)
-    if len(values) > 1 and 'White' in values:
-        values.remove('White')
-    return values
+    return filter_ethnicities(values)
+
+
+def filter_ethnicities(ethnicities):
+    """Return White-only ethnicities rather than multi-ethnic values under a search for 'White'."""
+    if len(ethnicities) > 1 and 'White' in ethnicities:
+        ethnicities.remove('White')
+    return ethnicities
 
 
 def simplified_ethnicities(feed):
