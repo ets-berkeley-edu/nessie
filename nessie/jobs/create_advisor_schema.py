@@ -53,20 +53,21 @@ class CreateAdvisorSchema(BackgroundJob):
             raise BackgroundJobError('Failed to import advisor attributes from CalNet.')
 
     def create_schema(self):
-        if not self.feature_flag_edl:
-            app.logger.info('Executing SQL...')
-            s3_sis_daily = get_s3_sis_sysadm_daily_path()
-            if not s3.get_keys_with_prefix(s3_sis_daily):
-                s3_sis_daily = _get_yesterdays_advisor_data()
-            s3_path = '/'.join([f"s3://{app.config['LOCH_S3_BUCKET']}", s3_sis_daily, 'advisors'])
+        app.logger.info('Executing SQL...')
+        redshift.drop_external_schema(self.external_schema)
 
-            redshift.drop_external_schema(self.external_schema)
-            resolved_ddl = resolve_sql_template('create_advisor_schema.template.sql', advisor_data_path=s3_path)
-            if not redshift.execute_ddl_script(resolved_ddl):
-                raise BackgroundJobError('Advisor schema creation job failed.')
+        s3_sis_daily = get_s3_sis_sysadm_daily_path()
+        if not s3.get_keys_with_prefix(s3_sis_daily):
+            s3_sis_daily = _get_yesterdays_advisor_data()
+        s3_path = '/'.join([f"s3://{app.config['LOCH_S3_BUCKET']}", s3_sis_daily, 'advisors'])
 
-            verify_external_schema(self.external_schema, resolved_ddl)
-            app.logger.info('Redshift schema created.')
+        sql_filename = 'create_advisor_note_permissions.template.sql' if self.feature_flag_edl else 'create_advisor_schema.template.sql'
+        resolved_ddl = resolve_sql_template(sql_filename, advisor_data_path=s3_path)
+        if not redshift.execute_ddl_script(resolved_ddl):
+            raise BackgroundJobError(f'Redshift execute_ddl_script failed on {sql_filename}')
+
+        verify_external_schema(self.external_schema, resolved_ddl)
+        app.logger.info('Redshift schema created.')
 
     def import_advisor_attributes(self):
         if self.feature_flag_edl:
