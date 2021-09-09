@@ -167,7 +167,8 @@ def get_advisee_advisor_mappings():
 
 @fixture('query_advisee_student_profile_feeds.csv')
 def get_advisee_student_profile_elements():
-    demographics_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS'] else sis_schema()
+    degree_progress_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_DEGREE_PROGRESS'] else app.config['REDSHIFT_SCHEMA_STUDENT']
+    demographics_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS'] else app.config['REDSHIFT_SCHEMA_STUDENT']
 
     use_edl_sis = app.config['FEATURE_FLAG_EDL_SIS_VIEWS']
     intended_major_schema = edl_schema() if use_edl_sis else sis_schema()
@@ -192,7 +193,7 @@ def get_advisee_student_profile_elements():
                 ON us.uid = ldap.ldap_uid
               LEFT JOIN {student_schema()}.{student_schema_table('sis_profiles')} sis
                 ON sis.sid = ldap.sid
-              LEFT JOIN {student_schema()}.{student_schema_table('degree_progress')} deg
+              LEFT JOIN {degree_progress_schema}.{student_schema_table('degree_progress')} deg
                 ON deg.sid = ldap.sid
               LEFT JOIN {demographics_schema}.{student_schema_table('student_demographics')} demog
                 ON demog.sid = ldap.sid
