@@ -61,7 +61,7 @@ class ImportRegistrations(AbstractRegistrationsJob):
         rows = {
             'term_gpas': [],
             'last_registrations': [],
-            self.demographics_key: [],
+            'api_demographics': [],
         }
         successes, failures = self.get_registration_data_per_sids(rows, sids)
         if load_mode != 'new' and (len(successes) == 0) and (len(failures) > 0):

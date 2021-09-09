@@ -167,10 +167,12 @@ def get_advisee_advisor_mappings():
 
 @fixture('query_advisee_student_profile_feeds.csv')
 def get_advisee_student_profile_elements():
-    use_edl = app.config['FEATURE_FLAG_EDL_SIS_VIEWS']
-    intended_major_schema = edl_schema() if use_edl else sis_schema()
+    demographics_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS'] else sis_schema()
+
+    use_edl_sis = app.config['FEATURE_FLAG_EDL_SIS_VIEWS']
+    intended_major_schema = edl_schema() if use_edl_sis else sis_schema()
     intended_majors_where_clause = 'im.sid = ldap.sid'
-    if use_edl:
+    if use_edl_sis:
         intended_majors_where_clause += " AND im.academic_program_status_code = 'AC'"
 
     sql = f"""SELECT DISTINCT ldap.ldap_uid, ldap.sid, ldap.first_name, ldap.last_name,
@@ -192,7 +194,7 @@ def get_advisee_student_profile_elements():
                 ON sis.sid = ldap.sid
               LEFT JOIN {student_schema()}.{student_schema_table('degree_progress')} deg
                 ON deg.sid = ldap.sid
-              LEFT JOIN {student_schema()}.{student_schema_table('student_demographics')} demog
+              LEFT JOIN {demographics_schema}.{student_schema_table('student_demographics')} demog
                 ON demog.sid = ldap.sid
               LEFT JOIN {student_schema()}.student_last_registrations reg
                 ON reg.sid = ldap.sid
