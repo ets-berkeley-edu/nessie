@@ -57,7 +57,7 @@ class CreateAdvisorSchema(BackgroundJob):
             app.logger.info('Executing SQL...')
             s3_sis_daily = get_s3_sis_sysadm_daily_path()
             if not s3.get_keys_with_prefix(s3_sis_daily):
-                s3_sis_daily = _get_yesterday_advisor_data()
+                s3_sis_daily = _get_yesterdays_advisor_data()
             s3_path = '/'.join([f"s3://{app.config['LOCH_S3_BUCKET']}", s3_sis_daily, 'advisors'])
 
             redshift.drop_external_schema(self.external_schema)
@@ -70,16 +70,19 @@ class CreateAdvisorSchema(BackgroundJob):
 
     def import_advisor_attributes(self):
         if self.feature_flag_edl:
-            sql = resolve_sql_template_string('SELECT DISTINCT advisor_id FROM {redshift_schema_edl_external}.student_advisor_data')
-            advisor_ids = [r['advisor_id'] for r in redshift.fetch(sql)]
+            sql = resolve_sql_template_string("""
+                SELECT DISTINCT advisor_id
+                FROM {redshift_schema_edl_external}.student_advisor_data
+                WHERE academic_career_cd = 'UGRD' AND advisor_id ~ '[0-9]+'
+            """)
+            advisor_ids = [row['advisor_id'] for row in redshift.fetch(sql)]
         else:
             sql = resolve_sql_template_string('SELECT DISTINCT advisor_sid FROM {redshift_schema_advisor_internal}.advisor_students')
-            csid_results = redshift.fetch(sql)
-            advisor_ids = [r['advisor_sid'] for r in csid_results]
+            advisor_ids = [row['advisor_sid'] for row in redshift.fetch(sql)]
         return _import_calnet_attributes(advisor_ids)
 
 
-def _get_yesterday_advisor_data():
+def _get_yesterdays_advisor_data():
     s3_sis_daily = get_s3_sis_sysadm_daily_path(datetime.now() - timedelta(days=1))
     if not s3.get_keys_with_prefix(s3_sis_daily):
         raise BackgroundJobError('No timely SIS S3 advisor data found')
@@ -94,8 +97,7 @@ def _import_calnet_attributes(advisor_ids):
     if len(advisor_ids) != calnet_row_count:
         ldap_csids = [person['csid'] for person in calnet_attributes]
         missing = set(advisor_ids) - set(ldap_csids)
-        app.logger.warning(
-            f'Looked for {len(advisor_ids)} advisor CSIDs but only found {calnet_row_count} : missing {missing}')
+        app.logger.warning(f'Looked for {len(advisor_ids)} advisor CSIDs but only found {calnet_row_count} : missing {missing}')
 
     advisor_rows = []
     for index, a in enumerate(calnet_attributes):
