@@ -50,10 +50,11 @@ def analyze_edl_registration_data(sid):
             pass
 
     job = MockRegistrationsJob()
-    demographics_key = 'demographics' if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS'] else 'api_demographics'
 
     for key in ('edl', 'sis'):
-        with _override_feature_flag('FEATURE_FLAG_EDL_REGISTRATIONS', key == 'edl'):
+        use_edl = key == 'edl'
+        demographics_key = 'demographics' if use_edl else 'api_demographics'
+        with _override_feature_flag('FEATURE_FLAG_EDL_REGISTRATIONS', use_edl):
             result[key] = {
                 'term_gpas': [],
                 'last_registrations': [],

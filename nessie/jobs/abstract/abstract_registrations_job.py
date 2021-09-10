@@ -39,7 +39,6 @@ import numpy as np
 
 class AbstractRegistrationsJob(BackgroundJob):
 
-    demographics_key = 'demographics' if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS'] else 'api_demographics'
     include_demographics = True
 
     @abstractmethod
@@ -71,7 +70,7 @@ class AbstractRegistrationsJob(BackgroundJob):
                 ),
             )
             if self.include_demographics:
-                rows[self.demographics_key].append(
+                rows['demographics'].append(
                     encoded_tsv_row([sid, json.dumps(edl_demographics_to_json(edl_row))]),
                 )
         failures = list(np.setdiff1d(sids, successes))
@@ -106,7 +105,7 @@ class AbstractRegistrationsJob(BackgroundJob):
                         app.logger.info(f'No past UGRD registrations found for SID {sid}.')
                     demographics = full_feed.get('demographics', {})
                     if demographics:
-                        rows[self.demographics_key].append(
+                        rows['api_demographics'].append(
                             encoded_tsv_row([sid, json.dumps(demographics)]),
                         )
                 else:
