@@ -61,7 +61,7 @@ class CreateAdvisorSchema(BackgroundJob):
             s3_sis_daily = _get_yesterdays_advisor_data()
         s3_path = '/'.join([f"s3://{app.config['LOCH_S3_BUCKET']}", s3_sis_daily, 'advisors'])
 
-        sql_filename = 'create_advisor_note_permissions.template.sql' if self.feature_flag_edl else 'create_advisor_schema.template.sql'
+        sql_filename = 'edl_create_advisor_schema.template.sql' if self.feature_flag_edl else 'create_advisor_schema.template.sql'
         resolved_ddl = resolve_sql_template(sql_filename, advisor_data_path=s3_path)
         if not redshift.execute_ddl_script(resolved_ddl):
             raise BackgroundJobError(f'Redshift execute_ddl_script failed on {sql_filename}')
@@ -78,7 +78,10 @@ class CreateAdvisorSchema(BackgroundJob):
             """)
             advisor_ids = [row['advisor_id'] for row in redshift.fetch(sql)]
         else:
-            sql = resolve_sql_template_string('SELECT DISTINCT advisor_sid FROM {redshift_schema_advisor_internal}.advisor_students')
+            sql = resolve_sql_template_string("""
+                SELECT DISTINCT advisor_sid
+                FROM {redshift_schema_advisor_internal}.advisor_students
+            """)
             advisor_ids = [row['advisor_sid'] for row in redshift.fetch(sql)]
         return _import_calnet_attributes(advisor_ids)
 
