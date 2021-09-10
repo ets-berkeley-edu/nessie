@@ -176,18 +176,28 @@ def get_advisee_student_profile_elements():
     if use_edl_sis:
         intended_majors_where_clause += " AND im.academic_program_status_code = 'AC'"
 
+    if use_edl_sis:
+        sql_intended_majors = f"""
+            SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(apo.academic_plan_nm, ''), ' || ')
+            FROM {intended_major_schema}.intended_majors im
+            LEFT JOIN {edl_external_schema()}.student_advisor_data apo ON im.plan_code = apo.academic_plan_cd
+            WHERE {intended_majors_where_clause}
+        """
+    else:
+        sql_intended_majors = f"""
+            SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(apo.acadplan_descr, ''), ' || ')
+            FROM {intended_major_schema}.intended_majors im
+            LEFT JOIN {advisor_schema()}.academic_plan_owners apo ON im.plan_code = apo.acadplan_code
+            WHERE {intended_majors_where_clause}
+        """
+
     sql = f"""SELECT DISTINCT ldap.ldap_uid, ldap.sid, ldap.first_name, ldap.last_name,
                 us.canvas_id AS canvas_user_id, us.name AS canvas_user_name,
                 sis.feed AS sis_profile_feed,
                 deg.feed AS degree_progress_feed,
                 demog.feed AS demographics_feed,
                 reg.feed AS last_registration_feed,
-                (
-                  SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(apo.acadplan_descr, ''), ' || ')
-                  FROM {intended_major_schema}.intended_majors im
-                  LEFT JOIN {advisor_schema()}.academic_plan_owners apo ON im.plan_code = apo.acadplan_code
-                  WHERE {intended_majors_where_clause}
-                ) AS intended_majors
+                ({sql_intended_majors}) AS intended_majors
               FROM {calnet_schema()}.advisees ldap
               LEFT JOIN {intermediate_schema()}.users us
                 ON us.uid = ldap.ldap_uid
