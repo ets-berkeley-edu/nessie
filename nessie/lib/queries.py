@@ -171,24 +171,19 @@ def get_advisee_student_profile_elements():
     demographics_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS'] else app.config['REDSHIFT_SCHEMA_STUDENT']
 
     use_edl_sis = app.config['FEATURE_FLAG_EDL_SIS_VIEWS']
-    intended_major_schema = edl_schema() if use_edl_sis else sis_schema()
-    intended_majors_where_clause = 'im.sid = ldap.sid'
-    if use_edl_sis:
-        intended_majors_where_clause += " AND im.academic_program_status_code = 'AC'"
-
     if use_edl_sis:
         sql_intended_majors = f"""
-            SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(apo.academic_plan_nm, ''), ' || ')
-            FROM {intended_major_schema}.intended_majors im
-            LEFT JOIN {edl_external_schema()}.student_advisor_data apo ON im.plan_code = apo.academic_plan_cd
-            WHERE {intended_majors_where_clause}
+            SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(saphd.academic_plan_nm, ''), ' || ')
+            FROM {edl_schema()}.intended_majors im
+            LEFT JOIN {edl_external_schema()}.student_academic_plan_hierarchy_data saphd ON im.plan_code = saphd.academic_plan_cd
+            WHERE im.sid = ldap.sid AND im.academic_program_status_code = 'AC'
         """
     else:
         sql_intended_majors = f"""
-            SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(apo.acadplan_descr, ''), ' || ')
-            FROM {intended_major_schema}.intended_majors im
+            SELECT LISTAGG(im.plan_code || ' :: ' || coalesce (apo.acadplan_descr, ''), ' || ')
+            FROM {sis_schema()}.intended_majors im
             LEFT JOIN {advisor_schema()}.academic_plan_owners apo ON im.plan_code = apo.acadplan_code
-            WHERE {intended_majors_where_clause}
+            WHERE im.sid = ldap.sid
         """
 
     sql = f"""SELECT DISTINCT ldap.ldap_uid, ldap.sid, ldap.first_name, ldap.last_name,
