@@ -176,7 +176,7 @@ def get_advisee_student_profile_elements():
             SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(saphd.academic_plan_nm, ''), ' || ')
             FROM {edl_schema()}.intended_majors im
             LEFT JOIN {edl_external_schema()}.student_academic_plan_hierarchy_data saphd ON im.plan_code = saphd.academic_plan_cd
-            WHERE im.sid = ldap.sid AND im.academic_program_status_code = 'AC'
+            WHERE im.sid = ldap.sid
         """
     else:
         sql_intended_majors = f"""
