@@ -156,7 +156,7 @@ AS (
     )::integer::boolean AS is_primary,
     class.enrollment_total_nbr AS enrollment_count,
     class.units_maximum_nbr AS allowed_units,
-    class.instructional_format_nm AS instruction_mode,
+    class.instruction_mode_cd AS instruction_mode,
     instr.instructor_calnet_uid AS instructor_uid,
     instr.instructor_preferred_display_nm AS instructor_name,
     instr.instructor_function_cd AS instructor_role_code,
