@@ -342,4 +342,5 @@ def merge_intended_majors(intended_majors_feed, sis_profile):
                 'degreeProgramUrl': degree_program_url_for_major(im.split(' :: ')[1]),
             } for im in intended_majors_feed.split(' || ')
         ]
+        intended_majors = list(set(intended_majors))
         sis_profile['intendedMajors'] = sorted(intended_majors, key=itemgetter('description'))
