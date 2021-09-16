@@ -49,6 +49,7 @@ from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesS
 from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.jobs.create_terms_schema import CreateTermsSchema
 from nessie.jobs.create_undergrads_schema import CreateUndergradsSchema
+from nessie.jobs.create_ycbm_schema import CreateYcbmSchema
 from nessie.jobs.delete_lrs_glue_jobs import DeleteLrsGlueJobs
 from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
@@ -190,6 +191,13 @@ def create_terms_schema():
 @auth_required
 def create_sis_advising_notes_schema():
     job_started = CreateSisAdvisingNotesSchema().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/create_ycbm_schema', methods=['POST'])
+@auth_required
+def create_ycbm_schema():
+    job_started = CreateYcbmSchema().run_async()
     return respond_with_status(job_started)
 
 
