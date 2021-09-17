@@ -107,9 +107,9 @@ class TestMergedSisProfile:
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
         assert profile['subplans'] == ['Ecosystem Sciences']
 
-    def test_intended_major_ignored_if_empty(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
+    def test_intended_major_ignored_if_empty(self, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
-        assert 'intendedMajors' not in profile
+        assert profile['intendedMajors'] is None
 
     def test_intended_major_included_if_present(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile(
@@ -117,7 +117,7 @@ class TestMergedSisProfile:
             sis_api_profiles,
             sis_api_degree_progress,
             sis_api_last_registrations,
-            '16A19U :: MatSci Eng + BusAdm MET Pgm UG',
+            '16A19U :: MatSci Eng + BusAdm MET Pgm UG || 16A19U :: MatSci Eng + BusAdm MET Pgm UG',
         )
         assert profile['intendedMajors'][0]['code'] == '16A19U'
         assert profile['intendedMajors'][0]['description'] == 'MatSci Eng + BusAdm MET Pgm UG'
