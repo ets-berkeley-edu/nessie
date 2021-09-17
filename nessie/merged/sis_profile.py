@@ -63,8 +63,7 @@ def parse_merged_sis_profile(feed_elements):
     merge_registration(sis_student_api_feed, last_registration_feed, sis_profile)
     if sis_profile.get('academicCareer') == 'UGRD':
         sis_profile['degreeProgress'] = degree_progress_api_feed and json.loads(degree_progress_api_feed)
-    merge_intended_majors(intended_majors_feed, sis_profile)
-
+    sis_profile['intendedMajors'] = merge_intended_majors(intended_majors_feed)
     return sis_profile
 
 
@@ -333,13 +332,20 @@ def merge_sis_profile_plans(academic_status, sis_profile):
     sis_profile['subplans'] = sorted(list(subplans))
 
 
-def merge_intended_majors(intended_majors_feed, sis_profile):
+def merge_intended_majors(intended_majors_feed):
+    intended_majors = None
     if intended_majors_feed:
-        intended_majors = [
-            {
-                'code': im.split(' :: ')[0],
-                'description': im.split(' :: ')[1],
-                'degreeProgramUrl': degree_program_url_for_major(im.split(' :: ')[1]),
-            } for im in intended_majors_feed.split(' || ')
-        ]
-        sis_profile['intendedMajors'] = sorted(intended_majors, key=itemgetter('description'))
+        unique_codes = []
+        intended_majors = []
+        for intended_major in intended_majors_feed.split(' || '):
+            code = intended_major.split(' :: ')[0]
+            if code not in unique_codes:
+                unique_codes.append(code)
+                description = intended_major.split(' :: ')[1]
+                intended_majors.append({
+                    'code': code,
+                    'description': description,
+                    'degreeProgramUrl': degree_program_url_for_major(description),
+                })
+        intended_majors = sorted(intended_majors, key=itemgetter('description'))
+    return intended_majors
