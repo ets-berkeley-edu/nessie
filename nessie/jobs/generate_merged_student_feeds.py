@@ -241,7 +241,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                     )
             for hold in sis_profile.get('holds', []):
                 feed_counts['student_holds'] += write_to_tsv_file(feed_files['student_holds'], [sid, json.dumps(hold)])
-            for intended_major in sis_profile.get('intendedMajors', []):
+            for intended_major in (sis_profile.get('intendedMajors') or []):
                 feed_counts['intended_majors'] += write_to_tsv_file(feed_files['intended_majors'], [sid, intended_major.get('description', None)])
             for plan in sis_profile.get('plansMinor', []):
                 if plan.get('status') == 'Active':
