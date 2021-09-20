@@ -68,6 +68,9 @@ AS (
         academic_standing_category_cd AS acad_standing_status,
         action_dt AS action_date
     FROM {redshift_schema_edl_external}.student_academic_standing_data
+    WHERE
+        academic_standing_category_cd IS NOT NULL
+        AND academic_standing_category_cd != ''
 );
 
 CREATE TABLE {redshift_schema_edl}.advising_notes
