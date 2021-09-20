@@ -448,16 +448,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_profiles
 DISTKEY (sid)
 SORTKEY (sid);
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_term_gpas
-(
-    sid VARCHAR NOT NULL,
-    term_id VARCHAR(4) NOT NULL,
-    gpa DECIMAL(5,3),
-    units_taken_for_gpa DECIMAL(4,1)
-)
-DISTKEY (sid)
-SORTKEY (sid, term_id);
-
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.hist_enr_last_registrations
 (
     sid VARCHAR NOT NULL,
@@ -465,16 +455,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.hist_enr_last_registrations
 )
 DISTKEY(sid)
 SORTKEY(sid);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.hist_enr_term_gpas
-(
-    sid VARCHAR NOT NULL,
-    term_id VARCHAR(4) NOT NULL,
-    gpa DECIMAL(5,3),
-    units_taken_for_gpa DECIMAL(4,1)
-)
-DISTKEY (sid)
-SORTKEY (sid, term_id);
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_enrollment_terms
 (
@@ -566,9 +546,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_profiles_hist_enr
 )
 DISTKEY (sid)
 SORTKEY (sid);
-
--- Equivalent to external table {redshift_schema_sis}.term_gpa. Distinct from student_term_gpas and hist_enr_term_gpas
--- above, which mimic API-sourced data.
 
 CREATE TABLE {redshift_schema_edl}.term_gpa
 SORTKEY(sid)
