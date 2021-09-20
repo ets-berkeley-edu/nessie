@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from concurrent.futures import ThreadPoolExecutor
+from decimal import Decimal
 from itertools import groupby, islice, repeat
 import json
 from operator import itemgetter
@@ -34,7 +35,7 @@ from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import degree_program_url_for_major
-from nessie.lib.queries import get_edl_demographics
+from nessie.lib.queries import get_edl_demographics, get_edl_registrations
 from nessie.lib.util import get_s3_edl_daily_path, resolve_sql_template, write_to_tsv_file
 from nessie.merged.student_demographics import GENDER_CODE_MAP, merge_from_details, UNDERREPRESENTED_GROUPS
 
@@ -80,6 +81,8 @@ class CreateEdlSchema(BackgroundJob):
             self.generate_degree_progress_feeds()
         if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS']:
             self.generate_demographics_feeds()
+        if app.config['FEATURE_FLAG_EDL_REGISTRATIONS']:
+            self.generate_registration_feeds()
 
     def generate_academic_plans_feeds(self):
         app.logger.info('Staging academic plans feeds...')
@@ -159,6 +162,32 @@ class CreateEdlSchema(BackgroundJob):
                 t.close()
             self._upload_file_to_staging('student_demographics', all_feeds)
 
+    def generate_registration_feeds(self):
+        app.logger.info('Staging registration feeds...')
+        registration_results = get_edl_registrations()
+
+        chunked_registrations = []
+        registrations_by_sid_iterator = iter(groupby(registration_results, lambda r: r['sid']))
+        while True:
+            chunk = {sid: list(registrations_for_sid) for sid, registrations_for_sid in islice(registrations_by_sid_iterator, self.batch_size)}
+            if not chunk:
+                break
+            chunked_registrations.append(chunk)
+
+        tempfiles = []
+        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
+            app_obj = app._get_current_object()
+            for result in executor.map(_process_registration_feeds, repeat(app_obj), chunked_registrations):
+                tempfiles.append(result)
+
+        with TemporaryFile() as all_feeds:
+            for t in tempfiles:
+                t.seek(0)
+                for line in t:
+                    all_feeds.write(line)
+                t.close()
+            self._upload_file_to_staging('student_last_registrations', all_feeds)
+
     def _upload_file_to_staging(self, table, _file):
         tsv_filename = f'staging_{table}.tsv'
         s3_key = f'{get_s3_edl_daily_path()}/{tsv_filename}'
@@ -173,6 +202,14 @@ class CreateEdlSchema(BackgroundJob):
 
 
 def _process_demographics_feeds(app_arg, chunk):
+    def _simplified_ethnicities(ethnic_map):
+        simpler_list = []
+        for group in ethnic_map.keys():
+            merge_from_details(simpler_list, group, ethnic_map[group])
+        if not simpler_list:
+            simpler_list.append('Not Specified')
+        return sorted(simpler_list)
+
     with app_arg.app_context():
         app_arg.logger.debug(f'{current_thread().name} will process demographics feeds chunk ({len(chunk)} records)')
         feeds = TemporaryFile()
@@ -204,10 +241,113 @@ def _process_demographics_feeds(app_arg, chunk):
         return feeds
 
 
-def _simplified_ethnicities(ethnic_map):
-    simpler_list = []
-    for group in ethnic_map.keys():
-        merge_from_details(simpler_list, group, ethnic_map[group])
-    if not simpler_list:
-        simpler_list.append('Not Specified')
-    return sorted(simpler_list)
+def _process_registration_feeds(app_arg, chunk):
+    def _str(v):
+        return (v is not None) and (float(v) if isinstance(v, Decimal) else str(v))
+
+    def _withdraw_code_to_name(code):
+        mappings = {
+            'CAN': 'CAN',
+            'DNSH': 'DNSH',
+            'DYSH': 'DYSH',
+            'MEDA': 'MEDA',
+            'MEDI': 'Medical',
+            'NPAY': 'NPAY',
+            'NWD': 'NWD',
+            'OTHR': 'Other',
+            'PARN': 'PARN',
+            'PERS': 'Personal',
+            'RETR': 'RETR',
+            'RSCH': 'RSCH',
+            'WDR': 'Withdrew',
+        }
+        return mappings.get(code) or code
+
+    def _find_last_registration(rows):
+        last_registration = None
+
+        for row in rows:
+            # We prefer the most recent completed registration. But if the only registration data
+            # is for an in-progress or future term, use it as a fallback.
+            is_pending = (row['term_enrolled_units'] and not row['term_berkeley_completed_total_units'])
+            if is_pending and last_registration:
+                continue
+
+            # At present, terms spent as an Extension student are not included in Term GPAs (but see BOAC-2266).
+            # However, if there are no other types of registration, the Extension term is used for academicCareer.
+            if row['academic_career_cd'] == 'UCBX':
+                if last_registration and last_registration['academic_career_cd'] != 'UCBX':
+                    continue
+
+            # The most recent registration will be at the end of the list.
+            last_registration = row
+
+        return last_registration
+
+    def _generate_feed(row):
+        feed = {
+            'term': {
+                'id': _str(row['term_id']),
+            },
+            'academicCareer': {
+                'code': _str(row['academic_career_cd']),
+            },
+            'academicLevels': [
+                {
+                    'type': {
+                        'code': 'BOT',
+                        'description': 'Beginning of Term',
+                    },
+                    'level': {
+                        'code': _str(row['academic_level_beginning_of_term_cd']),
+                        'description': row['academic_level_beginning_of_term_desc'],
+                    },
+                },
+                {
+                    'type': {
+                        'code': 'EOT',
+                        'description': 'End of Term',
+                    },
+                    'level': {
+                        'code': _str(row['academic_level_end_of_term_cd']),
+                        'description': row['academic_level_end_of_term_desc'],
+                    },
+                },
+            ],
+            'termUnits': [
+                {
+                    'type': {
+                        'code': 'Total',
+                        'description': 'Total Units',
+                    },
+                    'unitsEnrolled': _str(row['term_enrolled_units']),
+                    'unitsMax': _str(row['maximum_term_enrollment_units_limit']),
+                    'unitsMin': _str(row['minimum_term_enrollment_units_limit']),
+                    'unitsTaken': _str(row['term_berkeley_completed_total_units']),
+                },
+            ],
+        }
+        if row['withdraw_code'] != 'NWD':
+            feed['withdrawalCancel'] = {
+                'date': _str(row['withdraw_date']),
+                'reason': {
+                    'code': row['withdraw_reason'],
+                    'description': _withdraw_code_to_name(row['withdraw_reason']),
+                },
+                'type': {
+                    'code': _str(row['withdraw_code']),
+                    'description': _withdraw_code_to_name(row['withdraw_code']),
+                },
+            }
+        return feed
+
+    with app_arg.app_context():
+        app_arg.logger.debug(f'{current_thread().name} will process registration feeds chunk ({len(chunk)} records)')
+        feeds = TemporaryFile()
+        for sid, rows in chunk.items():
+            last_registration = _find_last_registration(rows)
+            if last_registration:
+                feed = _generate_feed(last_registration)
+                write_to_tsv_file(feeds, [sid, json.dumps(feed)])
+        app_arg.logger.debug(f'{current_thread().name} wrote all feeds, returning TSV tempfile')
+        return feeds

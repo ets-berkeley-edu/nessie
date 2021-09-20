@@ -31,10 +31,7 @@ from timeit import default_timer as timer
 from flask import current_app as app
 from nessie.externals import sis_student_api
 from nessie.jobs.background_job import BackgroundJob
-from nessie.lib.berkeley import edl_demographics_to_json, edl_registration_to_json
-from nessie.lib.queries import get_edl_student_registrations
 from nessie.lib.util import encoded_tsv_row
-import numpy as np
 
 
 class AbstractRegistrationsJob(BackgroundJob):
@@ -47,34 +44,7 @@ class AbstractRegistrationsJob(BackgroundJob):
 
     def get_registration_data_per_sids(self, rows, sids, include_demographics=True):
         self.include_demographics = include_demographics
-        return self._query_edl(rows, sids) if app.config['FEATURE_FLAG_EDL_REGISTRATIONS'] else self._query_student_api(rows, sids)
-
-    def _query_edl(self, rows, sids):
-        successes = []
-        for edl_row in get_edl_student_registrations(sids):
-            sid = edl_row['student_id']
-            if sid not in successes:
-                # Based on the SQL order_by, the first result per SID will be 'last_registration'.
-                successes.append(sid)
-                rows['last_registrations'].append(
-                    encoded_tsv_row([sid, json.dumps(edl_registration_to_json(edl_row))]),
-                )
-            rows['term_gpas'].append(
-                encoded_tsv_row(
-                    [
-                        sid,
-                        edl_row['term_id'],
-                        edl_row['current_term_gpa'] or '0',
-                        edl_row.get('unt_taken_gpa') or '0',  # TODO: Does EDL give us 'unitsTakenForGpa'?
-                    ],
-                ),
-            )
-            if self.include_demographics:
-                rows['demographics'].append(
-                    encoded_tsv_row([sid, json.dumps(edl_demographics_to_json(edl_row))]),
-                )
-        failures = list(np.setdiff1d(sids, successes))
-        return successes, failures
+        return self._query_student_api(rows, sids)
 
     def _query_student_api(self, rows, sids):
         successes = []

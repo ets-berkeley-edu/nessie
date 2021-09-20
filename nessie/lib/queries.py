@@ -169,6 +169,7 @@ def get_advisee_advisor_mappings():
 def get_advisee_student_profile_elements():
     degree_progress_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_DEGREE_PROGRESS'] else app.config['REDSHIFT_SCHEMA_STUDENT']
     demographics_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS'] else app.config['REDSHIFT_SCHEMA_STUDENT']
+    registration_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_REGISTRATIONS'] else app.config['REDSHIFT_SCHEMA_STUDENT']
 
     use_edl_sis = app.config['FEATURE_FLAG_EDL_SIS_VIEWS']
     if use_edl_sis:
@@ -202,7 +203,7 @@ def get_advisee_student_profile_elements():
                 ON deg.sid = ldap.sid
               LEFT JOIN {demographics_schema}.{student_schema_table('student_demographics')} demog
                 ON demog.sid = ldap.sid
-              LEFT JOIN {student_schema()}.student_last_registrations reg
+              LEFT JOIN {registration_schema}.student_last_registrations reg
                 ON reg.sid = ldap.sid
               ORDER BY ldap.sid
         """
@@ -344,165 +345,30 @@ def get_edl_demographics(limit=None, offset=None):
     return redshift.fetch(sql)
 
 
-def get_edl_student_registrations(sids):
-    # TODO: After move to EDL is done, compact the SQL below. For now, it is one column name per line, for readability.
-    results = []
-    count_per_chunk = 10000
-    for chunk in range(0, len(sids), count_per_chunk):
-        sids_subset = sids[chunk:chunk + count_per_chunk]
-        # TODO: This query must follow the 'as_of=near_future' logic used by _get_api_v2_registrations (see NS-1105).
-        sql = f"""SELECT
-                    r.academic_career_cd,
-                    r.academic_level_beginning_of_term_cd,
-                    r.academic_level_beginning_of_term_desc,
-                    r.academic_level_end_of_term_cd,
-                    r.academic_level_end_of_term_desc,
-                    r.current_term_gpa_nbr AS current_term_gpa,
-                    r.eligibility_status_desc,
-                    r.eligible_to_enroll_flag,
-                    r.expected_graduation_term,
-                    r.intends_to_graduate_flag,
-                    r.load_dt AS edl_load_date,
-                    r.maximum_term_enrollment_units_limit AS units_term_enrollment_max,
-                    r.minimum_term_enrollment_units_limit AS units_term_enrollment_min,
-                    r.registered_flag,
-                    r.registrn_eligibility_status_cd,
-                    r.semester_year_term_cd AS term_id,
-                    r.student_id,
-                    r.term_enrolled_units AS units_term_enrolled,
-                    r.terms_in_attendance,
-                    r.total_cumulative_gpa_nbr,
-                    r.total_units_completed_qty AS units_term_completed,
-                    s.acad_career,
-                    s.acad_career_first,
-                    s.acad_group_advis,
-                    s.acad_level_bot,
-                    s.acad_level_eot,
-                    s.acad_level_proj,
-                    s.acad_load_appr,
-                    s.acad_prog_primary,
-                    s.acad_year,
-                    s.academic_load,
-                    s.academic_load_dt,
-                    s.billing_career,
-                    s.class_rank_nbr,
-                    s.class_rank_tot,
-                    s.country,
-                    s.cum_gpa as gpa_cumulative,
-                    s.cum_resident_terms,
-                    s.cur_gpa,
-                    s.cur_resident_terms,
-                    s.elig_to_enroll,
-                    s.end_date,
-                    s.enrl_on_trans_dt,
-                    s.ext_org_id,
-                    s.fa_eligibility,
-                    s.fa_load,
-                    s.fa_stats_calc_dttm,
-                    s.fa_stats_calc_req,
-                    s.form_of_study,
-                    s.fully_enrl_dt,
-                    s.fully_graded_dt,
-                    s.grade_points,
-                    s.grade_points_fa,
-                    s.institution,
-                    s.last_date_attended,
-                    s.lock_in_amt,
-                    s.lock_in_dt,
-                    s.max_audit_unit,
-                    s.max_crse_count,
-                    s.max_nogpa_unit,
-                    s.max_total_unit,
-                    s.max_wait_unit,
-                    s.min_total_unit,
-                    s.nslds_loan_year,
-                    s.ovrd_acad_lvl_all,
-                    s.ovrd_acad_lvl_proj,
-                    s.ovrd_bill_units,
-                    s.ovrd_init_add_fee,
-                    s.ovrd_init_enr_fee,
-                    s.ovrd_max_units,
-                    s.ovrd_tuit_group,
-                    s.ovrd_wdrw_sched,
-                    s.pro_rata_eligible,
-                    s.proj_bill_unt,
-                    s.refund_pct,
-                    s.refund_scheme,
-                    s.reg_card_date,
-                    s.registered,
-                    s.reset_cum_stats,
-                    s.sel_group,
-                    s.ssr_activation_dt,
-                    s.ssr_comb_cur_gpa,
-                    s.ssr_cum_en_gpa,
-                    s.ssr_cum_tr_gpa,
-                    s.ssr_tot_en_grdpts,
-                    s.ssr_tot_en_tkngpa,
-                    s.ssr_tot_tr_grdpts,
-                    s.ssr_tot_tr_tkngpa,
-                    s.ssr_trf_cur_gpa,
-                    s.start_date,
-                    s.stats_on_trans_dt,
-                    s.stdnt_car_nbr,
-                    s.study_agreement,
-                    s.tc_units_adjust,
-                    s.term_type,
-                    s.tot_audit,
-                    s.tot_cumulative AS units_cumulative,
-                    s.tot_grade_points,
-                    s.tot_grd_points_fa,
-                    s.tot_inprog_gpa,
-                    s.tot_inprog_nogpa,
-                    s.tot_other,
-                    s.tot_passd_fa,
-                    s.tot_passd_gpa,
-                    s.tot_passd_nogpa,
-                    s.tot_passd_prgrss,
-                    s.tot_taken_fa,
-                    s.tot_taken_fa_gpa,
-                    s.tot_taken_gpa,
-                    s.tot_taken_nogpa,
-                    s.tot_taken_prgrss,
-                    s.tot_test_credit,
-                    s.tot_trnsfr,
-                    s.trf_grade_points,
-                    s.trf_passed_gpa,
-                    s.trf_passed_nogpa,
-                    s.trf_resident_terms,
-                    s.trf_taken_gpa,
-                    s.trf_taken_nogpa,
-                    s.tuit_calc_dttm,
-                    s.tuit_calc_req,
-                    s.tuition_res_terms,
-                    s.unit_multiplier,
-                    s.unt_audit,
-                    s.unt_inprog_gpa,
-                    s.unt_inprog_nogpa,
-                    s.unt_other,
-                    s.unt_passd_fa,
-                    s.unt_passd_gpa,
-                    s.unt_passd_nogpa,
-                    s.unt_passd_prgrss,
-                    s.unt_taken_fa,
-                    s.unt_taken_fa_gpa,
-                    s.unt_taken_gpa,
-                    s.unt_taken_nogpa,
-                    s.unt_taken_prgrss,
-                    s.unt_term_tot,
-                    s.unt_test_credit,
-                    s.unt_trnsfr,
-                    s.untprg_chg_nslc_dt,
-                    s.withdraw_code,
-                    s.withdraw_date,
-                    s.withdraw_reason
-                  FROM {edl_external_schema()}.student_registration_term_data r
-                  JOIN {edl_external_schema_staging()}.cs_ps_stdnt_car_term s
-                    ON r.student_id = s.emplid AND r.semester_year_term_cd = s.strm
-                  WHERE r.student_id=ANY('{{{','.join(sids_subset)}}}')
-                  ORDER BY r.student_id, r.semester_year_term_cd DESC
-            """
-        results += redshift.fetch(sql)
-    return results
+def get_edl_registrations():
+    sql = f"""SELECT
+                r.student_id AS sid,
+                r.academic_career_cd,
+                r.academic_level_beginning_of_term_cd,
+                r.academic_level_beginning_of_term_desc,
+                r.academic_level_end_of_term_cd,
+                r.academic_level_end_of_term_desc,
+                r.maximum_term_enrollment_units_limit,
+                r.minimum_term_enrollment_units_limit,
+                r.semester_year_term_cd AS term_id,
+                r.term_enrolled_units,
+                r.term_berkeley_completed_total_units,
+                s.withdraw_code,
+                s.withdraw_date,
+                s.withdraw_reason
+              FROM {edl_external_schema()}.student_registration_term_data r
+              JOIN {edl_external_schema_staging()}.cs_ps_stdnt_car_term s
+                ON r.student_id = s.emplid AND r.semester_year_term_cd = s.strm
+              WHERE (r.term_enrolled_units IS NOT NULL AND r.term_enrolled_units > 0)
+                OR (r.term_berkeley_completed_total_units IS NOT NULL AND r.term_berkeley_completed_total_units > 0)
+              ORDER BY r.student_id, r.semester_year_term_cd
+        """
+    return redshift.fetch(sql)
 
 
 def get_enrolled_canvas_sites_for_term(term_id):
@@ -627,11 +493,15 @@ def get_non_advisees_without_registration_imports():
 
 
 def get_non_advisee_api_feeds(sids):
+    if app.config['FEATURE_FLAG_EDL_REGISTRATIONS']:
+        registration_table = f'{edl_schema()}.student_last_registrations'
+    else:
+        registration_table = f'{student_schema()}.hist_enr_last_registrations'
     sql = f"""SELECT DISTINCT sis.sid, sis.uid,
                 sis.feed AS sis_feed,
                 reg.feed AS last_registration_feed
               FROM {student_schema()}.{student_schema_table('sis_profiles_hist_enr')} sis
-              LEFT JOIN {student_schema()}.hist_enr_last_registrations reg
+              LEFT JOIN {registration_table} reg
                 ON reg.sid = sis.sid
               WHERE sis.sid=ANY(%s)
               ORDER BY sis.sid
