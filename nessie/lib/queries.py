@@ -311,8 +311,12 @@ def get_all_advisee_enrollment_drops():
 
 
 def get_all_advisee_term_gpas():
+    if app.config['FEATURE_FLAG_EDL_REGISTRATIONS']:
+        term_gpa_table = f'{edl_schema()}.term_gpa'
+    else:
+        term_gpa_table = f'{student_schema()}.student_term_gpas'
     sql = f"""SELECT gp.sid, gp.term_id, gp.gpa, gp.units_taken_for_gpa
-              FROM {student_schema()}.student_term_gpas gp
+              FROM {term_gpa_table} gp
               JOIN {calnet_schema()}.advisees ldap
                 ON gp.sid = ldap.sid
               WHERE gp.term_id=ANY('{{{','.join(reverse_term_ids(include_legacy_terms=True))}}}')
@@ -538,8 +542,12 @@ def get_non_advisee_enrollment_drops(sids, term_id):
 
 
 def get_non_advisee_term_gpas(sids, term_id):
+    if app.config['FEATURE_FLAG_EDL_REGISTRATIONS']:
+        term_gpa_table = f'{edl_schema()}.term_gpa'
+    else:
+        term_gpa_table = f'{student_schema()}.hist_enr_term_gpas'
     sql = f"""SELECT gp.sid, gp.term_id, gp.gpa, gp.units_taken_for_gpa
-              FROM {student_schema()}.hist_enr_term_gpas gp
+              FROM {term_gpa_table} gp
               WHERE gp.sid = ANY(%s)
                 AND gp.term_id = '{term_id}'
               ORDER BY gp.sid
