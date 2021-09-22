@@ -35,6 +35,8 @@ from nessie.lib.util import get_s3_sis_sysadm_daily_path, resolve_sql_template
 
 class CreateSisAdvisingNotesSchema(BackgroundJob):
 
+    feature_flag_edl = app.config['FEATURE_FLAG_EDL_NOTES']
+
     def run(self):
         app.logger.info('Starting SIS Advising Notes schema creation job...')
 
@@ -79,7 +81,7 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
     def create_indexes(self):
         resolved_ddl = resolve_sql_template(
             'index_sis_advising_notes.template.sql',
-            redshift_schema=app.config['REDSHIFT_SCHEMA_EDL'] if app.config['FEATURE_FLAG_EDL_SIS_VIEWS']
+            redshift_schema=app.config['REDSHIFT_SCHEMA_EDL'] if self.feature_flag_edl
             else app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL'],
         )
         if rds.execute(resolved_ddl):

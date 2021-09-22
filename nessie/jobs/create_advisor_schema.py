@@ -36,7 +36,7 @@ from nessie.lib.util import encoded_tsv_row, get_s3_calnet_daily_path, get_s3_si
 class CreateAdvisorSchema(BackgroundJob):
 
     external_schema = app.config['REDSHIFT_SCHEMA_ADVISOR']
-    feature_flag_edl = app.config['FEATURE_FLAG_EDL_SIS_VIEWS']
+    feature_flag_edl = app.config['FEATURE_FLAG_EDL_ADVISORS']
 
     def run(self):
         app.logger.info('Starting Advisor schema creation job...')
