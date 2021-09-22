@@ -349,9 +349,96 @@ def get_edl_demographics(limit=None, offset=None):
     return redshift.fetch(sql)
 
 
+def get_edl_profiles():
+    sql = f"""SELECT spd.student_id AS sid,
+          spd.campus_email_address_nm,
+          spd.preferred_email_address_nm,
+          spd.person_display_nm,
+          spd.person_preferred_display_nm,
+          cppp.phone_type,
+          cppp.phone
+        FROM {edl_external_schema()}.student_personal_data spd
+        -- One phone number per student; prefer CELL, then LOCL.
+        LEFT JOIN (
+          SELECT emplid, phone, phone_type,
+          row_number() OVER (
+            PARTITION BY emplid
+            ORDER BY CASE phone_type WHEN 'CELL' THEN 0 WHEN 'LOCL' THEN 1 ELSE 2 END
+          ) AS seqnum
+          FROM cs_staging_ext_dev.cs_ps_personal_phone
+        ) cppp
+        ON spd.student_id = cppp.emplid and seqnum = 1
+        ORDER BY spd.student_id"""
+    return redshift.fetch(sql)
+
+
+def get_edl_profile_terms():
+    sql = f"""SELECT
+              r.student_id AS sid,
+              r.semester_year_term_cd AS term_id,
+              r.academic_career_cd,
+              r.expected_graduation_term,
+              r.term_berkeley_completed_gpa_units,
+              r.total_cumulative_gpa_nbr,
+              r.total_units_completed_qty
+            FROM {edl_external_schema()}.student_registration_term_data r
+            ORDER BY r.student_id, r.semester_year_term_cd"""
+    return redshift.fetch(sql)
+
+
+def get_edl_holds():
+    sql = f"""SELECT ssid.student_id AS sid,
+        ssid.service_indicator_start_dt,
+        ssid.service_indicator_reason_desc,
+        ssid.service_indicator_long_desc
+        FROM {edl_external_schema()}.student_service_indicator_data ssid
+        WHERE ssid.positive_service_indicator_flag = 'N' and ssid.deleted_flag = 'N'
+        ORDER BY ssid.student_id, ssid.service_indicator_start_dt"""
+    return redshift.fetch(sql)
+
+
+def get_edl_plans():
+    sql = f"""SELECT sapd.student_id AS sid,
+        sapd.academic_career_cd,
+        sapd.academic_plan_type_cd,
+        sapd.academic_plan_nm,
+        sapd.academic_program_cd,
+        sapd.academic_program_effective_dt,
+        sapd.academic_program_nm,
+        sapd.academic_program_shrt_nm,
+        sapd.academic_program_status_desc,
+        sapd.academic_subplan_nm,
+        sapd.degree_expected_year_term_cd,
+        sapd.transfer_student,
+        cpap.admit_term AS matriculation_term_cd
+        FROM {edl_external_schema()}.student_academic_plan_data sapd
+        JOIN {edl_external_schema_staging()}.cs_ps_acad_prog cpap
+          ON sapd.student_id = cpap.emplid
+          AND sapd.academic_program_cd = cpap.acad_prog
+          AND cpap.prog_action = 'MATR'
+        ORDER BY sapd.student_id, sapd.academic_career_cd, sapd.academic_program_cd"""
+    return redshift.fetch(sql)
+
+
+def get_edl_degrees():
+    sql = f"""SELECT sadd.student_id AS sid,
+        sadd.degree_desc,
+        sadd.academic_group_desc,
+        sadd.academic_plan_nm,
+        sadd.academic_plan_transcr_desc,
+        sadd.degree_desc,
+        sadd.academic_plan_type_cd,
+        sadd.degree_conferred_dt,
+        sadd.academic_degree_status_desc
+        FROM {edl_external_schema()}.student_awarded_degree_data sadd
+        ORDER BY sadd.student_id, sadd.degree_conferred_dt"""
+    return redshift.fetch(sql)
+
+
 def get_edl_registrations():
     sql = f"""SELECT
                 r.student_id AS sid,
+                r.semester_year_term_cd AS term_id,
                 r.academic_career_cd,
                 r.academic_level_beginning_of_term_cd,
                 r.academic_level_beginning_of_term_desc,
@@ -359,7 +446,6 @@ def get_edl_registrations():
                 r.academic_level_end_of_term_desc,
                 r.maximum_term_enrollment_units_limit,
                 r.minimum_term_enrollment_units_limit,
-                r.semester_year_term_cd AS term_id,
                 r.term_enrolled_units,
                 r.term_berkeley_completed_total_units,
                 s.withdraw_code,
