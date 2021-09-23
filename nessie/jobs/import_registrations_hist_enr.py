@@ -64,7 +64,7 @@ class ImportRegistrationsHistEnr(AbstractRegistrationsJob):
         successes, failures = self.get_registration_data_per_sids(rows, sids, include_demographics=False)
         for key in rows.keys():
             if len(rows[key]) > 0:
-                s3_key = f'{get_s3_sis_api_daily_path(use_edl_if_feature_flag=True)}/{key}.tsv'
+                s3_key = f'{get_s3_sis_api_daily_path()}/{key}.tsv'
                 app.logger.info(f'Upload {key} data to s3:{s3_key}. The file represents {len(rows[key])} students.')
                 if not s3.upload_tsv_rows(rows[key], s3_key):
                     raise BackgroundJobError(f'Error during S3 upload: {s3_key}. Aborting job.')

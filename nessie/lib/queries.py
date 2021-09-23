@@ -89,22 +89,15 @@ def sis_schema_internal():
 
 
 def student_schema():
-    return app.config['REDSHIFT_SCHEMA_EDL'] if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES'] else app.config['REDSHIFT_SCHEMA_STUDENT']
-
-
-# TODO: Remove this method when the EDL cutover is complete.
-def sis_schema_table(key):
-    return {
-        'minors': 'student_minors' if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES'] else 'minors',
-    }.get(key, key)
+    return app.config['REDSHIFT_SCHEMA_STUDENT']
 
 
 # TODO: Remove this method when the EDL cutover is complete.
 def student_schema_table(key):
     return {
         'degree_progress': 'student_degree_progress' if app.config['FEATURE_FLAG_EDL_DEGREE_PROGRESS'] else 'sis_api_degree_progress',
-        'sis_profiles': 'sis_profiles' if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES'] else 'sis_api_profiles',
-        'sis_profiles_hist_enr': 'sis_profiles_hist_enr' if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES'] else 'sis_api_profiles_hist_enr',
+        'sis_profiles': 'student_profiles' if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES'] else 'sis_api_profiles',
+        'sis_profiles_hist_enr': 'student_profiles' if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES'] else 'sis_api_profiles_hist_enr',
         'student_demographics': 'student_demographics' if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS'] else 'student_api_demographics',
     }.get(key, key)
 
@@ -169,6 +162,7 @@ def get_advisee_advisor_mappings():
 def get_advisee_student_profile_elements():
     degree_progress_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_DEGREE_PROGRESS'] else app.config['REDSHIFT_SCHEMA_STUDENT']
     demographics_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS'] else app.config['REDSHIFT_SCHEMA_STUDENT']
+    profile_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES'] else app.config['REDSHIFT_SCHEMA_STUDENT']
     registration_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_REGISTRATIONS'] else app.config['REDSHIFT_SCHEMA_STUDENT']
 
     use_edl_sis = app.config['FEATURE_FLAG_EDL_SIS_VIEWS']
@@ -197,7 +191,7 @@ def get_advisee_student_profile_elements():
               FROM {calnet_schema()}.advisees ldap
               LEFT JOIN {intermediate_schema()}.users us
                 ON us.uid = ldap.ldap_uid
-              LEFT JOIN {student_schema()}.{student_schema_table('sis_profiles')} sis
+              LEFT JOIN {profile_schema}.{student_schema_table('sis_profiles')} sis
                 ON sis.sid = ldap.sid
               LEFT JOIN {degree_progress_schema}.{student_schema_table('degree_progress')} deg
                 ON deg.sid = ldap.sid
@@ -589,10 +583,11 @@ def get_non_advisee_api_feeds(sids):
         registration_table = f'{edl_schema()}.student_last_registrations'
     else:
         registration_table = f'{student_schema()}.hist_enr_last_registrations'
+    profile_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES'] else student_schema()
     sql = f"""SELECT DISTINCT sis.sid, sis.uid,
                 sis.feed AS sis_feed,
                 reg.feed AS last_registration_feed
-              FROM {student_schema()}.{student_schema_table('sis_profiles_hist_enr')} sis
+              FROM {profile_schema}.{student_schema_table('sis_profiles_hist_enr')} sis
               LEFT JOIN {registration_table} reg
                 ON reg.sid = sis.sid
               WHERE sis.sid=ANY(%s)

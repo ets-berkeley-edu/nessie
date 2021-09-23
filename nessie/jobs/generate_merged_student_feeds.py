@@ -37,8 +37,7 @@ from nessie.jobs.generate_merged_enrollment_term import GenerateMergedEnrollment
 from nessie.lib.berkeley import current_term_id, future_term_id, future_term_ids, legacy_term_ids, \
     reverse_term_ids
 from nessie.lib.metadata import get_merged_enrollment_term_job_status, queue_merged_enrollment_term_jobs
-from nessie.lib.queries import get_advisee_advisor_mappings, get_advisee_student_profile_elements, sis_schema_table, \
-    student_schema
+from nessie.lib.queries import get_advisee_advisor_mappings, get_advisee_student_profile_elements, student_schema
 from nessie.lib.util import resolve_sql_template, write_to_tsv_file
 from nessie.merged.sis_profile import parse_merged_sis_profile
 from nessie.merged.student_demographics import add_demographics_rows, refresh_rds_demographics
@@ -465,7 +464,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             SELECT DISTINCT *
                 FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                     SELECT sid, minor
-                    FROM {student_schema()}.{sis_schema_table('minors')}
+                    FROM {student_schema()}.minors
               $REDSHIFT$)
             AS redshift_minors (
                 sid VARCHAR,

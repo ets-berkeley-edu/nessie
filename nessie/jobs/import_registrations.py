@@ -68,7 +68,7 @@ class ImportRegistrations(AbstractRegistrationsJob):
             raise BackgroundJobError('Failed to import registration histories: aborting job.')
 
         for key in rows.keys():
-            s3_key = f'{get_s3_sis_api_daily_path(use_edl_if_feature_flag=True)}/{key}.tsv'
+            s3_key = f'{get_s3_sis_api_daily_path()}/{key}.tsv'
             app.logger.info(f'Will stash {len(successes)} feeds in S3: {s3_key}')
             if not s3.upload_tsv_rows(rows[key], s3_key):
                 raise BackgroundJobError('Error on S3 upload: aborting job.')
