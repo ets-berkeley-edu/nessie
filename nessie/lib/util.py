@@ -168,11 +168,9 @@ def get_s3_sis_attachment_path(datestamp):
         return ['/'.join([app.config['LOCH_S3_ADVISING_NOTE_ATTACHMENT_SOURCE_PATH']] + datestamp.split('-'))]
 
 
-def get_s3_sis_api_daily_path(cutoff=None, use_edl_if_feature_flag=False):
+def get_s3_sis_api_daily_path(cutoff=None):
     # Path for stashed SIS API data that doesn't need to be queried by Redshift Spectrum.
-    use_edl = app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES'] and use_edl_if_feature_flag
-    key = 'LOCH_S3_EDL_DATA_PATH' if use_edl else 'LOCH_S3_SIS_API_DATA_PATH'
-    return f'{app.config[key]}/daily/{hashed_datestamp(cutoff)}'
+    return app.config['LOCH_S3_SIS_API_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
 
 def get_s3_sis_daily_path(cutoff=None):

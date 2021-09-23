@@ -26,7 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import json
 
 from nessie.externals import redshift
-from nessie.lib.queries import student_schema
+from nessie.lib.queries import edl_schema
 from tests.util import mock_s3, override_config
 
 
@@ -40,7 +40,7 @@ class TestCreateEdlSchema:
                 with mock_s3(app):
                     CreateEdlSchema().generate_demographics_feeds()
 
-            rows = redshift.fetch(f'SELECT * FROM {student_schema()}.student_demographics')
+            rows = redshift.fetch(f'SELECT * FROM {edl_schema()}.student_demographics')
             assert len(rows) == 11
             assert rows[0]['sid'] == '11667051'
             feed = json.loads(rows[0]['feed'])
