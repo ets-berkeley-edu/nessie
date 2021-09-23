@@ -379,6 +379,7 @@ def get_edl_profile_terms():
               r.academic_career_cd,
               r.expected_graduation_term,
               r.term_berkeley_completed_gpa_units,
+              r.terms_in_attendance,
               r.total_cumulative_gpa_nbr,
               r.total_units_completed_qty
             FROM {edl_external_schema()}.student_registration_term_data r
@@ -408,6 +409,7 @@ def get_edl_plans():
         sapd.academic_program_shrt_nm,
         sapd.academic_program_status_desc,
         sapd.academic_subplan_nm,
+        sapd.current_admit_term,
         sapd.degree_expected_year_term_cd,
         sapd.transfer_student,
         cpap.admit_term AS matriculation_term_cd
@@ -422,16 +424,16 @@ def get_edl_plans():
 
 def get_edl_degrees():
     sql = f"""SELECT sadd.student_id AS sid,
-        sadd.degree_desc,
+        sadd.academic_career_cd,
+        sadd.academic_degree_status_desc,
         sadd.academic_group_desc,
         sadd.academic_plan_nm,
         sadd.academic_plan_transcr_desc,
-        sadd.degree_desc,
         sadd.academic_plan_type_cd,
         sadd.degree_conferred_dt,
-        sadd.academic_degree_status_desc
+        sadd.degree_desc
         FROM {edl_external_schema()}.student_awarded_degree_data sadd
-        ORDER BY sadd.student_id, sadd.degree_conferred_dt"""
+        ORDER BY sadd.student_id, sadd.degree_conferred_dt, sadd.degree_desc"""
     return redshift.fetch(sql)
 
 

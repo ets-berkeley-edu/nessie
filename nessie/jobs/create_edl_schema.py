@@ -34,8 +34,9 @@ from threading import current_thread
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.berkeley import degree_program_url_for_major
-from nessie.lib.queries import get_edl_demographics, get_edl_registrations
+from nessie.lib.berkeley import career_code_to_name, term_info_for_sis_term_id
+from nessie.lib.queries import get_edl_degrees, get_edl_demographics, get_edl_holds, get_edl_plans, get_edl_profile_terms,\
+    get_edl_profiles, get_edl_registrations
 from nessie.lib.util import get_s3_edl_daily_path, resolve_sql_template, write_to_tsv_file
 from nessie.merged.student_demographics import GENDER_CODE_MAP, merge_from_details, UNDERREPRESENTED_GROUPS
 
@@ -76,7 +77,7 @@ class CreateEdlSchema(BackgroundJob):
 
     def generate_feeds(self):
         if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES']:
-            self.generate_academic_plans_feeds()
+            self.generate_sis_profile_feeds()
         if app.config['FEATURE_FLAG_EDL_DEGREE_PROGRESS']:
             self.generate_degree_progress_feeds()
         if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS']:
@@ -84,38 +85,43 @@ class CreateEdlSchema(BackgroundJob):
         if app.config['FEATURE_FLAG_EDL_REGISTRATIONS']:
             self.generate_registration_feeds()
 
-    def generate_academic_plans_feeds(self):
-        app.logger.info('Staging academic plans feeds...')
-        rows = redshift.fetch(f'SELECT * FROM {self.internal_schema}.student_academic_plan_index ORDER by sid')
-        with TemporaryFile() as feeds:
-            for sid, rows_for_student in groupby(rows, itemgetter('sid')):
-                rows_for_student = list(rows_for_student)
-                feed = self.generate_academic_plans_feed(rows_for_student)
-                write_to_tsv_file(feeds, [sid, json.dumps(feed)])
-            self._upload_file_to_staging('student_academic_plans', feeds)
+    def generate_sis_profile_feeds(self):
+        app.logger.info('Staging SIS profile feeds...')
 
-    def generate_academic_plans_feed(self, rows_for_student):
-        majors = []
-        minors = []
-        subplans = []
-        for row in rows_for_student:
-            plan = {
-                'degreeProgramUrl': degree_program_url_for_major(row['plan']),
-                'description': row['plan'],
-                'program': row['program'],
-                'status': 'Active' if row['status'] == 'Active in Program' else row['status'],
-            }
-            if 'MIN' == row['plan_type']:
-                minors.append(plan)
-            else:
-                majors.append(plan)
-            if row['subplan']:
-                subplans.append(row['subplan'])
-        return {
-            'plans': majors,
-            'plansMinor': minors,
-            'subplans': subplans,
+        profile_results = groupby(get_edl_profiles(), lambda r: r['sid'])
+
+        supplemental_queries = {
+            'degrees': get_edl_degrees,
+            'holds': get_edl_holds,
+            'plans': get_edl_plans,
+            'profile_terms': get_edl_profile_terms,
         }
+        supplemental_query_results = {k: groupby(query(), lambda r: r['sid']) for k, query in supplemental_queries.items()}
+
+        def _grouped_profile_results():
+            sid_tracker = {k: '' for k in supplemental_query_results.keys()}
+            rows_tracker = {}
+
+            for sid, profile_rows in profile_results:
+                grouped_results = {
+                    'sid': sid,
+                    'profile': list(profile_rows),
+                }
+                for k in supplemental_query_results.keys():
+                    while sid_tracker[k] < sid:
+                        sid_tracker[k], rows_tracker[k] = next(supplemental_query_results[k])
+                    if sid_tracker[k] == sid:
+                        grouped_results[k] = list(rows_tracker[k])
+                yield grouped_results
+
+        chunked_profiles = []
+        while True:
+            chunk = [r for r in islice(_grouped_profile_results(), self.batch_size)]
+            if not chunk:
+                break
+            chunked_profiles.append(chunk)
+
+        self._process_concurrent(chunked_profiles, _process_profile_feeds, 'student_profiles')
 
     def generate_degree_progress_feeds(self):
         app.logger.info('Staging degree progress feeds...')
@@ -148,19 +154,7 @@ class CreateEdlSchema(BackgroundJob):
                 break
             chunked_demographics.append(chunk)
 
-        tempfiles = []
-        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
-            app_obj = app._get_current_object()
-            for result in executor.map(_process_demographics_feeds, repeat(app_obj), chunked_demographics):
-                tempfiles.append(result)
-
-        with TemporaryFile() as all_feeds:
-            for t in tempfiles:
-                t.seek(0)
-                for line in t:
-                    all_feeds.write(line)
-                t.close()
-            self._upload_file_to_staging('student_demographics', all_feeds)
+        self._process_concurrent(chunked_demographics, _process_demographics_feeds, 'student_demographics')
 
     def generate_registration_feeds(self):
         app.logger.info('Staging registration feeds...')
@@ -174,10 +168,13 @@ class CreateEdlSchema(BackgroundJob):
                 break
             chunked_registrations.append(chunk)
 
+        self._process_concurrent(chunked_registrations, _process_registration_feeds, 'student_last_registrations')
+
+    def _process_concurrent(self, chunks, processor_method, filename):
         tempfiles = []
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
             app_obj = app._get_current_object()
-            for result in executor.map(_process_registration_feeds, repeat(app_obj), chunked_registrations):
+            for result in executor.map(processor_method, repeat(app_obj), chunks):
                 tempfiles.append(result)
 
         with TemporaryFile() as all_feeds:
@@ -186,7 +183,7 @@ class CreateEdlSchema(BackgroundJob):
                 for line in t:
                     all_feeds.write(line)
                 t.close()
-            self._upload_file_to_staging('student_last_registrations', all_feeds)
+            self._upload_file_to_staging(filename, all_feeds)
 
     def _upload_file_to_staging(self, table, _file):
         tsv_filename = f'staging_{table}.tsv'
@@ -239,6 +236,257 @@ def _process_demographics_feeds(app_arg, chunk):
             write_to_tsv_file(feeds, [sid, json.dumps(feed)])
         app_arg.logger.debug(f'{current_thread().name} wrote all feeds, returning TSV tempfile')
         return feeds
+
+
+def _process_profile_feeds(app_arg, chunk):
+    with app_arg.app_context():
+        app_arg.logger.debug(f'{current_thread().name} will process profile feeds chunk ({len(chunk)} records)')
+        feeds = TemporaryFile()
+
+        for feed_components in chunk:
+            sid = feed_components.get('sid')
+
+            # We may see results from multiple academic careers. We prefer a UGRD career if present; otherwise we look
+            # for a non-Law career with the most recent entering term.
+            plans = feed_components.get('plans', [])
+            career_code = None
+            career_admit_term = ''
+            for plan_row in feed_components.get('plans', []):
+                if plan_row['academic_career_cd'] == 'UGRD':
+                    career_code = 'UGRD'
+                    break
+                elif plan_row['academic_career_cd'] in {'UCBX', 'GRAD'} and plan_row['current_admit_term'] > career_admit_term:
+                    career_code = plan_row['academic_career_cd']
+                    career_admit_term = plan_row['current_admit_term']
+
+            feed = {
+                'academicStatuses': [
+                    {
+                        'studentCareer': {
+                            'academicCareer': {
+                                'code': career_code,
+                            },
+                        },
+                    },
+                ],
+                'identifiers': [
+                    {
+                        'id': sid,
+                        'type': 'student-id',
+                    },
+                ],
+            }
+
+            _merge_profile(feed, feed_components.get('profile'))
+            _merge_holds(feed, feed_components.get('holds'))
+            _merge_academic_status(feed, feed_components.get('profile_terms'), career_code)
+            _merge_plans(feed, plans, career_code)
+            _merge_degrees(feed, feed_components.get('degrees'), career_code)
+
+            write_to_tsv_file(feeds, [sid, json.dumps(feed)])
+
+        app_arg.logger.debug(f'{current_thread().name} wrote all feeds, returning TSV tempfile')
+        return feeds
+
+
+def _merge_profile(feed, profile_rows):
+    if not profile_rows or not len(profile_rows):
+        return
+    r = profile_rows[0]
+
+    feed['emails'] = []
+    if r['campus_email_address_nm']:
+        feed['emails'].append({'emailAddress': r['campus_email_address_nm'], 'type': {'code': 'CAMP'}})
+    if r['preferred_email_address_nm']:
+        feed['emails'].append({'emailAddress': r['campus_email_address_nm'], 'primary': True, 'type': {'code': 'OTHR'}})
+
+    feed['names'] = []
+    if r['person_preferred_display_nm']:
+        feed['names'].append({'formattedName': r['person_preferred_display_nm'], 'type': {'code': 'PRF'}})
+    if r['person_display_nm']:
+        feed['names'].append({'formattedName': r['person_display_nm'], 'type': {'code': 'PRI'}})
+
+    if r['phone']:
+        feed['phones'] = {'number': r['phone'], 'type': {'code': r['phone_type']}}
+
+
+def _merge_holds(feed, hold_rows):
+    if not hold_rows or not len(hold_rows):
+        return
+    feed['holds'] = []
+    for r in hold_rows:
+        feed['holds'].append({
+            'fromDate': str(r['service_indicator_start_dt'])[0:10],
+            'reason': {
+                'description': r['service_indicator_reason_desc'],
+                'formalDescription': r['service_indicator_long_desc'],
+            },
+        })
+
+
+def _merge_academic_status(feed, profile_term_rows, career_code):
+    if not profile_term_rows or not career_code:
+        return
+
+    latest_career_row = None
+    # This crude calculation of total GPA units ignores transfer units and therefore won't agree with the number from the SIS API.
+    # We only use it as a check for zero value to distinguish null from zero GPA.
+    total_units_for_gpa = 0
+    for row in profile_term_rows:
+        if row['academic_career_cd'] == career_code:
+            total_units_for_gpa += float(row['term_berkeley_completed_gpa_units'] or 0)
+            latest_career_row = row
+    if not latest_career_row:
+        return
+
+    academic_status = feed['academicStatuses'][0]
+
+    academic_status['cumulativeGPA'] = {
+        'average': float(latest_career_row['total_cumulative_gpa_nbr'] or 0),
+    }
+    academic_status['cumulativeUnits'] = [
+        {
+            'type': {
+                'code': 'Total',
+            },
+            'unitsCumulative': float(latest_career_row['total_units_completed_qty'] or 0),
+        },
+        {
+            'type': {
+                'code': 'For GPA',
+            },
+            'unitsTaken': float(total_units_for_gpa),
+        },
+    ]
+    if latest_career_row['terms_in_attendance']:
+        academic_status['termsInAttendance'] = int(latest_career_row['terms_in_attendance'])
+
+
+def _merge_plans(feed, plan_rows, career_code):
+    if not plan_rows or not career_code:
+        return
+
+    academic_status = feed['academicStatuses'][0]
+    academic_status['studentPlans'] = []
+    statuses = set()
+    matriculation_term_cd = ''
+    effective_date = ''
+    transfer_student = False
+
+    for row in plan_rows:
+        if row['academic_career_cd'] == career_code:
+            statuses.add(_simplified_status(row))
+            academic_status['studentPlans'].append(_construct_plan_feed(row))
+
+            if row['matriculation_term_cd'] and str(row['matriculation_term_cd']) > matriculation_term_cd:
+                matriculation_term_cd = str(row['matriculation_term_cd'])
+            if row['academic_program_effective_dt'] and str(row['academic_program_effective_dt']) > effective_date:
+                effective_date = str(row['academic_program_effective_dt'])
+            if row['transfer_student'] == 'Y':
+                transfer_student = True
+
+    matriculation = {}
+    if matriculation_term_cd:
+        season, year = term_info_for_sis_term_id(matriculation_term_cd)
+        matriculation['term'] = {'name': f'{year} {season}'}
+    if transfer_student:
+        matriculation['type'] = {'code': 'TRN'}
+    academic_status['studentCareer']['matriculation'] = matriculation
+
+    if effective_date:
+        academic_status['studentCareer']['toDate'] = effective_date[0:10]
+
+    feed['affiliations'] = []
+    for status in statuses:
+        feed['affiliations'].append({'status': {'description': status}, 'type': {'code': career_code_to_name(career_code)}})
+
+
+def _construct_plan_feed(row):
+    plan_feed = {
+        'academicPlan': {
+            'academicProgram': {
+                'program': {
+                    'description': row['academic_program_shrt_nm'],
+                    'formalDescription': row['academic_program_nm'],
+                },
+            },
+            'plan': {
+                'description': row['academic_plan_nm'],
+            },
+            'type': {
+                'code': row['academic_plan_type_cd'],
+            },
+        },
+        'statusInPlan': {
+            'status': {
+                'formalDescription': _simplified_status(row),
+            },
+        },
+    }
+    if row['degree_expected_year_term_cd'] and row['degree_expected_year_term_cd'].strip():
+        plan_feed['expectedGraduationTerm'] = {
+            'id': row['degree_expected_year_term_cd'],
+        }
+    if row['academic_subplan_nm']:
+        plan_feed['academicSubplans'] = {
+            'subplan': {
+                'description': row['academic_subplan_nm'],
+            },
+        }
+    return plan_feed
+
+
+def _simplified_status(row):
+    return 'Active' if row['academic_program_status_desc'] == 'Active in Program' else row['academic_program_status_desc']
+
+
+def _merge_degrees(feed, degree_rows, career_code):
+    if not degree_rows or not career_code:
+        return
+    feed['degrees'] = []
+
+    for degree, degree_plans in groupby(degree_rows, lambda r: [r['degree_conferred_dt'], r['degree_desc']]):
+        degree_plans = list(degree_plans)
+        if degree_plans[0]['academic_career_cd'] != career_code:
+            continue
+
+        degree_feed = {
+            'academicDegree': {
+                'type': {
+                    'description': degree_plans[0]['degree_desc'],
+                },
+            },
+            'academicPlans': [],
+            'dateAwarded': str(degree_plans[0]['degree_conferred_dt'])[0:10],
+            'status': {
+                'description': degree_plans[0]['academic_degree_status_desc'],
+            },
+        }
+
+        for plan in degree_plans:
+            plan_feed = {
+                'plan': {
+                    'description': plan['academic_plan_nm'],
+                    'formalDescription': plan['academic_plan_transcr_desc'],
+                },
+                'targetDegree': {
+                    'type': {
+                        'description': plan['degree_desc'],
+                    },
+                },
+                'type': {
+                    'code': plan['academic_plan_type_cd'],
+                },
+            }
+            if plan['academic_group_desc']:
+                plan_feed['academicProgram'] = {
+                    'academicGroup': {
+                        'formalDescription': plan['academic_group_desc'],
+                    },
+                }
+            degree_feed['academicPlans'].append(plan_feed)
+
+        feed['degrees'].append(degree_feed)
 
 
 def _process_registration_feeds(app_arg, chunk):
