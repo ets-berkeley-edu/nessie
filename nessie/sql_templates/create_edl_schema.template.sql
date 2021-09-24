@@ -195,15 +195,6 @@ AS (
     AND (meet.class_meeting_number = instr.class_meeting_number OR instr.class_meeting_number IS NULL)
 );
 
-CREATE TABLE {redshift_schema_edl}.demographics
-(
-    sid VARCHAR NOT NULL,
-    gender VARCHAR,
-    minority BOOLEAN
-)
-DISTKEY (sid)
-SORTKEY (sid);
-
 CREATE TABLE {redshift_schema_edl}.enrollments
 SORTKEY (sis_id)
 AS (
@@ -225,14 +216,6 @@ AS (
     ON spd.student_id = sed.student_id
   WHERE sed.enrollment_status_reason_cd != 'CANC'
 );
-
-CREATE TABLE {redshift_schema_edl}.ethnicities
-(
-    sid VARCHAR NOT NULL,
-    ethnicity VARCHAR
-)
-DISTKEY (sid)
-SORTKEY (sid, ethnicity);
 
 CREATE TABLE {redshift_schema_edl}.intended_majors
 DISTKEY (sid)
@@ -256,46 +239,6 @@ AS (
       WHERE intended_academic_plan_cd_2 IS NOT NULL
       GROUP BY student_id, intended_academic_plan_cd_2, academic_program_status_cd, academic_program_effective_dt
 );
-
-CREATE TABLE {redshift_schema_edl}.minors
-(
-    sid VARCHAR NOT NULL,
-    minor VARCHAR NOT NULL
-)
-DISTKEY (sid)
-SORTKEY (sid, minor);
-
-CREATE TABLE {redshift_schema_edl}.visas
-(
-    sid VARCHAR NOT NULL,
-    visa_status VARCHAR,
-    visa_type VARCHAR
-)
-DISTKEY (sid)
-SORTKEY (sid);
-
-CREATE TABLE {redshift_schema_edl}.student_academic_plan_index
-SORTKEY (sid)
-AS (
-    SELECT
-      student_id AS sid,
-      academic_program_nm AS program,
-      academic_plan_nm AS plan,
-      academic_plan_type_cd AS plan_type,
-      academic_subplan_nm AS subplan,
-      academic_program_status_desc AS status,
-      load_dt AS edl_load_date
-    FROM {redshift_schema_edl_external}.student_academic_plan_data
-    WHERE academic_plan_type_cd IN ('MAJ', 'SS', 'SP', 'HS', 'CRT', 'MIN')
-);
-
-CREATE TABLE {redshift_schema_edl}.student_academic_plans
-(
-    sid VARCHAR NOT NULL,
-    feed VARCHAR(max) NOT NULL
-)
-DISTKEY (sid)
-SORTKEY (sid);
 
 CREATE TABLE {redshift_schema_edl}.student_citizenships
 SORTKEY(sid)
@@ -389,52 +332,6 @@ AS (
   FROM {redshift_schema_edl_external}.student_late_drop_eform_data
 );
 
--- TODO: EDL equivalent of 'sis_profiles'?
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.sis_profiles
-(
-    sid VARCHAR NOT NULL,
-    feed VARCHAR(max) NOT NULL
-)
-DISTKEY(sid)
-SORTKEY(sid);
-
--- TODO: EDL equivalent of 'sis_profiles_hist_enr'?
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.sis_profiles_hist_enr
-(
-    sid VARCHAR NOT NULL,
-    uid VARCHAR,
-    feed VARCHAR(max) NOT NULL
-)
-DISTKEY(sid)
-SORTKEY(sid);
-
-CREATE TABLE {redshift_schema_edl}.student_majors
-DISTKEY (sid)
-SORTKEY (college, major)
-AS (
-    SELECT
-      student_id AS sid,
-      academic_plan_nm AS major,
-      academic_program_nm AS college,
-      load_dt AS edl_load_date
-    FROM {redshift_schema_edl_external}.student_academic_plan_data
-    WHERE academic_plan_type_cd in ('MAJ', 'SS', 'SP', 'HS', 'CRT')
-    AND academic_program_status_cd = 'AC'
-);
-
-CREATE TABLE {redshift_schema_edl}.student_minors
-DISTKEY (sid)
-SORTKEY (sid, minor)
-AS (
-    SELECT
-      student_id AS sid,
-      academic_plan_nm AS minor,
-      load_dt AS edl_load_date
-    FROM {redshift_schema_edl_external}.student_academic_plan_data
-    WHERE academic_plan_type_cd = 'MIN'
-    AND academic_program_status_cd = 'AC'
-);
-
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_last_registrations
 (
     sid VARCHAR NOT NULL,
@@ -446,51 +343,7 @@ SORTKEY(sid);
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_profiles
 (
     sid VARCHAR NOT NULL,
-    profile VARCHAR(max) NOT NULL
-)
-DISTKEY (sid)
-SORTKEY (sid);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.hist_enr_last_registrations
-(
-    sid VARCHAR NOT NULL,
     feed VARCHAR(max) NOT NULL
-)
-DISTKEY(sid)
-SORTKEY(sid);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_enrollment_terms
-(
-    sid VARCHAR NOT NULL,
-    term_id VARCHAR(4) NOT NULL,
-    enrollment_term VARCHAR(max) NOT NULL
-)
-DISTKEY (sid)
-SORTKEY (sid, term_id);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_enrollment_terms_hist_enr
-(
-    sid VARCHAR NOT NULL,
-    term_id VARCHAR(4) NOT NULL,
-    enrollment_term VARCHAR(max) NOT NULL
-)
-DISTKEY (sid)
-SORTKEY (sid, term_id);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_holds
-(
-    sid VARCHAR NOT NULL,
-    feed VARCHAR(max) NOT NULL
-)
-DISTKEY (sid)
-SORTKEY (sid);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_names_hist_enr
-(
-    sid VARCHAR NOT NULL,
-    uid VARCHAR NOT NULL,
-    first_name VARCHAR NOT NULL,
-    last_name VARCHAR NOT NULL
 )
 DISTKEY (sid)
 SORTKEY (sid);
@@ -525,43 +378,6 @@ AS (
     )
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index_hist_enr
-(
-    sid VARCHAR NOT NULL,
-    uid VARCHAR NOT NULL,
-    first_name VARCHAR,
-    last_name VARCHAR,
-    level VARCHAR,
-    gpa DECIMAL(5,3),
-    units DECIMAL (6,3),
-    transfer BOOLEAN,
-    expected_grad_term VARCHAR(4),
-    terms_in_attendance INT
-)
-DISTKEY (units)
-INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_profiles_hist_enr
-(
-    sid VARCHAR NOT NULL,
-    uid VARCHAR,
-    profile VARCHAR(max) NOT NULL
-)
-DISTKEY (sid)
-SORTKEY (sid);
-
-CREATE TABLE {redshift_schema_edl}.term_gpa
-SORTKEY(sid)
-AS (
-    SELECT
-      reg.student_id AS sid,
-      reg.semester_year_term_cd AS term_id,
-      reg.term_berkeley_completed_total_units AS units_total,
-      reg.term_berkeley_completed_gpa_units AS units_taken_for_gpa,
-      reg.current_term_gpa_nbr AS gpa
-    FROM {redshift_schema_edl_external}.student_registration_term_data reg
-);
-
 CREATE TABLE {redshift_schema_edl}.student_visas
 SORTKEY(sid)
 AS (
@@ -575,10 +391,22 @@ AS (
     AND visa_permit_type_cd IS NOT NULL
 );
 
+CREATE TABLE {redshift_schema_edl}.term_gpa
+SORTKEY(sid)
+AS (
+    SELECT
+      reg.student_id AS sid,
+      reg.semester_year_term_cd AS term_id,
+      reg.term_berkeley_completed_total_units AS units_total,
+      reg.term_berkeley_completed_gpa_units AS units_taken_for_gpa,
+      reg.current_term_gpa_nbr AS gpa
+    FROM {redshift_schema_edl_external}.student_registration_term_data reg
+);
+
 -- Follow-up correction for a small number of past courses that are marked as non-primary (i.e. non-graded sections) in EDL
 -- although enrollments did receive grades.
 
-UPDATE edl_sis_data.courses
+UPDATE {redshift_schema_edl}.courses
 SET is_primary = TRUE
 WHERE term_id || '-' || section_id IN
 (

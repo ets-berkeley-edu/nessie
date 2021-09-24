@@ -32,24 +32,10 @@ CREATE TABLE {redshift_schema_edl}.student_ethnicities (
     edl_load_date DATE
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_holds
-(
-    sid VARCHAR NOT NULL,
-    feed TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_last_registrations
 (
     sid VARCHAR NOT NULL,
     feed TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_majors
-(
-    sid VARCHAR NOT NULL,
-    college VARCHAR NOT NULL,
-    major VARCHAR NOT NULL,
-    PRIMARY KEY (sid, college, major)
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_profile_index
@@ -68,29 +54,10 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_profile_index
     edl_load_date DATE
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_profile_index_hist_enr
-(
-    sid VARCHAR NOT NULL,
-    uid VARCHAR NOT NULL,
-    first_name VARCHAR NOT NULL,
-    last_name VARCHAR NOT NULL,
-    level VARCHAR,
-    gpa DECIMAL(5,3),
-    units DECIMAL (6,3)
-);
-
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_profiles
 (
     sid VARCHAR NOT NULL,
-    profile TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_term_gpas
-(
-    sid VARCHAR NOT NULL,
-    term_id VARCHAR(4) NOT NULL,
-    gpa DECIMAL(5,3),
-    units_taken_for_gpa DECIMAL(4,1)
+    feed TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_visas
@@ -99,6 +66,14 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_visas
     visa_status VARCHAR,
     visa_type VARCHAR,
     edl_load_date DATE
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.term_gpas
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    gpa DECIMAL(5,3),
+    units_taken_for_gpa DECIMAL(4,1)
 );
 
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_edl}_staging;
@@ -122,24 +97,10 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}_staging.student_enrollment_term
     enrollment_term TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}_staging.student_holds
-(
-    sid VARCHAR NOT NULL,
-    feed TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}_staging.student_last_registrations
 (
     sid VARCHAR NOT NULL,
     feed TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}_staging.student_majors
-(
-    sid VARCHAR NOT NULL,
-    college VARCHAR NOT NULL,
-    major VARCHAR NOT NULL,
-    PRIMARY KEY (sid, college, major)
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}_staging.student_profile_index
@@ -148,23 +109,14 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}_staging.student_profile_index
     uid VARCHAR NOT NULL,
     first_name VARCHAR NOT NULL,
     last_name VARCHAR NOT NULL,
-    level VARCHAR,
-    gpa DECIMAL(5,3),
-    units DECIMAL (6,3)
-);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}_staging.student_profile_index_hist_enr
-(
-    sid VARCHAR NOT NULL,
-    uid VARCHAR NOT NULL,
-    first_name VARCHAR NOT NULL,
-    last_name VARCHAR NOT NULL,
+    gender VARCHAR,
     level VARCHAR,
     gpa DECIMAL(5,3),
     units DECIMAL (6,3),
     transfer BOOLEAN,
     expected_grad_term VARCHAR(4),
-    terms_in_attendance INT
+    terms_in_attendance INT,
+    edl_load_date DATE
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}_staging.student_profiles
@@ -173,7 +125,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}_staging.student_profiles
     profile TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}_staging.student_term_gpas
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}_staging.term_gpas
 (
     sid VARCHAR NOT NULL,
     term_id VARCHAR(4) NOT NULL,

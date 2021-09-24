@@ -125,8 +125,7 @@ class CreateEdlSchema(BackgroundJob):
 
     def generate_degree_progress_feeds(self):
         app.logger.info('Staging degree progress feeds...')
-        table = 'student_degree_progress'
-        rows = redshift.fetch(f'SELECT * FROM {self.internal_schema}.{table}_index ORDER by sid')
+        rows = redshift.fetch(f'SELECT * FROM {self.internal_schema}.student_degree_progress_index ORDER by sid')
         with TemporaryFile() as feeds:
             for sid, rows_for_student in groupby(rows, itemgetter('sid')):
                 rows_for_student = list(rows_for_student)
@@ -140,7 +139,7 @@ class CreateEdlSchema(BackgroundJob):
                     },
                 }
                 write_to_tsv_file(feeds, [sid, json.dumps(feed)])
-            self._upload_file_to_staging(table, feeds)
+            self._upload_file_to_staging('student_degree_progress', feeds)
 
     def generate_demographics_feeds(self):
         app.logger.info('Staging demographics feeds...')
@@ -307,7 +306,7 @@ def _merge_profile(feed, profile_rows):
         feed['names'].append({'formattedName': r['person_display_nm'], 'type': {'code': 'PRI'}})
 
     if r['phone']:
-        feed['phones'] = {'number': r['phone'], 'type': {'code': r['phone_type']}}
+        feed['phones'] = [{'number': r['phone'], 'type': {'code': r['phone_type']}}]
 
 
 def _merge_holds(feed, hold_rows):

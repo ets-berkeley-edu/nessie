@@ -583,11 +583,20 @@ def get_non_advisee_api_feeds(sids):
         registration_table = f'{edl_schema()}.student_last_registrations'
     else:
         registration_table = f'{student_schema()}.hist_enr_last_registrations'
-    profile_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES'] else student_schema()
-    sql = f"""SELECT DISTINCT sis.sid, sis.uid,
+    if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES']:
+        uid_select = 'attrs.ldap_uid AS uid'
+        attrs_join = f'LEFT JOIN {edl_schema()}.basic_attributes attrs ON attrs.sid = sis.sid'
+        profile_schema = edl_schema()
+    else:
+        uid_select = 'sis.uid'
+        attrs_join = ''
+        profile_schema = student_schema()
+    sql = f"""SELECT DISTINCT sis.sid,
+                {uid_select},
                 sis.feed AS sis_feed,
                 reg.feed AS last_registration_feed
               FROM {profile_schema}.{student_schema_table('sis_profiles_hist_enr')} sis
+              {attrs_join}
               LEFT JOIN {registration_table} reg
                 ON reg.sid = sis.sid
               WHERE sis.sid=ANY(%s)
