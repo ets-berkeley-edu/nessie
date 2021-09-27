@@ -360,7 +360,7 @@ def _merge_academic_status(feed, profile_term_rows, career_code):
 
 
 def _merge_plans(feed, plan_rows, career_code):
-    if not plan_rows or not career_code or not feed.get['academicStatuses']:
+    if not plan_rows or not career_code or not feed.get('academicStatuses'):
         return
 
     academic_status = feed['academicStatuses'][0]
