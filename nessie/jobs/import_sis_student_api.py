@@ -34,7 +34,7 @@ from nessie.externals import redshift, s3
 from nessie.externals.sis_student_api import get_v2_by_sids_list
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import current_term_id
-from nessie.lib.queries import get_all_student_ids, student_schema, student_schema_table
+from nessie.lib.queries import get_all_student_ids, student_schema
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string
 
 """Logic for SIS student API import job."""
@@ -70,22 +70,20 @@ class ImportSisStudentApi(BackgroundJob):
 
         app.logger.info('Will copy S3 feeds into Redshift...')
 
-        sis_profiles_table = student_schema_table('sis_profiles')
-        if not redshift.execute(f'TRUNCATE {student_schema()}_staging.{sis_profiles_table}'):
+        if not redshift.execute(f'TRUNCATE {student_schema()}_staging.sis_api_profiles'):
             raise BackgroundJobError('Error truncating old staging rows: aborting job.')
-        if not redshift.copy_tsv_from_s3(f'{student_schema()}_staging.{sis_profiles_table}', s3_key):
+        if not redshift.copy_tsv_from_s3(f'{student_schema()}_staging.sis_api_profiles', s3_key):
             raise BackgroundJobError('Error on Redshift copy: aborting job.')
 
         staging_to_destination_query = resolve_sql_template_string(
             """
-            DELETE FROM {redshift_schema}.{sis_profiles_table} WHERE sid IN
-                (SELECT sid FROM {redshift_schema}_staging.{sis_profiles_table});
-            INSERT INTO {redshift_schema}.{sis_profiles_table}
-                (SELECT * FROM {redshift_schema}_staging.{sis_profiles_table});
-            TRUNCATE {redshift_schema}_staging.{sis_profiles_table};
+            DELETE FROM {redshift_schema}.sis_api_profiles WHERE sid IN
+                (SELECT sid FROM {redshift_schema}_staging.sis_api_profiles);
+            INSERT INTO {redshift_schema}.sis_api_profiles
+                (SELECT * FROM {redshift_schema}_staging.sis_api_profiles);
+            TRUNCATE {redshift_schema}_staging.sis_api_profiles;
             """,
             redshift_schema=student_schema(),
-            sis_profiles_table=sis_profiles_table,
         )
         if not redshift.execute(staging_to_destination_query):
             raise BackgroundJobError('Error on Redshift copy: aborting job.')

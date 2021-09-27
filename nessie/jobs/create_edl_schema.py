@@ -259,15 +259,6 @@ def _process_profile_feeds(app_arg, chunk):
                     career_admit_term = plan_row['current_admit_term']
 
             feed = {
-                'academicStatuses': [
-                    {
-                        'studentCareer': {
-                            'academicCareer': {
-                                'code': career_code,
-                            },
-                        },
-                    },
-                ],
                 'identifiers': [
                     {
                         'id': sid,
@@ -338,8 +329,13 @@ def _merge_academic_status(feed, profile_term_rows, career_code):
     if not latest_career_row:
         return
 
-    academic_status = feed['academicStatuses'][0]
-
+    academic_status = {
+        'studentCareer': {
+            'academicCareer': {
+                'code': career_code,
+            },
+        },
+    }
     academic_status['cumulativeGPA'] = {
         'average': float(latest_career_row['total_cumulative_gpa_nbr'] or 0),
     }
@@ -360,9 +356,11 @@ def _merge_academic_status(feed, profile_term_rows, career_code):
     if latest_career_row['terms_in_attendance']:
         academic_status['termsInAttendance'] = int(latest_career_row['terms_in_attendance'])
 
+    feed['academicStatuses'] = [academic_status]
+
 
 def _merge_plans(feed, plan_rows, career_code):
-    if not plan_rows or not career_code:
+    if not plan_rows or not career_code or not feed.get['academicStatuses']:
         return
 
     academic_status = feed['academicStatuses'][0]
