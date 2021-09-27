@@ -62,15 +62,16 @@ CREATE TABLE {redshift_schema_edl}.academic_standing
 SORTKEY (sid)
 AS (
     SELECT
-        student_id AS sid,
-        semester_year_term_cd AS term_id,
-        academic_standing_cd AS acad_standing_action,
-        academic_standing_category_cd AS acad_standing_status,
-        action_dt AS action_date
-    FROM {redshift_schema_edl_external}.student_academic_standing_data
+        s.student_id AS sid,
+        s.semester_year_term_cd AS term_id,
+        s.academic_standing_cd AS acad_standing_action,
+        s.academic_standing_category_cd AS acad_standing_status,
+        s.action_dt AS action_date
+    FROM {redshift_schema_edl_external}.student_academic_standing_data s
+    JOIN {redshift_schema_calnet}.advisees a ON a.sid = s.student_id
     WHERE
-        academic_standing_category_cd IS NOT NULL
-        AND academic_standing_category_cd != ''
+        s.academic_standing_category_cd IS NOT NULL
+        AND s.academic_standing_category_cd != ''
 );
 
 CREATE TABLE {redshift_schema_edl}.advising_notes
