@@ -223,7 +223,7 @@ AS (
   FROM {redshift_schema_edl_external}.student_enrollment_data sed
   LEFT JOIN {redshift_schema_edl_external}.student_personal_data spd
     ON spd.student_id = sed.student_id
-  WHERE sed.enrollment_status_reason_cd != 'CANC'
+  WHERE sed.enrollment_status_reason_cd != 'CANC' OR sed.enrollment_action_cd = 'D'
 );
 
 CREATE TABLE {redshift_schema_edl}.intended_majors
