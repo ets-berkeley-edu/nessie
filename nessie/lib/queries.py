@@ -603,7 +603,23 @@ def get_non_advisee_api_feeds(sids):
         registration_table = f'{student_schema()}.hist_enr_last_registrations'
     if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES']:
         uid_select = 'attrs.ldap_uid AS uid'
-        attrs_join = f'LEFT JOIN {edl_schema()}.basic_attributes attrs ON attrs.sid = sis.sid'
+        attrs_join = """
+          LEFT JOIN (
+            SELECT a.sid, MAX(a.ldap_uid) AS ldap_uid FROM (
+              SELECT sid, ldap_uid FROM edl_sis_data.basic_attributes attrs
+                WHERE (
+                  attrs.affiliations LIKE '%%STUDENT-TYPE%%'
+                  OR attrs.affiliations LIKE '%%SIS-EXTENDED%%'
+                  OR attrs.affiliations LIKE '%%FORMER-STUDENT%%'
+                )
+                AND attrs.person_type = 'S' AND char_length(attrs.sid) < 12
+              UNION
+              SELECT sis_id AS sid, ldap_uid FROM edl_sis_data.enrollments
+              GROUP BY sid, ldap_uid
+            ) a
+            GROUP BY sid
+          ) attrs
+          ON attrs.sid = sis.sid"""
         profile_table = f'{edl_schema()}.student_profiles'
     else:
         uid_select = 'sis.uid'
