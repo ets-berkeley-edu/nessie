@@ -110,7 +110,7 @@ def get_all_student_ids():
             FROM {edl_external_schema()}.student_academic_plan_data
             WHERE
                 academic_career_cd='UGRD'
-                AND academic_program_status_cd='AC'
+                AND academic_program_status_cd IN ('AC', 'CM')
                 AND academic_plan_type_cd != 'MIN'
             UNION SELECT sid FROM {asc_schema()}.students
             UNION SELECT sid FROM {coe_schema()}.students
