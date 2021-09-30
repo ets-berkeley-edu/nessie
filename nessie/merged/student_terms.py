@@ -76,6 +76,7 @@ def merge_dropped_classes(student_enrollments_map, all_drops=None):
         all_drops = queries.get_all_advisee_enrollment_drops() or []
     for term_id, drops_per_term in groupby(all_drops, key=operator.itemgetter('sis_term_id')):
         term_id = str(term_id)
+        term_name = berkeley.term_name_for_sis_id(term_id)
         for sid, drops_per_student in groupby(drops_per_term, operator.itemgetter('sid')):
             student_drops = list(drops_per_student)
 
@@ -83,7 +84,13 @@ def merge_dropped_classes(student_enrollments_map, all_drops=None):
                 if term_id not in student_enrollments_map:
                     student_enrollments_map[term_id] = {}
                 if sid not in student_enrollments_map[term_id]:
-                    student_enrollments_map[term_id][sid] = {}
+                    student_enrollments_map[term_id][sid] = {
+                        'termId': term_id,
+                        'termName': term_name,
+                        'enrollments': [],
+                        'enrolledUnits': 0,
+                        'unmatchedCanvasSites': [],
+                    }
                 # Append drops
                 student_enrollments_map[term_id][sid]['droppedSections'] = []
                 for row in student_drops:
