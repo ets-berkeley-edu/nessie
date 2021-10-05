@@ -27,76 +27,74 @@ import json
 
 from nessie.externals import redshift
 from nessie.lib.queries import edl_schema
-from tests.util import mock_s3, override_config
+from tests.util import mock_s3
 
 
 class TestCreateEdlSchema:
 
     def test_generate_demographics_feeds(self, app, student_tables):
         """Builds JSON feeds and uploads to S3."""
-        from nessie.jobs.create_edl_schema import CreateEdlSchema
-        with override_config(app, 'FEATURE_FLAG_EDL_STUDENT_PROFILES', True):
-            with override_config(app, 'FEATURE_FLAG_EDL_DEMOGRAPHICS', True):
-                with mock_s3(app):
-                    CreateEdlSchema().generate_demographics_feeds()
+        from nessie.jobs.create_edl_schema import DemographicsFeedBuilder
+        with mock_s3(app):
+            DemographicsFeedBuilder().build()
 
-            rows = redshift.fetch(f'SELECT * FROM {edl_schema()}.student_demographics')
-            assert len(rows) == 11
-            assert rows[0]['sid'] == '11667051'
-            feed = json.loads(rows[0]['feed'])
-            assert feed['gender'] == 'Female'
-            assert feed['ethnicities'] == ['African-American / Black', 'Chinese / Chinese-American', 'East Indian / Pakistani']
-            assert feed['nationalities'] == ['Singapore']
-            assert feed['underrepresented'] is True
-            assert feed['visa']['type'] == 'PR'
-            assert feed['visa']['status'] == 'A'
+        rows = redshift.fetch(f'SELECT * FROM {edl_schema()}.student_demographics')
+        assert len(rows) == 11
+        assert rows[0]['sid'] == '11667051'
+        feed = json.loads(rows[0]['feed'])
+        assert feed['gender'] == 'Female'
+        assert feed['ethnicities'] == ['African-American / Black', 'Chinese / Chinese-American', 'East Indian / Pakistani']
+        assert feed['nationalities'] == ['Singapore']
+        assert feed['underrepresented'] is True
+        assert feed['visa']['type'] == 'PR'
+        assert feed['visa']['status'] == 'A'
 
-            assert rows[1]['sid'] == '1234567890'
-            feed = json.loads(rows[1]['feed'])
-            assert feed['gender'] == 'Male'
-            assert feed['ethnicities'] == ['Mexican / Mexican-American / Chicano', 'White']
-            assert feed['nationalities'] == ['Iran (Islamic Republic Of)']
-            assert feed['underrepresented'] is True
-            assert feed['visa']['type'] == 'F1'
-            assert feed['visa']['status'] == 'A'
+        assert rows[1]['sid'] == '1234567890'
+        feed = json.loads(rows[1]['feed'])
+        assert feed['gender'] == 'Male'
+        assert feed['ethnicities'] == ['Mexican / Mexican-American / Chicano', 'White']
+        assert feed['nationalities'] == ['Iran (Islamic Republic Of)']
+        assert feed['underrepresented'] is True
+        assert feed['visa']['type'] == 'F1'
+        assert feed['visa']['status'] == 'A'
 
-            assert rows[2]['sid'] == '2345678901'
-            feed = json.loads(rows[2]['feed'])
-            assert feed['gender'] == 'Female'
-            assert feed['ethnicities'] == ['White']
-            assert feed['nationalities'] == ['Taiwan']
-            assert feed['underrepresented'] is False
-            assert feed['visa'] is None
+        assert rows[2]['sid'] == '2345678901'
+        feed = json.loads(rows[2]['feed'])
+        assert feed['gender'] == 'Female'
+        assert feed['ethnicities'] == ['White']
+        assert feed['nationalities'] == ['Taiwan']
+        assert feed['underrepresented'] is False
+        assert feed['visa'] is None
 
-            assert rows[3]['sid'] == '3456789012'
-            feed = json.loads(rows[3]['feed'])
-            assert feed['gender'] == 'Decline to State'
-            assert feed['ethnicities'] == ['American Indian / Alaska Native', 'Filipino / Filipino-American']
-            assert feed['nationalities'] == ['Korea, Republic of']
-            assert feed['underrepresented'] is True
-            assert feed['visa']['type'] == 'J1'
-            assert feed['visa']['status'] == 'G'
+        assert rows[3]['sid'] == '3456789012'
+        feed = json.loads(rows[3]['feed'])
+        assert feed['gender'] == 'Decline to State'
+        assert feed['ethnicities'] == ['American Indian / Alaska Native', 'Filipino / Filipino-American']
+        assert feed['nationalities'] == ['Korea, Republic of']
+        assert feed['underrepresented'] is True
+        assert feed['visa']['type'] == 'J1'
+        assert feed['visa']['status'] == 'G'
 
-            assert rows[4]['sid'] == '5000000000'
-            feed = json.loads(rows[4]['feed'])
-            assert feed['gender'] == 'Female'
-            assert feed['ethnicities'] == ['Not Specified']
-            assert feed['nationalities'] == []
-            assert feed['underrepresented'] is False
-            assert feed['visa'] is None
+        assert rows[4]['sid'] == '5000000000'
+        feed = json.loads(rows[4]['feed'])
+        assert feed['gender'] == 'Female'
+        assert feed['ethnicities'] == ['Not Specified']
+        assert feed['nationalities'] == []
+        assert feed['underrepresented'] is False
+        assert feed['visa'] is None
 
-            assert rows[7]['sid'] == '8901234567'
-            feed = json.loads(rows[7]['feed'])
-            assert feed['gender'] == 'Decline to State'
-            assert feed['ethnicities'] == ['Not Specified']
-            assert feed['nationalities'] == []
-            assert feed['underrepresented'] is False
-            assert feed['visa'] is None
+        assert rows[7]['sid'] == '8901234567'
+        feed = json.loads(rows[7]['feed'])
+        assert feed['gender'] == 'Decline to State'
+        assert feed['ethnicities'] == ['Not Specified']
+        assert feed['nationalities'] == []
+        assert feed['underrepresented'] is False
+        assert feed['visa'] is None
 
-            assert rows[9]['sid'] == '9000000000'
-            feed = json.loads(rows[9]['feed'])
-            assert feed['gender'] == 'Nonbinary'
-            assert feed['ethnicities'] == ['African-American / Black', 'Other Asian', 'Pacific Islander']
-            assert feed['nationalities'] == ["Lao People's Democratic Rep", 'Saint Kitts and Nevis']
-            assert feed['underrepresented'] is True
-            assert feed['visa'] is None
+        assert rows[9]['sid'] == '9000000000'
+        feed = json.loads(rows[9]['feed'])
+        assert feed['gender'] == 'Nonbinary'
+        assert feed['ethnicities'] == ['African-American / Black', 'Other Asian', 'Pacific Islander']
+        assert feed['nationalities'] == ["Lao People's Democratic Rep", 'Saint Kitts and Nevis']
+        assert feed['underrepresented'] is True
+        assert feed['visa'] is None
