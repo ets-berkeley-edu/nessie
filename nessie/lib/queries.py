@@ -408,7 +408,7 @@ def stream_edl_profiles():
             PARTITION BY emplid
             ORDER BY CASE phone_type WHEN 'CELL' THEN 0 WHEN 'LOCL' THEN 1 ELSE 2 END
           ) AS seqnum
-          FROM cs_staging_ext_dev.cs_ps_personal_phone
+          FROM {edl_external_schema_staging()}.cs_ps_personal_phone
         ) cppp
         ON spd.student_id = cppp.emplid and seqnum = 1
         ORDER BY spd.student_id"""
