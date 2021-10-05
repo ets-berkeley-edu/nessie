@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from decimal import Decimal
 from itertools import groupby, islice, repeat
 import json
@@ -36,8 +37,8 @@ from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import career_code_to_name, term_info_for_sis_term_id
-from nessie.lib.queries import get_edl_degrees, get_edl_demographics, get_edl_holds, get_edl_plans, get_edl_profile_terms,\
-    get_edl_profiles, get_edl_registrations
+from nessie.lib.queries import stream_edl_degrees, stream_edl_demographics, stream_edl_holds, stream_edl_plans,\
+    stream_edl_profile_terms, stream_edl_profiles, stream_edl_registrations
 from nessie.lib.util import get_s3_edl_daily_path, resolve_sql_template, write_to_tsv_file
 from nessie.merged.student_demographics import GENDER_CODE_MAP, merge_from_details, UNDERREPRESENTED_GROUPS
 
@@ -112,16 +113,16 @@ class ConcurrentFeedBuilder(object):
 
     def build(self):
         source_files = []
-        source_feed_generator = self.fetch_source_feeds()
-        while True:
-            results = False
-            source_file = TemporaryFile()
-            for source_feed in islice(source_feed_generator, self.batch_size):
-                pickle.dump(source_feed, source_file)
-                results = True
-            if not results:
-                break
-            source_files.append(source_file)
+        with self.fetch_source_feeds() as source_feed_generator:
+            while True:
+                results = False
+                source_file = TemporaryFile()
+                for source_feed in islice(source_feed_generator, self.batch_size):
+                    pickle.dump(source_feed, source_file)
+                    results = True
+                if not results:
+                    break
+                source_files.append(source_file)
 
         target_files = []
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
@@ -138,8 +139,9 @@ class ConcurrentFeedBuilder(object):
             _upload_file_to_staging(self.filename, all_feeds)
 
     # Subclasses implement.
+    @contextmanager
     def fetch_source_feeds(self):
-        pass
+        yield
 
     # Subclasses implement.
     def build_target_feeds(self, app_arg, source_file):
@@ -161,10 +163,17 @@ class DemographicsFeedBuilder(ConcurrentFeedBuilder):
 
     filename = 'student_demographics'
 
+    @contextmanager
     def fetch_source_feeds(self):
-        demographics_by_sid = iter(groupby(get_edl_demographics(), lambda r: r['sid']))
-        for sid, rows in demographics_by_sid:
-            yield {'sid': sid, 'feed': list(rows)}
+        stream = stream_edl_demographics()
+        try:
+            def _fetch_source_feeds():
+                demographics_by_sid = iter(groupby(stream, lambda r: r['sid']))
+                for sid, rows in demographics_by_sid:
+                    yield {'sid': sid, 'feed': list(rows)}
+            yield _fetch_source_feeds()
+        finally:
+            stream.close()
 
     def build_target_feeds(self, app_arg, source_file):
         with app_arg.app_context():
@@ -217,33 +226,44 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
 
     filename = 'student_profiles'
 
+    @contextmanager
     def fetch_source_feeds(self):
-        profile_results = groupby(get_edl_profiles(), lambda r: r['sid'])
-
-        supplemental_queries = {
-            'degrees': get_edl_degrees,
-            'holds': get_edl_holds,
-            'plans': get_edl_plans,
-            'profile_terms': get_edl_profile_terms,
+        profile_stream = stream_edl_profiles()
+        supplemental_streams = {
+            'degrees': stream_edl_degrees(),
+            'holds': stream_edl_holds(),
+            'plans': stream_edl_plans(),
+            'profile_terms': stream_edl_profile_terms(),
         }
-        supplemental_query_results = {k: groupby(query(), lambda r: r['sid']) for k, query in supplemental_queries.items()}
 
-        sid_tracker = {k: '' for k in supplemental_query_results.keys()}
-        rows_tracker = {}
+        try:
+            profile_results = groupby(profile_stream, lambda r: r['sid'])
+            supplemental_stream_results = {k: groupby(stream, lambda r: r['sid']) for k, stream in supplemental_streams.items()}
 
-        for sid, profile_rows in profile_results:
-            grouped_results = {
-                'sid': sid,
-                'feed': {
-                    'profile': list(profile_rows),
-                },
-            }
-            for k in supplemental_query_results.keys():
-                while sid_tracker[k] < sid:
-                    sid_tracker[k], rows_tracker[k] = next(supplemental_query_results[k])
-                if sid_tracker[k] == sid:
-                    grouped_results['feed'][k] = list(rows_tracker[k])
-            yield grouped_results
+            sid_tracker = {k: '' for k in supplemental_stream_results.keys()}
+            rows_tracker = {}
+
+            def _fetch_source_feeds():
+                for sid, profile_rows in profile_results:
+                    grouped_results = {
+                        'sid': sid,
+                        'feed': {
+                            'profile': list(profile_rows),
+                        },
+                    }
+                    for k in supplemental_stream_results.keys():
+                        while sid_tracker[k] < sid:
+                            sid_tracker[k], rows_tracker[k] = next(supplemental_stream_results[k])
+                        if sid_tracker[k] == sid:
+                            grouped_results['feed'][k] = list(rows_tracker[k])
+                    yield grouped_results
+
+            yield _fetch_source_feeds()
+
+        finally:
+            profile_stream.close()
+            for stream in supplemental_streams.values():
+                stream.close()
 
     def build_target_feeds(self, app_arg, source_file):
         with app_arg.app_context():
@@ -494,10 +514,17 @@ class RegistrationsFeedBuilder(ConcurrentFeedBuilder):
 
     filename = 'student_last_registrations'
 
+    @contextmanager
     def fetch_source_feeds(self):
-        registrations_by_sid = iter(groupby(get_edl_registrations(), lambda r: r['sid']))
-        for sid, rows in registrations_by_sid:
-            yield {'sid': sid, 'feed': list(rows)}
+        stream = stream_edl_registrations()
+        try:
+            def _fetch_source_feeds():
+                registrations_by_sid = iter(groupby(stream, lambda r: r['sid']))
+                for sid, rows in registrations_by_sid:
+                    yield {'sid': sid, 'feed': list(rows)}
+            yield _fetch_source_feeds()
+        finally:
+            stream.close()
 
     def build_target_feeds(self, app_arg, source_file):
         with app_arg.app_context():

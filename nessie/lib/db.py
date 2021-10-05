@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from contextlib import contextmanager
+from datetime import datetime
 
 import psycopg2
 import psycopg2.extras
@@ -46,9 +47,22 @@ def get_psycopg_cursor(operation='read', autocommit=True, **kwargs):
         # Autocommit is required for EXTERNAL TABLE creation and deletion.
         if autocommit:
             connection.autocommit = True
-        yield connection.cursor(cursor_factory=cursor_factory)
+        cursor_args = {'cursor_factory': cursor_factory}
+        yield connection.cursor(**cursor_args)
     finally:
         if cursor is not None:
             cursor.close()
         if connection is not None:
             connection.close()
+
+
+def get_psycopg_cursor_streaming(**kwargs):
+    if kwargs.get('uri'):
+        connection = psycopg2.connect(kwargs['uri'])
+    else:
+        connection = psycopg2.connect(**kwargs)
+    # Result streaming requires a server-side cursor with a name.
+    return connection.cursor(
+        cursor_factory=psycopg2.extras.DictCursor,
+        name=f'nessie_cursor_{datetime.now().timestamp()}',
+    )

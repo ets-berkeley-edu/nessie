@@ -30,12 +30,15 @@ import re
 
 from flask import current_app as app
 from nessie.externals import s3
-from nessie.lib.db import get_psycopg_cursor
+from nessie.lib.db import get_psycopg_cursor, get_psycopg_cursor_streaming
 import psycopg2
 import psycopg2.extras
 import psycopg2.sql
 
 """Client code to run queries against Redshift."""
+
+# Batch size to use when streaming large result sets.
+CURSOR_ITERSIZE = 1000
 
 
 def execute(sql, **kwargs):
@@ -144,16 +147,22 @@ def drop_external_schema(schema_name):
 
 
 def fetch(sql, **kwargs):
-    """Execute SQL read operation with optional keyword arguments for formatting, returning an array of dictionaries."""
-    with _get_cursor(operation='read') as cursor:
-        if not cursor:
-            return None
-        rows = _execute(sql, 'read', cursor, **kwargs)
-        if rows is None:
-            return None
-        else:
-            # For Pandas compatibility, copy psycopg's list-like object of dict-like objects to a real list of dicts.
-            return [r.copy() for r in rows]
+    """Execute SQL read operation with optional keyword arguments for formatting."""
+    if kwargs.pop('stream_results', None):
+        cursor = _get_streaming_cursor()
+        _execute_streaming(sql, cursor, **kwargs)
+        return cursor
+    else:
+        # If streaming is not requested, return an array of dictionaries.
+        with _get_cursor(operation='read') as cursor:
+            if not cursor:
+                return None
+            rows = _execute(sql, 'read', cursor, **kwargs)
+            if rows is None:
+                return None
+            else:
+                # For Pandas compatibility, copy psycopg's list-like object of dict-like objects to a real list of dicts.
+                return [r.copy() for r in rows]
 
 
 class Transaction():
@@ -183,19 +192,39 @@ def _get_cursor(autocommit=True, operation='write'):
         with get_psycopg_cursor(
             operation=operation,
             autocommit=autocommit,
-            dbname=app.config.get('REDSHIFT_DATABASE'),
-            host=app.config.get('REDSHIFT_HOST'),
-            port=app.config.get('REDSHIFT_PORT'),
-            user=app.config.get('REDSHIFT_USER'),
-            password=app.config.get('REDSHIFT_PASSWORD'),
+            **_connection_args(),
         ) as cursor:
             yield cursor
     except psycopg2.Error as e:
-        error_str = str(e)
-        if e.pgcode:
-            error_str += f'{e.pgcode}: {e.pgerror}\n'
-        app.logger.warning(error_str)
+        _handle_psycopg2_error(e)
         yield None
+
+
+def _get_streaming_cursor():
+    try:
+        cursor = get_psycopg_cursor_streaming(**_connection_args())
+        cursor.itersize = CURSOR_ITERSIZE
+        return cursor
+    except psycopg2.Error as e:
+        _handle_psycopg2_error(e)
+        return None
+
+
+def _handle_psycopg2_error(e):
+    error_str = str(e)
+    if e.pgcode:
+        error_str += f'{e.pgcode}: {e.pgerror}\n'
+    app.logger.warning(error_str)
+
+
+def _connection_args():
+    return {
+        'dbname': app.config.get('REDSHIFT_DATABASE'),
+        'host': app.config.get('REDSHIFT_HOST'),
+        'port': app.config.get('REDSHIFT_PORT'),
+        'user': app.config.get('REDSHIFT_USER'),
+        'password': app.config.get('REDSHIFT_PASSWORD'),
+    }
 
 
 def _execute(sql, operation, cursor, **kwargs):
@@ -232,3 +261,14 @@ def _execute(sql, operation, cursor, **kwargs):
         error_str += f'on SQL: {sql_for_log}'
         app.logger.warning(error_str)
     return result
+
+
+def _execute_streaming(sql, cursor, **kwargs):
+    params = None
+    if kwargs:
+        params = kwargs.pop('params', None)
+        sql = psycopg2.sql.SQL(sql).format(**kwargs)
+    # Don't log sensitive credentials in the SQL.
+    sql_for_log = re.sub(r"CREDENTIALS '[^']+'", "CREDENTIALS '<credentials>'", str(sql))
+    cursor.execute(sql, params)
+    app.logger.debug(f'Redshift query (cursor {cursor.name} streaming results:\n{sql_for_log}\n{params or ""}')
