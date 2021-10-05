@@ -368,7 +368,8 @@ def stream_edl_holds():
 
 
 def stream_edl_plans():
-    sql = f"""SELECT sapd.student_id AS sid,
+    sql = f"""SELECT
+        DISTINCT sapd.student_id AS sid,
         sapd.academic_career_cd,
         sapd.academic_plan_type_cd,
         sapd.academic_plan_nm,
