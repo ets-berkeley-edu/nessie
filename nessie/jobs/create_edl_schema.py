@@ -317,7 +317,7 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
         if r['campus_email_address_nm']:
             feed['emails'].append({'emailAddress': r['campus_email_address_nm'], 'type': {'code': 'CAMP'}})
         if r['preferred_email_address_nm']:
-            feed['emails'].append({'emailAddress': r['campus_email_address_nm'], 'primary': True, 'type': {'code': 'OTHR'}})
+            feed['emails'].append({'emailAddress': r['preferred_email_address_nm'], 'primary': True, 'type': {'code': 'OTHR'}})
 
         preferred_name_parts = []
         primary_name_parts = []
