@@ -450,8 +450,8 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 'id': row['degree_expected_year_term_cd'],
             }
         if row['academic_subplan_nm']:
-            plan_feed['academicSubplans'] = {
-                'subplan': {
+            plan_feed['academicSubPlans'] = {
+                'subPlan': {
                     'description': row['academic_subplan_nm'],
                 },
             }
