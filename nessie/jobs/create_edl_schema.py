@@ -319,11 +319,19 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
         if r['preferred_email_address_nm']:
             feed['emails'].append({'emailAddress': r['campus_email_address_nm'], 'primary': True, 'type': {'code': 'OTHR'}})
 
+        preferred_name_parts = []
+        primary_name_parts = []
         feed['names'] = []
-        if r['person_preferred_display_nm']:
-            feed['names'].append({'formattedName': r['person_preferred_display_nm'], 'type': {'code': 'PRF'}})
-        if r['person_display_nm']:
-            feed['names'].append({'formattedName': r['person_display_nm'], 'type': {'code': 'PRI'}})
+        for col in ['person_preferred_first_nm', 'person_preferred_middle_nm', 'person_preferred_last_nm']:
+            if r[col] and len(r[col]):
+                preferred_name_parts.append(r[col])
+        for col in ['person_first_nm', 'person_middle_nm', 'person_last_nm']:
+            if r[col] and len(r[col]):
+                primary_name_parts.append(r[col])
+        if len(preferred_name_parts):
+            feed['names'].append({'formattedName': ' '.join(preferred_name_parts), 'type': {'code': 'PRF'}})
+        if len(primary_name_parts):
+            feed['names'].append({'formattedName': ' '.join(primary_name_parts), 'type': {'code': 'PRI'}})
 
         if r['phone']:
             feed['phones'] = [{'number': r['phone'], 'type': {'code': r['phone_type']}}]
