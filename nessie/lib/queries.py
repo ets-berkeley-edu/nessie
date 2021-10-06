@@ -396,8 +396,12 @@ def stream_edl_profiles():
     sql = f"""SELECT spd.student_id AS sid,
           spd.campus_email_address_nm,
           spd.preferred_email_address_nm,
-          spd.person_display_nm,
-          spd.person_preferred_display_nm,
+          spd.person_first_nm,
+          spd.person_middle_nm,
+          spd.person_last_nm,
+          spd.person_preferred_first_nm,
+          spd.person_preferred_middle_nm,
+          spd.person_preferred_last_nm,
           cppp.phone_type,
           cppp.phone
         FROM {edl_external_schema()}.student_personal_data spd
