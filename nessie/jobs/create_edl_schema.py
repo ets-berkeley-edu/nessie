@@ -616,19 +616,12 @@ class RegistrationsFeedBuilder(ConcurrentFeedBuilder):
         last_registration = None
 
         for row in rows:
-            # We prefer the most recent completed registration. But if the only registration data
-            # is for an in-progress or future term, use it as a fallback.
-            is_pending = (row['term_enrolled_units'] and not row['term_berkeley_completed_total_units'])
-            if is_pending and last_registration:
-                continue
-
             # At present, terms spent as an Extension student are not included in Term GPAs (but see BOAC-2266).
             # However, if there are no other types of registration, the Extension term is used for academicCareer.
             if row['academic_career_cd'] == 'UCBX':
                 if last_registration and last_registration['academic_career_cd'] != 'UCBX':
                     continue
 
-            # The most recent registration will be at the end of the list.
             last_registration = row
 
         return last_registration
