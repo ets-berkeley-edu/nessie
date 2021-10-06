@@ -57,15 +57,15 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     def run(self, term_id=None):
         app.logger.info('Starting merged profile generation job.')
 
-        # This version of the code will always generate feeds for all-terms and all-advisees, but we
-        # expect support for term-specific or backfill-specific feed generation will return soon.
-        if term_id != 'all':
-            app.logger.warn(f'Term-specific generation was requested for {term_id}, but all terms will be generated.')
+        # Term id is not a number for this job.
+        if term_id not in ['all', 'none']:
+            app.logger.warn("Didn't understand term id argument; will generate feeds for all terms.")
+            term_id = 'all'
 
         app.logger.info('Cleaning up old data...')
         redshift.execute('VACUUM; ANALYZE;')
 
-        status = self.generate_feeds()
+        status = self.generate_feeds(term_id)
 
         # Clean up the workbench.
         redshift.execute('VACUUM; ANALYZE;')
@@ -73,7 +73,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
         return status
 
-    def generate_feeds(self):
+    def generate_feeds(self, term_id):
         # Translation between canvas_user_id and UID/SID is needed to merge Canvas analytics data and SIS enrollment-based data.
         advisees_by_canvas_id = {}
         advisees_by_sid = {}
@@ -83,58 +83,27 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         if not profile_tables:
             raise BackgroundJobError('Failed to generate student profile tables.')
 
-        feed_path = app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH'] + '/feeds/'
-        s3.upload_json(advisees_by_canvas_id, feed_path + 'advisees_by_canvas_id.json')
-
-        upload_student_term_maps(advisees_by_sid)
-
-        # Avoid processing Canvas analytics data for future terms and pre-CS terms.
-        for term_id in (future_term_ids() + legacy_term_ids()):
-            enrollment_term_map = s3.get_object_json(feed_path + f'enrollment_term_map_{term_id}.json')
-            if enrollment_term_map:
-                GenerateMergedEnrollmentTerm().refresh_student_enrollment_term(term_id, enrollment_term_map)
-
-        canvas_integrated_term_ids = reverse_term_ids()
-        app.logger.info(f'Will queue analytics generation for {len(canvas_integrated_term_ids)} terms on worker nodes.')
-        result = queue_merged_enrollment_term_jobs(self.job_id, canvas_integrated_term_ids)
-        if not result:
-            raise BackgroundJobError('Failed to queue enrollment term jobs.')
+        if term_id != 'none':
+            self.queue_enrollment_term_jobs(advisees_by_canvas_id, advisees_by_sid)
 
         refresh_all_from_staging(profile_tables)
         self.update_redshift_academic_standing()
         self.update_rds_profile_indexes()
 
-        app.logger.info('Profile generation complete; waiting for enrollment term generation to finish.')
-
-        while True:
-            sleep(1)
-            enrollment_results = get_merged_enrollment_term_job_status(self.job_id)
-            if not enrollment_results:
-                raise BackgroundJobError('Failed to refresh RDS indexes.')
-            any_pending_job = next((row for row in enrollment_results if row['status'] == 'created' or row['status'] == 'started'), None)
-            if not any_pending_job:
-                break
-
-        app.logger.info('Exporting analytics data for archival purposes.')
-        unload_enrollment_terms([current_term_id(), future_term_id()])
-
-        app.logger.info('Refreshing enrollment terms in RDS.')
-        with rds.transaction() as transaction:
-            if self.refresh_rds_enrollment_terms(None, transaction):
-                transaction.commit()
-                app.logger.info('Refreshed RDS enrollment terms.')
-            else:
-                transaction.rollback()
-                raise BackgroundJobError('Failed to refresh RDS enrollment terms.')
-
         status_string = f'Generated merged profiles ({len(self.successes)} successes, {len(self.failures)} failures).'
         errored = False
-        for row in enrollment_results:
-            status_string += f" {row['details']}"
-            if row['status'] == 'error':
-                errored = True
 
-        truncate_staging_table('student_enrollment_terms')
+        if term_id != 'none':
+            app.logger.info('Profile generation complete; waiting for enrollment term generation to finish.')
+            enrollment_results = self.await_enrollment_term_jobs()
+
+            for row in enrollment_results:
+                status_string += f" {row['details']}"
+                if row['status'] == 'error':
+                    errored = True
+
+            truncate_staging_table('student_enrollment_terms')
+
         if errored:
             raise BackgroundJobError(status_string)
         else:
@@ -276,6 +245,48 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             app.logger.info('RDS student profile indexes updated.')
         else:
             raise BackgroundJobError('Failed to update RDS student profile indexes.')
+
+    def queue_enrollment_term_jobs(self, advisees_by_canvas_id, advisees_by_sid):
+        feed_path = app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH'] + '/feeds/'
+        s3.upload_json(advisees_by_canvas_id, feed_path + 'advisees_by_canvas_id.json')
+
+        upload_student_term_maps(advisees_by_sid)
+
+        # Avoid processing Canvas analytics data for future terms and pre-CS terms.
+        for term_id in (future_term_ids() + legacy_term_ids()):
+            enrollment_term_map = s3.get_object_json(feed_path + f'enrollment_term_map_{term_id}.json')
+            if enrollment_term_map:
+                GenerateMergedEnrollmentTerm().refresh_student_enrollment_term(term_id, enrollment_term_map)
+
+        canvas_integrated_term_ids = reverse_term_ids()
+        app.logger.info(f'Will queue analytics generation for {len(canvas_integrated_term_ids)} terms on worker nodes.')
+        result = queue_merged_enrollment_term_jobs(self.job_id, canvas_integrated_term_ids)
+        if not result:
+            raise BackgroundJobError('Failed to queue enrollment term jobs.')
+
+    def await_enrollment_term_jobs(self):
+        while True:
+            sleep(1)
+            enrollment_results = get_merged_enrollment_term_job_status(self.job_id)
+            if not enrollment_results:
+                raise BackgroundJobError('Failed to refresh RDS indexes.')
+            any_pending_job = next((row for row in enrollment_results if row['status'] == 'created' or row['status'] == 'started'), None)
+            if not any_pending_job:
+                break
+
+        app.logger.info('Exporting analytics data for archival purposes.')
+        unload_enrollment_terms([current_term_id(), future_term_id()])
+
+        app.logger.info('Refreshing enrollment terms in RDS.')
+        with rds.transaction() as transaction:
+            if self.refresh_rds_enrollment_terms(None, transaction):
+                transaction.commit()
+                app.logger.info('Refreshed RDS enrollment terms.')
+            else:
+                transaction.rollback()
+                raise BackgroundJobError('Failed to refresh RDS enrollment terms.')
+
+        return enrollment_results
 
     def refresh_rds_indexes(self, sids, transaction):
         if not (
