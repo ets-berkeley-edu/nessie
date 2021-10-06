@@ -387,7 +387,7 @@ def stream_edl_plans():
         JOIN {edl_external_schema_staging()}.cs_ps_acad_prog cpap
           ON sapd.student_id = cpap.emplid
           AND sapd.academic_program_cd = cpap.acad_prog
-          AND cpap.prog_action IN ('DATA', 'MATR')
+          AND cpap.prog_action IN ('DATA', 'MATR', 'PRGC')
         ORDER BY sapd.student_id, sapd.academic_career_cd, sapd.academic_program_cd"""
     return redshift.fetch(sql, stream_results=True)
 
