@@ -406,7 +406,7 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
 
         for row in plan_rows:
             if row['academic_career_cd'] == career_code:
-                statuses.add(self._simplified_status(row))
+                statuses.add(self._simplified_career_status(row))
                 academic_status['studentPlans'].append(self._construct_plan_feed(row))
 
                 if row['matriculation_term_cd'] and str(row['matriculation_term_cd']) > matriculation_term_cd:
@@ -449,7 +449,7 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
             },
             'statusInPlan': {
                 'status': {
-                    'formalDescription': self._simplified_status(row),
+                    'formalDescription': self._simplified_program_status(row),
                 },
             },
         }
@@ -516,7 +516,21 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
             feed['degrees'].append(degree_feed)
 
     @staticmethod
-    def _simplified_status(row):
+    def _simplified_career_status(row):
+        simplifier = {
+            'Active in Program': 'Active',
+            'Cancelled': 'Inactive',
+            'Completed Program': 'Completed',
+            'Deceased': 'Inactive',
+            'Discontinued': 'Inactive',
+            'Dismissed': 'Inactive',
+            'Leave of Absence': 'Inactive',
+            'Suspended': 'Inactive',
+        }
+        return simplifier.get(row['academic_program_status_desc'], row['academic_program_status_desc'])
+
+    @staticmethod
+    def _simplified_program_status(row):
         return 'Active' if row['academic_program_status_desc'] == 'Active in Program' else row['academic_program_status_desc']
 
 
