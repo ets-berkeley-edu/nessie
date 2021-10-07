@@ -384,10 +384,9 @@ def stream_edl_plans():
         sapd.transfer_student,
         cpap.admit_term AS matriculation_term_cd
         FROM {edl_external_schema()}.student_academic_plan_data sapd
-        JOIN {edl_external_schema_staging()}.cs_ps_acad_prog cpap
+        LEFT JOIN {edl_external_schema_staging()}.cs_ps_acad_prog cpap
           ON sapd.student_id = cpap.emplid
-          AND sapd.academic_program_cd = cpap.acad_prog
-          AND cpap.prog_action IN ('DATA', 'MATR', 'PRGC')
+          AND cpap.prog_action = 'MATR'
         ORDER BY sapd.student_id, sapd.academic_career_cd, sapd.academic_program_cd"""
     return redshift.fetch(sql, stream_results=True)
 
