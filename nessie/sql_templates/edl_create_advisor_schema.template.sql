@@ -84,7 +84,6 @@ AS (
         academic_career_cd='UGRD'
         AND advisor_id ~ '[0-9]+'
         AND academic_department_cd IS NOT NULL
-        AND academic_plan_cd IS NOT NULL
     ORDER BY advisor_id, academic_plan_cd
 );
 
@@ -120,6 +119,10 @@ AS (
         a.academic_plan_cd AS academic_plan_code,
         a.academic_plan_nm AS academic_plan
     FROM {redshift_schema_edl_external}.student_advisor_data a
+    WHERE
+        a.academic_career_cd='UGRD'
+        AND a.advisor_id ~ '[0-9]+'
+        AND a.academic_department_cd IS NOT NULL
 );
 
 CREATE TABLE {redshift_schema_advisor_internal}.advisor_attributes(
