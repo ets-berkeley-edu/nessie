@@ -409,7 +409,7 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 statuses.add(self._simplified_career_status(row))
                 academic_status['studentPlans'].append(self._construct_plan_feed(row))
 
-                if row['matriculation_term_cd'] and str(row['matriculation_term_cd']) > matriculation_term_cd:
+                if row['matriculation_term_cd'] and str(row['matriculation_term_cd']) < matriculation_term_cd:
                     matriculation_term_cd = str(row['matriculation_term_cd'])
                 if row['academic_program_effective_dt'] and str(row['academic_program_effective_dt']) > effective_date:
                     effective_date = str(row['academic_program_effective_dt'])
