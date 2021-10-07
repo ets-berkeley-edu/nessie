@@ -643,18 +643,16 @@ class RegistrationsFeedBuilder(ConcurrentFeedBuilder):
     @staticmethod
     def _withdraw_code_to_name(code):
         mappings = {
-            'CAN': 'CAN',
-            'DNSH': 'DNSH',
-            'DYSH': 'DYSH',
-            'MEDA': 'MEDA',
-            'MEDI': 'Medical',
-            'NPAY': 'NPAY',
-            'NWD': 'NWD',
+            'CAN': 'Cancelled',
+            'DNSH': 'Deceased',
+            'DYSH': 'Deceased',
+            'MEDA': 'Medical - Approved',
+            'MEDI': 'Medical - Self-Reported',
+            'NPAY': 'Cancelled For Non-Payment',
             'OTHR': 'Other',
-            'PARN': 'PARN',
+            'PARN': 'Parental Leave',
             'PERS': 'Personal',
-            'RETR': 'RETR',
-            'RSCH': 'RSCH',
+            'RETR': 'Retroactive',
             'WDR': 'Withdrew',
         }
         return mappings.get(code) or code
