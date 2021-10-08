@@ -352,7 +352,7 @@ def stream_edl_degrees():
         sadd.degree_conferred_dt,
         sadd.degree_desc
         FROM {edl_external_schema()}.student_awarded_degree_data sadd
-        ORDER BY sadd.student_id, sadd.degree_conferred_dt, sadd.degree_desc"""
+        ORDER BY sadd.student_id, sadd.degree_conferred_dt DESC, sadd.degree_desc"""
     return redshift.fetch(sql, stream_results=True)
 
 
