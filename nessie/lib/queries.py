@@ -452,9 +452,8 @@ def stream_edl_registrations():
               FROM {edl_external_schema()}.student_registration_term_data r
               JOIN {edl_external_schema_staging()}.cs_ps_stdnt_car_term s
                 ON r.student_id = s.emplid AND r.semester_year_term_cd = s.strm
-              WHERE
-                r.term_enrolled_units IS NOT NULL
-                OR r.term_berkeley_completed_total_units IS NOT NULL
+              WHERE (r.term_enrolled_units IS NOT NULL AND r.term_enrolled_units > 0)
+                OR (r.term_berkeley_completed_total_units IS NOT NULL AND r.term_berkeley_completed_total_units > 0)
               ORDER BY r.student_id, r.semester_year_term_cd
         """
     return redshift.fetch(sql, stream_results=True)
