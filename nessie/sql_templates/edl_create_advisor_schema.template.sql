@@ -121,7 +121,7 @@ AS (
     FROM {redshift_schema_edl_external}.student_advisor_data a
     WHERE
         a.academic_career_cd='UGRD'
-        AND a.advisor_id ~ '[0-9]+'
+        AND a.advisor_id ~ '[0-9A-Z]+'
         AND a.academic_department_cd IS NOT NULL
 );
 
