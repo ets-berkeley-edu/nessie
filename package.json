@@ -10,7 +10,7 @@
     "serve-vue": "vue-cli-service serve --open"
   },
   "dependencies": {
-    "axios": "0.21.1",
+    "axios": "0.21.2",
     "bootstrap-vue": "2.21.2",
     "lodash": "4.17.21",
     "vue": "2.6.14",
@@ -23,7 +23,7 @@
     "vuex": "3.6.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.5.5",
+    "@babel/core": "^7.15.8",
     "@typescript-eslint/eslint-plugin": "^4.23.0",
     "@typescript-eslint/eslint-plugin-tslint": "^4.23.0",
     "@typescript-eslint/parser": "^4.23.0",
