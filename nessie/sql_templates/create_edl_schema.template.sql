@@ -366,7 +366,7 @@ AS (
       s.campus_id AS uid,
       p.person_preferred_first_nm AS first_name,
       p.person_preferred_last_nm AS last_name,
-      p.gender_cd AS gender,
+      COALESCE(NULLIF(p.gender_identity_cd, ''), p.gender_cd) AS gender,
       NULL AS level,
       reg.total_cumulative_gpa_nbr AS gpa,
       reg.total_units_completed_qty AS units,
