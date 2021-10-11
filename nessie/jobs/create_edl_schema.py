@@ -277,12 +277,13 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 career_code = None
                 career_admit_term = ''
                 for plan_row in feed_components.get('plans', []):
-                    if plan_row['academic_career_cd'] == 'UGRD':
-                        career_code = 'UGRD'
-                        break
-                    elif plan_row['academic_career_cd'] in {'UCBX', 'GRAD'} and plan_row['current_admit_term'] > career_admit_term:
-                        career_code = plan_row['academic_career_cd']
-                        career_admit_term = plan_row['current_admit_term']
+                    if plan_row['current_admit_term'] > career_admit_term:
+                        if plan_row['academic_career_cd'] == 'UGRD':
+                            career_code = 'UGRD'
+                            break
+                        elif plan_row['academic_career_cd'] in {'UCBX', 'GRAD'}:
+                            career_code = plan_row['academic_career_cd']
+                            career_admit_term = plan_row['current_admit_term']
 
                 feed = {
                     'identifiers': [
