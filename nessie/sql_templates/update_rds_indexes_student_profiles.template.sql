@@ -83,7 +83,9 @@ DELETE FROM {rds_schema_student}.student_degrees WHERE hist_enr IS FALSE;
 INSERT INTO {rds_schema_student}.student_degrees
 SELECT sid, plan, date_awarded,
 CASE substr(date_awarded, 6, 2)
+  WHEN '03' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '0'
   WHEN '05' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '2'
+  WHEN '06' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '2'
   WHEN '08' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '5'
   WHEN '12' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '8'
   END AS term_id,
