@@ -159,7 +159,6 @@ class TestMergedSisProfile:
 
     def test_current_term(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
-        assert profile['currentRegistration']['term']['id'] == '2178'
         assert profile['level']['code'] == '30'
         assert profile['level']['description'] == 'Junior'
         assert profile['currentTerm']['unitsMax'] == 24
@@ -202,7 +201,6 @@ class TestMergedSisProfile:
     def test_no_registrations_in_list(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         """Falls back to last term-with-units if the student is not active in the current term."""
         profile = merged_profile('1234567890', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
-        assert profile['currentRegistration']['term']['id'] == '2172'
         assert profile['level']['code'] == '20'
         assert profile['level']['description'] == 'Sophomore'
 

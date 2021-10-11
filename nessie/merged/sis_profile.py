@@ -184,7 +184,6 @@ def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile
     # V2 registrations feed.
     if not registration:
         registration = last_registration_feed and json.loads(last_registration_feed)
-    sis_profile['currentRegistration'] = registration
     if not registration:
         return
 
