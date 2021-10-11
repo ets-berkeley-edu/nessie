@@ -29,7 +29,15 @@ from nessie.lib.util import write_to_tsv_file
 
 UNDERREPRESENTED_GROUPS = {'Black/African American', 'Hispanic/Latino', 'American Indian/Alaska Native'}
 
-GENDER_CODE_MAP = {'F': 'Female', 'M': 'Male', 'U': 'Decline to State', 'X': 'Nonbinary'}
+GENDER_CODE_MAP = {
+    'F': 'Female',
+    'M': 'Male',
+    'Q': 'Genderqueer/Gender Non-Conform',
+    'TF': 'Female',
+    'TM': 'Male',
+    'U': 'Decline to State',
+    'X': 'Different Identity',
+}
 
 
 def add_demographics_rows(sid, feed, feed_files, feed_counts):

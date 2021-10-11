@@ -187,7 +187,6 @@ class DemographicsFeedBuilder(ConcurrentFeedBuilder):
                 nationalities = set()
                 ethnic_map = {}
                 for r in rows:
-                    # TODO: Prefer gender identity once available (NS-1073)
                     gender = r['gender']
                     if r['visa_type']:
                         visa = {'status': r['visa_status'], 'type': r['visa_type']}
@@ -198,7 +197,7 @@ class DemographicsFeedBuilder(ConcurrentFeedBuilder):
                             ethnic_map[r['ethnic_group']] = set()
                         ethnic_map[r['ethnic_group']].add(r['ethnicity'])
                 feed = {
-                    'gender': GENDER_CODE_MAP[gender],
+                    'gender': GENDER_CODE_MAP.get(gender, None),
                     'ethnicities': self._simplified_ethnicities(ethnic_map),
                     'nationalities': sorted(nationalities),
                     'underrepresented': not UNDERREPRESENTED_GROUPS.isdisjoint(ethnic_map.keys()),

@@ -93,7 +93,7 @@ class TestCreateEdlSchema:
 
         assert rows[9]['sid'] == '9000000000'
         feed = json.loads(rows[9]['feed'])
-        assert feed['gender'] == 'Nonbinary'
+        assert feed['gender'] == 'Different Identity'
         assert feed['ethnicities'] == ['African-American / Black', 'Other Asian', 'Pacific Islander']
         assert feed['nationalities'] == ["Lao People's Democratic Rep", 'Saint Kitts and Nevis']
         assert feed['underrepresented'] is True
