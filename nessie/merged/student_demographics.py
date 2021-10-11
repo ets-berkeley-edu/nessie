@@ -146,8 +146,9 @@ def ethnicity_filter_values(feed):
 def filter_ethnicities(ethnicities):
     """Return White-only ethnicities rather than multi-ethnic values under a search for 'White'."""
     if len(ethnicities) > 1 and 'White' in ethnicities:
-        ethnicities.remove('White')
-    return ethnicities
+        return [e for e in ethnicities if e != 'White']
+    else:
+        return ethnicities
 
 
 def simplified_ethnicities(feed):
