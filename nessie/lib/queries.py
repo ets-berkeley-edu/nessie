@@ -307,8 +307,10 @@ def get_all_advisee_enrollment_drops():
 
 
 def get_all_advisee_term_gpas():
+    order_by = 'gp.term_id, gp.sid DESC'
     if app.config['FEATURE_FLAG_EDL_REGISTRATIONS']:
         term_gpa_table = f'{edl_schema()}.term_gpa'
+        order_by += ", CASE gp.career WHEN 'UGRD' THEN 1 ELSE 0 END"
     else:
         term_gpa_table = f'{student_schema()}.student_term_gpas'
     sql = f"""SELECT gp.sid, gp.term_id, gp.gpa, gp.units_taken_for_gpa
@@ -316,7 +318,7 @@ def get_all_advisee_term_gpas():
               JOIN {calnet_schema()}.advisees ldap
                 ON gp.sid = ldap.sid
               WHERE gp.term_id=ANY('{{{','.join(reverse_term_ids(include_legacy_terms=True))}}}')
-              ORDER BY gp.term_id, gp.sid DESC
+              ORDER BY {order_by}
         """
     return redshift.fetch(sql)
 
@@ -668,15 +670,17 @@ def get_non_advisee_enrollment_drops(sids, term_id):
 
 
 def get_non_advisee_term_gpas(sids, term_id):
+    order_by = 'gp.sid'
     if app.config['FEATURE_FLAG_EDL_REGISTRATIONS']:
         term_gpa_table = f'{edl_schema()}.term_gpa'
+        order_by += ", CASE gp.career WHEN 'UGRD' THEN 1 ELSE 0 END"
     else:
         term_gpa_table = f'{student_schema()}.hist_enr_term_gpas'
     sql = f"""SELECT gp.sid, gp.term_id, gp.gpa, gp.units_taken_for_gpa
               FROM {term_gpa_table} gp
               WHERE gp.sid = ANY(%s)
                 AND gp.term_id = '{term_id}'
-              ORDER BY gp.sid
+              ORDER BY {order_by}
         """
     return redshift.fetch(sql, params=(sids,))
 
