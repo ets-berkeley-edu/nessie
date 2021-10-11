@@ -406,6 +406,7 @@ AS (
     SELECT
       reg.student_id AS sid,
       reg.semester_year_term_cd AS term_id,
+      reg.academic_career_cd AS career,
       reg.term_berkeley_completed_total_units AS units_total,
       reg.term_berkeley_completed_gpa_units AS units_taken_for_gpa,
       reg.current_term_gpa_nbr AS gpa

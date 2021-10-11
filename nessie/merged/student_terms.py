@@ -111,6 +111,8 @@ def merge_term_gpas(student_enrollments_map, all_gpas=None):
     for key, term_gpa_rows in groupby(all_gpas, operator.itemgetter('term_id')):
         term_id = str(key)
         for term_gpa_row in term_gpa_rows:
+            # In the case of multiple results per term id and SID, SQL ordering ensures that a UGRD career, if present,
+            # will get the last word.
             sid = term_gpa_row['sid']
             student_term = student_enrollments_map.get(term_id, {}).get(sid)
             if student_term and student_term.get('enrolledUnits'):
