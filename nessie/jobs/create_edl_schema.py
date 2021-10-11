@@ -398,9 +398,9 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
 
         academic_status = feed['academicStatuses'][0]
         academic_status['studentPlans'] = []
-        statuses = set()
-        matriculation_term_cd = ''
         effective_date = ''
+        matriculation_term_cd = None
+        statuses = set()
         transfer_student = False
 
         for row in plan_rows:
@@ -408,8 +408,9 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 statuses.add(self._simplified_career_status(row))
                 academic_status['studentPlans'].append(self._construct_plan_feed(row))
 
-                if row['matriculation_term_cd'] and str(row['matriculation_term_cd']) < matriculation_term_cd:
-                    matriculation_term_cd = str(row['matriculation_term_cd'])
+                m_term_cd = str(row['matriculation_term_cd'])
+                if m_term_cd and (matriculation_term_cd is None or m_term_cd < matriculation_term_cd):
+                    matriculation_term_cd = m_term_cd
                 if row['academic_program_effective_dt'] and str(row['academic_program_effective_dt']) > effective_date:
                     effective_date = str(row['academic_program_effective_dt'])
                 if row['transfer_student'] == 'Y':
