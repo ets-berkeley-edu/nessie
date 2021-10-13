@@ -428,9 +428,9 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
         if effective_date:
             academic_status['studentCareer']['toDate'] = effective_date[0:10]
 
-        feed['affiliations'] = []
-        for status in statuses:
-            feed['affiliations'].append({'status': {'description': status}, 'type': {'code': career_code_to_name(career_code)}})
+        status = self._best_status(statuses)
+        if status:
+            feed['affiliations'] = [{'status': {'description': status}, 'type': {'code': career_code_to_name(career_code)}}]
 
     def _construct_plan_feed(self, row):
         plan_feed = {
@@ -515,6 +515,15 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 degree_feed['academicPlans'].append(plan_feed)
 
             feed['degrees'].append(degree_feed)
+
+    @staticmethod
+    def _best_status(statuses):
+        if 'Active' in statuses:
+            return 'Active'
+        elif 'Completed' in statuses:
+            return 'Completed'
+        elif 'Inactive' in statuses:
+            return 'Inactive'
 
     @staticmethod
     def _simplified_career_status(row):
