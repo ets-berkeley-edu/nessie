@@ -277,13 +277,12 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 career_code = None
                 career_admit_term = ''
                 for plan_row in feed_components.get('plans', []):
-                    if plan_row['current_admit_term'] > career_admit_term:
-                        if plan_row['academic_career_cd'] == 'UGRD':
-                            career_code = 'UGRD'
-                            break
-                        elif plan_row['academic_career_cd'] in {'UCBX', 'GRAD'}:
-                            career_code = plan_row['academic_career_cd']
-                            career_admit_term = plan_row['current_admit_term']
+                    if plan_row['academic_career_cd'] == 'UGRD':
+                        career_code = 'UGRD'
+                        break
+                    elif plan_row['academic_career_cd'] in {'UCBX', 'GRAD'} and plan_row['current_admit_term'] > career_admit_term:
+                        career_code = plan_row['academic_career_cd']
+                        career_admit_term = plan_row['current_admit_term']
 
                 feed = {
                     'identifiers': [
@@ -401,13 +400,16 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
         academic_status['studentPlans'] = []
         effective_date = ''
         matriculation_term_cd = None
+        plans = set()
         statuses = set()
         transfer_student = False
 
         for row in plan_rows:
             if row['academic_career_cd'] == career_code:
                 statuses.add(self._simplified_career_status(row))
-                academic_status['studentPlans'].append(self._construct_plan_feed(row))
+                if row['academic_plan_nm'] not in plans:
+                    plans.add(row['academic_plan_nm'])
+                    academic_status['studentPlans'].append(self._construct_plan_feed(row))
 
                 m_term_cd = row['matriculation_term_cd']
                 if m_term_cd and (matriculation_term_cd is None or str(m_term_cd) < matriculation_term_cd):
