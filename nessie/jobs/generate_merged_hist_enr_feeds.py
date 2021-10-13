@@ -23,17 +23,18 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from itertools import groupby
 import json
+import operator
 import tempfile
 
 from flask import current_app as app
 from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib import queries
-from nessie.lib.berkeley import reverse_term_ids
+from nessie.lib import berkeley, queries
 from nessie.lib.util import encoded_tsv_row, resolve_sql_template
 from nessie.merged.sis_profile import parse_merged_sis_profile
-from nessie.merged.student_terms import map_sis_enrollments, merge_dropped_classes, merge_term_gpas
+from nessie.merged.student_terms import append_drops, append_term_gpa, empty_term_feed, merge_enrollment
 from nessie.models.student_schema_manager import refresh_from_staging, truncate_staging_table, write_file_to_staging
 
 """Logic to generate client-friendly merge of available data on non-current students."""
@@ -159,40 +160,55 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
             app.logger.debug(f'No name parsed in {api_json}')
 
     def generate_student_enrollments_table(self, non_advisee_sids):
-        # Split all S3/Redshift operations by term in hope of not overloading memory or other resources.
-        # (Using finer-grained batches of SIDs would probably involve replacing the staging table by a Spectrum
-        # external table.)
-        total_count = 0
         table_name = 'student_enrollment_terms_hist_enr'
         truncate_staging_table(table_name)
-        for term_id in reverse_term_ids(include_future_terms=True, include_legacy_terms=True):
-            with tempfile.TemporaryFile() as feed_file:
-                term_count = self.collect_merged_enrollments(non_advisee_sids, term_id, feed_file)
-                if term_count:
-                    write_file_to_staging(
-                        table_name,
-                        feed_file,
-                        term_count,
-                        term_id,
-                    )
-            if term_count:
+        with tempfile.TemporaryFile() as feed_file:
+            row_count = self.generate_term_feeds(non_advisee_sids, feed_file)
+            if row_count:
+                write_file_to_staging(table_name, feed_file, row_count)
                 with redshift.transaction() as transaction:
                     refresh_from_staging(
                         table_name,
-                        term_id,
-                        non_advisee_sids,
-                        transaction,
+                        term_id=None,
+                        sids=non_advisee_sids,
+                        transaction=transaction,
                     )
-                total_count += term_count
         app.logger.info('Non-advisee term enrollment generation complete.')
-        return total_count
+        return row_count
 
-    def collect_merged_enrollments(self, sids, term_id, feed_file):
-        rows = queries.get_non_advisee_sis_enrollments(sids, term_id)
-        enrollments_by_student = map_sis_enrollments(rows)
-        merge_dropped_classes(enrollments_by_student, queries.get_non_advisee_enrollment_drops(sids, term_id))
-        merge_term_gpas(enrollments_by_student, queries.get_non_advisee_term_gpas(sids, term_id))
-        enrollments_by_student = enrollments_by_student.get(term_id, {})
-        for (sid, enrollments_feed) in enrollments_by_student.items():
-            feed_file.write(encoded_tsv_row([sid, term_id, json.dumps(enrollments_feed)]) + b'\n')
-        return len(enrollments_by_student.keys())
+    def generate_term_feeds(self, sids, feed_file):
+        enrollment_stream = queries.stream_sis_enrollments(sids)
+        term_gpa_stream = queries.stream_term_gpas(sids)
+        term_gpa_tracker = {'term_id': '9999', 'sid': '', 'term_gpas': []}
+
+        row_count = 0
+
+        try:
+            term_gpa_results = groupby(term_gpa_stream, lambda r: (str(r['term_id']), r['sid']))
+
+            for term_id, term_enrollments_grp in groupby(enrollment_stream, operator.itemgetter('sis_term_id')):
+                term_id = str(term_id)
+                term_name = berkeley.term_name_for_sis_id(term_id)
+                for sid, enrollments_grp in groupby(term_enrollments_grp, operator.itemgetter('sid')):
+                    term_feed = None
+                    for is_dropped, enrollments_subgroup in groupby(enrollments_grp, operator.itemgetter('dropped')):
+                        if not is_dropped:
+                            term_feed = merge_enrollment(enrollments_subgroup, term_id, term_name)
+                        else:
+                            if not term_feed:
+                                term_feed = empty_term_feed(term_id, term_name)
+                            append_drops(term_feed, enrollments_subgroup)
+
+                    while term_gpa_tracker['term_id'] > term_id or (term_gpa_tracker['term_id'] == term_id and term_gpa_tracker['sid'] < sid):
+                        (term_gpa_tracker['term_id'], term_gpa_tracker['sid']), term_gpa_tracker['term_gpas'] = next(term_gpa_results)
+                    if term_gpa_tracker['term_id'] == term_id and term_gpa_tracker['sid'] == sid:
+                        append_term_gpa(term_feed, term_gpa_tracker['term_gpas'])
+
+                    feed_file.write(encoded_tsv_row([sid, term_id, json.dumps(term_feed)]) + b'\n')
+                    row_count += 1
+
+        finally:
+            enrollment_stream.close()
+            term_gpa_stream.close()
+
+        return row_count
