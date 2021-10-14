@@ -74,6 +74,7 @@ def map_sis_enrollments(sis_enrollments):
 def merge_dropped_classes(student_enrollments_map, all_drops=None):
     if all_drops is None:
         all_drops = queries.get_all_advisee_enrollment_drops() or []
+
     for term_id, drops_per_term in groupby(all_drops, key=operator.itemgetter('sis_term_id')):
         term_id = str(term_id)
         term_name = berkeley.term_name_for_sis_id(term_id)
@@ -84,25 +85,33 @@ def merge_dropped_classes(student_enrollments_map, all_drops=None):
                 if term_id not in student_enrollments_map:
                     student_enrollments_map[term_id] = {}
                 if sid not in student_enrollments_map[term_id]:
-                    student_enrollments_map[term_id][sid] = {
-                        'termId': term_id,
-                        'termName': term_name,
-                        'enrollments': [],
-                        'enrolledUnits': 0,
-                        'unmatchedCanvasSites': [],
-                    }
-                # Append drops
-                student_enrollments_map[term_id][sid]['droppedSections'] = []
-                for row in student_drops:
-                    student_enrollments_map[term_id][sid]['droppedSections'].append({
-                        'component': row['sis_instruction_format'],
-                        'displayName': row['sis_course_name'],
-                        'dropDate': str(row['drop_date']) if row['drop_date'] else None,
-                        'instructionMode': row['sis_instruction_mode'],
-                        'sectionNumber': row['sis_section_num'],
-                        'withdrawAfterDeadline': (row['grade'] == 'W'),
-                    })
+                    student_enrollments_map[term_id][sid] = empty_term_feed(term_id, term_name)
+                append_drops(student_enrollments_map[term_id][sid], student_drops)
+
     return student_enrollments_map
+
+
+def empty_term_feed(term_id, term_name):
+    return {
+        'termId': term_id,
+        'termName': term_name,
+        'enrollments': [],
+        'enrolledUnits': 0,
+        'unmatchedCanvasSites': [],
+    }
+
+
+def append_drops(term_feed, drops):
+    term_feed['droppedSections'] = []
+    for row in drops:
+        term_feed['droppedSections'].append({
+            'component': row['sis_instruction_format'],
+            'displayName': row['sis_course_name'],
+            'dropDate': str(row['drop_date']) if row['drop_date'] else None,
+            'instructionMode': row['sis_instruction_mode'],
+            'sectionNumber': row['sis_section_num'],
+            'withdrawAfterDeadline': (row['grade'] == 'W'),
+        })
 
 
 def merge_term_gpas(student_enrollments_map, all_gpas=None):
@@ -110,17 +119,21 @@ def merge_term_gpas(student_enrollments_map, all_gpas=None):
         all_gpas = queries.get_all_advisee_term_gpas() or []
     for key, term_gpa_rows in groupby(all_gpas, operator.itemgetter('term_id')):
         term_id = str(key)
-        for term_gpa_row in term_gpa_rows:
-            # In the case of multiple results per term id and SID, SQL ordering ensures that a UGRD career, if present,
-            # will get the last word.
-            sid = term_gpa_row['sid']
+        for sid, student_term_gpa_rows in groupby(term_gpa_rows, operator.itemgetter('sid')):
             student_term = student_enrollments_map.get(term_id, {}).get(sid)
-            if student_term and student_term.get('enrolledUnits'):
-                student_term['termGpa'] = {
-                    'gpa': float(term_gpa_row['gpa']),
-                    'unitsTakenForGpa': float(term_gpa_row['units_taken_for_gpa']),
-                }
+            append_term_gpa(student_term, student_term_gpa_rows)
     return student_enrollments_map
+
+
+def append_term_gpa(term_feed, term_gpa_rows):
+    if term_feed and term_feed.get('enrolledUnits'):
+        # In the case of multiple results per term id and SID, SQL ordering ensures that a UGRD career, if present,
+        # will get the last word.
+        for row in term_gpa_rows:
+            term_feed['termGpa'] = {
+                'gpa': float(row['gpa']),
+                'unitsTakenForGpa': float(row['units_taken_for_gpa']),
+            }
 
 
 def get_canvas_site_maps():

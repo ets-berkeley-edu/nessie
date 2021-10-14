@@ -654,36 +654,35 @@ def get_non_advisee_api_feeds(sids):
     return redshift.fetch(sql, params=(sids,))
 
 
-def get_non_advisee_sis_enrollments(sids, term_id):
+def stream_sis_enrollments(sids):
     sql = f"""SELECT
                   enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id,
                   enr.ldap_uid, enr.sid,
                   enr.sis_course_title, enr.sis_course_name, enr.sis_section_id,
-                  enr.sis_primary, enr.sis_instruction_mode, enr.sis_instruction_format, enr.sis_section_num
+                  enr.sis_primary, enr.sis_instruction_mode, enr.sis_instruction_format, enr.sis_section_num,
+                  NULL::date AS drop_date, NULL::boolean AS dropped
               FROM {intermediate_schema()}.sis_enrollments enr
-              WHERE enr.sid=ANY(%s)
-                AND enr.sis_term_id='{term_id}'
-              ORDER BY enr.sis_term_id DESC, enr.sid, enr.sis_course_name, enr.sis_primary DESC, enr.sis_instruction_format, enr.sis_section_num
-        """
-    return redshift.fetch(sql, params=(sids,))
-
-
-def get_non_advisee_enrollment_drops(sids, term_id):
-    sql = f"""SELECT dr.*, dd.date AS drop_date
+              WHERE enr.sid = ANY(%s)
+              UNION
+              SELECT
+                dr.grade, dr.grade_midterm, NULL::int as units, NULL::varchar as grading_basis, dr.sis_enrollment_status, dr.sis_term_id,
+                dr.ldap_uid, dr.sid,
+                dr.sis_course_title, dr.sis_course_name, dr.sis_section_id,
+                NULL::boolean as sis_primary, dr.sis_instruction_mode, dr.sis_instruction_format, dr.sis_section_num,
+                dd.date AS drop_date, TRUE as dropped
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
               LEFT JOIN {sis_schema_internal()}.drop_dates dd
                 ON dr.ldap_uid = dd.ldap_uid
                 AND dr.sis_term_id = dd.sis_term_id
                 AND dr.sis_section_id = dd.sis_section_id
               WHERE dr.sid = ANY(%s)
-                AND dr.sis_term_id = '{term_id}'
-              ORDER BY dr.sid, dr.sis_course_name
+              ORDER BY sis_term_id DESC, sid, dropped NULLS FIRST, sis_course_name, sis_primary DESC, sis_instruction_format, sis_section_num
         """
-    return redshift.fetch(sql, params=(sids,))
+    return redshift.fetch(sql, params=(sids, sids), stream_results=True)
 
 
-def get_non_advisee_term_gpas(sids, term_id):
-    order_by = 'gp.sid'
+def stream_term_gpas(sids):
+    order_by = 'gp.term_id DESC, gp.sid'
     if app.config['FEATURE_FLAG_EDL_REGISTRATIONS']:
         term_gpa_table = f'{edl_schema()}.term_gpa'
         order_by += ", CASE gp.career WHEN 'UGRD' THEN 1 ELSE 0 END"
@@ -692,10 +691,9 @@ def get_non_advisee_term_gpas(sids, term_id):
     sql = f"""SELECT gp.sid, gp.term_id, gp.gpa, gp.units_taken_for_gpa
               FROM {term_gpa_table} gp
               WHERE gp.sid = ANY(%s)
-                AND gp.term_id = '{term_id}'
               ORDER BY {order_by}
         """
-    return redshift.fetch(sql, params=(sids,))
+    return redshift.fetch(sql, params=(sids,), stream_results=True)
 
 
 def get_sids_with_registration_imports():
