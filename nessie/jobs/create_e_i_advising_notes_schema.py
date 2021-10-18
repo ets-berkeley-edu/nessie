@@ -45,13 +45,14 @@ class CreateEIAdvisingNotesSchema(BackgroundJob):
     def create_schema(self):
         external_schema = app.config['REDSHIFT_SCHEMA_E_I_ADVISING_NOTES']
         redshift.drop_external_schema(external_schema)
-        e_i_data_sftp_path = '/'.join([
+        e_i_advising_notes_path = '/'.join([
             f"s3://{app.config['LOCH_S3_BUCKET']}",
             app.config['LOCH_S3_E_I_DATA_SFTP_PATH'],
+            'e-and-i-sftp/incremental/advising_notes',
         ])
         resolved_ddl = resolve_sql_template(
             'create_e_i_advising_notes_schema.template.sql',
-            e_i_data_sftp_path=e_i_data_sftp_path,
+            e_i_advising_notes_path=e_i_advising_notes_path,
         )
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(external_schema, resolved_ddl)

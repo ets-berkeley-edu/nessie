@@ -58,7 +58,7 @@ CREATE EXTERNAL TABLE {redshift_schema_e_i_advising_notes}.advising_notes
   >
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
-LOCATION '{e_i_data_sftp_path}';
+LOCATION '{e_i_advising_notes_path}';
 
 --------------------------------------------------------------------
 -- Internal schema
