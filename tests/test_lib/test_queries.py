@@ -32,7 +32,7 @@ from nessie.lib.mockingdata import MockRows, register_mock
 class TestQueries:
 
     def test_canvas_course_scores_fixture(self, app):
-        results = queries.get_all_enrollments_in_advisee_canvas_sites()
+        results = queries.stream_canvas_enrollments('2178')
         assert len(results) > 0
         assert {
             'canvas_course_id': 7654321, 'canvas_course_term': 'Fall 2017', 'uid': '9000100',
@@ -41,7 +41,7 @@ class TestQueries:
         } in results
 
     def test_sis_sections_in_canvas_course(self, app):
-        sections = queries.get_advisee_enrolled_canvas_sites()
+        sections = queries.stream_canvas_sites('2178')
 
         burmese_sections = next(s['sis_section_ids'] for s in sections if s['canvas_course_id'] == 7654320)
         assert burmese_sections == '90100,90101'
@@ -57,7 +57,7 @@ class TestQueries:
         assert project_site_sections is None
 
     def test_sis_enrollments(self, app):
-        enrollments = queries.get_all_advisee_sis_enrollments()
+        enrollments = queries.stream_sis_enrollments(advisees_only=True)
         assert len(enrollments) == 10
 
         for enr in enrollments:
@@ -98,8 +98,8 @@ class TestQueries:
         assert enrollments[8]['grade'] == 'P'
 
     def test_student_canvas_courses(self, app):
-        courses = queries.get_advisee_enrolled_canvas_sites()
-        assert len(courses) == 6
+        courses = queries.stream_canvas_sites('2178')
+        assert len(courses) == 5
         # Canvas sites should be sorted by term, then by Course ID number
         assert courses[1]['canvas_course_id'] == 7654320
         assert courses[1]['canvas_course_name'] == 'Introductory Burmese'
@@ -117,13 +117,9 @@ class TestQueries:
         assert courses[4]['canvas_course_name'] == 'Optional Friday Night Radioactivity Group'
         assert courses[4]['canvas_course_code'] == 'NUC ENG 124'
         assert courses[4]['canvas_course_term'] == 'Fall 2017'
-        assert courses[5]['canvas_course_id'] == 7654325
-        assert courses[5]['canvas_course_name'] == 'Modern Statistical Prediction and Machine Learning'
-        assert courses[5]['canvas_course_code'] == 'STAT 154'
-        assert courses[5]['canvas_course_term'] == 'Spring 2017'
 
     def test_submissions_turned_in_relative_to_user_fixture(self, app):
-        data = queries.get_advisee_submissions_sorted('2178')
+        data = queries.stream_canvas_assignment_submissions('2178')
         assert len(data) > 0
         assert {
             'reference_user_id': 9000100,
@@ -135,8 +131,8 @@ class TestQueries:
 
     def test_override_fixture(self, app):
         mr = MockRows(io.StringIO('course_id,uid,canvas_user_id,current_score,last_activity_at,sis_enrollment_status\n1,2,3,4,5,F'))
-        with register_mock(queries.get_all_enrollments_in_advisee_canvas_sites, mr):
-            data = queries.get_all_enrollments_in_advisee_canvas_sites()
+        with register_mock(queries.stream_canvas_enrollments, mr):
+            data = queries.stream_canvas_enrollments('2178')
         assert len(data) == 1
         assert {
             'course_id': 1, 'uid': '2', 'canvas_user_id': 3, 'current_score': 4, 'last_activity_at': 5,

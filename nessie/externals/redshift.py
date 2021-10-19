@@ -161,8 +161,12 @@ def fetch(sql, **kwargs):
             if rows is None:
                 return None
             else:
-                # For Pandas compatibility, copy psycopg's list-like object of dict-like objects to a real list of dicts.
-                return [r.copy() for r in rows]
+                return copy_for_pandas(rows)
+
+
+def copy_for_pandas(rows):
+    # For Pandas compatibility, copy psycopg's list-like object of dict-like objects to a real list of dicts.
+    return [r.copy() for r in rows]
 
 
 class Transaction():

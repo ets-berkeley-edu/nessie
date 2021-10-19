@@ -281,7 +281,15 @@ AS (
         MIN({redshift_schema_intermediate}.sis_enrollments.sis_enrollment_status) AS sis_enrollment_status,
         {redshift_schema_canvas}.course_dim.name AS canvas_course_name,
         {redshift_schema_canvas}.course_dim.code AS canvas_course_code,
-        {redshift_schema_intermediate}.course_sections.canvas_course_term
+        {redshift_schema_intermediate}.course_sections.canvas_course_term,
+        CASE LEFT({redshift_schema_intermediate}.course_sections.canvas_course_term, 4)
+          WHEN 'Spri' THEN '2' || RIGHT({redshift_schema_intermediate}.course_sections.canvas_course_term, 2) || '2'
+          WHEN 'Summ' THEN '2' || RIGHT({redshift_schema_intermediate}.course_sections.canvas_course_term, 2) || '5'
+          WHEN 'Fall' THEN '2' || RIGHT({redshift_schema_intermediate}.course_sections.canvas_course_term, 2) || '8'
+          ELSE NULL
+        END AS term_id,
+        LISTAGG(DISTINCT {redshift_schema_intermediate}.sis_enrollments.sis_section_id, ',')
+          WITHIN GROUP (ORDER BY {redshift_schema_intermediate}.sis_enrollments.sis_section_id) AS sis_section_ids
     FROM
         {redshift_schema_canvas}.enrollment_fact
         JOIN {redshift_schema_canvas}.enrollment_dim
@@ -308,7 +316,8 @@ AS (
         {redshift_schema_canvas}.enrollment_dim.last_activity_at,
         {redshift_schema_canvas}.course_dim.name,
         {redshift_schema_canvas}.course_dim.code,
-        {redshift_schema_intermediate}.course_sections.canvas_course_term
+        {redshift_schema_intermediate}.course_sections.canvas_course_term,
+        term_id
 );
 
 /*

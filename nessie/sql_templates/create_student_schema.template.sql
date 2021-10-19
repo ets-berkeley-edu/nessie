@@ -259,3 +259,13 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_enrollment_terms_hi
 )
 DISTKEY (sid)
 SORTKEY (sid, term_id);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_canvas_site_memberships
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    sis_section_ids VARCHAR,
+    feed VARCHAR(max) NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (term_id, sid);

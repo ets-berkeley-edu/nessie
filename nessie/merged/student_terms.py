@@ -24,71 +24,9 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from decimal import Decimal
-from itertools import groupby
-import operator
+import json
 
-from flask import current_app as app
-from nessie.externals import s3
-from nessie.lib import berkeley, queries
-
-
-def upload_student_term_maps(advisees_by_sid):
-    (enrollment_terms_map, canvas_site_map) = generate_student_term_maps(advisees_by_sid)
-    feed_path = app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH'] + '/feeds/'
-    for term_id, enrollment_term_map in enrollment_terms_map.items():
-        s3.upload_json(enrollment_term_map, feed_path + f'enrollment_term_map_{term_id}.json')
-    for term_id, canvas_site in canvas_site_map.items():
-        s3.upload_json(canvas_site, feed_path + f'canvas_site_map_{term_id}.json')
-
-
-def generate_student_term_maps(advisees_by_sid):
-    # Our mission is to produce 1) a dictionary of enrollment terms indexed by term_id and sid; 2) a dictionary
-    # of Canvas sites indexed by Canvas course id.
-    enrollment_terms_map = get_sis_enrollments()
-    merge_dropped_classes(enrollment_terms_map)
-    merge_term_gpas(enrollment_terms_map)
-    # Track the results of course-site-level queries to avoid requerying.
-    (canvas_site_map, advisee_site_map) = get_canvas_site_maps()
-    merge_memberships_into_site_map(canvas_site_map)
-    merge_canvas_data(canvas_site_map, advisee_site_map, enrollment_terms_map, advisees_by_sid)
-    return enrollment_terms_map, canvas_site_map
-
-
-def get_sis_enrollments():
-    sis_enrollments = queries.get_all_advisee_sis_enrollments()
-    return map_sis_enrollments(sis_enrollments)
-
-
-def map_sis_enrollments(sis_enrollments):
-    student_enrollments_map = {}
-    for key, all_sids_grp in groupby(sis_enrollments, operator.itemgetter('sis_term_id')):
-        term_id = str(key)
-        term_name = berkeley.term_name_for_sis_id(term_id)
-        student_enrollments_map[term_id] = {}
-        for sid, all_enrs_grp in groupby(all_sids_grp, operator.itemgetter('sid')):
-            term_enrollments = merge_enrollment(all_enrs_grp, term_id, term_name)
-            student_enrollments_map[term_id][sid] = term_enrollments
-    return student_enrollments_map
-
-
-def merge_dropped_classes(student_enrollments_map, all_drops=None):
-    if all_drops is None:
-        all_drops = queries.get_all_advisee_enrollment_drops() or []
-
-    for term_id, drops_per_term in groupby(all_drops, key=operator.itemgetter('sis_term_id')):
-        term_id = str(term_id)
-        term_name = berkeley.term_name_for_sis_id(term_id)
-        for sid, drops_per_student in groupby(drops_per_term, operator.itemgetter('sid')):
-            student_drops = list(drops_per_student)
-
-            if student_enrollments_map.get(term_id, {}).get(sid) or student_drops:
-                if term_id not in student_enrollments_map:
-                    student_enrollments_map[term_id] = {}
-                if sid not in student_enrollments_map[term_id]:
-                    student_enrollments_map[term_id][sid] = empty_term_feed(term_id, term_name)
-                append_drops(student_enrollments_map[term_id][sid], student_drops)
-
-    return student_enrollments_map
+from nessie.lib import berkeley
 
 
 def empty_term_feed(term_id, term_name):
@@ -114,17 +52,6 @@ def append_drops(term_feed, drops):
         })
 
 
-def merge_term_gpas(student_enrollments_map, all_gpas=None):
-    if all_gpas is None:
-        all_gpas = queries.get_all_advisee_term_gpas() or []
-    for key, term_gpa_rows in groupby(all_gpas, operator.itemgetter('term_id')):
-        term_id = str(key)
-        for sid, student_term_gpa_rows in groupby(term_gpa_rows, operator.itemgetter('sid')):
-            student_term = student_enrollments_map.get(term_id, {}).get(sid)
-            append_term_gpa(student_term, student_term_gpa_rows)
-    return student_enrollments_map
-
-
 def append_term_gpa(term_feed, term_gpa_rows):
     if term_feed and term_feed.get('enrolledUnits'):
         # In the case of multiple results per term id and SID, SQL ordering ensures that a UGRD career, if present,
@@ -136,103 +63,27 @@ def append_term_gpa(term_feed, term_gpa_rows):
             }
 
 
-def get_canvas_site_maps():
-    canvas_site_map = {}
-    advisee_site_map = {}
-    canvas_sites = queries.get_advisee_enrolled_canvas_sites()
-    for canvas_course_term, canvas_sites_grp in groupby(canvas_sites, operator.itemgetter('canvas_course_term')):
-        sis_term_id = berkeley.sis_term_id_for_name(canvas_course_term)
-        canvas_site_map[sis_term_id] = {}
-        for row in canvas_sites_grp:
-            canvas_site_id = row['canvas_course_id']
-            sis_sections = row.get('sis_section_ids', [])
-            if sis_sections:
-                # The SIS-derived feeds tend to deliver section IDs as integers rather than strings.
-                sis_sections = [int(s) for s in sis_sections.split(',')]
-            canvas_site_map[sis_term_id][canvas_site_id] = {
-                'canvasCourseId': row['canvas_course_id'],
-                'courseName': row.get('canvas_course_name'),
-                'courseCode': row.get('canvas_course_code'),
-                'courseTerm': canvas_course_term,
-                'enrollments': [],
-                'adviseeEnrollments': [],
-                'sis_sections': sis_sections,
-            }
-            if not advisee_site_map.get(sis_term_id):
-                advisee_site_map[sis_term_id] = {}
-            sids = row.get('advisee_sids', [])
-            if sids:
-                sids = sids.split(',')
-                for sid in sids:
-                    if not advisee_site_map[sis_term_id].get(sid):
-                        advisee_site_map[sis_term_id][sid] = []
-                    advisee_site_map[sis_term_id][sid].append({
-                        'canvas_course_id': canvas_site_id,
-                    })
-    return canvas_site_map, advisee_site_map
-
-
-def merge_memberships_into_site_map(site_map):
-    # Collect the bCourses enrollments of interest.
-    canvas_enrollments = queries.get_all_enrollments_in_advisee_canvas_sites()
-    for key, group in groupby(canvas_enrollments, key=operator.itemgetter('canvas_course_id')):
-        canvas_site_id = key
-        enrollments = list(group)
-        sis_term_id = berkeley.sis_term_id_for_name(enrollments[0].get('canvas_course_term'))
-        site = site_map.get(sis_term_id, {}).get(canvas_site_id)
-        if site:
-            site['enrollments'] = enrollments
-        else:
-            app.logger.warn(f'Did not find canvas_course_id {canvas_site_id} in site map for term {sis_term_id}')
-    return site_map
-
-
-def merge_canvas_data(canvas_site_map, advisee_site_map, all_advisees_terms_map, advisees_by_sid):
-    for (term_id, all_sids) in advisee_site_map.items():
-        canvas_sites_for_term = canvas_site_map.get(term_id, {})
-        for (sid, sites) in all_sids.items():
-            canvas_user_id = advisees_by_sid.get(sid, {}).get('canvas_user_id')
-            term_feed = all_advisees_terms_map.get(term_id, {}).get(sid)
-            if not term_feed:
-                continue
-            for membership in sites:
-                merge_canvas_site_membership(membership, sid, canvas_user_id, term_feed, canvas_sites_for_term)
-    return all_advisees_terms_map
-
-
-def merge_canvas_site_membership(membership, sid, canvas_user_id, term_feed, canvas_sites_for_term):
-    enrollments_matched = set()
-    canvas_course_id = membership['canvas_course_id']
-    canvas_site = canvas_sites_for_term.get(canvas_course_id)
-    if not canvas_site:
-        app.logger.warn(f'canvas_course_id {canvas_course_id} found in SID {sid} memberships but not in site map for term')
-        return
-    canvas_sections = canvas_site['sis_sections']
-    if not canvas_sections:
-        return
-    canvas_site_element = {
-        'canvasCourseId': canvas_site['canvasCourseId'],
-        'courseName': canvas_site['courseName'],
-        'courseCode': canvas_site['courseCode'],
-        'courseTerm': canvas_site['courseTerm'],
-        'analytics': {},
-    }
-    if canvas_user_id:
-        canvas_site['adviseeEnrollments'].append(canvas_user_id)
-    for canvas_ccn in canvas_sections:
-        # There is no particularly intuitive unique identifier for a 'class enrollment', and so we resort to
-        # list position.
-        for index, enrollment in enumerate(term_feed['enrollments']):
-            for sis_section in enrollment['sections']:
-                if canvas_ccn == sis_section.get('ccn'):
-                    sis_section['canvasCourseIds'] = sis_section.get('canvasCourseIds', [])
-                    sis_section['canvasCourseIds'].append(canvas_course_id)
-                    # Do not add the same site multiple times to the same enrollment.
-                    if index not in enrollments_matched:
-                        enrollments_matched.add(index)
-                        enrollment['canvasSites'].append(canvas_site_element)
-    if not enrollments_matched:
-        term_feed['unmatchedCanvasSites'].append(canvas_site_element)
+def merge_canvas_site_memberships(term_feed, canvas_site_rows):
+    for site_row in canvas_site_rows:
+        enrollments_matched = set()
+        canvas_site_feed = json.loads(site_row['feed'])
+        section_ids = site_row['sis_section_ids'] or []
+        if section_ids:
+            section_ids = [int(s) for s in section_ids.split(',')]
+        for section_id in section_ids:
+            # There is no particularly intuitive unique identifier for a 'class enrollment', and so we resort to
+            # list position.
+            for index, enrollment in enumerate(term_feed['enrollments']):
+                for sis_section in enrollment['sections']:
+                    if section_id == sis_section.get('ccn'):
+                        sis_section['canvasCourseIds'] = sis_section.get('canvasCourseIds', [])
+                        sis_section['canvasCourseIds'].append(canvas_site_feed['canvasCourseId'])
+                        # Do not add the same site multiple times to the same enrollment.
+                        if index not in enrollments_matched:
+                            enrollments_matched.add(index)
+                            enrollment['canvasSites'].append(canvas_site_feed)
+        if not enrollments_matched:
+            term_feed['unmatchedCanvasSites'].append(canvas_site_feed)
 
 
 def check_for_multiple_primary_sections(enrollment, class_name, enrollments_by_class, section_feed):

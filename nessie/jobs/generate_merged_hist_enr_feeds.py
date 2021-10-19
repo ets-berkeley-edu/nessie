@@ -177,8 +177,8 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         return row_count
 
     def generate_term_feeds(self, sids, feed_file):
-        enrollment_stream = queries.stream_sis_enrollments(sids)
-        term_gpa_stream = queries.stream_term_gpas(sids)
+        enrollment_stream = queries.stream_sis_enrollments(sids=sids)
+        term_gpa_stream = queries.stream_term_gpas(sids=sids)
         term_gpa_tracker = {'term_id': '9999', 'sid': '', 'term_gpas': []}
 
         row_count = 0

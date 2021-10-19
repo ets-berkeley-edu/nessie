@@ -37,15 +37,6 @@ def staging_schema():
     return f'{student_schema()}_staging'
 
 
-def drop_staged_enrollment_term(term_id):
-    redshift.execute(
-        'DELETE FROM {schema}.{table} WHERE term_id = %s',
-        schema=psycopg2.sql.Identifier(staging_schema()),
-        table=psycopg2.sql.Identifier('student_enrollment_terms'),
-        params=(term_id,),
-    )
-
-
 def refresh_all_from_staging(tables):
     with redshift.transaction() as transaction:
         for table in tables:
@@ -128,52 +119,6 @@ def truncate_staging_table(table):
     )
 
 
-def unload_enrollment_terms(term_ids):
-    query = resolve_sql_template_string(
-        """
-        UNLOAD ('SELECT *, GETDATE() AS analytics_generated_at
-            FROM {schema}.student_enrollment_terms
-            WHERE term_id=ANY(\''{{{term_ids}}}\'')')
-            TO '{loch_s3_boac_analytics_incremental_path}/student_enrollment_terms'
-            IAM_ROLE '{redshift_iam_role}'
-            ENCRYPTED
-            DELIMITER AS '\\t'
-            ALLOWOVERWRITE
-            GZIP;
-        """,
-        schema=student_schema(),
-        term_ids=','.join(term_ids),
-    )
-    if not redshift.execute(query):
-        raise BackgroundJobError('Error on Redshift unload: aborting job.')
-
-
-def upload_to_staging(table, rows, term_id=None):
-    if term_id:
-        tsv_filename = f'staging_{table}_{term_id}.tsv'
-    else:
-        tsv_filename = f'staging_{table}.tsv'
-    s3_key = f'{get_s3_sis_api_daily_path()}/{tsv_filename}'
-    app.logger.info(f'Will stash {len(rows)} feeds in S3: {s3_key}')
-    if not s3.upload_tsv_rows(rows, s3_key):
-        raise BackgroundJobError('Error on S3 upload: aborting job.')
-
-    app.logger.info('Will copy S3 feeds into Redshift...')
-    query = resolve_sql_template_string(
-        """
-        COPY {staging_schema}.{table}
-            FROM '{loch_s3_sis_api_data_path}/{tsv_filename}'
-            IAM_ROLE '{redshift_iam_role}'
-            DELIMITER '\\t';
-        """,
-        staging_schema=staging_schema(),
-        table=table,
-        tsv_filename=tsv_filename,
-    )
-    if not redshift.execute(query):
-        raise BackgroundJobError('Error on Redshift copy: aborting job.')
-
-
 def upload_file_to_staging(table, term_file, row_count, term_id):
     tsv_filename = f'staging_{table}_{term_id}.tsv' if term_id else f'staging_{table}.tsv'
     s3_key = f'{get_s3_sis_api_daily_path()}/{tsv_filename}'
@@ -210,12 +155,6 @@ def verify_table(table):
         app.logger.info(f'Verified population of staging table {table} ({count} rows).')
     else:
         raise BackgroundJobError(f'Failed to verify population of staging table {table}: aborting job.')
-
-
-def write_to_staging(table, rows, term_id=None):
-    upload_to_staging(table, rows, term_id)
-    verify_table(table)
-    return True
 
 
 def write_file_to_staging(table, term_file, row_count, term_id=None):
