@@ -21,7 +21,6 @@ config/build-summary.json
 # Local dev
 venv
 .tox/
-*.csv
 
 # Compiled/optimized files
 .python-version

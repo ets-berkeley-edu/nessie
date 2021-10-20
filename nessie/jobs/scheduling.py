@@ -24,8 +24,6 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import os
-from threading import Thread
-from time import sleep
 
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -76,8 +74,6 @@ def initialize_job_schedules(_app, force=False):
         sched = BackgroundScheduler(jobstores={'default': db_jobstore})
         sched.start()
         schedule_all_jobs(force)
-    if app.config['WORKER_QUEUE_ENABLED']:
-        start_worker_listener()
 
 
 def schedule_all_jobs(force=False):
@@ -241,44 +237,3 @@ def run_startup_jobs(_app):
         CreateRdsIndexes().run()
         CreateTermsSchema().run()
         CreateStudentSchema().run()
-
-
-def start_worker_listener():
-    listener_thread = Thread(target=listen_for_merged_enrollment_term_jobs, args=[app], daemon=True)
-    listener_thread.start()
-
-
-def listen_for_merged_enrollment_term_jobs(_app):
-    from nessie.jobs.background_job import BackgroundJobError
-    from nessie.jobs.generate_merged_enrollment_term import GenerateMergedEnrollmentTerm
-    from nessie.lib.metadata import poll_merged_enrollment_term_job_queue, update_merged_enrollment_term_job_status
-    with _app.app_context():
-        _app.logger.info('Listening for merged enrollment term jobs.')
-        while True:
-            sleep(5)
-            args = poll_merged_enrollment_term_job_queue()
-            if args:
-                _app.logger.info(f"Starting queued merged enrollment term job (master_job_id={args['master_job_id']}, term_id={args['term_id']}.")
-                try:
-                    job = GenerateMergedEnrollmentTerm()
-                    error = None
-                    result = job.run(term_id=args['term_id'])
-                except BackgroundJobError as e:
-                    _app.logger.error(e)
-                    result = None
-                    error = str(e)
-                except Exception as e:
-                    _app.logger.exception(e)
-                    result = None
-                    error = str(e)
-                if result:
-                    status = 'success'
-                    if isinstance(result, str):
-                        _app.logger.info(result)
-                        details = result
-                    else:
-                        details = None
-                else:
-                    status = 'error'
-                    details = error
-                update_merged_enrollment_term_job_status(args['id'], status, details)

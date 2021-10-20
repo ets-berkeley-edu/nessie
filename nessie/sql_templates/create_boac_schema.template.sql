@@ -35,7 +35,7 @@ GRANT USAGE ON SCHEMA {redshift_schema_boac} TO GROUP {redshift_dblink_group};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_boac} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
 
 CREATE TABLE {redshift_schema_boac}.assignment_submissions_scores
-SORTKEY (canvas_user_id, assignment_id)
+SORTKEY (term_id, course_id, canvas_user_id, assignment_id)
 AS (
     /*
      * Following Canvas code, in cases where multiple assignment overrides associate a student with an assignment,
@@ -79,6 +79,7 @@ AS (
             {redshift_schema_canvas}.course_dim.canvas_id AS course_id,
             {redshift_schema_canvas}.course_dim.id AS canvas_global_course_id,
             {redshift_schema_intermediate}.active_student_enrollments.canvas_course_term AS term_name,
+            {redshift_schema_intermediate}.active_student_enrollments.term_id,
             {redshift_schema_intermediate}.active_student_enrollments.sis_enrollment_status AS sis_enrollment_status
         FROM
             {redshift_schema_intermediate}.active_student_enrollments
@@ -92,6 +93,7 @@ AS (
         distinct_user_enrollments.canvas_user_id,
         distinct_user_enrollments.course_id,
         distinct_user_enrollments.term_name,
+        distinct_user_enrollments.term_id,
         {redshift_schema_canvas}.assignment_dim.canvas_id AS assignment_id,
         CASE
             /*
@@ -237,6 +239,7 @@ AS (
         ase.canvas_user_id,
         ase.canvas_course_id AS course_id,
         ase.canvas_course_term AS course_term,
+        ase.term_id,
         /*
          * There must be only one summary row for each course site membership.
          *
@@ -247,6 +250,7 @@ AS (
         GREATEST(MAX(ase.last_activity_at), MAX(api.last_activity_at)) AS last_activity_at,
         MIN(ase.sis_enrollment_status) AS sis_enrollment_status,
         MAX(csf.current_score) AS current_score,
+        MAX(ase.sis_section_ids) AS sis_section_ids,
         MAX(csf.final_score) AS final_score
     FROM
         {redshift_schema_intermediate}.active_student_enrollments ase
@@ -263,7 +267,8 @@ AS (
         ase.uid,
         ase.canvas_user_id,
         ase.canvas_course_id,
-        ase.canvas_course_term
+        ase.canvas_course_term,
+        ase.term_id
 );
 
 

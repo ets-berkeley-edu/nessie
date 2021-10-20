@@ -23,113 +23,122 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from itertools import groupby
+import json
 import math
+import operator
 
 from flask import current_app as app
+from nessie.externals.redshift import copy_for_pandas
+from nessie.lib.util import write_to_tsv_file
 from numpy import nan
 import pandas
 from scipy.stats import percentileofscore
 
 
-def merge_analytics_for_course(term_id, canvas_map_entry, enrollment_term_map, advisees_by_canvas_id):
-    enrollments = canvas_map_entry.get('enrollments')
-    if enrollments is None:
-        _error = {'error': 'Redshift query returned no results'}
-        return {'currentScore': _error, 'lastActivity': _error}
-    advisee_enrollments = canvas_map_entry.get('adviseeEnrollments')
+def generate_analytics_feeds_for_course(output_file, term_id, canvas_site_row, site_enrollments_stream, site_submissions_stream):
+    count = 0
+
+    course_id = canvas_site_row.get('canvas_course_id')
+    sis_sections = canvas_site_row.get('sis_section_ids')
+    if sis_sections:
+        sis_sections = set([s for s in sis_sections.split(',')])
+    else:
+        sis_sections = set()
+
+    enrollments = copy_for_pandas(site_enrollments_stream)
+    advisee_enrollments = [e for e in enrollments if e['current_advisee'] == 1]
     if not advisee_enrollments:
-        return None
+        return 0
 
-    canvas_course_id = canvas_map_entry.get('canvasCourseId')
     df = pandas.DataFrame(enrollments, columns=['canvas_user_id', 'current_score', 'last_activity_at'])
-    student_rows = {}
-
-    for advisee_canvas_user_id in advisee_enrollments:
-        student_row = df.loc[df['canvas_user_id'].values == int(advisee_canvas_user_id)]
-        if enrollments and student_row.empty:
-            app.logger.warning(f'Canvas user {advisee_canvas_user_id} not found in Data Loch for course site {canvas_course_id}')
-            df, student_row = append_missing_row(
-                df,
-                advisee_canvas_user_id,
-                pandas.DataFrame({
-                    'canvas_user_id': [int(advisee_canvas_user_id)],
-                    'current_score': [None],
-                    'last_activity_at': [None],
-                }),
-            )
-        student_rows[advisee_canvas_user_id] = student_row
-
     metrics = ['current_score', 'last_activity_at']
     course_distributions = get_distributions_for_metric(df, metrics)
     course_analytics = {metric: analytics_for_course(course_distributions, metric) for metric in metrics}
 
-    for (advisee_canvas_user_id, student_row) in student_rows.items():
-        advisee_sid = advisees_by_canvas_id.get(str(advisee_canvas_user_id), {}).get('sid')
-        if not advisee_sid:
-            app.logger.info(f'No match in advisees map for Canvas user {advisee_canvas_user_id} (course={canvas_course_id})')
-            continue
-        user_courses = canvas_courses_from_enrollment_term(enrollment_term_map[advisee_sid])
-        for entry in user_courses:
-            if entry['canvasCourseId'] != canvas_course_id:
-                continue
-            entry['analytics'] = entry.get('analytics') or {}
-            entry['analytics'].update({
-                'currentScore': analytics_for_student(
-                    student_row,
-                    'current_score',
-                    course_analytics,
-                    course_distributions,
-                ),
-                'lastActivity': analytics_for_student(
-                    student_row,
-                    'last_activity_at',
-                    course_analytics,
-                    course_distributions,
-                ),
-                'courseEnrollmentCount': len(enrollments),
-            })
+    submissions_by_user_id = groupby(site_submissions_stream, operator.itemgetter('reference_user_id'))
+    submission_tracker = {'user_id': 0, 'submissions': []}
+
+    for enrollment in advisee_enrollments:
+        user_id = enrollment['canvas_user_id']
+        df_enrollment = df.loc[df['canvas_user_id'].values == user_id]
+
+        analytics_feed = _generate_analytics_feed(df_enrollment, course_analytics, course_distributions, len(enrollments))
+
+        while submission_tracker['user_id'] < user_id:
+            submission_tracker['user_id'], submission_tracker['submissions'] = next(submissions_by_user_id, (user_id, []))
+        if submission_tracker['user_id'] == user_id:
+            submission_rows = submission_tracker['submissions']
+        else:
+            submission_rows = []
+        analytics_feed['assignmentsSubmitted'] = _generate_submission_analytics(course_id, user_id, submission_rows)
+
+        canvas_site_feed = {
+            'canvasCourseId': course_id,
+            'courseName': canvas_site_row.get('canvas_course_name'),
+            'courseCode': canvas_site_row.get('canvas_course_code'),
+            'courseTerm': canvas_site_row.get('canvas_course_term'),
+            'analytics': analytics_feed,
+        }
+
+        enrolled_sections = enrollment.get('sis_section_ids')
+        if enrolled_sections:
+            enrolled_sections = ','.join(sorted(sis_sections.intersection([s for s in enrolled_sections.split(',')])))
+
+        write_to_tsv_file(
+            output_file,
+            [
+                enrollment['sid'],
+                term_id,
+                enrolled_sections,
+                json.dumps(canvas_site_feed),
+            ],
+        )
+        count += 1
+
+    return count
 
 
-def merge_assignment_submissions_for_user(advisee_term_feed, canvas_user_id, relative_submission_counts):
-    user_courses = canvas_courses_from_enrollment_term(advisee_term_feed)
-    if not user_courses:
-        return
-    for course in user_courses:
-        canvas_course_id = course['canvasCourseId']
-        course_rows = relative_submission_counts.get(canvas_course_id, [])
-        df = pandas.DataFrame(course_rows, columns=['canvas_user_id', 'submissions_turned_in'])
-        student_row = df.loc[df['canvas_user_id'].values == int(canvas_user_id)]
-        if course_rows and student_row.empty:
-            app.logger.warn(f'Canvas user id {canvas_user_id}, course id {canvas_course_id} not found in Data Loch assignments; will assume 0 score')
-            df, student_row = append_missing_row(
-                df,
-                canvas_user_id,
-                pandas.DataFrame({
-                    'canvas_user_id': [int(canvas_user_id)],
-                    'submissions_turned_in': [0],
-                }),
-            )
-
-        course_distributions = get_distributions_for_metric(df, ['submissions_turned_in'])
-        course_analytics = {'submissions_turned_in': analytics_for_course(course_distributions, 'submissions_turned_in')}
-
-        course['analytics'] = course.get('analytics') or {}
-        course['analytics'].update({
-            'assignmentsSubmitted': analytics_for_student(
-                student_row,
-                'submissions_turned_in',
-                course_analytics,
-                course_distributions,
-            ),
-        })
+def _generate_analytics_feed(student_row, course_analytics, course_distributions, enrollment_count):
+    return {
+        'currentScore': analytics_for_student(
+            student_row,
+            'current_score',
+            course_analytics,
+            course_distributions,
+        ),
+        'lastActivity': analytics_for_student(
+            student_row,
+            'last_activity_at',
+            course_analytics,
+            course_distributions,
+        ),
+        'courseEnrollmentCount': enrollment_count,
+    }
 
 
-def canvas_courses_from_enrollment_term(advisee_term_feed):
-    canvas_courses = []
-    for enrollment in advisee_term_feed.get('enrollments', []):
-        canvas_courses += enrollment['canvasSites']
-    canvas_courses += advisee_term_feed.get('unmatchedCanvasSites', [])
-    return canvas_courses
+def _generate_submission_analytics(canvas_course_id, canvas_user_id, submission_rows):
+    submissions = copy_for_pandas(submission_rows)
+    df = pandas.DataFrame(submissions, columns=['canvas_user_id', 'submissions_turned_in'])
+    student_row = df.loc[df['canvas_user_id'].values == int(canvas_user_id)]
+    if submissions and student_row.empty:
+        app.logger.warn(f'Canvas user id {canvas_user_id}, course id {canvas_course_id} not found in Data Loch assignments; will assume 0 score')
+        df, student_row = append_missing_row(
+            df,
+            canvas_user_id,
+            pandas.DataFrame({
+                'canvas_user_id': [int(canvas_user_id)],
+                'submissions_turned_in': [0],
+            }),
+        )
+    course_distributions = get_distributions_for_metric(df, ['submissions_turned_in'])
+    course_analytics = {'submissions_turned_in': analytics_for_course(course_distributions, 'submissions_turned_in')}
+    return analytics_for_student(
+        student_row,
+        'submissions_turned_in',
+        course_analytics,
+        course_distributions,
+    )
 
 
 def append_missing_row(df, canvas_user_id, student_row):

@@ -28,22 +28,16 @@ from itertools import groupby
 import json
 import operator
 import tempfile
-from time import sleep
 
 from flask import current_app as app
-from nessie.externals import rds, redshift, s3
+from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.jobs.generate_merged_enrollment_term import GenerateMergedEnrollmentTerm
-from nessie.lib.berkeley import current_term_id, future_term_id, future_term_ids, legacy_term_ids, \
-    reverse_term_ids
-from nessie.lib.metadata import get_merged_enrollment_term_job_status, queue_merged_enrollment_term_jobs
-from nessie.lib.queries import get_advisee_advisor_mappings, get_advisee_student_profile_elements, student_schema
-from nessie.lib.util import resolve_sql_template, write_to_tsv_file
+from nessie.lib import berkeley, queries
+from nessie.lib.util import encoded_tsv_row, resolve_sql_template, write_to_tsv_file
 from nessie.merged.sis_profile import parse_merged_sis_profile
 from nessie.merged.student_demographics import add_demographics_rows, refresh_rds_demographics
-from nessie.merged.student_terms import upload_student_term_maps
-from nessie.models.student_schema_manager import refresh_all_from_staging, truncate_staging_table, \
-    unload_enrollment_terms, write_file_to_staging
+from nessie.merged.student_terms import append_drops, append_term_gpa, empty_term_feed, merge_canvas_site_memberships, merge_enrollment
+from nessie.models.student_schema_manager import refresh_all_from_staging, refresh_from_staging, truncate_staging_table, write_file_to_staging
 
 """Logic for merged student profile and term generation."""
 
@@ -53,6 +47,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     rds_schema = app.config['RDS_SCHEMA_STUDENT']
     rds_dblink_to_redshift = app.config['REDSHIFT_DATABASE'] + '_redshift'
     redshift_schema_sis = app.config['REDSHIFT_SCHEMA_EDL'] if app.config['FEATURE_FLAG_EDL_SIS_VIEWS'] else app.config['REDSHIFT_SCHEMA_SIS']
+    student_schema = queries.student_schema()
 
     def run(self, term_id=None):
         app.logger.info('Starting merged profile generation job.')
@@ -74,42 +69,35 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         return status
 
     def generate_feeds(self, term_id):
-        # Translation between canvas_user_id and UID/SID is needed to merge Canvas analytics data and SIS enrollment-based data.
-        advisees_by_canvas_id = {}
-        advisees_by_sid = {}
         self.successes = []
         self.failures = []
-        profile_tables = self.generate_student_profile_tables(advisees_by_canvas_id, advisees_by_sid)
+
+        all_student_feed_elements = queries.get_advisee_student_profile_elements()
+
+        profile_tables = self.generate_student_profile_tables(all_student_feed_elements)
         if not profile_tables:
             raise BackgroundJobError('Failed to generate student profile tables.')
-
-        if term_id != 'none':
-            self.queue_enrollment_term_jobs(advisees_by_canvas_id, advisees_by_sid)
-
         refresh_all_from_staging(profile_tables)
+
         self.update_redshift_academic_standing()
         self.update_rds_profile_indexes()
 
-        status_string = f'Generated merged profiles ({len(self.successes)} successes, {len(self.failures)} failures).'
-        errored = False
+        result = f'Generated merged profiles ({len(self.successes)} successes, {len(self.failures)} failures).'
 
         if term_id != 'none':
-            app.logger.info('Profile generation complete; waiting for enrollment term generation to finish.')
-            enrollment_results = self.await_enrollment_term_jobs()
+            app.logger.info('Profile generation complete; will generate enrollment terms.')
+            row_count = self.generate_student_enrollments_table(all_student_feed_elements)
+            if row_count:
+                result = f'Generated merged enrollment terms ({row_count} feeds.'
+            else:
+                raise BackgroundJobError('Failed to generate student enrollment tables.')
 
-            for row in enrollment_results:
-                status_string += f" {row['details']}"
-                if row['status'] == 'error':
-                    errored = True
-
+            self.refresh_rds_enrollment_terms()
             truncate_staging_table('student_enrollment_terms')
 
-        if errored:
-            raise BackgroundJobError(status_string)
-        else:
-            return status_string
+        return result
 
-    def generate_student_profile_tables(self, advisees_by_canvas_id, advisees_by_sid):
+    def generate_student_profile_tables(self, all_student_feed_elements):
         tables = [
             'student_profiles', 'student_profile_index', 'student_majors', 'student_holds',
             'demographics', 'ethnicities', 'intended_majors', 'minors', 'visas',
@@ -117,7 +105,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         for table in tables:
             truncate_staging_table(table)
 
-        all_student_feed_elements = get_advisee_student_profile_elements()
         all_student_advisor_mappings = self.map_advisors_to_students()
         if not all_student_feed_elements:
             app.logger.error('No profile feeds returned, aborting job.')
@@ -136,10 +123,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                     feed_counts,
                 )
                 if merged_profile:
-                    canvas_user_id = feed_elements['canvas_user_id']
-                    if canvas_user_id:
-                        advisees_by_canvas_id[canvas_user_id] = {'sid': sid, 'uid': feed_elements['ldap_uid']}
-                        advisees_by_sid[sid] = {'canvas_user_id': canvas_user_id}
                     self.successes.append(sid)
                 else:
                     self.failures.append(sid)
@@ -219,14 +202,14 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
     def map_advisors_to_students(self):
         advisors_by_student_id = {}
-        for sid, rows in groupby(get_advisee_advisor_mappings(), operator.itemgetter('student_sid')):
+        for sid, rows in groupby(queries.get_advisee_advisor_mappings(), operator.itemgetter('student_sid')):
             advisors_by_student_id[sid] = list(rows)
         return advisors_by_student_id
 
     def update_redshift_academic_standing(self):
         redshift.execute(
-            f"""TRUNCATE {student_schema()}.academic_standing;
-            INSERT INTO {student_schema()}.academic_standing
+            f"""TRUNCATE {self.student_schema}.academic_standing;
+            INSERT INTO {self.student_schema}.academic_standing
                 SELECT sid, term_id, acad_standing_action, acad_standing_status, action_date
                 FROM {self.redshift_schema_sis}.academic_standing;""",
         )
@@ -246,47 +229,76 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         else:
             raise BackgroundJobError('Failed to update RDS student profile indexes.')
 
-    def queue_enrollment_term_jobs(self, advisees_by_canvas_id, advisees_by_sid):
-        feed_path = app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH'] + '/feeds/'
-        s3.upload_json(advisees_by_canvas_id, feed_path + 'advisees_by_canvas_id.json')
+    def generate_student_enrollments_table(self, all_student_feed_elements):
+        sids = [r['sid'] for r in all_student_feed_elements]
+        row_count = 0
 
-        upload_student_term_maps(advisees_by_sid)
+        with tempfile.TemporaryFile() as feed_file:
+            row_count = self.generate_term_feeds(sids, feed_file)
+            if row_count:
+                table_name = 'student_enrollment_terms'
+                truncate_staging_table(table_name)
+                write_file_to_staging(table_name, feed_file, row_count)
+                with redshift.transaction() as transaction:
+                    refresh_from_staging(
+                        table_name,
+                        term_id=None,
+                        sids=sids,
+                        transaction=transaction,
+                    )
 
-        # Avoid processing Canvas analytics data for future terms and pre-CS terms.
-        for term_id in (future_term_ids() + legacy_term_ids()):
-            enrollment_term_map = s3.get_object_json(feed_path + f'enrollment_term_map_{term_id}.json')
-            if enrollment_term_map:
-                GenerateMergedEnrollmentTerm().refresh_student_enrollment_term(term_id, enrollment_term_map)
+        app.logger.info(f'Advisee term enrollment generation complete ({row_count} feeds).')
+        return row_count
 
-        canvas_integrated_term_ids = reverse_term_ids()
-        app.logger.info(f'Will queue analytics generation for {len(canvas_integrated_term_ids)} terms on worker nodes.')
-        result = queue_merged_enrollment_term_jobs(self.job_id, canvas_integrated_term_ids)
-        if not result:
-            raise BackgroundJobError('Failed to queue enrollment term jobs.')
+    def generate_term_feeds(self, sids, feed_file):
+        enrollment_stream = queries.stream_sis_enrollments(sids=sids)
+        term_gpa_stream = queries.stream_term_gpas(sids=sids)
+        canvas_site_stream = queries.stream_canvas_memberships(sids=sids)
 
-    def await_enrollment_term_jobs(self):
-        while True:
-            sleep(1)
-            enrollment_results = get_merged_enrollment_term_job_status(self.job_id)
-            if not enrollment_results:
-                raise BackgroundJobError('Failed to refresh RDS indexes.')
-            any_pending_job = next((row for row in enrollment_results if row['status'] == 'created' or row['status'] == 'started'), None)
-            if not any_pending_job:
-                break
+        term_gpa_tracker = {'term_id': '9999', 'sid': '', 'term_gpas': []}
+        canvas_site_tracker = {'term_id': '9999', 'sid': '', 'sites': []}
 
-        app.logger.info('Exporting analytics data for archival purposes.')
-        unload_enrollment_terms([current_term_id(), future_term_id()])
+        row_count = 0
 
-        app.logger.info('Refreshing enrollment terms in RDS.')
-        with rds.transaction() as transaction:
-            if self.refresh_rds_enrollment_terms(None, transaction):
-                transaction.commit()
-                app.logger.info('Refreshed RDS enrollment terms.')
-            else:
-                transaction.rollback()
-                raise BackgroundJobError('Failed to refresh RDS enrollment terms.')
+        try:
+            term_gpa_results = groupby(term_gpa_stream, lambda r: (str(r['term_id']), r['sid']))
+            canvas_site_results = groupby(canvas_site_stream, lambda r: (str(r['term_id']), r['sid']))
 
-        return enrollment_results
+            for term_id, term_enrollments_grp in groupby(enrollment_stream, operator.itemgetter('sis_term_id')):
+                term_id = str(term_id)
+                term_name = berkeley.term_name_for_sis_id(term_id)
+                app.logger.info(f'Generating enrollment feeds for term {term_id}...')
+                for sid, enrollments_grp in groupby(term_enrollments_grp, operator.itemgetter('sid')):
+                    term_feed = None
+                    for is_dropped, enrollments_subgroup in groupby(enrollments_grp, operator.itemgetter('dropped')):
+                        if not is_dropped:
+                            term_feed = merge_enrollment(enrollments_subgroup, term_id, term_name)
+                        else:
+                            if not term_feed:
+                                term_feed = empty_term_feed(term_id, term_name)
+                            append_drops(term_feed, enrollments_subgroup)
+
+                    while term_gpa_tracker['term_id'] > term_id or (term_gpa_tracker['term_id'] == term_id and term_gpa_tracker['sid'] < sid):
+                        (term_gpa_tracker['term_id'], term_gpa_tracker['sid']), term_gpa_tracker['term_gpas'] =\
+                            next(term_gpa_results, ((term_id, sid), []))
+                    if term_gpa_tracker['term_id'] == term_id and term_gpa_tracker['sid'] == sid:
+                        append_term_gpa(term_feed, term_gpa_tracker['term_gpas'])
+
+                    while canvas_site_tracker['term_id'] > term_id or\
+                            (canvas_site_tracker['term_id'] == term_id and canvas_site_tracker['sid'] < sid):
+                        (canvas_site_tracker['term_id'], canvas_site_tracker['sid']), canvas_site_tracker['sites'] =\
+                            next(canvas_site_results, ((term_id, sid), []))
+                    if canvas_site_tracker['term_id'] == term_id and canvas_site_tracker['sid'] == sid:
+                        merge_canvas_site_memberships(term_feed, canvas_site_tracker['sites'])
+
+                    feed_file.write(encoded_tsv_row([sid, term_id, json.dumps(term_feed)]) + b'\n')
+                    row_count += 1
+
+        finally:
+            enrollment_stream.close()
+            term_gpa_stream.close()
+
+        return row_count
 
     def refresh_rds_indexes(self, sids, transaction):
         if not (
@@ -308,7 +320,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             and self._refresh_rds_minors(transaction)
             and self._index_rds_email_address(transaction)
             and self._index_rds_entering_term(transaction)
-            and refresh_rds_demographics(self.rds_schema, self.rds_dblink_to_redshift, student_schema(), transaction)
+            and refresh_rds_demographics(self.rds_schema, self.rds_dblink_to_redshift, self.student_schema, transaction)
         ):
             return False
         return True
@@ -340,7 +352,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             SELECT *
             FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                 SELECT DISTINCT sid, term_id, acad_standing_action, acad_standing_status, LEFT(action_date, 10)
-                FROM {student_schema()}.academic_standing
+                FROM {self.student_schema}.academic_standing
               $REDSHIFT$)
             AS redshift_academic_standing (
                 sid VARCHAR,
@@ -357,7 +369,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             SELECT *
             FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                 SELECT DISTINCT sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance
-                FROM {student_schema()}.student_profile_index
+                FROM {self.student_schema}.student_profile_index
               $REDSHIFT$)
             AS redshift_profile_index (
                 sid VARCHAR,
@@ -403,7 +415,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             SELECT *
                 FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                     SELECT sid, feed
-                    FROM {student_schema()}.student_holds
+                    FROM {self.student_schema}.student_holds
               $REDSHIFT$)
             AS redshift_holds (
                 sid VARCHAR,
@@ -432,7 +444,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             SELECT *
             FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                 SELECT DISTINCT sid, college, major
-                FROM {student_schema()}.student_majors
+                FROM {self.student_schema}.student_majors
               $REDSHIFT$)
             AS redshift_majors (
                 sid VARCHAR,
@@ -447,7 +459,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             SELECT *
                 FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                     SELECT sid, profile
-                    FROM {student_schema()}.student_profiles
+                    FROM {self.student_schema}.student_profiles
               $REDSHIFT$)
             AS redshift_profiles (
                 sid VARCHAR,
@@ -461,7 +473,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             SELECT DISTINCT *
                 FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                     SELECT sid, major
-                    FROM {student_schema()}.intended_majors
+                    FROM {self.student_schema}.intended_majors
               $REDSHIFT$)
             AS redshift_intended_majors (
                 sid VARCHAR,
@@ -475,7 +487,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             SELECT DISTINCT *
                 FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                     SELECT sid, minor
-                    FROM {student_schema()}.minors
+                    FROM {self.student_schema}.minors
               $REDSHIFT$)
             AS redshift_minors (
                 sid VARCHAR,
@@ -489,7 +501,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             SELECT *
                 FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                     SELECT sid, term_id, enrollment_term
-                    FROM {student_schema()}.student_enrollment_terms
+                    FROM {self.student_schema}.student_enrollment_terms
               $REDSHIFT$)
             AS redshift_enrollment_terms (
                 sid VARCHAR,
