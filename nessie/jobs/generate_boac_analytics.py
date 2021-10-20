@@ -62,7 +62,7 @@ class GenerateBoacAnalytics(BackgroundJob):
 
         # By default, refresh Canvas analytics for the current term only.
         if not term_id:
-            term_id = [all_canvas_terms[0]]
+            term_id = all_canvas_terms[0]
         self.generate_analytics_feeds(term_id)
 
         return 'BOAC analytics creation job completed.'
