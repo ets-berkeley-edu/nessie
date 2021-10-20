@@ -23,8 +23,10 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import json
+
 from flask import current_app as app
-from nessie.externals import rds, redshift
+from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.util import resolve_sql_template
 
@@ -45,15 +47,28 @@ class CreateEIAdvisingNotesSchema(BackgroundJob):
     def create_schema(self):
         external_schema = app.config['REDSHIFT_SCHEMA_E_I_ADVISING_NOTES']
         redshift.drop_external_schema(external_schema)
-        e_i_advising_notes_path = '/'.join([
-            f"s3://{app.config['LOCH_S3_BUCKET']}",
-            app.config['LOCH_S3_E_I_DATA_SFTP_PATH'],
-            'e-and-i-sftp/incremental/advising_notes',
-        ])
+        # Merge all JSON files (sourced from E&I) into a single, schema-friendly JSON file.
+        merged_json_filename = '_e_i_advising_notes.json'
+        merged_json_s3_key = f"{app.config['LOCH_S3_E_I_NOTES_PATH']}/{merged_json_filename}"
+
+        # The file uploaded to S3 will have one note (JSON object) per line.
+        data = ''
+        for key in s3.get_keys_with_prefix(app.config['LOCH_S3_E_I_NOTES_PATH']):
+            if key.endswith('.json') and key != merged_json_filename:
+                notes_json = s3.get_object_json(key)
+                if notes_json and 'notes' in notes_json:
+                    notes = [json.dumps(note) for note in notes_json['notes']]
+                    data += '\n'.join(notes)
+        s3.upload_data(data=data, s3_key=merged_json_s3_key)
+
+        # Create schema
         resolved_ddl = resolve_sql_template(
             'create_e_i_advising_notes_schema.template.sql',
-            e_i_advising_notes_path=e_i_advising_notes_path,
+            e_i_advising_notes_path=merged_json_s3_key,
         )
+        # Clean up
+        s3.delete_objects([merged_json_s3_key])
+
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(external_schema, resolved_ddl)
         else:
