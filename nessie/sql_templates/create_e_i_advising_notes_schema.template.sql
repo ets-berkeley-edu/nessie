@@ -39,19 +39,19 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 
 CREATE EXTERNAL TABLE {redshift_schema_e_i_advising_notes}.advising_notes
 (
-  id: VARCHAR,
-  studentSid: VARCHAR,
-  studentFirstName: VARCHAR,
-  studentLastName: VARCHAR,
-  meetingDate: VARCHAR,
-  advisorUid: VARCHAR,
-  advisorFirstName: VARCHAR,
-  advisorLastName: VARCHAR,
-  overview: VARCHAR,
-  topics: ARRAY<VARCHAR>,
-  note: VARCHAR(MAX),
-  createdDate: VARCHAR,
-  lastModifiedDate: VARCHAR
+  id VARCHAR,
+  studentSid VARCHAR,
+  studentFirstName VARCHAR,
+  studentLastName VARCHAR,
+  meetingDate VARCHAR,
+  advisorUid VARCHAR,
+  advisorFirstName VARCHAR,
+  advisorLastName VARCHAR,
+  overview VARCHAR,
+  topics ARRAY<VARCHAR>,
+  note VARCHAR(MAX),
+  createdDate VARCHAR,
+  lastModifiedDate VARCHAR
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
 LOCATION '{e_i_advising_notes_path}';
