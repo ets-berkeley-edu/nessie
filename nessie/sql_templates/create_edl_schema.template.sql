@@ -213,6 +213,7 @@ AS (
     spd.calnet_uid AS ldap_uid,
     sed.student_id AS sis_id,
     sed.enrollment_action_cd AS enrollment_status,
+    sed.enrollment_status_reason_cd as enrollment_status_reason,
     sed.wait_list_position_cd AS waitlist_position,
     sed.enrollment_drop_dt AS drop_date,
     sed.units AS units,

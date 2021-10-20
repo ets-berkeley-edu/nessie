@@ -218,6 +218,7 @@ AS (
         /* No dropped or withdrawn enrollments. */
         en.enrollment_status != 'D'
         AND en.grade != 'W'
+        {where_clause_exclude_withdrawn}
         /* No waitlisted enrollments from past terms. */
         AND (en.enrollment_status != 'W' OR en.term_id >= '{current_term_id}')
 );
