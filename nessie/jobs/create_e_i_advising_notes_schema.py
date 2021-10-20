@@ -49,7 +49,7 @@ class CreateEIAdvisingNotesSchema(BackgroundJob):
         redshift.drop_external_schema(external_schema)
         # Merge all JSON files (sourced from E&I) into a single, schema-friendly JSON file.
         merged_json_filename = '_e_i_advising_notes.json'
-        merged_json_s3_key = f"{app.config['LOCH_S3_E_I_NOTES_PATH']}/{merged_json_filename}"
+        merged_json_s3_key = f"s3://{app.config['LOCH_S3_E_I_NOTES_PATH']}/{merged_json_filename}"
 
         # The file uploaded to S3 will have one note (JSON object) per line.
         data = ''
