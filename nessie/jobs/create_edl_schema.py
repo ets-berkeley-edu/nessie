@@ -432,9 +432,14 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
         if effective_date:
             academic_status['studentCareer']['toDate'] = effective_date[0:10]
 
-        ldap_affiliations = [a.strip() for a in ldap_affiliations.split(',')] if ldap_affiliations else []
-        _add_affiliation(feed, 'ldap', ldap_affiliations)
-        _add_affiliation(feed, career_code_to_name(career_code), self._best_status(statuses))
+        feed['calnet'] = {
+            'affiliations': [a.strip() for a in ldap_affiliations.split(',')] if ldap_affiliations else [],
+        }
+
+        status = self._best_status(statuses)
+        if status:
+            code = career_code_to_name(career_code)
+            feed['affiliations'] = [{'status': {'description': status}, 'type': {'code': code}}]
 
     def _construct_plan_feed(self, row):
         plan_feed = {
@@ -670,14 +675,6 @@ class RegistrationsFeedBuilder(ConcurrentFeedBuilder):
             'WDR': 'Withdrew',
         }
         return mappings.get(code) or code
-
-
-def _add_affiliation(feed, type_code, status):
-    key = 'affiliations'
-    if key not in feed:
-        feed[key] = []
-    if status:
-        feed[key].append({'status': {'description': status}, 'type': {'code': type_code}})
 
 
 def _str(v):
