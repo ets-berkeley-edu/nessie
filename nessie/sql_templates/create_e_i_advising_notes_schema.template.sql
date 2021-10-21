@@ -54,7 +54,19 @@ CREATE EXTERNAL TABLE {redshift_schema_e_i_advising_notes}.advising_notes
   lastModifiedDate VARCHAR
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
-LOCATION '{e_i_advising_notes_path}';
+WITH SERDEPROPERTIES ('strip.outer.array' = 'true')
+LOCATION '{loch_s3_e_i_aggregated_notes}';
+
+CREATE EXTERNAL TABLE {redshift_schema_e_i_advising_notes}.advising_topics
+(
+  id VARCHAR,
+  e_i_id VARCHAR,
+  sid VARCHAR,
+  topic VARCHAR
+)
+ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
+WITH SERDEPROPERTIES ('strip.outer.array' = 'true')
+LOCATION '{loch_s3_e_i_aggregated_topics}';
 
 --------------------------------------------------------------------
 -- Internal schema
@@ -111,11 +123,11 @@ CREATE TABLE {redshift_schema_e_i_advising_notes_internal}.advising_note_topics
 SORTKEY (id)
 AS (
     SELECT DISTINCT
-      studentSid || '-' || id AS id,
-      id AS e_i_id,
-      studentSid AS sid,
+      id,
+      e_i_id,
+      sid,
       topic
-    FROM {redshift_schema_e_i_advising_notes}.advising_notes
+    FROM {redshift_schema_e_i_advising_notes}.advising_topics
 );
 
 DROP FUNCTION {redshift_schema_e_i_advising_notes_internal}.to_utc_iso_string(VARCHAR);
