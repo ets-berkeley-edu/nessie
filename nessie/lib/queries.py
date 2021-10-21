@@ -326,6 +326,7 @@ def stream_edl_holds():
 def stream_edl_plans():
     sql = f"""SELECT
         DISTINCT sapd.student_id AS sid,
+        attrs.affiliations AS ldap_affiliations,
         sapd.academic_career_cd,
         sapd.academic_plan_type_cd,
         sapd.academic_plan_nm,
@@ -343,6 +344,8 @@ def stream_edl_plans():
         LEFT JOIN {edl_external_schema_staging()}.cs_ps_acad_prog cpap
           ON sapd.student_id = cpap.emplid
           AND cpap.prog_action = 'MATR'
+        LEFT OUTER JOIN {edl_schema()}.basic_attributes attrs
+          ON sapd.student_id = attrs.sid
         ORDER BY sapd.student_id, sapd.academic_career_cd, sapd.academic_program_cd"""
     return redshift.fetch(sql, stream_results=True)
 
