@@ -325,17 +325,23 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             return False
         return True
 
-    def refresh_rds_enrollment_terms(self, sids, transaction):
-        if not (
-            self._delete_rds_rows('student_enrollment_terms', sids, transaction)
-            and self._refresh_rds_enrollment_terms(transaction)
-            and self._index_rds_midpoint_deficient_grades(transaction)
-            and self._index_rds_enrolled_units(transaction)
-            and self._index_rds_term_gpa(transaction)
-            and self._index_rds_epn_grading_option(transaction)
-        ):
-            return False
-        return True
+    def refresh_rds_enrollment_terms(self):
+        app.logger.info('Refreshing enrollment terms in RDS.')
+        with rds.transaction() as transaction:
+            result = (
+                self._delete_rds_rows('student_enrollment_terms', None, transaction)
+                and self._refresh_rds_enrollment_terms(transaction)
+                and self._index_rds_midpoint_deficient_grades(transaction)
+                and self._index_rds_enrolled_units(transaction)
+                and self._index_rds_term_gpa(transaction)
+                and self._index_rds_epn_grading_option(transaction)
+            )
+            if result:
+                transaction.commit()
+                app.logger.info('Refreshed RDS enrollment terms.')
+            else:
+                transaction.rollback()
+                raise BackgroundJobError('Failed to refresh RDS enrollment terms.')
 
     def _delete_rds_rows(self, table, sids, transaction):
         if sids:
