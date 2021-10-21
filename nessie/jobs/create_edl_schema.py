@@ -328,9 +328,23 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
             if r[col] and len(r[col]):
                 primary_name_parts.append(r[col])
         if len(preferred_name_parts):
-            feed['names'].append({'formattedName': ' '.join(preferred_name_parts), 'type': {'code': 'PRF'}})
+            feed['names'].append(
+                {
+                    'formattedName': ' '.join(preferred_name_parts),
+                    'familyName': r['person_preferred_last_nm'],
+                    'givenName': r['person_preferred_first_nm'],
+                    'type': {'code': 'PRF'},
+                },
+            )
         if len(primary_name_parts):
-            feed['names'].append({'formattedName': ' '.join(primary_name_parts), 'type': {'code': 'PRI'}})
+            feed['names'].append(
+                {
+                    'formattedName': ' '.join(primary_name_parts),
+                    'familyName': r['person_last_nm'],
+                    'givenName': r['person_first_nm'],
+                    'type': {'code': 'PRI'},
+                },
+            )
 
         if r['phone']:
             feed['phones'] = [{'number': r['phone'], 'type': {'code': r['phone_type']}}]

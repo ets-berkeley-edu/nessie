@@ -88,7 +88,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             app.logger.info('Profile generation complete; will generate enrollment terms.')
             row_count = self.generate_student_enrollments_table(all_student_feed_elements)
             if row_count:
-                result = f'Generated merged enrollment terms ({row_count} feeds.'
+                result += f' Generated merged enrollment terms ({row_count} feeds.)'
             else:
                 raise BackgroundJobError('Failed to generate student enrollment tables.')
 
