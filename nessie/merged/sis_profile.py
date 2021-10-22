@@ -33,18 +33,18 @@ from nessie.lib.util import to_float, vacuum_whitespace
 
 
 def parse_merged_sis_profile(feed_elements):
-    sis_student_api_feed = feed_elements.get('sis_profile_feed')
-    degree_progress_api_feed = feed_elements.get('degree_progress_feed')
+    sis_profile_feed = feed_elements.get('sis_profile_feed')
+    degree_progress_feed = feed_elements.get('degree_progress_feed')
     last_registration_feed = feed_elements.get('last_registration_feed')
     intended_majors_feed = feed_elements.get('intended_majors')
 
-    sis_student_api_feed = sis_student_api_feed and json.loads(sis_student_api_feed, strict=False)
-    if not sis_student_api_feed:
+    sis_profile_feed = sis_profile_feed and json.loads(sis_profile_feed, strict=False)
+    if not sis_profile_feed:
         return False
 
     sis_profile = {}
 
-    # We sometimes get malformed feed structures from the Hub, most often in the form of
+    # We sometimes get malformed feed structures, most often in the form of
     # duplicate wrapped dictionaries (BOAC-362, NS-202, NS-203). Retrieve as much as we
     # can, separately handling exceptions in different parts of the feed.
     for merge_method in [
@@ -55,27 +55,27 @@ def parse_merged_sis_profile(feed_elements):
         merge_holds,
     ]:
         try:
-            merge_method(sis_student_api_feed, sis_profile)
+            merge_method(sis_profile_feed, sis_profile)
         except AttributeError as e:
-            app.logger.error(f'Hub Student API returned malformed response in {sis_student_api_feed}')
+            app.logger.error(f'Malformed data in sis_profile_feed: {sis_profile_feed}')
             app.logger.error(e)
 
-    merge_registration(sis_student_api_feed, last_registration_feed, sis_profile)
+    merge_registration(sis_profile_feed, last_registration_feed, sis_profile)
     if sis_profile.get('academicCareer') == 'UGRD':
-        sis_profile['degreeProgress'] = degree_progress_api_feed and json.loads(degree_progress_api_feed)
+        sis_profile['degreeProgress'] = degree_progress_feed and json.loads(degree_progress_feed)
     sis_profile['intendedMajors'] = merge_intended_majors(intended_majors_feed)
     return sis_profile
 
 
-def merge_holds(sis_student_api_feed, sis_profile):
-    sis_profile['holds'] = sis_student_api_feed.get('holds', [])
+def merge_holds(sis_profile_feed, sis_profile):
+    sis_profile['holds'] = sis_profile_feed.get('holds', [])
 
 
-def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
-    # The Hub may return multiple academic statuses. We'll prefer an undergraduate enrollment, but
+def merge_sis_profile_academic_status(sis_profile_feed, sis_profile):
+    # It is possible to receive multiple academic statuses. We'll prefer an undergraduate enrollment, but
     # otherwise select the first well-formed status that is not a Law enrollment.
     academic_status = None
-    for status in sis_student_api_feed.get('academicStatuses', []):
+    for status in sis_profile_feed.get('academicStatuses', []):
         status_code = status.get('studentCareer', {}).get('academicCareer', {}).get('code')
         if status_code and status_code == 'UGRD':
             academic_status = status
@@ -87,9 +87,10 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
         return
     career_code = academic_status['studentCareer']['academicCareer']['code']
     sis_profile['academicCareer'] = career_code
-    sis_profile['academicCareerStatus'] = parse_career_status(career_code, sis_student_api_feed)
+    sis_profile['academicCareerStatus'] = parse_career_status(career_code, sis_profile_feed)
+    sis_profile['calnetAffiliations'] = sis_profile_feed.get('calnet', {}).get('affiliations', [])
 
-    merge_degrees(sis_student_api_feed, sis_profile, academic_status)
+    merge_degrees(sis_profile_feed, sis_profile, academic_status)
 
     cumulative_units = None
     cumulative_units_taken_for_gpa = None
@@ -115,10 +116,10 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
     merge_sis_profile_plans(academic_status, sis_profile)
 
 
-def parse_career_status(career_code, sis_student_api_feed):
+def parse_career_status(career_code, sis_profile_feed):
     # Try to derive a coherent career-status from the SIS affiliations.
     career_status = None
-    for affiliation in sis_student_api_feed.get('affiliations', []):
+    for affiliation in sis_profile_feed.get('affiliations', []):
         if affiliation.get('type', {}).get('code') == career_code_to_name(career_code):
             if affiliation.get('detail') == 'Completed':
                 career_status = 'Completed'
@@ -128,11 +129,11 @@ def parse_career_status(career_code, sis_student_api_feed):
                     career_status = affiliation.get('status', {}).get('formalDescription')
             break
     if not career_status:
-        app.logger.warning(f'Conflict between affiliations and academicStatuses in SIS feed: {sis_student_api_feed}')
+        app.logger.warning(f'Conflict between affiliations and academicStatuses in profile feed: {sis_profile_feed}')
     return career_status
 
 
-def merge_degrees(sis_student_api_feed, sis_profile, academic_status):
+def merge_degrees(sis_profile_feed, sis_profile, academic_status):
     if sis_profile.get('academicCareerStatus') != 'Completed':
         return
     # If completed, look for a completion date under student career (which seems to indicate graduation date)
@@ -141,7 +142,7 @@ def merge_degrees(sis_student_api_feed, sis_profile, academic_status):
     # Next, look for a degree matching that completion date. If we can't make a match, take the most recent degree
     # on offer.
     degree = None
-    for candidate_degree in sis_student_api_feed.get('degrees', []):
+    for candidate_degree in sis_profile_feed.get('degrees', []):
         date_awarded = candidate_degree.get('dateAwarded')
         if not date_awarded or candidate_degree.get('status', {}).get('description') != 'Awarded':
             break
@@ -177,11 +178,10 @@ def merge_degrees(sis_student_api_feed, sis_profile, academic_status):
         }
 
 
-def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile):
-    registration = next((r for r in sis_student_api_feed.get('registrations', [])), None)
-    # If the student is not officially registered in the current term, the basic V2 Students API will not include a
-    # 'registrations' element. Instead, we find the most recent registration-hosted data through the fuller
-    # V2 registrations feed.
+def merge_registration(sis_profile_feed, last_registration_feed, sis_profile):
+    registration = next((r for r in sis_profile_feed.get('registrations', [])), None)
+    # If student is not officially registered in the current term, the feed may not include a 'registrations' element.
+    # In that case, we find most recent registration-hosted data in the fuller 'last_registration' feed.
     if not registration:
         registration = last_registration_feed and json.loads(last_registration_feed)
     if not registration:
@@ -191,7 +191,7 @@ def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile
         sis_profile['academicCareer'] = registration.get('academicCareer', {}).get('code')
 
     term_units = registration.get('termUnits', [])
-    # The v2 SIS API has been inconsistent w.r.t. termUnits.type.description value. We tolerate the variance.
+    # SIS has been inconsistent w.r.t. termUnits.type.description value. We tolerate the variance.
     total_units = next((u for u in term_units if u['type']['description'] in ['Total', 'Total Units']), {})
 
     # The old 'academicLevel' element has become at least two 'academicLevels': one for the beginning-of-term, one
@@ -203,7 +203,7 @@ def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile
         is_pending = (not total_units.get('unitsTaken')) and total_units.get('unitsEnrolled')
         level_type = 'BOT' if is_pending else 'EOT'
         for level in levels:
-            # For Summer Session visitors, the SIS V2 Students API may return a data-free 'academicLevels' element.
+            # For Summer Session visitors, SIS may return a data-free 'academicLevels' element.
             if level.get('level') and level.get('type', {}).get('code') == level_type:
                 sis_profile['level'] = level['level']
                 break
@@ -230,10 +230,10 @@ def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile
         }
 
 
-def merge_sis_profile_emails(sis_student_api_feed, sis_profile):
+def merge_sis_profile_emails(sis_profile_feed, sis_profile):
     primary_email = None
     campus_email = None
-    for email in sis_student_api_feed.get('emails', []):
+    for email in sis_profile_feed.get('emails', []):
         if email.get('primary'):
             primary_email = email.get('emailAddress')
         elif email.get('type', {}).get('code') == 'CAMP':
@@ -256,8 +256,8 @@ def merge_sis_profile_matriculation(academic_status, sis_profile):
         sis_profile['transfer'] = False
 
 
-def merge_sis_profile_names(sis_student_api_feed, sis_profile):
-    for name in sis_student_api_feed.get('names', []):
+def merge_sis_profile_names(sis_profile_feed, sis_profile):
+    for name in sis_profile_feed.get('names', []):
         code = name.get('type', {}).get('code')
         if code == 'PRF':
             sis_profile['preferredName'] = vacuum_whitespace(name.get('formattedName'))
@@ -267,10 +267,10 @@ def merge_sis_profile_names(sis_student_api_feed, sis_profile):
             break
 
 
-def merge_sis_profile_phones(sis_student_api_feed, sis_profile):
+def merge_sis_profile_phones(sis_profile_feed, sis_profile):
     phones_by_code = {
         phone.get('type', {}).get('code'): phone.get('number')
-        for phone in sis_student_api_feed.get('phones', [])
+        for phone in sis_profile_feed.get('phones', [])
     }
     sis_profile['phoneNumber'] = phones_by_code.get('CELL') or phones_by_code.get('LOCL') or phones_by_code.get('HOME')
 
