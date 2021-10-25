@@ -24,7 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
-from nessie.externals import rds, redshift
+from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.util import resolve_sql_template
 
@@ -35,28 +35,37 @@ class CreateEIAdvisingNotesSchema(BackgroundJob):
 
     def run(self):
         app.logger.info('Starting E&I Advising Notes schema creation job...')
-        app.logger.info('Executing SQL...')
         self.create_schema()
         app.logger.info('Redshift schema created. Creating RDS indexes...')
         self.create_indexes()
-
         return 'E&I Advising Notes schema creation job completed.'
 
     def create_schema(self):
+        base_s3_key = app.config['LOCH_S3_E_I_DATA_PATH']
         external_schema = app.config['REDSHIFT_SCHEMA_E_I_ADVISING_NOTES']
         redshift.drop_external_schema(external_schema)
-        e_i_data_sftp_path = '/'.join([
-            f"s3://{app.config['LOCH_S3_BUCKET']}",
-            app.config['LOCH_S3_E_I_DATA_SFTP_PATH'],
-        ])
-        resolved_ddl = resolve_sql_template(
-            'create_e_i_advising_notes_schema.template.sql',
-            e_i_data_sftp_path=e_i_data_sftp_path,
-        )
-        if redshift.execute_ddl_script(resolved_ddl):
-            verify_external_schema(external_schema, resolved_ddl)
+        # Flatten E&I-sourced JSON files into two schema-friendly JSON files.
+        notes = []
+        topics = []
+        for key in s3.get_keys_with_prefix(base_s3_key):
+            if key.endswith('.json'):
+                notes_json = s3.get_object_json(key)
+                if notes_json and 'notes' in notes_json:
+                    notes += notes_json['notes']
+                    for note in notes:
+                        topics += _extract_topics(note)
+
+        if s3.upload_json(obj=notes, s3_key=f'{base_s3_key}/aggregated_notes/data.json') \
+                and s3.upload_json(obj=topics, s3_key=f'{base_s3_key}/aggregated_topics/data.json'):
+            # Create schema
+            app.logger.info('Executing SQL...')
+            resolved_ddl = resolve_sql_template('create_e_i_advising_notes_schema.template.sql')
+            if redshift.execute_ddl_script(resolved_ddl):
+                verify_external_schema(external_schema, resolved_ddl)
+            else:
+                raise BackgroundJobError('E&I Advising Notes schema creation job failed.')
         else:
-            raise BackgroundJobError('E&I Advising Notes schema creation job failed.')
+            raise BackgroundJobError('Failed to upload aggregated E&I advising notes and topics.')
 
     def create_indexes(self):
         resolved_ddl = resolve_sql_template('index_e_i_advising_notes.template.sql')
@@ -64,3 +73,17 @@ class CreateEIAdvisingNotesSchema(BackgroundJob):
             app.logger.info('Created E&I Advising Notes RDS indexes.')
         else:
             raise BackgroundJobError('E&I Advising Notes schema creation job failed to create indexes.')
+
+
+def _extract_topics(note):
+    topics = []
+    note_id = note['id']
+    sid = note['studentSid']
+    for topic in (note['topics'] or []):
+        topics.append({
+            'id': f'{sid}-{note_id}',
+            'e_i_id': note_id,
+            'sid': sid,
+            'topic': topic,
+        })
+    return topics

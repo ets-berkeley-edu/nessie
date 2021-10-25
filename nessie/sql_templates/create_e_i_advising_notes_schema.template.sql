@@ -39,26 +39,34 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 
 CREATE EXTERNAL TABLE {redshift_schema_e_i_advising_notes}.advising_notes
 (
-  notes ARRAY <
-    STRUCT <
-      id: VARCHAR,
-      studentSid: VARCHAR,
-      studentFirstName: VARCHAR,
-      studentLastName: VARCHAR,
-      meetingDate: VARCHAR,
-      advisorUid: VARCHAR,
-      advisorFirstName: VARCHAR,
-      advisorLastName: VARCHAR,
-      overview: VARCHAR,
-      topics: ARRAY<VARCHAR>,
-      note: VARCHAR(MAX),
-      createdDate: VARCHAR,
-      lastModifiedDate: VARCHAR
-    >
-  >
+  id VARCHAR,
+  studentSid VARCHAR,
+  studentFirstName VARCHAR,
+  studentLastName VARCHAR,
+  meetingDate VARCHAR,
+  advisorUid VARCHAR,
+  advisorFirstName VARCHAR,
+  advisorLastName VARCHAR,
+  overview VARCHAR,
+  topics ARRAY<VARCHAR>,
+  note VARCHAR(MAX),
+  createdDate VARCHAR,
+  lastModifiedDate VARCHAR
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
-LOCATION '{e_i_data_sftp_path}';
+WITH SERDEPROPERTIES ('strip.outer.array' = 'true')
+LOCATION '{loch_s3_e_i_aggregated_notes}';
+
+CREATE EXTERNAL TABLE {redshift_schema_e_i_advising_notes}.advising_topics
+(
+  id VARCHAR,
+  e_i_id VARCHAR,
+  sid VARCHAR,
+  topic VARCHAR
+)
+ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
+WITH SERDEPROPERTIES ('strip.outer.array' = 'true')
+LOCATION '{loch_s3_e_i_aggregated_topics}';
 
 --------------------------------------------------------------------
 -- Internal schema
@@ -95,31 +103,31 @@ CREATE TABLE {redshift_schema_e_i_advising_notes_internal}.advising_notes
 SORTKEY (id)
 AS (
     SELECT
-      n.studentSid || '-' || n.id AS id,
-      n.id AS e_i_id,
-      n.studentSid AS sid,
-      n.studentFirstName AS student_first_name,
-      n.studentLastName AS student_last_name,
-      n.meetingDate AS meeting_date,
-      n.advisorUid AS advisor_uid,
-      n.advisorFirstName AS advisor_first_name,
-      n.advisorLastName AS advisor_last_name,
-      n.overview AS overview,
-      n.note AS note,
-      TO_TIMESTAMP({redshift_schema_e_i_advising_notes_internal}.to_utc_iso_string(n.createdDate), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
-      TO_TIMESTAMP({redshift_schema_e_i_advising_notes_internal}.to_utc_iso_string(n.lastModifiedDate), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at
-    FROM {redshift_schema_e_i_advising_notes}.advising_notes a, a.notes n
+      studentSid || '-' || id AS id,
+      id AS e_i_id,
+      studentSid AS sid,
+      studentFirstName AS student_first_name,
+      studentLastName AS student_last_name,
+      meetingDate AS meeting_date,
+      advisorUid AS advisor_uid,
+      advisorFirstName AS advisor_first_name,
+      advisorLastName AS advisor_last_name,
+      overview AS overview,
+      note AS note,
+      TO_TIMESTAMP({redshift_schema_e_i_advising_notes_internal}.to_utc_iso_string(createdDate), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
+      TO_TIMESTAMP({redshift_schema_e_i_advising_notes_internal}.to_utc_iso_string(lastModifiedDate), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at
+    FROM {redshift_schema_e_i_advising_notes}.advising_notes
 );
 
 CREATE TABLE {redshift_schema_e_i_advising_notes_internal}.advising_note_topics
 SORTKEY (id)
 AS (
     SELECT DISTINCT
-      n.studentSid || '-' || n.id AS id,
-      n.id AS e_i_id,
-      n.studentSid AS sid,
-      t AS topic
-    FROM {redshift_schema_e_i_advising_notes}.advising_notes a, a.notes n, n.topics t
+      id,
+      e_i_id,
+      sid,
+      topic
+    FROM {redshift_schema_e_i_advising_notes}.advising_topics
 );
 
 DROP FUNCTION {redshift_schema_e_i_advising_notes_internal}.to_utc_iso_string(VARCHAR);
