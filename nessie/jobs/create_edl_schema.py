@@ -297,7 +297,7 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 self._merge_holds(feed, feed_components.get('holds'))
                 self._merge_academic_status(feed, feed_components.get('profile_terms'), career_code)
                 self._merge_plans(feed, plans, career_code)
-                self._merge_degrees(feed, feed_components.get('degrees'), career_code)
+                self._merge_degrees(feed, feed_components.get('degrees'))
 
                 write_to_tsv_file(target_file, [sid, json.dumps(feed)])
 
@@ -491,15 +491,13 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
             ]
         return plan_feed
 
-    def _merge_degrees(self, feed, degree_rows, career_code):
-        if not degree_rows or not career_code:
+    def _merge_degrees(self, feed, degree_rows):
+        if not degree_rows:
             return
-        feed['degrees'] = []
 
+        feed['degrees'] = []
         for degree, degree_plans in groupby(degree_rows, lambda r: [r['degree_conferred_dt'], r['degree_desc']]):
             degree_plans = list(degree_plans)
-            if degree_plans[0]['academic_career_cd'] != career_code:
-                continue
 
             degree_feed = {
                 'academicDegree': {
