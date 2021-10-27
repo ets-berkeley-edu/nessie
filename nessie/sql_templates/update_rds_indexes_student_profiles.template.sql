@@ -91,13 +91,14 @@ CASE substr(date_awarded, 6, 2)
   END AS term_id,
   FALSE AS hist_enr
 FROM (
-  SELECT
-    sid,
-    p.profile::json->'sisProfile'->'degree'->>'dateAwarded' AS date_awarded,
-    plans.*
+  SELECT sid, "dateAwarded" AS date_awarded, plans.*
   FROM
-    {rds_schema_student}.student_profiles p,
-    json_to_recordset(p.profile::json->'sisProfile'->'degree'->'plans') AS plans(plan varchar)
+  (
+    SELECT sid, "dateAwarded", plans
+    FROM {rds_schema_student}.student_profiles p,
+    json_to_recordset(p.profile::json->'sisProfile'->'degrees') AS degrees("dateAwarded" varchar, "plans" varchar)
+  ) p,
+  json_to_recordset(plans::json) AS plans(plan varchar)
 ) degrees
 ON CONFLICT (sid, plan) DO UPDATE SET
   sid=EXCLUDED.sid, plan=EXCLUDED.plan, date_awarded=EXCLUDED.date_awarded, term_id=EXCLUDED.term_id,

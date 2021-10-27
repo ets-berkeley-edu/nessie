@@ -90,7 +90,8 @@ def merge_sis_profile_academic_status(sis_profile_feed, sis_profile):
     sis_profile['academicCareerStatus'] = parse_career_status(career_code, sis_profile_feed)
     sis_profile['calnetAffiliations'] = sis_profile_feed.get('calnet', {}).get('affiliations', [])
 
-    merge_degrees(sis_profile_feed, sis_profile, academic_status)
+    if sis_profile.get('academicCareerStatus') == 'Completed':
+        merge_degrees(sis_profile_feed, sis_profile, academic_status)
 
     cumulative_units = None
     cumulative_units_taken_for_gpa = None
@@ -134,48 +135,48 @@ def parse_career_status(career_code, sis_profile_feed):
 
 
 def merge_degrees(sis_profile_feed, sis_profile, academic_status):
-    if sis_profile.get('academicCareerStatus') != 'Completed':
-        return
-    # If completed, look for a completion date under student career (which seems to indicate graduation date)
-    # rather than under affiliations (which seems to indicate the expiration of a grace period).
+    degrees = []
+    # Look up 'studentCareer' completion date, which we believe is graduation date.
     completion_date = academic_status.get('studentCareer', {}).get('toDate')
-    # Next, look for a degree matching that completion date. If we can't make a match, take the most recent degree
-    # on offer.
-    degree = None
-    for candidate_degree in sis_profile_feed.get('degrees', []):
-        date_awarded = candidate_degree.get('dateAwarded')
-        if not date_awarded or candidate_degree.get('status', {}).get('description') != 'Awarded':
-            break
-        if date_awarded == completion_date:
-            degree = candidate_degree
-            break
-        if not degree or date_awarded > degree.get('dateAwarded'):
-            degree = candidate_degree
+
+    # Relevant degrees are those where 'dateAwarded' matches the career completion date. If none are matching
+    # then grab the most recent degree(s) per 'dateAwarded'.
+
+    def is_awarded(d):
+        return d.get('status', {}).get('description') == 'Awarded'
+    degrees_all_awarded = [d for d in sis_profile_feed.get('degrees', []) if is_awarded(d)]
+    degrees_recently_awarded = []
 
     if completion_date:
         sis_profile['academicCareerCompleted'] = completion_date
-    if degree:
-        degree_desc = degree.get('academicDegree', {}).get('type', {}).get('description')
-        degree_plans = []
+        degrees_recently_awarded = [d for d in degrees_all_awarded if d.get('dateAwarded') == completion_date]
+    if not degrees_recently_awarded:
+        max_date_awarded = max(d.get('dateAwarded') for d in degrees_all_awarded)
+        degrees_recently_awarded = [d for d in degrees_all_awarded if d.get('dateAwarded') == max_date_awarded]
+
+    for degree in degrees_recently_awarded:
+        description = degree.get('academicDegree', {}).get('type', {}).get('description')
+        plans = []
         for plan in degree.get('academicPlans', []):
             plan_type = plan.get('type', {}).get('code')
             target_degree = plan.get('targetDegree', {}).get('type', {}).get('description', {})
-            if target_degree == degree_desc or plan_type == 'MIN':
+            if target_degree == description or plan_type == 'MIN':
                 # formalDescription seems to work for UGRD plans but gets too wordy for others.
                 if sis_profile.get('academicCareer') == 'UGRD':
                     plan_desc = plan.get('plan', {}).get('formalDescription')
                 else:
                     plan_desc = plan.get('plan', {}).get('description')
-                degree_plans.append({
+                plans.append({
                     'group': plan.get('academicProgram', {}).get('academicGroup', {}).get('formalDescription'),
                     'plan': plan_desc,
                     'type': plan_type,
                 })
-        sis_profile['degree'] = {
+        degrees.append({
             'dateAwarded': degree.get('dateAwarded'),
-            'description': degree_desc,
-            'plans': degree_plans,
-        }
+            'description': description,
+            'plans': plans,
+        })
+    sis_profile['degrees'] = degrees
 
 
 def merge_registration(sis_profile_feed, last_registration_feed, sis_profile):

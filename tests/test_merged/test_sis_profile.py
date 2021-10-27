@@ -249,15 +249,17 @@ class TestMergedSisProfile:
             assert profile['academicCareer'] == 'UGRD'
             assert profile['academicCareerStatus'] == 'Completed'
             assert profile['academicCareerCompleted'] == '2018-05-17'
-            assert profile['degree']['dateAwarded'] == '2018-05-17'
-            assert profile['degree']['description'] == 'Bachelor of Arts'
-            assert len(profile['degree']['plans']) == 2
-            assert profile['degree']['plans'][0]['group'] == 'College of Letters and Science'
-            assert profile['degree']['plans'][0]['plan'] == 'Physics'
-            assert profile['degree']['plans'][0]['type'] == 'MAJ'
-            assert profile['degree']['plans'][1]['group'] is None
-            assert profile['degree']['plans'][1]['plan'] == 'Minor in Music'
-            assert profile['degree']['plans'][1]['type'] == 'MIN'
+
+            degree = profile['degrees'][0]
+            assert len(degree['plans']) == 2
+            assert degree['dateAwarded'] == '2018-05-17'
+            assert degree['description'] == 'Bachelor of Arts'
+            assert degree['plans'][0]['group'] == 'College of Letters and Science'
+            assert degree['plans'][0]['plan'] == 'Physics'
+            assert degree['plans'][0]['type'] == 'MAJ'
+            assert degree['plans'][1]['group'] is None
+            assert degree['plans'][1]['plan'] == 'Minor in Music'
+            assert degree['plans'][1]['type'] == 'MIN'
 
         def test_pre_cs_degree(self, app):
             # Older feeds may be missing normal post-CS fields.
@@ -267,9 +269,10 @@ class TestMergedSisProfile:
             assert profile['academicCareer'] == 'UGRD'
             assert profile['academicCareerStatus'] == 'Completed'
             assert profile.get('academicCareerCompleted') is None
-            assert profile['degree']['dateAwarded'] == '2015-08-14'
-            assert profile['degree']['description'] == 'Bachelor of Arts'
-            assert not profile['degree']['plans']
+            degree = profile['degrees'][0]
+            assert degree['dateAwarded'] == '2015-08-14'
+            assert degree['description'] == 'Bachelor of Arts'
+            assert degree['plans'] == []
 
         def test_affiliations_conflict(self, app, caplog):
             feed = {
