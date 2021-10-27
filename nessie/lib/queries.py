@@ -324,6 +324,8 @@ def stream_edl_holds():
 
 
 def stream_edl_plans():
+    # TODO EDL QA schema temporarily coded in pending EDL production release.
+    edl_schema_qa = 'edl_qa_cs_analytics_ext_dev'
     sql = f"""SELECT
         DISTINCT sapd.student_id AS sid,
         attrs.affiliations AS ldap_affiliations,
@@ -339,11 +341,8 @@ def stream_edl_plans():
         sapd.current_admit_term,
         sapd.degree_expected_year_term_cd,
         sapd.transfer_student,
-        cpap.admit_term AS matriculation_term_cd
-        FROM {edl_external_schema()}.student_academic_plan_data sapd
-        LEFT JOIN {edl_external_schema_staging()}.cs_ps_acad_prog cpap
-          ON sapd.student_id = cpap.emplid
-          AND cpap.prog_action = 'MATR'
+        sapd.matriculation_term_cd
+        FROM {edl_schema_qa}.student_academic_plan_data sapd
         LEFT OUTER JOIN {edl_schema()}.basic_attributes attrs
           ON sapd.student_id = attrs.sid
         ORDER BY sapd.student_id, sapd.academic_career_cd, sapd.academic_program_cd"""
