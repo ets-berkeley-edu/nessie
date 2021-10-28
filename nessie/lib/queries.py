@@ -345,7 +345,16 @@ def stream_edl_plans():
         FROM {edl_schema_qa}.student_academic_plan_data sapd
         LEFT OUTER JOIN {edl_schema()}.basic_attributes attrs
           ON sapd.student_id = attrs.sid
-        ORDER BY sapd.student_id, sapd.academic_career_cd, sapd.academic_program_cd"""
+        ORDER BY
+          sapd.student_id,
+          CASE sapd.academic_career_cd
+            WHEN 'UGRD' THEN 1
+            WHEN 'GRAD' THEN 2
+            WHEN 'UCBX' THEN 3
+            ELSE 4
+          END,
+          sapd.career_program_sequence_nbr,
+          sapd.academic_program_cd"""
     return redshift.fetch(sql, stream_results=True)
 
 

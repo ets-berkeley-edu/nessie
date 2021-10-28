@@ -427,9 +427,9 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                     plans.add(row['academic_plan_nm'])
                     academic_status['studentPlans'].append(self._construct_plan_feed(row))
 
-                m_term_cd = row['matriculation_term_cd']
-                if m_term_cd and (matriculation_term_cd is None or str(m_term_cd) < matriculation_term_cd):
-                    matriculation_term_cd = str(m_term_cd)
+                if not matriculation_term_cd:
+                    matriculation_term_cd = self._get_matriculation_term(row)
+
                 if row['academic_program_effective_dt'] and str(row['academic_program_effective_dt']) > effective_date:
                     effective_date = str(row['academic_program_effective_dt'])
                 if row['transfer_student'] == 'Y':
@@ -454,6 +454,16 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
         if status:
             code = career_code_to_name(career_code)
             feed['affiliations'] = [{'status': {'description': status}, 'type': {'code': code}}]
+
+    def _get_matriculation_term(self, row):
+        # Pick the first row we get through SQL ordering that does not correspond to a non-degree academic
+        # program. If a summer term, treat as the next fall term.
+        matriculation_term_cd = None
+        if row['matriculation_term_cd'] and (row['academic_program_cd'] not in ['UNODG', 'GNODG', 'LNODG']):
+            matriculation_term_cd = str(row['matriculation_term_cd'])
+            if matriculation_term_cd[-1] == '5':
+                matriculation_term_cd = matriculation_term_cd[0:3] + '8'
+        return matriculation_term_cd
 
     def _construct_plan_feed(self, row):
         plan_feed = {
