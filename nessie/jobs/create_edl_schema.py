@@ -36,7 +36,7 @@ from threading import current_thread
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.berkeley import career_code_to_name, term_info_for_sis_term_id
+from nessie.lib.berkeley import career_code_to_name, current_term_id, term_info_for_sis_term_id
 from nessie.lib.queries import stream_edl_degrees, stream_edl_demographics, stream_edl_holds, stream_edl_plans,\
     stream_edl_profile_terms, stream_edl_profiles, stream_edl_registrations
 from nessie.lib.util import get_s3_edl_daily_path, resolve_sql_template, write_to_tsv_file
@@ -671,6 +671,11 @@ class RegistrationsFeedBuilder(ConcurrentFeedBuilder):
         last_registration = None
 
         for row in rows:
+            # We prefer registration data from: 1) the current term; 2) failing that, the nearest past term; 3) failing that,
+            # the nearest future term. Which is to say, skip future terms unless that's all we have.
+            if (row['term_id'] > current_term_id()) and last_registration:
+                continue
+
             # At present, terms spent as an Extension student are not included in Term GPAs (but see BOAC-2266).
             # However, if there are no other types of registration, the Extension term is used for academicCareer.
             if row['academic_career_cd'] == 'UCBX':
