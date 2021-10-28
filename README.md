@@ -15,7 +15,7 @@ virtualenv venv
 source venv/bin/activate
 
 pip3 install -r requirements.txt [--upgrade]
-pip3 install pandas==0.23.3
+pip3 install pandas==0.25.3
 ```
 
 ### Front-end dependencies
@@ -48,7 +48,7 @@ export NESSIE_LOCAL_CONFIGS=/Volumes/XYZ/nessie_config
 
 1. Open up a terminal and start the Python app:
 ```
-python3 run.py
+python3 application.py
 ```
 2. Nessie back-end APIs now available at http://localhost:5001
 3. If you are doing front-end development then open a second terminal and
