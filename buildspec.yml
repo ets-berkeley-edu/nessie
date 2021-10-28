@@ -21,11 +21,12 @@ phases:
 artifacts:
   files:
   - '.ebextensions/**/*'
+  - '.platform/**/*'
+  - 'application.py'
   - 'config/**/*'
-  - 'dist/**/*'
   - 'consoler.py'
+  - 'dist/**/*'
   - 'fixtures/**/*'
   - 'nessie/**/*'
   - 'requirements.txt'
-  - 'run.py'
   - 'scripts/**/*'

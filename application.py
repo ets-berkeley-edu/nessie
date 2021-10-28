@@ -32,20 +32,20 @@ from nessie.factory import create_app
 """
 Usage mode A:
 
->>> python run.py
+>>> python application.py
 
 Usage mode B:
 
->>> export FLASK_APP=run.py
+>>> export FLASK_APP=application.py
 >>> flask run --help
 >>> flask run --debugger
 """
 
 # When running under WSGI, system environment variables are not automatically made available to Python code, and
 # an app restart will result in configurations being lost. We work around this with an explicit load from the shell
-# environment, sourcing from the Elastic Beanstalk-provided /opt/python/current/env file if available.
+# environment, sourcing from the Elastic Beanstalk-provided /var/app/current/env file if available.
 if __name__.startswith('_mod_wsgi'):
-    command = ['bash', '-c', '{ source /opt/python/current/env || true; } && env']
+    command = ['bash', '-c', '{ source /var/app/current/env || true; } && env']
     shell_environment = subprocess.Popen(command, stdout=subprocess.PIPE)
     for line in shell_environment.stdout:
         key, _, value = line.decode('utf-8').rstrip().partition('=')
