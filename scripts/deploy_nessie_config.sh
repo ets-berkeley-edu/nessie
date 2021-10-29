@@ -35,8 +35,8 @@ else
 fi
 
 # Download from Amazon S3
-config_name=$(echo "${eb_env}" | sed -E -e 's/(-worker|-master)//')
-config_location="s3://la-deploy-configs/nessie/${config_name}.py"
+env_name=$(echo "${eb_env}" | sed -E -e 's/(nessie-lowlands-|nessie-highlands-)//')
+config_location="s3://la-deploy-configs/nessie-al2-${env_name}.py"
 
 echo "In five seconds, ${config_location} will be copied to ${local_config}."; echo
 echo "Use CTRL-C to abort..."; echo
