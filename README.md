@@ -15,7 +15,6 @@ virtualenv venv
 source venv/bin/activate
 
 pip3 install -r requirements.txt [--upgrade]
-pip3 install pandas==0.25.3
 ```
 
 ### Front-end dependencies
