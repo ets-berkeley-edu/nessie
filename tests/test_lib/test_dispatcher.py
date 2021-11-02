@@ -29,7 +29,7 @@ from tests.util import capture_app_logs
 
 
 class TestDispatcher:
-    """Master-to-worker dispatcher."""
+    """highlands-to-lowlands dispatcher."""
 
     def test_dispatch_fixture(self, app):
         """Returns fixture data."""
