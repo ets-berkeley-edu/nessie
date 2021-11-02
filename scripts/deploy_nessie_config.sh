@@ -3,7 +3,7 @@
 # -------------------------------------------------------------------
 #
 # Copy appropriate config file from S3 to production-local.py. This
-# script must be run on the target EC2 instance (eg, nessie-master-dev).
+# script must be run on the target EC2 instance.
 #
 # -------------------------------------------------------------------
 

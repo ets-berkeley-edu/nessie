@@ -117,8 +117,8 @@ FEATURE_FLAG_EDL_REGISTRATIONS = False
 FEATURE_FLAG_EDL_SIS_VIEWS = False
 FEATURE_FLAG_EDL_STUDENT_PROFILES = False
 
-# True on master node, false on worker nodes.
-# Override by embedding "master" or "worker" in the EB_ENVIRONMENT environment variable.
+# True on 'highlands' node, false on 'lowlands' nodes.
+# Override by embedding "highlands" or "lowlands" in the EB_ENVIRONMENT environment variable.
 JOB_SCHEDULING_ENABLED = True
 
 # See http://apscheduler.readthedocs.io/en/latest/modules/triggers/cron.html for supported schedule formats.
@@ -307,7 +307,7 @@ VUE_LOCALHOST_BASE_URL = None
 
 WORKER_HOST = 'hard-working-nessie.berkeley.edu'
 
-# Thread queues will be ignored if "master" is embedded in the EB_ENVIRONMENT environment variable.
+# Thread queues will be ignored if "highlands" is embedded in the EB_ENVIRONMENT environment variable.
 WORKER_QUEUE_ENABLED = True
 WORKER_THREADS = 5
 

@@ -30,7 +30,7 @@ from flask import current_app as app
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
 
-"""Client code allowing a master instance to dispatch requests to workers."""
+"""Client code allowing a 'highlands' instance to dispatch requests to the 'lowlands'."""
 
 
 @fixture('dispatch_{command}')

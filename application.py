@@ -23,7 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-
 import os
 import subprocess
 
@@ -43,9 +42,9 @@ Usage mode B:
 
 # When running under WSGI, system environment variables are not automatically made available to Python code, and
 # an app restart will result in configurations being lost. We work around this with an explicit load from the shell
-# environment, sourcing from the Elastic Beanstalk-provided /var/app/current/env file if available.
+# environment.
 if __name__.startswith('_mod_wsgi'):
-    command = ['bash', '-c', '{ source /var/app/current/env || true; } && env']
+    command = ['bash', '-c', 'env']
     shell_environment = subprocess.Popen(command, stdout=subprocess.PIPE)
     for line in shell_environment.stdout:
         key, _, value = line.decode('utf-8').rstrip().partition('=')

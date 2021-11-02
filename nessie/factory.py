@@ -56,13 +56,13 @@ def create_app():
 
 
 def configure_scheduler_mode(app):
-    """Determine whether this app instance is running as 'master' or 'worker'."""
+    """Determine whether this app instance is running as 'highlands' or 'lowlands'."""
     default_scheduler_mode = app.config['JOB_SCHEDULING_ENABLED']
     eb_environment = os.environ.get('EB_ENVIRONMENT')
     if eb_environment is not None:
-        if 'worker' in eb_environment:
+        if 'lowlands' in eb_environment:
             override_mode = False
-        elif 'master' in eb_environment:
+        elif 'highlands' in eb_environment:
             override_mode = True
             if app.config['WORKER_QUEUE_ENABLED']:
                 app.logger.info('Changing WORKER_QUEUE_ENABLED to False')
