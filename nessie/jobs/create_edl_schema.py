@@ -243,6 +243,9 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
             rows_tracker = {}
 
             def _fetch_source_feeds():
+                # To avoid StopIteration errors, mark the ends of streams with a value alphabetically greater than any SID.
+                stream_terminator = ('Z', [])
+
                 for sid, profile_rows in profile_results:
                     grouped_results = {
                         'sid': sid,
@@ -252,7 +255,7 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                     }
                     for k in supplemental_stream_results.keys():
                         while sid_tracker[k] < sid:
-                            sid_tracker[k], rows_tracker[k] = next(supplemental_stream_results[k])
+                            sid_tracker[k], rows_tracker[k] = next(supplemental_stream_results[k], stream_terminator)
                         if sid_tracker[k] == sid:
                             grouped_results['feed'][k] = list(rows_tracker[k])
                     yield grouped_results
