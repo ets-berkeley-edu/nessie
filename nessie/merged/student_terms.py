@@ -119,6 +119,9 @@ def merge_enrollment(enrollments, term_id, term_name):
     enrollments_by_class = {}
     term_section_ids = {}
     enrolled_units = 0
+    max_term_units_allowed = None
+    min_term_units_allowed = None
+
     for enrollment in enrollments:
         # Skip this class section if we've seen it already.
         section_id = enrollment.get('sis_section_id')
@@ -165,6 +168,9 @@ def merge_enrollment(enrollments, term_id, term_name):
             enrollments_by_class[class_name]['midtermGrade'] = section_feed['midtermGrade']
             enrollments_by_class[class_name]['gradingBasis'] = section_feed['gradingBasis']
             enrollments_by_class[class_name]['units'] = section_feed['units']
+        if max_term_units_allowed is None:
+            max_term_units_allowed = enrollment['max_term_units_allowed']
+            min_term_units_allowed = enrollment['min_term_units_allowed']
 
     enrollments_feed = sorted(enrollments_by_class.values(), key=lambda x: x['displayName'])
     # Whenever we have floating arithmetic, we can expect floating errors.
@@ -176,6 +182,8 @@ def merge_enrollment(enrollments, term_id, term_name):
         'enrollments': enrollments_feed,
         'enrolledUnits': _to_float_cautiously(enrolled_units),
         'unmatchedCanvasSites': [],
+        'maxTermUnitsAllowed': max_term_units_allowed,
+        'minTermUnitsAllowed': min_term_units_allowed,
     }
     return term_feed
 
