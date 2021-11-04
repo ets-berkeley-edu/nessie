@@ -212,13 +212,10 @@ def merge_registration(sis_profile_feed, last_registration_feed, sis_profile):
 
     if total_units:
         sis_profile['currentTerm'] = {}
-        units_min = to_float(total_units.get('unitsMin')) or None
-        # For reasons we are working to understand, if a student does not have a 'unitsMinOverride' then SIS assigns a
-        # default of termUnits.unitsMin = 0.5. Thus, a student carrying 3 units in the current term will NOT be flagged
-        # as units-deficient. As a result, the system will not recognize the need to alert advisors.
-        # TODO: Until SISRP-48560 is resolved we will treat "0.5" as "12", the expected min units value.
-        sis_profile['currentTerm']['unitsMin'] = 12 if units_min == 0.5 else units_min
-        sis_profile['currentTerm']['unitsMax'] = to_float(total_units.get('unitsMax'))
+        units_max = total_units.get('unitsMax')
+        sis_profile['currentTerm']['unitsMax'] = to_float(units_max) if units_max is not None else None
+        units_min = total_units.get('unitsMin')
+        sis_profile['currentTerm']['unitsMin'] = to_float(units_min) if units_min is not None else None
 
     # TODO Should we also check for ['academicStanding']['status'] == {'code': 'DIS', 'description': 'Dismissed'}?
     withdrawal_cancel = registration.get('withdrawalCancel', {})

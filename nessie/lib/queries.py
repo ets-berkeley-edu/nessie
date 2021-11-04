@@ -611,8 +611,12 @@ def stream_sis_enrollments(sids=None, advisees_only=False):
                   enr.ldap_uid, enr.sid,
                   enr.sis_course_title, enr.sis_course_name, enr.sis_section_id,
                   enr.sis_primary, enr.sis_instruction_mode, enr.sis_instruction_format, enr.sis_section_num,
-                  NULL::date AS drop_date, NULL::boolean AS dropped
+                  NULL::date AS drop_date, NULL::boolean AS dropped,
+                  r.maximum_term_enrollment_units_limit AS max_term_units_allowed,
+                  r.minimum_term_enrollment_units_limit AS min_term_units_allowed
               FROM {intermediate_schema()}.sis_enrollments enr
+              LEFT JOIN {edl_external_schema()}.student_registration_term_data r
+                  ON enr.sis_term_id = r.semester_year_term_cd AND enr.sid = r.student_id
               {'JOIN ' + calnet_schema() + '.advisees ldap ON enr.ldap_uid = ldap.ldap_uid' if advisees_only else ''}
               {'WHERE enr.sid = ANY(%s)' if sids else ''}
               UNION
@@ -621,8 +625,12 @@ def stream_sis_enrollments(sids=None, advisees_only=False):
                 dr.ldap_uid, dr.sid,
                 dr.sis_course_title, dr.sis_course_name, dr.sis_section_id,
                 NULL::boolean as sis_primary, dr.sis_instruction_mode, dr.sis_instruction_format, dr.sis_section_num,
-                dd.date AS drop_date, TRUE as dropped
+                dd.date AS drop_date, TRUE as dropped,
+                r.maximum_term_enrollment_units_limit AS max_term_units_allowed,
+                r.minimum_term_enrollment_units_limit AS min_term_units_allowed
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
+              LEFT JOIN {edl_external_schema()}.student_registration_term_data r
+                  ON dr.sis_term_id = r.semester_year_term_cd AND dr.sid = r.student_id
               {'JOIN ' + calnet_schema() + '.advisees ldap ON dr.ldap_uid = ldap.ldap_uid' if advisees_only else ''}
               LEFT JOIN {sis_schema_internal()}.drop_dates dd
                 ON dr.ldap_uid = dd.ldap_uid
