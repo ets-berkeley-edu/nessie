@@ -43,7 +43,7 @@ echo "Use CTRL-C to abort..."; echo
 sleep 5
 
 AWS_REGION=us-west-2 aws s3 cp ${config_location} "${local_config}"
-chown wsgi "${local_config}"
+chown webapp "${local_config}"
 chmod 400 "${local_config}"
 
 # Add EB_ENVIRONMENT to new config file
