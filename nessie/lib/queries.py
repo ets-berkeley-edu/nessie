@@ -324,8 +324,6 @@ def stream_edl_holds():
 
 
 def stream_edl_plans():
-    # TODO EDL QA schema temporarily coded in pending EDL production release.
-    edl_schema_qa = 'edl_qa_cs_analytics_ext_dev'
     sql = f"""SELECT
         DISTINCT sapd.student_id AS sid,
         attrs.affiliations AS ldap_affiliations,
@@ -342,7 +340,7 @@ def stream_edl_plans():
         sapd.degree_expected_year_term_cd,
         sapd.transfer_student,
         sapd.matriculation_term_cd
-        FROM {edl_schema_qa}.student_academic_plan_data sapd
+        FROM {edl_external_schema()}.student_academic_plan_data sapd
         LEFT OUTER JOIN {edl_schema()}.basic_attributes attrs
           ON sapd.student_id = attrs.sid
         ORDER BY
