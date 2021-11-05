@@ -7,7 +7,7 @@ addons:
 
 before_install:
   - cd ${TRAVIS_BUILD_DIR}
-  - nvm install 12
+  - nvm install 14
 
   # Set up test db
   - psql -c 'create database nessie_metadata_test;' -U postgres
