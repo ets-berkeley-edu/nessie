@@ -6,7 +6,7 @@ Networked engines supply statistics in education.
 
 ## Installation
 
-* Install Python 3
+* Install Python 3.8
 * Create your virtual environment (venv)
 * Install dependencies
 ```
