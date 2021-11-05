@@ -396,8 +396,7 @@ AS (
       visa_workpermit_status_cd AS visa_status,
       visa_permit_type_cd AS visa_type,
       load_dt AS edl_load_date
-    -- TODO EDL QA schema temporarily coded in pending EDL production release.
-    FROM edl_qa_cs_analytics_ext_dev.student_visa_permit_data
+    FROM {redshift_schema_edl_external}.student_visa_permit_data
     WHERE country_cd = 'USA'
     AND visa_permit_type_cd IS NOT NULL
 );
