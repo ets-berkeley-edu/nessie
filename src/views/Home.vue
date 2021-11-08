@@ -65,6 +65,15 @@
         <LargeSpinner v-if="loading" />
         <div v-if="!loading">
           <div v-if="jobs.all.length">
+            <b-alert v-if="jobs.started.length === 1" show>
+              {{ jobs.started[0].id }} is running.
+            </b-alert>
+            <b-alert v-if="jobs.started.length > 1" show>
+              <h2 class="jobs-running-header">Jobs Running</h2>
+              <ul>
+                <li v-for="job in jobs.started" :key="job.id">{{ job.id }}</li>
+              </ul>
+            </b-alert>
             <b-table
               :fields="jobs.fields"
               hover
@@ -162,6 +171,7 @@ export default {
       ],
       started: []
     },
+    pageRefresh: undefined,
     params: {},
     runnableJobs: [],
     selected: null,
@@ -182,6 +192,9 @@ export default {
       this.runnableJobs = data
       this.refresh().then(this.$ready)
     })
+  },
+  destroyed() {
+    clearTimeout(this.pageRefresh)
   },
   methods: {
     closeAlert() {
@@ -211,17 +224,19 @@ export default {
       return available
     },
     refresh() {
-      return getBackgroundJobStatus(this.dateSelected).then(jobs => {
-        this.jobs.errored = []
-        this.jobs.started = []
-        this.jobs.all = this.$_.map(jobs, job => {
+      clearTimeout(this.pageRefresh)
+      const jobs = {}
+      return getBackgroundJobStatus(this.dateSelected).then(data => {
+        jobs.errored = []
+        jobs.started = []
+        jobs.all = this.$_.map(data, job => {
           let style
           if (job.status === 'failed') {
             style = 'danger'
-            this.jobs.errored.push(job)
+            jobs.errored.push(job)
           } else if (job.status === 'started') {
             style = 'info'
-            this.jobs.started.push(job)
+            jobs.started.push(job)
           } else {
             style = 'success'
           }
@@ -230,6 +245,9 @@ export default {
           job.duration = finished && finished.diff(this.$moment.utc(job.started))
           return job
         })
+        this.jobs = jobs
+        this.$eventHub.emit('homepage-refresh')
+        this.schedulePageRefresh()
       })
     },
     run() {
@@ -250,6 +268,11 @@ export default {
           this.toastTimer = setTimeout(this.closeAlert, 60000)
         })
       })
+    },
+    schedulePageRefresh() {
+      const interval = 10000 // Milliseconds
+      clearTimeout(this.pageRefresh)
+      this.pageRefresh = setTimeout(this.refresh, interval)
     }
   }
 }
@@ -259,6 +282,9 @@ export default {
 .jobs-datepicker {
   text-align: center;
   width: 110px;
+}
+.jobs-running-header {
+  font-size: 16px;
 }
 pre {
   background-color: #f5c6cb;
