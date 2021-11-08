@@ -111,7 +111,7 @@ AS (
     SELECT
         a.advisor_id AS advisor_sid,
         a.student_id AS student_sid,
-        NULL AS student_uid,
+        ba.ldap_uid AS student_uid,
         a.advisor_role AS advisor_type_code,
         a.advisor_role_desc AS advisor_type,
         a.academic_program_cd AS academic_program_code,
@@ -119,6 +119,8 @@ AS (
         a.academic_plan_cd AS academic_plan_code,
         a.academic_plan_nm AS academic_plan
     FROM {redshift_schema_edl_external}.student_advisor_data a
+    JOIN {redshift_schema_edl}.basic_attributes ba
+        ON a.student_id = ba.sid
     WHERE
         a.academic_career_cd='UGRD'
         AND a.advisor_id ~ '[0-9A-Z]+'
