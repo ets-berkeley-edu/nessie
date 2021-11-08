@@ -4,6 +4,7 @@ import _ from 'lodash'
 import App from '@/App.vue'
 import axios from 'axios'
 import lodash from 'lodash'
+import mitt from 'mitt'
 import router from '@/router'
 import store from '@/store'
 import Vue from 'vue'
@@ -30,6 +31,7 @@ Vue.use(VueLodash, {lodash})
 
 Vue.prototype.$_ = _
 Vue.prototype.$loading = () => store.dispatch('context/loadingStart')
+Vue.prototype.$eventHub = mitt()
 Vue.prototype.$ready = () => store.dispatch('context/loadingComplete')
 
 const apiBaseUrl = process.env.VUE_APP_API_BASE_URL
