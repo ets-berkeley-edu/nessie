@@ -9,7 +9,7 @@
       <b-col>
         <b-tabs v-if="$currentUser" v-model="tabIndex" align="center">
           <b-tab
-            v-for="(path, title, index) in {Jobs: '/home', Schedule: '/schedule', Status: '/status'}"
+            v-for="(path, title, index) in {Jobs: '/home', Schedule: '/schedule', Configs: '/status'}"
             :key="title"
             :active="path === $route.path"
             :title="title"
