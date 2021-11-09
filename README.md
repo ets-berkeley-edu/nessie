@@ -55,7 +55,7 @@ use the underlying `vue-cli-service` to start Vue.js app. Compile and hot-reload
 ```
 npm run serve-vue
 ```
-4. Nessie Admin Console (front-end) is now available at http://localhost:8080
+4. Finally, [open Nessie in a browser](http://localhost:8080).
 
 ## Run tests, lint the code
 
