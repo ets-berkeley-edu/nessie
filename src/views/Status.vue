@@ -1,26 +1,34 @@
 <template>
-  <div class="mx-3">
-    <h2>Config</h2>
-    <b-list-group class="w-50">
-      <b-list-group-item
-        v-for="key in $_.keys($config).sort()"
-        :key="key"
-        class="d-flex justify-content-between align-items-center"
-      >
-        <b-badge pill variant="info"><span class="config-pill">{{ $_.capitalize(decamelize(key)) }}</span></b-badge>
-        {{ $config[key] }}
-      </b-list-group-item>
-    </b-list-group>
+  <div class="mx-3 pt-3">
+    <b-table
+      :fields="fields"
+      head-row-variant="info"
+      :items="items"
+      responsive
+      striped
+    />
   </div>
 </template>
 
 <script>
 export default {
+  data: () => ({
+    fields: [
+      {key: 'key', label: 'Config', sortable: true},
+      {key: 'value', label: 'Value'}
+    ],
+    items: undefined
+  }),
   created() {
+    this.items = []
+    this.$_.each(this.$_.keys(this.$config).sort(), key => {
+      const formattedKey = key.replace(/([a-z\d])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z\d]+)/g, '$1_$2').toUpperCase()
+      this.items.push({
+        key: formattedKey,
+        value: this.$config[key]
+      })
+    })
     this.$ready()
-  },
-  methods: {
-    decamelize: s => s.replace(/([a-z\d])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z\d]+)/g, '$1 $2')
   }
 }
 </script>
