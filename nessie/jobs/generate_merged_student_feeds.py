@@ -46,7 +46,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
     rds_schema = app.config['RDS_SCHEMA_STUDENT']
     rds_dblink_to_redshift = app.config['REDSHIFT_DATABASE'] + '_redshift'
-    redshift_schema_sis = app.config['REDSHIFT_SCHEMA_EDL'] if app.config['FEATURE_FLAG_EDL_SIS_VIEWS'] else app.config['REDSHIFT_SCHEMA_SIS']
     student_schema = queries.student_schema()
 
     def run(self, term_id=None):
@@ -211,7 +210,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             f"""TRUNCATE {self.student_schema}.academic_standing;
             INSERT INTO {self.student_schema}.academic_standing
                 SELECT sid, term_id, acad_standing_action, acad_standing_status, action_date
-                FROM {self.redshift_schema_sis}.academic_standing;""",
+                FROM {app.config['REDSHIFT_SCHEMA_EDL']}.academic_standing;""",
         )
 
     def update_rds_profile_indexes(self):

@@ -43,36 +43,26 @@ from nessie.jobs.create_data_science_advising_schema import CreateDataScienceAdv
 from nessie.jobs.create_e_i_advising_notes_schema import CreateEIAdvisingNotesSchema
 from nessie.jobs.create_edl_schema import CreateEdlSchema
 from nessie.jobs.create_gradescope_schema import CreateGradescopeSchema
-from nessie.jobs.create_lrs_glue_jobs import CreateLrsGlueJobs
 from nessie.jobs.create_oua_schema import CreateOUASchema
 from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
 from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.jobs.create_terms_schema import CreateTermsSchema
 from nessie.jobs.create_undergrads_schema import CreateUndergradsSchema
 from nessie.jobs.create_ycbm_schema import CreateYcbmSchema
-from nessie.jobs.delete_lrs_glue_jobs import DeleteLrsGlueJobs
 from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
-from nessie.jobs.generate_canvas_caliper_analytics import GenerateCanvasCaliperAnalytics
 from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
 from nessie.jobs.generate_merged_hist_enr_feeds import GenerateMergedHistEnrFeeds
 from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.jobs.import_calnet_data import ImportCalNetData
 from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
-from nessie.jobs.import_degree_progress import ImportDegreeProgress
-from nessie.jobs.import_lrs_incrementals import ImportLrsIncrementals
 from nessie.jobs.import_non_current_students import ImportNonCurrentStudents
 from nessie.jobs.import_piazza_api_data import ImportPiazzaApiData
-from nessie.jobs.import_registrations import ImportRegistrations
-from nessie.jobs.import_registrations_hist_enr import ImportRegistrationsHistEnr
-from nessie.jobs.import_sis_student_api import ImportSisStudentApi
-from nessie.jobs.import_sis_student_api_hist_enr import ImportSisStudentApiHistEnr
 from nessie.jobs.import_student_photos import ImportStudentPhotos
 from nessie.jobs.import_ycbm_api import ImportYcbmApi
 from nessie.jobs.index_advising_notes import IndexAdvisingNotes
 from nessie.jobs.index_enrollments import IndexEnrollments
-from nessie.jobs.migrate_lrs_incrementals import MigrateLrsIncrementals
 from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
 from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
 from nessie.jobs.restore_rds_user_privileges import RestoreRdsUserPrivileges
@@ -81,7 +71,6 @@ from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.jobs.sync_canvas_requests_snapshots import SyncCanvasRequestsSnapshots
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
-from nessie.jobs.transform_lrs_incrementals import TransformLrsIncrementals
 from nessie.jobs.transform_piazza_api_data import TransformPiazzaApiData
 from nessie.jobs.verify_sis_advising_note_attachments import VerifySisAdvisingNoteAttachments
 from nessie.lib.http import tolerant_jsonify
@@ -229,13 +218,6 @@ def generate_boac_analytics():
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/generate_canvas_caliper_analytics', methods=['POST'])
-@auth_required
-def generate_canvas_caliper_analytics():
-    job_started = GenerateCanvasCaliperAnalytics().run_async()
-    return respond_with_status(job_started)
-
-
 @app.route('/api/job/generate_intermediate_tables', methods=['POST'])
 @auth_required
 def generate_intermediate_tables():
@@ -266,25 +248,6 @@ def import_canvas_enrollments_api():
     else:
         term_id = None
     job_started = ImportCanvasEnrollmentsApi(term_id=term_id).run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/import_degree_progress', methods=['POST'])
-@auth_required
-def import_degree_progress():
-    job_started = ImportDegreeProgress().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/import_lrs_incrementals', methods=['POST'])
-@auth_required
-def import_lrs_incrementals():
-    args = get_json_args(request)
-    if args:
-        truncate_lrs = args.get('truncate_lrs')
-    else:
-        truncate_lrs = False
-    job_started = ImportLrsIncrementals(truncate_lrs=truncate_lrs).run_async()
     return respond_with_status(job_started)
 
 
@@ -334,46 +297,6 @@ def index_advising_notes():
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/create_lrs_glue_jobs', methods=['POST'])
-@auth_required
-def create_lrs_glue_jobs():
-    job_started = CreateLrsGlueJobs().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/load_lrs_incrementals', methods=['POST'])
-@auth_required
-def full_caliper_import():
-    args = get_json_args(request)
-    if args:
-        truncate_lrs = args.get('truncate_lrs')
-    else:
-        truncate_lrs = False
-    chained_job = ChainedBackgroundJob(
-        steps=[
-            ImportLrsIncrementals(truncate_lrs=truncate_lrs),
-            TransformLrsIncrementals(),
-            MigrateLrsIncrementals(),
-        ],
-    )
-    job_started = chained_job.run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/migrate_lrs_incrementals', methods=['POST'])
-@auth_required
-def migrate_lrs_incrementals():
-    job_started = MigrateLrsIncrementals().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/transform_lrs_incrementals', methods=['POST'])
-@auth_required
-def transform_lrs_incrementals():
-    job_started = TransformLrsIncrementals().run_async()
-    return respond_with_status(job_started)
-
-
 @app.route('/api/job/transform_piazza_api_data', methods=['POST'])
 @app.route('/api/job/transform_piazza_api_data/<archive>', methods=['POST'])
 @auth_required
@@ -381,27 +304,6 @@ def transform_piazza_api_data(archive='latest'):
     if (archive != 'latest') and not (re.match('(daily|monthly|full)', archive) and re.match(r'(\w+)\_(\d{4}\-\d{2}\-\d{2})', archive)):
         raise BadRequestError(f"Incorrect archive parameter '{archive}', should be 'latest' or like 'daily_2020-09-12'.")
     job_started = TransformPiazzaApiData(archive=archive).run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/delete_lrs_glue_jobs', methods=['POST'])
-@auth_required
-def delete_lrs_glue_jobs():
-    job_started = DeleteLrsGlueJobs().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/import_sis_student_api', methods=['POST'])
-@auth_required
-def import_sis_student_api():
-    job_started = ImportSisStudentApi().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/import_sis_student_api_hist_enr', methods=['POST'])
-@auth_required
-def import_sis_student_api_hist_enr():
-    job_started = ImportSisStudentApiHistEnr().run_async()
     return respond_with_status(job_started)
 
 
@@ -416,24 +318,6 @@ def import_student_photos():
 @auth_required
 def import_student_population():
     job_started = ChainedImportStudentPopulation().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/import_registrations/<load_mode>', methods=['POST'])
-@auth_required
-def import_registrations(load_mode):
-    if load_mode not in ['all', 'batch', 'new']:
-        raise BadRequestError('Unrecognized mode for registrations import.')
-    job_started = ImportRegistrations(load_mode=load_mode).run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/import_registrations_hist_enr/<load_mode>', methods=['POST'])
-@auth_required
-def import_registrations_hist_enr(load_mode):
-    if load_mode not in ['batch', 'new']:
-        raise BadRequestError('Unrecognized mode for non-advisee registrations import.')
-    job_started = ImportRegistrationsHistEnr(load_mode=load_mode).run_async()
     return respond_with_status(job_started)
 
 

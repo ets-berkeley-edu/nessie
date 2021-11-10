@@ -37,34 +37,11 @@ class GenerateIntermediateTables(BackgroundJob):
     def run(self):
         app.logger.info('Starting intermediate table generation job...')
 
-        if app.config['FEATURE_FLAG_EDL_SIS_VIEWS']:
-            sis_source_schema = app.config['REDSHIFT_SCHEMA_EDL']
-            where_clause_exclude_withdrawn = "AND en.enrollment_status_reason <> 'WDRW'"
-        else:
-            sis_source_schema = app.config['REDSHIFT_SCHEMA_SIS']
-            where_clause_exclude_withdrawn = f"""/* Enrollment with no primary section is likely a withdrawal. */
-                AND EXISTS (
-                    SELECT
-                        en0.term_id,
-                        en0.section_id,
-                        en0.ldap_uid
-                    FROM {app.config['REDSHIFT_SCHEMA_SIS']}.enrollments en0
-                    JOIN {app.config['REDSHIFT_SCHEMA_INTERMEDIATE']}.course_sections crs0
-                        ON crs0.sis_section_id = en0.section_id
-                        AND crs0.sis_term_id = en0.term_id
-                    WHERE en0.term_id = en.term_id
-                    AND en0.ldap_uid = en.ldap_uid
-                    AND crs0.sis_course_name = crs.sis_course_name
-                    AND crs0.sis_primary = TRUE
-                    AND en0.enrollment_status != 'D'
-                    AND en0.grade != 'W'
-                )"""
-
         resolved_ddl_redshift = resolve_sql_template(
             'create_intermediate_schema.template.sql',
             current_term_id=current_term_id(),
-            redshift_schema_sis=sis_source_schema,
-            where_clause_exclude_withdrawn=where_clause_exclude_withdrawn,
+            redshift_schema_sis=app.config['REDSHIFT_SCHEMA_EDL'],
+            where_clause_exclude_withdrawn="AND en.enrollment_status_reason <> 'WDRW'",
         )
         if redshift.execute_ddl_script(resolved_ddl_redshift):
             app.logger.info('Redshift tables generated.')

@@ -93,7 +93,7 @@ def prior_job_status(app):
 class TestVerifySisAdvisingNoteAttachments:
     """Validates the work of MigrateSisAdvisingNoteAttachments and reports any failures."""
 
-    def test_run_with_no_param(self, app, caplog, sis_note_tables):
+    def test_run_with_no_param(self, app, caplog, sis_note_tables, student_tables):
         """When no parameter is provided, validates all files."""
         with set_up_to_succeed(app, caplog):
             response = VerifySisAdvisingNoteAttachments().run()
@@ -106,7 +106,7 @@ class TestVerifySisAdvisingNoteAttachments:
         assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files.' in caplog.text
         assert 'Total number of failed attachment syncs from sis-data/sis-sftp/incremental/advising-notes/attachment-files is 1' in caplog.text
 
-    def test_run_with_all_param(self, app, caplog, sis_note_tables):
+    def test_run_with_all_param(self, app, caplog, sis_note_tables, student_tables):
         """When 'all' is provided, validates all files."""
         with set_up_to_succeed(app, caplog):
             response = VerifySisAdvisingNoteAttachments().run(datestamp='all')
@@ -119,7 +119,7 @@ class TestVerifySisAdvisingNoteAttachments:
         assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files.' in caplog.text
         assert 'Total number of failed attachment syncs from sis-data/sis-sftp/incremental/advising-notes/attachment-files is 1' in caplog.text
 
-    def test_run_with_datestamp_param(self, sis_note_tables, app, caplog, metadata_db):
+    def test_run_with_datestamp_param(self, sis_note_tables, student_tables, app, caplog, metadata_db):
         """When a datestamp is provided, validates files copied from the corresponding dated folder."""
         with set_up_to_succeed(app, caplog):
             response = VerifySisAdvisingNoteAttachments().run(datestamp='2018-12-22')
@@ -134,7 +134,7 @@ class TestVerifySisAdvisingNoteAttachments:
             'Total number of failed attachment syncs from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/22 is 1'
         ) in caplog.text
 
-    def test_run_with_partial_datestamp_param(self, sis_note_tables, app, caplog, metadata_db):
+    def test_run_with_partial_datestamp_param(self, sis_note_tables, student_tables, app, caplog, metadata_db):
         """When a partial datestamp is provided, validates files copied from the corresponding dated folder."""
         with set_up_to_succeed(app, caplog):
             response = VerifySisAdvisingNoteAttachments().run(datestamp='2018')

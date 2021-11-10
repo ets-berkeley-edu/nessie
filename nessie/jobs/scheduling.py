@@ -43,15 +43,10 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_IMPORT_ADMISSIONS': 1850,
     'JOB_IMPORT_SIS_DATA': 1900,
     'JOB_IMPORT_STUDENT_POPULATION': 2000,
-    'JOB_IMPORT_DEGREE_PROGRESS': 2500,
     'JOB_IMPORT_HIST_ENR': 2600,
-    'JOB_IMPORT_SIS_STUDENTS': 2700,
-    'JOB_IMPORT_REGISTRATIONS': 2800,
     'JOB_IMPORT_CANVAS_ENROLLMENTS': 2900,
-    'JOB_GENERATE_CANVAS_CALIPER_ANALYTICS': 2950,
     'JOB_GENERATE_ALL_TABLES': 3000,
     'JOB_GENERATE_CURRENT_TERM_FEEDS': 3500,
-    'JOB_LOAD_LRS_INCREMENTALS': 3800,
     'JOB_LOAD_ADVISING_NOTES': 4000,
     'JOB_IMPORT_PIAZZA_API': 6000,
     'JOB_TRANSFORM_PIAZZA_DATA': 6050,
@@ -91,12 +86,7 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.generate_merged_hist_enr_feeds import GenerateMergedHistEnrFeeds
     from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
     from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
-    from nessie.jobs.import_degree_progress import ImportDegreeProgress
     from nessie.jobs.import_piazza_api_data import ImportPiazzaApiData
-    from nessie.jobs.import_sis_student_api import ImportSisStudentApi
-    from nessie.jobs.import_sis_student_api_hist_enr import ImportSisStudentApiHistEnr
-    from nessie.jobs.import_registrations import ImportRegistrations
-    from nessie.jobs.import_registrations_hist_enr import ImportRegistrationsHistEnr
     from nessie.jobs.import_ycbm_api import ImportYcbmApi
     from nessie.jobs.index_advising_notes import IndexAdvisingNotes
     from nessie.jobs.index_enrollments import IndexEnrollments
@@ -113,19 +103,14 @@ def schedule_all_jobs(force=False):
     schedule_job(sched, 'JOB_IMPORT_ADVISORS', CreateAdvisorSchema, force)
     schedule_job(sched, 'JOB_IMPORT_ADMISSIONS', CreateOUASchema, force)
     schedule_job(sched, 'JOB_IMPORT_STUDENT_POPULATION', ChainedImportStudentPopulation, force)
-    schedule_job(sched, 'JOB_IMPORT_DEGREE_PROGRESS', ImportDegreeProgress, force)
     schedule_chained_job(
         sched,
         'JOB_IMPORT_HIST_ENR',
         [
-            ImportSisStudentApiHistEnr,
-            ImportRegistrationsHistEnr,
             GenerateMergedHistEnrFeeds,
         ],
         force,
     )
-    schedule_job(sched, 'JOB_IMPORT_SIS_STUDENTS', ImportSisStudentApi, force)
-    schedule_job(sched, 'JOB_IMPORT_REGISTRATIONS', ImportRegistrations, force, load_mode='batch')
     schedule_job(sched, 'JOB_IMPORT_SIS_DATA', CreateSisSchema, force)
     schedule_job(sched, 'JOB_IMPORT_CANVAS_ENROLLMENTS', ImportCanvasEnrollmentsApi, force)
     schedule_chained_job(
@@ -180,7 +165,12 @@ def schedule_all_jobs(force=False):
 def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):
     job_schedule = app.config.get(job_id)
     if job_schedule is not None:
-        existing_job = sched.get_job(job_id)
+        try:
+            existing_job = sched.get_job(job_id)
+        # If a stored job refers to obsolete code, remove it.
+        except ModuleNotFoundError:
+            sched.remove_job(job_id)
+            existing_job = None
         if existing_job and (force is False):
             app.logger.info(f'Found existing cron trigger for job {job_id}, will not reschedule: {existing_job.next_run_time}')
             return False

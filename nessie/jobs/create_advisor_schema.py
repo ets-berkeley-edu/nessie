@@ -36,7 +36,6 @@ from nessie.lib.util import encoded_tsv_row, get_s3_calnet_daily_path, get_s3_si
 class CreateAdvisorSchema(BackgroundJob):
 
     external_schema = app.config['REDSHIFT_SCHEMA_ADVISOR']
-    feature_flag_edl = app.config['FEATURE_FLAG_EDL_ADVISORS']
 
     def run(self):
         app.logger.info('Starting Advisor schema creation job...')
@@ -61,7 +60,7 @@ class CreateAdvisorSchema(BackgroundJob):
             s3_sis_daily = _get_yesterdays_advisor_data()
         s3_path = '/'.join([f"s3://{app.config['LOCH_S3_BUCKET']}", s3_sis_daily, 'advisors'])
 
-        sql_filename = 'edl_create_advisor_schema.template.sql' if self.feature_flag_edl else 'create_advisor_schema.template.sql'
+        sql_filename = 'edl_create_advisor_schema.template.sql'
         resolved_ddl = resolve_sql_template(sql_filename, advisor_data_path=s3_path)
         if not redshift.execute_ddl_script(resolved_ddl):
             raise BackgroundJobError(f'Redshift execute_ddl_script failed on {sql_filename}')

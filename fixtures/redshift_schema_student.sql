@@ -9,18 +9,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.canvas_api_enrollments
     feed TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_degree_progress
-(
-    sid VARCHAR NOT NULL,
-    feed TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.sis_api_profiles
-(
-    sid VARCHAR NOT NULL,
-    feed TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index
 (
     sid VARCHAR NOT NULL,
@@ -46,12 +34,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index_hist_
     units DECIMAL (6,3)
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_api_demographics
-(
-    sid VARCHAR NOT NULL,
-    feed TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_demographics
 (
     sid VARCHAR NOT NULL,
@@ -71,12 +53,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_holds
     feed TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_last_registrations
-(
-    sid VARCHAR NOT NULL,
-    feed TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_majors
 (
     sid VARCHAR NOT NULL,
@@ -91,14 +67,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles
     profile TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_term_gpas
-(
-    sid VARCHAR NOT NULL,
-    term_id VARCHAR(4) NOT NULL,
-    gpa DECIMAL(5,3),
-    units_taken_for_gpa DECIMAL(4,1)
-);
-
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_student}_staging;
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.canvas_api_enrollments
@@ -107,18 +75,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.canvas_api_enrollme
     user_id VARCHAR NOT NULL,
     term_id VARCHAR(4) NOT NULL,
     last_activity_at TIMESTAMP,
-    feed TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.sis_api_degree_progress
-(
-    sid VARCHAR NOT NULL,
-    feed TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.sis_api_profiles
-(
-    sid VARCHAR NOT NULL,
     feed TEXT NOT NULL
 );
 
@@ -147,12 +103,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_profile_ind
     terms_in_attendance INT
 );
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_api_demographics
-(
-    sid VARCHAR NOT NULL,
-    feed TEXT NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_enrollment_terms
 (
     sid VARCHAR NOT NULL,
@@ -161,12 +111,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_enrollment_
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_holds
-(
-    sid VARCHAR NOT NULL,
-    feed TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_last_registrations
 (
     sid VARCHAR NOT NULL,
     feed TEXT NOT NULL
@@ -185,16 +129,3 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_profiles
     sid VARCHAR NOT NULL,
     profile TEXT NOT NULL
 );
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_term_gpas
-(
-    sid VARCHAR NOT NULL,
-    term_id VARCHAR(4) NOT NULL,
-    gpa DECIMAL(5,3),
-    units_taken_for_gpa DECIMAL(4,1)
-);
-
-INSERT INTO {redshift_schema_student}.sis_api_degree_progress
-(sid, feed)
-VALUES
-('11667051', %(sis_degree_progress_11667051)s);

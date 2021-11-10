@@ -25,36 +25,30 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import json
 
-from nessie.lib.queries import student_schema
+from nessie.lib.queries import edl_schema
 from nessie.merged.sis_profile import merge_sis_profile_academic_status, parse_merged_sis_profile
 import pytest
-from tests.util import capture_app_logs, mock_s3
+from tests.util import capture_app_logs
 
 
 @pytest.fixture()
-def sis_api_profiles(app, student_tables):
+def edl_degree_progress(app, student_tables):
     from nessie.externals import redshift
-    from nessie.jobs.import_sis_student_api import ImportSisStudentApi
-    with mock_s3(app):
-        ImportSisStudentApi().run_wrapped()
-    sql = f'SELECT sid, feed FROM {student_schema()}.sis_api_profiles'
+    sql = f'SELECT sid, feed FROM {edl_schema()}.student_degree_progress'
     return redshift.fetch(sql)
 
 
 @pytest.fixture()
-def sis_api_degree_progress(app, student_tables):
+def edl_last_registrations(app, student_tables):
     from nessie.externals import redshift
-    sql = f'SELECT sid, feed FROM {student_schema()}.sis_api_degree_progress'
+    sql = f'SELECT sid, feed FROM {edl_schema()}.student_last_registrations'
     return redshift.fetch(sql)
 
 
 @pytest.fixture()
-def sis_api_last_registrations(app, metadata_db, student_tables):
+def edl_profiles(app, student_tables):
     from nessie.externals import redshift
-    from nessie.jobs.import_registrations import ImportRegistrations
-    with mock_s3(app):
-        ImportRegistrations().run_wrapped()
-    sql = f'SELECT sid, feed FROM {student_schema()}.student_last_registrations'
+    sql = f'SELECT sid, feed FROM {edl_schema()}.student_profiles'
     return redshift.fetch(sql)
 
 
@@ -73,61 +67,61 @@ def merged_profile(sid, profile_rows, degree_progress_rows, last_registration_ro
 class TestMergedSisProfile:
     """Test merged SIS profile."""
 
-    def test_skips_concurrent_academic_status(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
+    def test_skips_concurrent_academic_status(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
         """Skips concurrent academic status if another academic status exists."""
-        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+        profile = merged_profile('11667051', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert profile['academicCareer'] == 'UGRD'
         assert profile['plans'][0]['program'] == 'Undergrad Letters & Science'
 
-    def test_falls_back_on_concurrent_academic_status(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
+    def test_falls_back_on_concurrent_academic_status(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
         """Selects concurrent academic status if no other academic status exists."""
-        profile = merged_profile('1234567890', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+        profile = merged_profile('1234567890', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert profile['academicCareer'] == 'UCBX'
         assert profile['plans'][0]['program'] == 'UCBX Concurrent Enrollment'
 
-    def test_withdrawal_cancel_ignored_if_empty(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
-        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+    def test_withdrawal_cancel_ignored_if_empty(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
+        profile = merged_profile('11667051', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert 'withdrawalCancel' not in profile
 
-    def test_withdrawal_cancel_included_if_present(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
-        profile = merged_profile('2345678901', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+    def test_withdrawal_cancel_included_if_present(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
+        profile = merged_profile('2345678901', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert profile['withdrawalCancel']['description'] == 'Withdrew'
         assert profile['withdrawalCancel']['reason'] == 'Personal'
         assert profile['withdrawalCancel']['date'] == '2017-10-31'
         assert profile['withdrawalCancel']['termId'] == '2178'
 
-    def test_major_minor_plans(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
-        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+    def test_major_minor_plans(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
+        profile = merged_profile('11667051', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert len(profile['plans']) == 2
         assert [p['description'] for p in profile['plans']] == ['Astrophysics BS', 'English BA']
         assert len(profile['plansMinor']) == 1
         assert [p['description'] for p in profile['plansMinor']] == ['Art History']
 
-    def test_subplans(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
-        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+    def test_subplans(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
+        profile = merged_profile('11667051', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert profile['subplans'] == ['Ecosystem Sciences']
 
-    def test_intended_major_ignored_if_empty(self, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
-        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+    def test_intended_major_ignored_if_empty(self, edl_profiles, edl_degree_progress, edl_last_registrations):
+        profile = merged_profile('11667051', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert profile['intendedMajors'] is None
 
-    def test_intended_major_included_if_present(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
+    def test_intended_major_included_if_present(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
         profile = merged_profile(
             '11667051',
-            sis_api_profiles,
-            sis_api_degree_progress,
-            sis_api_last_registrations,
+            edl_profiles,
+            edl_degree_progress,
+            edl_last_registrations,
             '16A19U :: MatSci Eng + BusAdm MET Pgm UG || 16A19U :: MatSci Eng + BusAdm MET Pgm UG',
         )
         assert profile['intendedMajors'][0]['code'] == '16A19U'
         assert profile['intendedMajors'][0]['description'] == 'MatSci Eng + BusAdm MET Pgm UG'
 
-    def test_multiple_intended_majors_included(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
+    def test_multiple_intended_majors_included(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
         profile = merged_profile(
             '11667051',
-            sis_api_profiles,
-            sis_api_degree_progress,
-            sis_api_last_registrations,
+            edl_profiles,
+            edl_degree_progress,
+            edl_last_registrations,
             '252A1U :: Dance & Perf Studies BA || 25968U :: MCB-Immunology BA',
         )
         assert profile['intendedMajors'][0]['code'] == '252A1U'
@@ -135,72 +129,71 @@ class TestMergedSisProfile:
         assert profile['intendedMajors'][1]['code'] == '25968U'
         assert profile['intendedMajors'][1]['description'] == 'MCB-Immunology BA'
 
-    def test_degree_progress(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
-        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+    def test_degree_progress(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
+        profile = merged_profile('11667051', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert profile['degreeProgress']['reportDate'] == '2017-03-03'
         assert len(profile['degreeProgress']['requirements']) == 4
         assert profile['degreeProgress']['requirements'][0] == {'entryLevelWriting': {'status': 'Satisfied'}}
 
-    def test_email_addresses(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
-        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+    def test_email_addresses(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
+        profile = merged_profile('11667051', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert profile['emailAddress'] == 'oski@berkeley.edu'
-        assert profile['emailAddressAlternate'] == 'ursa.minor.beta@example.com'
 
-    def test_no_holds(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
-        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+    def test_no_holds(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
+        profile = merged_profile('11667051', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert profile['holds'] == []
 
-    def test_multiple_holds(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
-        profile = merged_profile('2345678901', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+    def test_multiple_holds(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
+        profile = merged_profile('2345678901', edl_profiles, edl_degree_progress, edl_last_registrations)
         holds = profile['holds']
         assert len(holds) == 2
         assert holds[0]['reason']['code'] == 'CSBAL'
         assert holds[1]['reason']['code'] == 'ADVHD'
 
-    def test_current_term(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
-        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+    def test_current_term(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
+        profile = merged_profile('11667051', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert profile['level']['code'] == '30'
         assert profile['level']['description'] == 'Junior'
         assert profile['currentTerm']['unitsMax'] == 24
         assert profile['currentTerm']['unitsMin'] == 15
 
-    def test_zero_gpa_when_gpa_units(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
-        for row in sis_api_profiles:
+    def test_zero_gpa_when_gpa_units(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
+        for row in edl_profiles:
             if row['sid'] == '11667051':
                 feed = json.loads(row['feed'], strict=False)
                 feed['academicStatuses'][1]['cumulativeGPA']['average'] = 0
                 row['feed'] = json.dumps(feed)
                 break
-        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+        profile = merged_profile('11667051', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert profile['cumulativeGPA'] == 0
 
-    def test_null_gpa_when_no_gpa_units(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
-        for row in sis_api_profiles:
+    def test_null_gpa_when_no_gpa_units(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
+        for row in edl_profiles:
             if row['sid'] == '11667051':
                 feed = json.loads(row['feed'], strict=False)
                 feed['academicStatuses'][1]['cumulativeGPA']['average'] = 0
                 feed['academicStatuses'][1]['cumulativeUnits'][1]['unitsTaken'] = 0
                 row['feed'] = json.dumps(feed)
                 break
-        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+        profile = merged_profile('11667051', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert profile['cumulativeGPA'] is None
 
-    def test_expected_graduation_term(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
-        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+    def test_expected_graduation_term(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
+        profile = merged_profile('11667051', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert profile['expectedGraduationTerm']['id'] == '2198'
         assert profile['expectedGraduationTerm']['name'] == 'Fall 2019'
 
-    def test_transfer_true_if_notation_present(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
-        profile = merged_profile('2345678901', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+    def test_transfer_true_if_notation_present(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
+        profile = merged_profile('2345678901', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert profile['transfer'] is True
 
-    def test_transfer_false_if_notation_not_present(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
-        profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+    def test_transfer_false_if_notation_not_present(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
+        profile = merged_profile('11667051', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert profile['transfer'] is False
 
-    def test_no_registrations_in_list(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
+    def test_no_registrations_in_list(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
         """Falls back to last term-with-units if the student is not active in the current term."""
-        profile = merged_profile('1234567890', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+        profile = merged_profile('1234567890', edl_profiles, edl_degree_progress, edl_last_registrations)
         assert profile['level']['code'] == '20'
         assert profile['level']['description'] == 'Sophomore'
 

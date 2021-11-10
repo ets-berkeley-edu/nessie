@@ -39,10 +39,9 @@ class CreateYcbmSchema(BackgroundJob):
         external_schema = app.config['REDSHIFT_SCHEMA_YCBM']
         redshift.drop_external_schema(external_schema)
 
-        sis_source_schema = app.config['REDSHIFT_SCHEMA_EDL'] if app.config['FEATURE_FLAG_EDL_SIS_VIEWS'] else app.config['REDSHIFT_SCHEMA_SIS']
         resolved_ddl = resolve_sql_template(
             'create_ycbm_schema.template.sql',
-            redshift_schema_sis=sis_source_schema,
+            redshift_schema_sis=app.config['REDSHIFT_SCHEMA_EDL'],
         )
 
         if redshift.execute_ddl_script(resolved_ddl):
