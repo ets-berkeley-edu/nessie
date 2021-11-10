@@ -47,8 +47,7 @@ def generate_analytics_feeds_for_course(output_file, term_id, canvas_site_row, s
         sis_sections = set()
 
     enrollments = copy_for_pandas(site_enrollments_stream)
-    advisee_enrollments = [e for e in enrollments if e['current_advisee'] == 1]
-    if not advisee_enrollments:
+    if not enrollments:
         return 0
 
     df = pandas.DataFrame(enrollments, columns=['canvas_user_id', 'current_score', 'last_activity_at'])
@@ -59,7 +58,7 @@ def generate_analytics_feeds_for_course(output_file, term_id, canvas_site_row, s
     submissions_by_user_id = groupby(site_submissions_stream, operator.itemgetter('reference_user_id'))
     submission_tracker = {'user_id': 0, 'submissions': []}
 
-    for enrollment in advisee_enrollments:
+    for enrollment in enrollments:
         user_id = enrollment['canvas_user_id']
         df_enrollment = df.loc[df['canvas_user_id'].values == user_id]
 

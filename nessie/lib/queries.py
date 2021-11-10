@@ -243,8 +243,7 @@ def stream_canvas_enrollments(term_id):
                 ce.current_score,
                 EXTRACT(EPOCH FROM ce.last_activity_at) AS last_activity_at,
                 ce.sis_enrollment_status,
-                ce.sis_section_ids,
-                CASE WHEN ldap.sid IS NULL THEN 0 ELSE 1 END AS current_advisee
+                ce.sis_section_ids
               FROM {boac_schema()}.course_enrollments ce
               JOIN {intermediate_schema()}.course_sections cs
                 ON cs.canvas_course_id = ce.course_id
