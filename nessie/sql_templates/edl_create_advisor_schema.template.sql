@@ -37,6 +37,32 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 -- External Tables
 --------------------------------------------------------------------
 
+-- Instructor-Advisor Mapping (BOA_INSTRUCTOR_ADVISOR_VW)
+CREATE EXTERNAL TABLE {redshift_schema_advisor}.instructor_advisor
+(
+  ADVISOR_ID VARCHAR,
+  CAMPUS_ID VARCHAR,
+  INSTRUCTOR_ADVISOR_NBR INT,
+  ADVISOR_TYPE VARCHAR,
+  ADVISOR_TYPE_DESCR VARCHAR,
+  INSTRUCTOR_TYPE VARCHAR,
+  INSTRUCTOR_TYPE_DESCR VARCHAR,
+  ACADEMIC_PROGRAM VARCHAR,
+  ACADEMIC_PROGRAM_DESCR VARCHAR,
+  ACADEMIC_PLAN VARCHAR,
+  ACADEMIC_PLAN_DESCR VARCHAR,
+  ACADEMIC_SUB_PLAN VARCHAR,
+  ACADEMIC_SUB_PLAN_DESCR VARCHAR
+)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
+WITH SERDEPROPERTIES (
+  'separatorChar' = ',',
+  'quoteChar' = '\"',
+  'escapeChar' = '\\'
+)
+STORED AS TEXTFILE
+LOCATION '{advisor_data_path}/instructor-advisor-map';
+
 -- Advisor note permissions (BOA_ADV_NOTES_ACCESS_VW)
 CREATE EXTERNAL TABLE {redshift_schema_advisor}.advisor_note_permissions
 (
@@ -68,41 +94,20 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_advisor_internal} GRANT SELE
 -- Internal Tables
 --------------------------------------------------------------------
 
-CREATE TABLE {redshift_schema_advisor_internal}.advisor_departments
-SORTKEY (sid)
-AS (
-    SELECT
-        advisor_id AS sid,
-        advisor_role AS advisor_type_code,
-        advisor_role_desc AS advisor_type,
-        academic_plan_cd AS plan_code,
-        academic_plan_nm AS plan,
-        academic_department_cd AS department_code,
-        academic_department_short_nm AS department
-    FROM {redshift_schema_edl_external}.student_advisor_data
-    WHERE
-        academic_career_cd='UGRD'
-        AND advisor_id ~ '[0-9]+'
-        AND academic_department_cd IS NOT NULL
-    ORDER BY advisor_id, academic_plan_cd
-);
-
 CREATE TABLE {redshift_schema_advisor_internal}.advisor_roles
 SORTKEY (sid)
 AS (
     SELECT DISTINCT
         p.CS_ID AS sid,
         p.USER_ID AS uid,
-        a.advisor_role AS advisor_type_code,
-        a.advisor_role_desc AS advisor_type,
-        NULL AS instructor_type_code,
-        NULL AS instructor_type,
-        a.academic_program_cd AS academic_program_code,
-        a.academic_program_nm AS academic_program,
+        I.ADVISOR_TYPE AS advisor_type_code,
+        I.ADVISOR_TYPE_DESCR AS advisor_type,
+        I.ACADEMIC_PROGRAM AS academic_program_code,
+        I.ACADEMIC_PROGRAM_DESCR AS academic_program,
         p.PERMISSION_LIST AS cs_permissions
     FROM {redshift_schema_advisor}.advisor_note_permissions p
-    LEFT JOIN {redshift_schema_edl_external}.student_advisor_data a
-    ON p.CS_ID = a.advisor_id
+    LEFT JOIN {redshift_schema_advisor}.instructor_advisor i
+    ON p.CS_ID = i.advisor_id
 );
 
 CREATE TABLE {redshift_schema_advisor_internal}.advisor_students
