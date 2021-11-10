@@ -211,8 +211,8 @@ def get_advisee_sids_with_photos():
 
 
 def get_advisor_sids():
-    sql = f"""SELECT advisor_id AS sid
-        FROM {advisor_schema()}.student_advisor
+    sql = f"""SELECT advisor_sid AS sid
+        FROM {advisor_schema_internal()}.advisor_students
         UNION SELECT advisor_id AS sid
         FROM {advisor_schema()}.instructor_advisor"""
     return redshift.fetch(sql)

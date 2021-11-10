@@ -88,7 +88,7 @@ class IndexAdvisingNotes(BackgroundJob):
         advisor_sids_from_sis_notes = set(
             [r['advisor_sid'] for r in rds.fetch(f'SELECT DISTINCT advisor_sid FROM {sis_notes_schema}.advising_notes')],
         )
-        advisor_sids_from_advisors = set([r['advisor_id'] for r in get_advisor_sids()])
+        advisor_sids_from_advisors = set([r['sid'] for r in get_advisor_sids()])
         advisor_sids = list(advisor_sids_from_sis_notes | advisor_sids_from_advisors)
         return calnet.client(app).search_csids(advisor_sids)
 
