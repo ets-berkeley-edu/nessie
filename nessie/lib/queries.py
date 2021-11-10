@@ -239,7 +239,7 @@ def stream_canvas_enrollments(term_id):
                 ce.course_id as canvas_course_id,
                 ce.canvas_user_id,
                 ce.uid,
-                ldap.sid,
+                attrs.sid,
                 ce.current_score,
                 EXTRACT(EPOCH FROM ce.last_activity_at) AS last_activity_at,
                 ce.sis_enrollment_status,
@@ -249,8 +249,8 @@ def stream_canvas_enrollments(term_id):
               JOIN {intermediate_schema()}.course_sections cs
                 ON cs.canvas_course_id = ce.course_id
                 AND cs.sis_section_id IS NOT NULL
-              LEFT JOIN {calnet_schema()}.advisees ldap
-                ON ce.uid = ldap.ldap_uid
+              LEFT JOIN {edl_schema()}.basic_attributes attrs
+                ON ce.uid = attrs.ldap_uid
               WHERE ce.term_id='{term_id}'
               ORDER BY ce.course_id, ce.canvas_user_id
         """
@@ -269,8 +269,7 @@ def stream_canvas_assignment_submissions(term_id):
             ) AS submissions_turned_in
         FROM {boac_schema()}.assignment_submissions_scores ac1
         JOIN {boac_schema()}.assignment_submissions_scores ac2
-            ON ac1.uid IN (SELECT ldap_uid FROM {calnet_schema()}.advisees)
-            AND ac1.term_id='{term_id}'
+            ON ac1.term_id='{term_id}'
             AND ac1.assignment_id = ac2.assignment_id
             AND ac1.course_id = ac2.course_id
         GROUP BY canvas_course_id, reference_user_id, ac2.canvas_user_id
