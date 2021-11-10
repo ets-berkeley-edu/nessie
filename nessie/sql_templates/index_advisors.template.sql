@@ -63,41 +63,6 @@ INSERT INTO {rds_schema_advisor}.advisor_attributes (
 
 CREATE INDEX idx_advisor_attributes_uid ON {rds_schema_advisor}.advisor_attributes(uid);
 
-DROP TABLE IF EXISTS {rds_schema_advisor}.advisor_departments CASCADE;
-
-CREATE TABLE {rds_schema_advisor}.advisor_departments (
-   sid VARCHAR,
-   advisor_type_code VARCHAR,
-   advisor_type VARCHAR,
-   plan_code VARCHAR,
-   plan VARCHAR,
-   department_code VARCHAR,
-   department VARCHAR
-);
-
-INSERT INTO {rds_schema_advisor}.advisor_departments (
-  SELECT *
-  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT sid, advisor_type_code, advisor_type, plan_code, plan,
-           department_code, department
-    FROM {redshift_schema_advisor_internal}.advisor_departments
-    ORDER BY sid, plan_code
-  $REDSHIFT$)
-  AS redshift_advisor_departments (
-    sid VARCHAR,
-    advisor_type_code VARCHAR,
-    advisor_type VARCHAR,
-    plan_code VARCHAR,
-    plan VARCHAR,
-    department_code VARCHAR,
-    department VARCHAR
-  )
-);
-
-CREATE INDEX idx_advisor_departments_sid ON {rds_schema_advisor}.advisor_departments(sid);
-CREATE INDEX idx_advisor_departments_plan_code ON {rds_schema_advisor}.advisor_departments(plan_code);
-CREATE INDEX idx_advisor_departments_department_code ON {rds_schema_advisor}.advisor_departments(department_code);
-
 DROP TABLE IF EXISTS {rds_schema_advisor}.advisor_roles CASCADE;
 
 CREATE TABLE {rds_schema_advisor}.advisor_roles (
@@ -105,8 +70,6 @@ CREATE TABLE {rds_schema_advisor}.advisor_roles (
    uid VARCHAR,
    advisor_type_code VARCHAR,
    advisor_type VARCHAR,
-   instructor_type_code VARCHAR,
-   instructor_type VARCHAR,
    academic_program_code VARCHAR,
    academic_program VARCHAR,
    cs_permissions VARCHAR
@@ -115,8 +78,7 @@ CREATE TABLE {rds_schema_advisor}.advisor_roles (
 INSERT INTO {rds_schema_advisor}.advisor_roles (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT sid, uid, advisor_type_code, advisor_type, instructor_type_code, instructor_type,
-           academic_program_code, academic_program, cs_permissions
+    SELECT sid, uid, advisor_type_code, advisor_type, academic_program_code, academic_program, cs_permissions
     FROM {redshift_schema_advisor_internal}.advisor_roles
     ORDER BY uid, academic_program_code, advisor_type_code
   $REDSHIFT$)
@@ -125,8 +87,6 @@ INSERT INTO {rds_schema_advisor}.advisor_roles (
     uid VARCHAR,
     advisor_type_code VARCHAR,
     advisor_type VARCHAR,
-    instructor_type_code VARCHAR,
-    instructor_type VARCHAR,
     academic_program_code VARCHAR,
     academic_program VARCHAR,
     cs_permissions VARCHAR
