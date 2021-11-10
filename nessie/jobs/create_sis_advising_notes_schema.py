@@ -28,6 +28,7 @@ from datetime import datetime, timedelta
 from flask import current_app as app
 from nessie.externals import calnet, rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
+from nessie.lib.queries import get_advisor_sids
 from nessie.lib.util import get_s3_sis_sysadm_daily_path, resolve_sql_template
 
 """Logic for SIS Advising Notes schema creation job."""
@@ -91,14 +92,10 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
 
     def import_appointment_advisors(self):
         sis_notes_schema = app.config['RDS_SCHEMA_SIS_ADVISING_NOTES']
-        advisor_schema_redshift = app.config['REDSHIFT_SCHEMA_ADVISOR_INTERNAL']
-
         advisor_sids_from_sis_appointments = set(
             [r['advisor_sid'] for r in rds.fetch(f'SELECT DISTINCT advisor_sid FROM {sis_notes_schema}.advising_appointments')],
         )
-        advisor_sids_from_advisors = set(
-            [r['sid'] for r in redshift.fetch(f'SELECT DISTINCT sid FROM {advisor_schema_redshift}.advisor_departments')],
-        )
+        advisor_sids_from_advisors = set([r['advisor_id'] for r in get_advisor_sids()])
         advisor_sids = list(advisor_sids_from_sis_appointments | advisor_sids_from_advisors)
 
         advisor_attributes = calnet.client(app).search_csids(advisor_sids)

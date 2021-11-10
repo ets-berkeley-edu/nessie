@@ -24,8 +24,9 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
-from nessie.externals import calnet, rds, redshift
+from nessie.externals import calnet, rds
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
+from nessie.lib.queries import get_advisor_sids
 from nessie.lib.util import resolve_sql_template
 
 """Logic for advising note author names index job."""
@@ -84,14 +85,10 @@ class IndexAdvisingNotes(BackgroundJob):
 
     def _advisor_attributes_by_sid(self):
         sis_notes_schema = app.config['RDS_SCHEMA_SIS_ADVISING_NOTES']
-        advisor_schema_redshift = app.config['REDSHIFT_SCHEMA_ADVISOR_INTERNAL']
-
         advisor_sids_from_sis_notes = set(
             [r['advisor_sid'] for r in rds.fetch(f'SELECT DISTINCT advisor_sid FROM {sis_notes_schema}.advising_notes')],
         )
-        advisor_sids_from_advisors = set(
-            [r['sid'] for r in redshift.fetch(f'SELECT DISTINCT sid FROM {advisor_schema_redshift}.advisor_departments')],
-        )
+        advisor_sids_from_advisors = set([r['advisor_id'] for r in get_advisor_sids()])
         advisor_sids = list(advisor_sids_from_sis_notes | advisor_sids_from_advisors)
         return calnet.client(app).search_csids(advisor_sids)
 
