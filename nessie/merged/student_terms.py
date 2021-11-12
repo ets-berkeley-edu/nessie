@@ -27,6 +27,7 @@ from decimal import Decimal
 import json
 
 from nessie.lib import berkeley
+from nessie.lib.util import to_float
 
 
 def empty_term_feed(term_id, term_name):
@@ -169,8 +170,8 @@ def merge_enrollment(enrollments, term_id, term_name):
             enrollments_by_class[class_name]['gradingBasis'] = section_feed['gradingBasis']
             enrollments_by_class[class_name]['units'] = section_feed['units']
         if max_term_units_allowed is None:
-            max_term_units_allowed = enrollment['max_term_units_allowed']
-            min_term_units_allowed = enrollment['min_term_units_allowed']
+            max_term_units_allowed = to_float(enrollment['max_term_units_allowed'])
+            min_term_units_allowed = to_float(enrollment['min_term_units_allowed'])
 
     enrollments_feed = sorted(enrollments_by_class.values(), key=lambda x: x['displayName'])
     # Whenever we have floating arithmetic, we can expect floating errors.
