@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_degrees
     date_awarded VARCHAR NOT NULL,
     term_id VARCHAR(4) NOT NULL,
     hist_enr BOOLEAN NOT NULL,
-    PRIMARY KEY (sid, plan)
+    PRIMARY KEY (sid, plan, term_id)
 );
 
 CREATE INDEX IF NOT EXISTS student_degree_plan_idx ON {rds_schema_student}.student_degrees (plan);
