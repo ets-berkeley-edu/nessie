@@ -485,9 +485,9 @@ def get_fetched_non_advisees():
         profile_table = f'{edl_schema()}.student_profiles'
         where_clause = f"""
             LEFT JOIN (
-                 SELECT sid, ldap_uid FROM edl_sis_data.basic_attributes attrs
+                 SELECT sid, ldap_uid FROM {edl_schema()}.basic_attributes attrs
                  UNION
-                 SELECT sis_id AS sid, ldap_uid FROM edl_sis_data.enrollments
+                 SELECT sis_id AS sid, ldap_uid FROM {edl_schema()}.enrollments
                  GROUP BY sid, ldap_uid
             ) attrs
             ON attrs.sid = hist.sid
@@ -572,10 +572,10 @@ def get_non_advisee_api_feeds(sids):
         registration_table = f'{student_schema()}.hist_enr_last_registrations'
     if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES']:
         uid_select = 'attrs.ldap_uid AS uid'
-        attrs_join = """
+        attrs_join = f"""
           LEFT JOIN (
             SELECT a.sid, MAX(a.ldap_uid) AS ldap_uid FROM (
-              SELECT sid, ldap_uid FROM edl_sis_data.basic_attributes attrs
+              SELECT sid, ldap_uid FROM {edl_schema()}.basic_attributes attrs
                 WHERE (
                   attrs.affiliations LIKE '%%STUDENT-TYPE%%'
                   OR attrs.affiliations LIKE '%%SIS-EXTENDED%%'
@@ -583,7 +583,7 @@ def get_non_advisee_api_feeds(sids):
                 )
                 AND attrs.person_type = 'S' AND char_length(attrs.sid) < 12
               UNION
-              SELECT sis_id AS sid, ldap_uid FROM edl_sis_data.enrollments
+              SELECT sis_id AS sid, ldap_uid FROM {edl_schema()}.enrollments
               GROUP BY sid, ldap_uid
             ) a
             GROUP BY sid

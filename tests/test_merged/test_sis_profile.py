@@ -250,10 +250,11 @@ class TestMergedSisProfile:
             assert profile['academicCareerStatus'] == 'Completed'
             assert profile['academicCareerCompleted'] == '2018-05-17'
 
-            degree = profile['degrees'][0]
+            assert len(profile['degrees']) == 2
+            degree = next((d for d in profile['degrees'] if d['description'] == 'Bachelor of Arts'), None)
+            assert degree
             assert len(degree['plans']) == 2
             assert degree['dateAwarded'] == '2018-05-17'
-            assert degree['description'] == 'Bachelor of Arts'
             assert degree['plans'][0]['group'] == 'College of Letters and Science'
             assert degree['plans'][0]['plan'] == 'Physics'
             assert degree['plans'][0]['type'] == 'MAJ'
