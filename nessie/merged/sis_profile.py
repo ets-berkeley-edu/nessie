@@ -141,21 +141,11 @@ def merge_degrees(sis_profile_feed, sis_profile, academic_status):
     if completion_date:
         sis_profile['academicCareerCompleted'] = completion_date
 
-    # Relevant degrees are those where 'dateAwarded' matches the career completion date. If none are matching
-    # then grab the most recent degree(s) per 'dateAwarded'.
-
     def is_awarded(d):
         return d.get('status', {}).get('description') == 'Awarded'
-    degrees_all_awarded = [d for d in sis_profile_feed.get('degrees', []) if is_awarded(d)]
-    degrees_recently_awarded = []
-    if degrees_all_awarded:
-        if completion_date:
-            degrees_recently_awarded = [d for d in degrees_all_awarded if d.get('dateAwarded') == completion_date]
-        if not degrees_recently_awarded:
-            max_date_awarded = max(d.get('dateAwarded') for d in degrees_all_awarded)
-            degrees_recently_awarded = [d for d in degrees_all_awarded if d.get('dateAwarded') == max_date_awarded]
+    degrees_awarded = [d for d in sis_profile_feed.get('degrees', []) if is_awarded(d)]
 
-    for degree in degrees_recently_awarded:
+    for degree in degrees_awarded:
         description = degree.get('academicDegree', {}).get('type', {}).get('description')
         plans = []
         for plan in degree.get('academicPlans', []):
