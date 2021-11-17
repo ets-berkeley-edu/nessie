@@ -44,11 +44,10 @@ class TestAdminController:
         assert response.status_code == 200
         assert response.json == []
 
-    def test_failures_from_last_sync(self, app, client):
+    def test_runnable_jobs(self, app, client):
         """Returns jobs runnable via Admin Console."""
         response = get_basic_auth(client=client, path='/api/admin/runnable_jobs', credentials=credentials(app))
         assert response.status_code == 200
         job = next((job for job in response.json if job.get('name') == 'Generate merged student feeds'), None)
-        assert job.get('path') == '/api/job/generate_merged_student_feeds/<term_id>'
-        assert job.get('required') == ['term_id']
+        assert job.get('path') == '/api/job/generate_merged_student_feeds'
         assert 'POST' in job.get('methods')

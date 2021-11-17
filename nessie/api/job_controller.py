@@ -232,10 +232,10 @@ def generate_merged_hist_enr_feeds():
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/generate_merged_student_feeds/<term_id>', methods=['POST'])
+@app.route('/api/job/generate_merged_student_feeds', methods=['POST'])
 @auth_required
-def generate_merged_student_feeds(term_id):
-    job_started = GenerateMergedStudentFeeds(term_id=term_id).run_async()
+def generate_merged_student_feeds():
+    job_started = GenerateMergedStudentFeeds().run_async()
     return respond_with_status(job_started)
 
 

@@ -26,14 +26,13 @@
 DELETE FROM {rds_schema_student}.student_profile_index WHERE hist_enr IS FALSE;
 
 INSERT INTO {rds_schema_student}.student_profile_index
-  (sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance,
-   hist_enr)
+  (sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance, hist_enr)
 SELECT
-  sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance,
-  FALSE
+  sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance, hist_enr)
 FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
   SELECT *
   FROM {redshift_schema_student}.student_profile_index
+  WHERE hist_enr IS FALSE
 $REDSHIFT$)
 AS redshift_profile_index (
   sid VARCHAR,
@@ -45,7 +44,8 @@ AS redshift_profile_index (
   units NUMERIC,
   transfer BOOLEAN,
   expected_grad_term VARCHAR,
-  terms_in_attendance INT
+  terms_in_attendance INT,
+  hist_enr BOOLEAN
 )
 ON CONFLICT (sid) DO UPDATE SET
   sid=EXCLUDED.sid, uid=EXCLUDED.uid, first_name=EXCLUDED.first_name, last_name=EXCLUDED.last_name,

@@ -82,8 +82,8 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         profile_count = 0
         with tempfile.TemporaryFile() as feed_file, tempfile.TemporaryFile() as index_file, tempfile.TemporaryFile() as names_file:
             tables = {
-                'student_profiles_hist_enr': feed_file,
-                'student_profile_index_hist_enr': index_file,
+                'student_profiles': feed_file,
+                'student_profile_index': index_file,
                 'student_names_hist_enr': names_file,
             }
             # Work in batches so as not to overload memory.
@@ -132,7 +132,8 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
             expected_grad_term = str(sis_profile.get('expectedGraduationTerm', {}).get('id') or '')
             terms_in_attendance = str(sis_profile.get('termsInAttendance', {}) or '')
             index_file.write(
-                encoded_tsv_row([sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance]) + b'\n',
+                encoded_tsv_row(
+                    [sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance, True]) + b'\n',
             )
 
             names_file.write(
