@@ -100,6 +100,6 @@ FROM (
   ) p,
   json_to_recordset(plans::json) AS plans(plan varchar)
 ) degrees
-ON CONFLICT (sid, plan) DO UPDATE SET
+ON CONFLICT (sid, plan, term_id) DO UPDATE SET
   sid=EXCLUDED.sid, plan=EXCLUDED.plan, date_awarded=EXCLUDED.date_awarded, term_id=EXCLUDED.term_id,
   hist_enr=FALSE;

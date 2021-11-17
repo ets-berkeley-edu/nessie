@@ -117,7 +117,7 @@ FROM (
   ) p,
   json_to_recordset(plans::json) AS plans(plan varchar)
 ) degrees
-ON CONFLICT (sid, plan) DO NOTHING;
+ON CONFLICT (sid, plan, term_id) DO NOTHING;
 
 DROP TABLE IF EXISTS {rds_schema_student}.student_enrollment_terms_hist_enr CASCADE;
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_enrollment_terms_hist_enr
