@@ -1,4 +1,55 @@
+CREATE SCHEMA IF NOT EXISTS {redshift_schema_edl_external};
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl_external}.student_academic_plan_data (
+    student_id VARCHAR NOT NULL,
+    academic_career_cd VARCHAR,
+    academic_program_status_cd VARCHAR,
+    academic_plan_type_cd VARCHAR
+);
+
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_edl};
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.academic_standing (
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR NOT NULL,
+    acad_standing_action VARCHAR NOT NULL,
+    acad_standing_status VARCHAR NOT NULL,
+    action_date DATE
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.advising_note_attachments (
+    advising_note_id VARCHAR NOT NULL,
+    sid VARCHAR NOT NULL,
+    student_note_nr VARCHAR NOT NULL,
+    created_by VARCHAR NOT NULL,
+    user_file_name VARCHAR NOT NULL,
+    sis_file_name VARCHAR NOT NULL,
+    edl_load_date DATE,
+    is_historical BOOLEAN
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.advising_note_topics (
+    advising_note_id VARCHAR NOT NULL,
+    sid VARCHAR NOT NULL,
+    student_note_nr VARCHAR NOT NULL,
+    note_topic VARCHAR NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.advising_notes (
+    id VARCHAR NOT NULL,
+    sid VARCHAR NOT NULL,
+    student_note_nr VARCHAR NOT NULL,
+    advisor_sid VARCHAR NOT NULL,
+    appointment_id VARCHAR,
+    note_category VARCHAR,
+    note_subcategory VARCHAR,
+    note_body VARCHAR,
+    created_by VARCHAR,
+    created_at TIMESTAMP WITH TIME ZONE,
+    updated_by VARCHAR,
+    updated_at TIMESTAMP WITH TIME ZONE,
+    edl_load_date DATE
+);
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_citizenships (
     sid VARCHAR NOT NULL,
@@ -146,7 +197,7 @@ VALUES
 INSERT INTO {redshift_schema_edl}.student_degree_progress
 (sid, feed)
 VALUES
-('11667051', %(sis_degree_progress_11667051)s);
+('11667051', %(edl_degree_progress_11667051)s);
 
 INSERT INTO {redshift_schema_edl}.student_ethnicities
 (sid, ethnicity, ethnic_group, edl_load_date)
@@ -168,6 +219,11 @@ VALUES
 ('9000000000', 'Samoan', 'Native Hawaiian/Oth Pac Island', '2021-02-18'),
 ('9000000000', 'African American/Black', 'Black/African American', '2021-02-18');
 
+INSERT INTO {redshift_schema_edl}.student_last_registrations
+(sid, feed)
+VALUES
+('1234567890', %(edl_last_registration_1234567890)s);
+
 INSERT INTO {redshift_schema_edl}.student_profile_index
 (sid, uid, first_name, last_name, gender, level, gpa, units, transfer, expected_grad_term, terms_in_attendance, edl_load_date)
 VALUES
@@ -182,6 +238,14 @@ VALUES
 ('890127492', '211159', 'Siegfried', 'Schlemiel', 'X', 10, 0, 3, FALSE, '2002', NULL, '2021-02-17'),
 ('9000000000', '300847', 'Wolfgang', 'Pauli-O''Rourke', 'X', 20, 0, 3, FALSE, '2218', NULL, '2021-02-17'),
 ('9100000000', '300848', 'Nora Stanton', 'Barney', 'M', 30, 0, 3, FALSE, '2218', NULL, '2021-02-17');
+
+INSERT INTO {redshift_schema_edl}.student_profiles
+(sid, feed)
+VALUES
+('11667051', %(edl_profile_11667051)s),
+('1234567890', %(edl_profile_1234567890)s),
+('2345678901', %(edl_profile_2345678901)s),
+('5000000000', %(edl_profile_5000000000)s);
 
 INSERT INTO {redshift_schema_edl}.student_visas
 (sid, visa_status, visa_type, edl_load_date)

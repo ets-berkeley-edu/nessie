@@ -23,7 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-import json
 import os
 
 import nessie.factory
@@ -142,17 +141,15 @@ def student_tables(app):
     fixture_path = f"{app.config['BASE_DIR']}/fixtures"
     params = {}
     for key in [
-        'sis_degree_progress_11667051',
-        'sis_student_api_11667051',
-        'sis_student_api_1234567890',
-        'sis_student_api_2345678901',
-        'sis_student_api_5000000000',
+        'edl_degree_progress_11667051',
+        'edl_last_registration_1234567890',
+        'edl_profile_11667051',
+        'edl_profile_1234567890',
+        'edl_profile_2345678901',
+        'edl_profile_5000000000',
     ]:
         with open(f'{fixture_path}/{key}.json', 'r') as f:
-            feed = f.read()
-            if key.startswith('sis_student_api'):
-                feed = json.dumps(json.loads(feed)['apiResponse']['response']['any']['students'][0])
-            params[key] = feed
+            params[key] = f.read()
 
     rds.execute('DROP SCHEMA sis_internal_test CASCADE')
     rds.execute(resolve_sql_template('create_rds_indexes.template.sql'))
@@ -165,19 +162,18 @@ def student_tables(app):
 
     for schema in ['asc_test', 'coe_test', 'student_test']:
         rds.execute(f'DROP SCHEMA {schema} CASCADE')
-        redshift.execute(f'DROP SCHEMA {schema} CASCADE')
+        redshift.execute(f'DROP SCHEMA IF EXISTS {schema} CASCADE')
     for schema in ['advisee_test', 'calnet_test', 'edl_test', 'undergrads_test']:
-        redshift.execute(f'DROP SCHEMA {schema} CASCADE')
+        redshift.execute(f'DROP SCHEMA IF EXISTS {schema} CASCADE')
 
 
 @pytest.fixture()
 def sis_note_tables(app):
     """Use Postgres to mock the Redshift SIS note schemas on local test runs."""
     from nessie.externals import redshift
-    internal_schema = app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL']
-    redshift.execute(f'DROP SCHEMA IF EXISTS {internal_schema} CASCADE')
-    redshift.execute(f'CREATE SCHEMA {internal_schema}')
-    redshift.execute(f"""CREATE TABLE {internal_schema}.advising_note_attachments
+    internal_schema = app.config['REDSHIFT_SCHEMA_EDL']
+    redshift.execute(f'CREATE SCHEMA IF NOT EXISTS {internal_schema}')
+    redshift.execute(f"""CREATE TABLE IF NOT EXISTS {internal_schema}.advising_note_attachments
     (
         advising_note_id character varying(513),
         sid character varying(256),

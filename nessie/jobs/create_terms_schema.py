@@ -27,10 +27,9 @@ from datetime import datetime, timedelta
 
 from flask import current_app as app
 from nessie.externals import rds, redshift
-from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import next_term_id, term_name_for_sis_id
 from nessie.lib.queries import edl_external_schema
-from nessie.lib.util import resolve_sql_template
 import pytz
 
 """Logic for SIS Terms schema creation job."""
@@ -38,45 +37,28 @@ import pytz
 
 class CreateTermsSchema(BackgroundJob):
 
-    feature_flag_edl = app.config['FEATURE_FLAG_EDL_SIS_VIEWS']
     rds_schema = app.config['RDS_SCHEMA_TERMS']
     redshift_schema = app.config['REDSHIFT_SCHEMA_TERMS']
 
     def run(self):
         app.logger.info('Starting SIS terms schema creation job...')
-        self.create_external_schema()
         self.refresh_sis_term_definitions()
         self.refresh_current_term_index()
         return 'SIS terms schema creation job completed.'
 
-    def create_external_schema(self):
-        if not self.feature_flag_edl:
-            # External schema is necessary when pulling term definitions from S3.
-            redshift.drop_external_schema(self.redshift_schema)
-            sql_template = 'create_terms_schema.template.sql'
-            app.logger.info(f'Executing {sql_template}...')
-            resolved_ddl = resolve_sql_template(sql_template)
-            if redshift.execute_ddl_script(resolved_ddl):
-                verify_external_schema(self.redshift_schema, resolved_ddl)
-            else:
-                raise BackgroundJobError('SIS terms schema creation job failed.')
-
     def refresh_sis_term_definitions(self):
-        if self.feature_flag_edl:
-            rows = redshift.fetch(f"""
-                SELECT
-                  semester_year_term_cd AS term_id,
-                  semester_year_name_concat_2 as term_name,
-                  TO_CHAR(semester_first_day_of_insr_dt, 'YYYY-MM-DD') AS term_begins,
-                  TO_CHAR(term_end_dt, 'YYYY-MM-DD') AS term_ends
-                FROM {edl_external_schema()}.student_academic_terms_data
-                WHERE
-                  semester_year_term_cd >= {app.config['EARLIEST_ACADEMIC_HISTORY_TERM_ID']}
-                  AND academic_career_cd = 'UGRD'
-                ORDER BY semester_year_term_cd
-            """)
-        else:
-            rows = redshift.fetch(f'SELECT * FROM {self.redshift_schema}.term_definitions')
+        rows = redshift.fetch(f"""
+            SELECT
+              semester_year_term_cd AS term_id,
+              semester_year_name_concat_2 as term_name,
+              TO_CHAR(semester_first_day_of_insr_dt, 'YYYY-MM-DD') AS term_begins,
+              TO_CHAR(term_end_dt, 'YYYY-MM-DD') AS term_ends
+            FROM {edl_external_schema()}.student_academic_terms_data
+            WHERE
+              semester_year_term_cd >= {app.config['EARLIEST_ACADEMIC_HISTORY_TERM_ID']}
+              AND academic_career_cd = 'UGRD'
+            ORDER BY semester_year_term_cd
+        """)
 
         if len(rows):
             with rds.transaction() as transaction:

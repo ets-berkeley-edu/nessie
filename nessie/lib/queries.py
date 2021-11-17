@@ -89,35 +89,21 @@ def student_schema():
     return app.config['REDSHIFT_SCHEMA_STUDENT']
 
 
-# TODO: Remove this method when the EDL cutover is complete.
-def student_schema_table(key):
-    return {
-        'degree_progress': 'student_degree_progress' if app.config['FEATURE_FLAG_EDL_DEGREE_PROGRESS'] else 'sis_api_degree_progress',
-        'student_demographics': 'student_demographics' if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS'] else 'student_api_demographics',
-    }.get(key, key)
-
-
 def undergrads_schema():
     return app.config['REDSHIFT_SCHEMA_UNDERGRADS']
 
 
 def get_all_student_ids():
-    if app.config['FEATURE_FLAG_EDL_SIS_VIEWS']:
-        sql = f"""SELECT DISTINCT student_id AS sid
-            FROM {edl_external_schema()}.student_academic_plan_data
-            WHERE
-                academic_career_cd='UGRD'
-                AND academic_program_status_cd='AC'
-                AND academic_plan_type_cd != 'MIN'
-            UNION SELECT sid FROM {asc_schema()}.students
-            UNION SELECT sid FROM {coe_schema()}.students
-            UNION SELECT sid FROM {advisee_schema()}.non_current_students
-        """
-    else:
-        sql = f"""SELECT sid FROM {asc_schema()}.students
-            UNION SELECT sid FROM {coe_schema()}.students
-            UNION SELECT sid FROM {undergrads_schema()}.students
-            UNION SELECT sid FROM {advisee_schema()}.non_current_students"""
+    sql = f"""SELECT DISTINCT student_id AS sid
+        FROM {edl_external_schema()}.student_academic_plan_data
+        WHERE
+            academic_career_cd='UGRD'
+            AND academic_program_status_cd='AC'
+            AND academic_plan_type_cd != 'MIN'
+        UNION SELECT sid FROM {asc_schema()}.students
+        UNION SELECT sid FROM {coe_schema()}.students
+        UNION SELECT sid FROM {advisee_schema()}.non_current_students
+    """
     return redshift.fetch(sql)
 
 
@@ -155,48 +141,29 @@ def get_advisee_advisor_mappings():
 
 @fixture('query_advisee_student_profile_feeds.csv')
 def get_advisee_student_profile_elements():
-    degree_progress_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_DEGREE_PROGRESS'] else app.config['REDSHIFT_SCHEMA_STUDENT']
-    demographics_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_DEMOGRAPHICS'] else app.config['REDSHIFT_SCHEMA_STUDENT']
-    registration_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_REGISTRATIONS'] else app.config['REDSHIFT_SCHEMA_STUDENT']
-
-    use_edl_sis = app.config['FEATURE_FLAG_EDL_SIS_VIEWS']
-    if use_edl_sis:
-        sql_intended_majors = f"""
-            SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(saphd.academic_plan_nm, ''), ' || ')
-            FROM {edl_schema()}.intended_majors im
-            LEFT JOIN {edl_external_schema()}.student_academic_plan_hierarchy_data saphd ON im.plan_code = saphd.academic_plan_cd
-            WHERE im.sid = ldap.sid
-        """
-    else:
-        sql_intended_majors = f"""
-            SELECT LISTAGG(im.plan_code || ' :: ' || coalesce (apo.acadplan_descr, ''), ' || ')
-            FROM {sis_schema()}.intended_majors im
-            LEFT JOIN {advisor_schema()}.academic_plan_owners apo ON im.plan_code = apo.acadplan_code
-            WHERE im.sid = ldap.sid
-        """
-
-    if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES']:
-        profile_table = f'{edl_schema()}.student_profiles'
-    else:
-        profile_table = f'{student_schema()}.sis_api_profiles'
-
     sql = f"""SELECT DISTINCT ldap.ldap_uid, ldap.sid, ldap.first_name, ldap.last_name,
                 us.canvas_id AS canvas_user_id, us.name AS canvas_user_name,
                 sis.feed AS sis_profile_feed,
                 deg.feed AS degree_progress_feed,
                 demog.feed AS demographics_feed,
                 reg.feed AS last_registration_feed,
-                ({sql_intended_majors}) AS intended_majors
+                (
+                    SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(saphd.academic_plan_nm, ''), ' || ')
+                    FROM {edl_schema()}.intended_majors im
+                    LEFT JOIN {edl_external_schema()}.student_academic_plan_hierarchy_data saphd
+                        ON im.plan_code = saphd.academic_plan_cd
+                    WHERE im.sid = ldap.sid
+                ) AS intended_majors
               FROM {calnet_schema()}.advisees ldap
               LEFT JOIN {intermediate_schema()}.users us
                 ON us.uid = ldap.ldap_uid
-              LEFT JOIN {profile_table} sis
+              LEFT JOIN {edl_schema()}.student_profiles sis
                 ON sis.sid = ldap.sid
-              LEFT JOIN {degree_progress_schema}.{student_schema_table('degree_progress')} deg
+              LEFT JOIN {edl_schema()}.student_degree_progress deg
                 ON deg.sid = ldap.sid
-              LEFT JOIN {demographics_schema}.{student_schema_table('student_demographics')} demog
+              LEFT JOIN {edl_schema()}.student_demographics demog
                 ON demog.sid = ldap.sid
-              LEFT JOIN {registration_schema}.student_last_registrations reg
+              LEFT JOIN {edl_schema()}.student_last_registrations reg
                 ON reg.sid = ldap.sid
               ORDER BY ldap.sid
         """
@@ -281,9 +248,8 @@ def stream_canvas_assignment_submissions(term_id):
 
 
 def get_all_instructor_uids():
-    course_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_SIS_VIEWS'] else sis_schema()
     sql = f"""SELECT DISTINCT instructor_uid
-              FROM {course_schema}.courses
+              FROM {edl_schema()}.courses
               WHERE instructor_uid IS NOT NULL AND instructor_uid != ''
         """
     return redshift.fetch(sql)
@@ -443,47 +409,34 @@ def get_enrolled_canvas_sites_for_term(term_id):
 def get_enrolled_primary_sections(term_id=None):
     term_clause = f'AND sec.sis_term_id = {term_id}' if term_id else ''
     sql = f"""SELECT
-                sec.sis_term_id,
-                sec.sis_section_id,
-                sec.sis_course_name,
-                TRANSLATE(sec.sis_course_name, '&-, ', '') AS sis_course_name_compressed,
-                sec.sis_course_title,
-                sec.sis_instruction_format,
-                sec.sis_section_num,
-                LISTAGG(DISTINCT sec.instructor_name, ', ') WITHIN GROUP (ORDER BY sec.instructor_name) AS instructors
-              FROM {intermediate_schema()}.sis_enrollments enr
-              JOIN {intermediate_schema()}.sis_sections sec
-                ON enr.sis_term_id = sec.sis_term_id
-                {term_clause}
-                AND sec.is_primary = TRUE
-                AND enr.sis_section_id = sec.sis_section_id
-                AND enr.ldap_uid IN (SELECT uid FROM {student_schema()}.student_profile_index)
-              GROUP BY
-                sec.sis_term_id, sec.sis_section_id, sec.sis_course_name,
-                sec.sis_course_title, sec.sis_instruction_format, sec.sis_section_num
-              ORDER BY sec.sis_section_id
+            sec.sis_term_id,
+            sec.sis_section_id,
+            sec.sis_course_name,
+            TRANSLATE(sec.sis_course_name, '&-, ', '') AS sis_course_name_compressed,
+            sec.sis_course_title,
+            sec.sis_instruction_format,
+            sec.sis_section_num,
+            LISTAGG(DISTINCT sec.instructor_name, ', ') WITHIN GROUP (ORDER BY sec.instructor_name) AS instructors
+          FROM {intermediate_schema()}.sis_enrollments enr
+          JOIN {intermediate_schema()}.sis_sections sec
+            ON enr.sis_term_id = sec.sis_term_id
+            {term_clause}
+            AND sec.is_primary = TRUE
+            AND enr.sis_section_id = sec.sis_section_id
+            AND enr.ldap_uid IN (SELECT uid FROM {student_schema()}.student_profile_index)
+          GROUP BY
+            sec.sis_term_id, sec.sis_section_id, sec.sis_course_name,
+            sec.sis_course_title, sec.sis_instruction_format, sec.sis_section_num
+          ORDER BY sec.sis_section_id
         """
     return redshift.fetch(sql)
 
 
 def get_fetched_non_advisees():
-    if app.config['FEATURE_FLAG_EDL_SIS_VIEWS']:
-        where_clause = f"""
-            LEFT JOIN {edl_external_schema()}.student_academic_plan_data ug ON ug.student_id = hist.sid
-              AND ug.academic_career_cd = 'UGRD'
-              AND ug.academic_program_status_cd = 'AC'
-              AND ug.academic_plan_type_cd != 'MIN'
-            WHERE ascs.sid IS NULL AND coe.sid IS NULL AND ug.student_id IS NULL
-        """
-    else:
-        where_clause = f"""
-            LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = hist.sid
-            WHERE ascs.sid IS NULL AND coe.sid IS NULL AND ug.sid IS NULL
-        """
-
-    if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES']:
-        profile_table = f'{edl_schema()}.student_profiles'
-        where_clause = f"""
+    sql = f"""SELECT DISTINCT(hist.sid) AS sid
+            FROM {edl_schema()}.student_profiles hist
+            LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = hist.sid
+            LEFT JOIN {coe_schema()}.students coe ON coe.sid = hist.sid
             LEFT JOIN (
                  SELECT sid, ldap_uid FROM {edl_schema()}.basic_attributes attrs
                  UNION
@@ -491,70 +444,49 @@ def get_fetched_non_advisees():
                  GROUP BY sid, ldap_uid
             ) attrs
             ON attrs.sid = hist.sid
-            {where_clause}
+            LEFT JOIN {edl_external_schema()}.student_academic_plan_data ug ON ug.student_id = hist.sid
+                AND ug.academic_career_cd = 'UGRD'
+                AND ug.academic_program_status_cd = 'AC'
+                AND ug.academic_plan_type_cd != 'MIN'
+            WHERE ascs.sid IS NULL AND coe.sid IS NULL AND ug.student_id IS NULL
             AND attrs.ldap_uid IS NOT NULL and attrs.ldap_uid != ''
-        """
-    else:
-        profile_table = f'{student_schema()}.sis_api_profiles_hist_enr'
-
-    sql = f"""SELECT DISTINCT(hist.sid) AS sid
-              FROM {profile_table} hist
-              LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = hist.sid
-              LEFT JOIN {coe_schema()}.students coe ON coe.sid = hist.sid
-              {where_clause}
         """
     return redshift.fetch(sql)
 
 
 def get_unfetched_non_advisees():
-    if app.config['FEATURE_FLAG_EDL_SIS_VIEWS']:
-        attrs_schema = edl_schema()
-        ug_join = f"""LEFT JOIN {edl_external_schema()}.student_academic_plan_data ug ON ug.student_id = hist.sid
-              AND ug.academic_career_cd = 'UGRD'
-              AND ug.academic_program_status_cd = 'AC'
-              AND ug.academic_plan_type_cd != 'MIN'"""
-        ug_null = 'AND ug.student_id IS NULL'
-    else:
-        attrs_schema = sis_schema()
-        ug_join = f'LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = attrs.sid'
-        ug_null = 'AND ug.sid IS NULL'
+
     sql = f"""SELECT DISTINCT attrs.sid
-              FROM {attrs_schema}.basic_attributes attrs
-              LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = attrs.sid
-              LEFT JOIN {coe_schema()}.students coe ON coe.sid = attrs.sid
-              LEFT JOIN {student_schema()}.sis_api_profiles_hist_enr hist ON hist.sid = attrs.sid
-              {ug_join}
-              WHERE ascs.sid IS NULL AND coe.sid IS NULL AND hist.sid IS NULL {ug_null}
-                AND (
-                  attrs.affiliations LIKE '%STUDENT-TYPE%'
-                  OR attrs.affiliations LIKE '%SIS-EXTENDED%'
-                  OR attrs.affiliations LIKE '%FORMER-STUDENT%'
-                )
-                AND attrs.person_type = 'S' AND char_length(attrs.sid) < 12
+          FROM {edl_schema()}.basic_attributes attrs
+          LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = attrs.sid
+          LEFT JOIN {coe_schema()}.students coe ON coe.sid = attrs.sid
+          LEFT JOIN {student_schema()}.sis_api_profiles_hist_enr hist ON hist.sid = attrs.sid
+          LEFT JOIN {edl_external_schema()}.student_academic_plan_data ug ON ug.student_id = hist.sid
+            AND ug.academic_career_cd = 'UGRD'
+            AND ug.academic_program_status_cd = 'AC'
+            AND ug.academic_plan_type_cd != 'MIN'
+          WHERE ascs.sid IS NULL AND coe.sid IS NULL AND hist.sid IS NULL AND ug.student_id IS NULL
+            AND (
+              attrs.affiliations LIKE '%STUDENT-TYPE%'
+              OR attrs.affiliations LIKE '%SIS-EXTENDED%'
+              OR attrs.affiliations LIKE '%FORMER-STUDENT%'
+            )
+            AND attrs.person_type = 'S' AND char_length(attrs.sid) < 12
         """
     return redshift.fetch(sql)
 
 
 def get_non_advisees_without_registration_imports():
-    if app.config['FEATURE_FLAG_EDL_SIS_VIEWS']:
-        attrs_schema = edl_schema()
-        ug_join = f"""LEFT JOIN {edl_external_schema()}.student_academic_plan_data ug ON ug.student_id = hist.sid
-              AND ug.academic_career_cd = 'UGRD'
-              AND ug.academic_program_status_cd = 'AC'
-              AND ug.academic_plan_type_cd != 'MIN'"""
-        ug_null = 'AND ug.student_id IS NULL'
-    else:
-        attrs_schema = sis_schema()
-        ug_join = f'LEFT JOIN {undergrads_schema()}.students ug ON ug.sid = attrs.sid'
-        ug_null = 'AND ug.sid IS NULL'
-    attrs_schema = edl_schema() if app.config['FEATURE_FLAG_EDL_SIS_VIEWS'] else sis_schema()
     sql = f"""SELECT DISTINCT attrs.sid
-              FROM {attrs_schema}.basic_attributes attrs
+              FROM {edl_schema()}.basic_attributes attrs
               LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = attrs.sid
               LEFT JOIN {coe_schema()}.students coe ON coe.sid = attrs.sid
               LEFT JOIN {student_schema()}.hist_enr_last_registrations hist ON hist.sid = attrs.sid
-              {ug_join}
-              WHERE ascs.sid IS NULL AND coe.sid IS NULL AND hist.sid IS NULL {ug_null}
+              LEFT JOIN {edl_external_schema()}.student_academic_plan_data ug ON ug.student_id = hist.sid
+              AND ug.academic_career_cd = 'UGRD'
+              AND ug.academic_program_status_cd = 'AC'
+              AND ug.academic_plan_type_cd != 'MIN'
+              WHERE ascs.sid IS NULL AND coe.sid IS NULL AND hist.sid IS NULL AND ug.student_id IS NULL
                 AND (
                   attrs.affiliations LIKE '%STUDENT-TYPE%'
                   OR attrs.affiliations LIKE '%SIS-EXTENDED%'
@@ -566,41 +498,28 @@ def get_non_advisees_without_registration_imports():
 
 
 def get_non_advisee_api_feeds(sids):
-    if app.config['FEATURE_FLAG_EDL_REGISTRATIONS']:
-        registration_table = f'{edl_schema()}.student_last_registrations'
-    else:
-        registration_table = f'{student_schema()}.hist_enr_last_registrations'
-    if app.config['FEATURE_FLAG_EDL_STUDENT_PROFILES']:
-        uid_select = 'attrs.ldap_uid AS uid'
-        attrs_join = f"""
-          LEFT JOIN (
-            SELECT a.sid, MAX(a.ldap_uid) AS ldap_uid FROM (
-              SELECT sid, ldap_uid FROM {edl_schema()}.basic_attributes attrs
-                WHERE (
-                  attrs.affiliations LIKE '%%STUDENT-TYPE%%'
-                  OR attrs.affiliations LIKE '%%SIS-EXTENDED%%'
-                  OR attrs.affiliations LIKE '%%FORMER-STUDENT%%'
-                )
-                AND attrs.person_type = 'S' AND char_length(attrs.sid) < 12
-              UNION
-              SELECT sis_id AS sid, ldap_uid FROM {edl_schema()}.enrollments
-              GROUP BY sid, ldap_uid
-            ) a
-            GROUP BY sid
-          ) attrs
-          ON attrs.sid = sis.sid"""
-        profile_table = f'{edl_schema()}.student_profiles'
-    else:
-        uid_select = 'sis.uid'
-        attrs_join = ''
-        profile_table = f'{student_schema()}.sis_api_profiles_hist_enr'
     sql = f"""SELECT DISTINCT sis.sid,
-                {uid_select},
+                attrs.ldap_uid AS uid,
                 sis.feed AS sis_feed,
                 reg.feed AS last_registration_feed
-              FROM {profile_table} sis
-              {attrs_join}
-              LEFT JOIN {registration_table} reg
+              FROM {edl_schema()}.student_profiles sis
+              LEFT JOIN (
+                SELECT a.sid, MAX(a.ldap_uid) AS ldap_uid FROM (
+                  SELECT sid, ldap_uid FROM {edl_schema()}.basic_attributes attrs
+                    WHERE (
+                      attrs.affiliations LIKE '%%STUDENT-TYPE%%'
+                      OR attrs.affiliations LIKE '%%SIS-EXTENDED%%'
+                      OR attrs.affiliations LIKE '%%FORMER-STUDENT%%'
+                    )
+                    AND attrs.person_type = 'S' AND char_length(attrs.sid) < 12
+                  UNION
+                  SELECT sis_id AS sid, ldap_uid FROM {edl_schema()}.enrollments
+                  GROUP BY sid, ldap_uid
+                ) a
+                GROUP BY sid
+              ) attrs
+              ON attrs.sid = sis.sid
+              LEFT JOIN {edl_schema()}.student_last_registrations reg
                 ON reg.sid = sis.sid
               WHERE sis.sid=ANY(%s)
               ORDER BY sis.sid
@@ -648,14 +567,6 @@ def stream_sis_enrollments(sids=None, advisees_only=False):
 
 
 def stream_term_gpas(sids=None, advisees_only=False):
-    order_by = 'gp.term_id DESC, gp.sid'
-    if app.config['FEATURE_FLAG_EDL_REGISTRATIONS']:
-        term_gpa_table = f'{edl_schema()}.term_gpa'
-        order_by += ", CASE gp.career WHEN 'UGRD' THEN 1 ELSE 0 END"
-    elif advisees_only:
-        term_gpa_table = f'{student_schema()}.student_term_gpas'
-    else:
-        term_gpa_table = f'{student_schema()}.hist_enr_term_gpas'
     if sids:
         sid_filter = 'WHERE gp.sid = ANY(%s)'
     elif advisees_only:
@@ -663,9 +574,9 @@ def stream_term_gpas(sids=None, advisees_only=False):
     else:
         sid_filter = ''
     sql = f"""SELECT gp.sid, gp.term_id, gp.gpa, gp.units_taken_for_gpa
-              FROM {term_gpa_table} gp
+              FROM {edl_schema()}.term_gpa gp
               {sid_filter}
-              ORDER BY {order_by}
+              ORDER BY gp.term_id DESC, gp.sid, CASE gp.career WHEN 'UGRD' THEN 1 ELSE 0 END
         """
     params = (sids,) if sids else None
     return redshift.fetch(sql, params=params, stream_results=True)

@@ -50,7 +50,7 @@ class CreateSisSchema(BackgroundJob):
         redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template('create_sis_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl):
-            verify_external_schema(external_schema, resolved_ddl, is_zero_count_acceptable=app.config['FEATURE_FLAG_EDL_SIS_VIEWS'])
+            verify_external_schema(external_schema, resolved_ddl, is_zero_count_acceptable=True)
         else:
             raise BackgroundJobError('SIS schema creation job failed.')
         return 'SIS schema creation job completed.'

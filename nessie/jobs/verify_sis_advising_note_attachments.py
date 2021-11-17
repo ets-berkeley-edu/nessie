@@ -88,11 +88,9 @@ class VerifySisAdvisingNoteAttachments(BackgroundJob):
         return s3_attachment_sync_failures
 
     def get_all_notes_attachments(self):
-        schema = app.config['REDSHIFT_SCHEMA_EDL'] if app.config['FEATURE_FLAG_EDL_NOTES']\
-            else app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL']
-        sis_notes_attachments = set(
-            [r['sis_file_name'] for r in redshift.fetch(f'SELECT DISTINCT sis_file_name FROM {schema}.advising_note_attachments')],
-        )
+        results = redshift.fetch(f"""
+            SELECT DISTINCT sis_file_name FROM {app.config['REDSHIFT_SCHEMA_EDL']}.advising_note_attachments""")
+        sis_notes_attachments = set([r['sis_file_name'] for r in results])
         return sis_notes_attachments
 
     def find_missing_notes_view_attachments(self, dest_prefix):
