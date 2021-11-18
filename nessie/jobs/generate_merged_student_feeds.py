@@ -48,18 +48,10 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     rds_dblink_to_redshift = app.config['REDSHIFT_DATABASE'] + '_redshift'
     student_schema = queries.student_schema()
 
-    def run(self, term_id=None):
+    def run(self):
         app.logger.info('Starting merged profile generation job.')
 
-        # Term id is not a number for this job.
-        if term_id not in ['all', 'none']:
-            app.logger.warn("Didn't understand term id argument; will generate feeds for all terms.")
-            term_id = 'all'
-
-        app.logger.info('Cleaning up old data...')
-        redshift.execute('VACUUM; ANALYZE;')
-
-        status = self.generate_feeds(term_id)
+        status = self.generate_feeds()
 
         # Clean up the workbench.
         redshift.execute('VACUUM; ANALYZE;')
@@ -67,7 +59,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
         return status
 
-    def generate_feeds(self, term_id):
+    def generate_feeds(self):
         self.successes = []
         self.failures = []
 
@@ -83,16 +75,15 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
         result = f'Generated merged profiles ({len(self.successes)} successes, {len(self.failures)} failures).'
 
-        if term_id != 'none':
-            app.logger.info('Profile generation complete; will generate enrollment terms.')
-            row_count = self.generate_student_enrollments_table(all_student_feed_elements)
-            if row_count:
-                result += f' Generated merged enrollment terms ({row_count} feeds.)'
-            else:
-                raise BackgroundJobError('Failed to generate student enrollment tables.')
+        app.logger.info('Profile generation complete; will generate enrollment terms.')
+        row_count = self.generate_student_enrollments_table(all_student_feed_elements)
+        if row_count:
+            result += f' Generated merged enrollment terms ({row_count} feeds.)'
+        else:
+            raise BackgroundJobError('Failed to generate student enrollment tables.')
 
-            self.refresh_rds_enrollment_terms()
-            truncate_staging_table('student_enrollment_terms')
+        self.refresh_rds_enrollment_terms()
+        truncate_staging_table('student_enrollment_terms')
 
         return result
 
@@ -180,7 +171,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
             feed_counts['student_profile_index'] += write_to_tsv_file(
                 feed_files['student_profile_index'],
-                [sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance],
+                [sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance, False],
             )
 
             for plan in sis_profile.get('plans', []):
@@ -375,6 +366,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                 SELECT DISTINCT sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance
                 FROM {self.student_schema}.student_profile_index
+                WHERE hist_enr IS FALSE
               $REDSHIFT$)
             AS redshift_profile_index (
                 sid VARCHAR,

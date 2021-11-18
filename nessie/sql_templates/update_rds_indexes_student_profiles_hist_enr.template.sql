@@ -50,11 +50,11 @@ INSERT INTO {rds_schema_student}.student_profile_index
   (sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance,
    hist_enr)
 SELECT
-  sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance,
-  TRUE
+  sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance, hist_enr
 FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
   SELECT *
-  FROM {redshift_schema_student}.student_profile_index_hist_enr
+  FROM {redshift_schema_student}.student_profile_index
+  WHERE hist_enr IS TRUE
 $REDSHIFT$)
 AS redshift_profile_index_hist_enr (
   sid VARCHAR,
@@ -66,7 +66,8 @@ AS redshift_profile_index_hist_enr (
   units NUMERIC,
   transfer BOOLEAN,
   expected_grad_term VARCHAR,
-  terms_in_attendance INT
+  terms_in_attendance INT,
+  hist_enr BOOLEAN
 )
 ON CONFLICT (sid) DO NOTHING;
 
