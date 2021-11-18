@@ -28,7 +28,7 @@ DELETE FROM {rds_schema_student}.student_profile_index WHERE hist_enr IS FALSE;
 INSERT INTO {rds_schema_student}.student_profile_index
   (sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance, hist_enr)
 SELECT
-  sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance, hist_enr)
+  sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance, hist_enr
 FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
   SELECT *
   FROM {redshift_schema_student}.student_profile_index

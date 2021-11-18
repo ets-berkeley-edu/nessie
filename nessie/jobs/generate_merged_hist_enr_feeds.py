@@ -82,7 +82,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         profile_count = 0
         with tempfile.TemporaryFile() as feed_file, tempfile.TemporaryFile() as index_file, tempfile.TemporaryFile() as names_file:
             tables = {
-                'student_profiles': feed_file,
+                'student_profiles_hist_enr': feed_file,
                 'student_profile_index': index_file,
                 'student_names_hist_enr': names_file,
             }
