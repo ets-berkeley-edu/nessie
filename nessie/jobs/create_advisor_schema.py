@@ -69,19 +69,12 @@ class CreateAdvisorSchema(BackgroundJob):
         app.logger.info('Redshift schema created.')
 
     def import_advisor_attributes(self):
-        if self.feature_flag_edl:
-            sql = resolve_sql_template_string("""
-                SELECT DISTINCT advisor_id
-                FROM {redshift_schema_edl_external}.student_advisor_data
-                WHERE academic_career_cd = 'UGRD' AND advisor_id ~ '[0-9]+'
-            """)
-            advisor_ids = [row['advisor_id'] for row in redshift.fetch(sql)]
-        else:
-            sql = resolve_sql_template_string("""
-                SELECT DISTINCT advisor_sid
-                FROM {redshift_schema_advisor_internal}.advisor_students
-            """)
-            advisor_ids = [row['advisor_sid'] for row in redshift.fetch(sql)]
+        sql = resolve_sql_template_string("""
+            SELECT DISTINCT advisor_id
+            FROM {redshift_schema_edl_external}.student_advisor_data
+            WHERE academic_career_cd = 'UGRD' AND advisor_id ~ '[0-9]+'
+        """)
+        advisor_ids = [row['advisor_id'] for row in redshift.fetch(sql)]
         return _import_calnet_attributes(advisor_ids)
 
 
