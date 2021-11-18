@@ -64,11 +64,12 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         self.failures = []
 
         all_student_feed_elements = queries.get_advisee_student_profile_elements()
+        sids = [r['sid'] for r in all_student_feed_elements]
 
         profile_tables = self.generate_student_profile_tables(all_student_feed_elements)
         if not profile_tables:
             raise BackgroundJobError('Failed to generate student profile tables.')
-        refresh_all_from_staging(profile_tables)
+        refresh_all_from_staging(profile_tables, sids)
 
         self.update_redshift_academic_standing()
         self.update_rds_profile_indexes()
@@ -76,7 +77,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         result = f'Generated merged profiles ({len(self.successes)} successes, {len(self.failures)} failures).'
 
         app.logger.info('Profile generation complete; will generate enrollment terms.')
-        row_count = self.generate_student_enrollments_table(all_student_feed_elements)
+        row_count = self.generate_student_enrollments_table(sids)
         if row_count:
             result += f' Generated merged enrollment terms ({row_count} feeds.)'
         else:
@@ -219,8 +220,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         else:
             raise BackgroundJobError('Failed to update RDS student profile indexes.')
 
-    def generate_student_enrollments_table(self, all_student_feed_elements):
-        sids = [r['sid'] for r in all_student_feed_elements]
+    def generate_student_enrollments_table(self, sids):
         row_count = 0
 
         with tempfile.TemporaryFile() as feed_file:

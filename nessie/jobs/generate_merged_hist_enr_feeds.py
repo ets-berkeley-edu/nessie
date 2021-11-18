@@ -82,7 +82,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         profile_count = 0
         with tempfile.TemporaryFile() as feed_file, tempfile.TemporaryFile() as index_file, tempfile.TemporaryFile() as names_file:
             tables = {
-                'student_profiles_hist_enr': feed_file,
+                'student_profiles': feed_file,
                 'student_profile_index': index_file,
                 'student_names_hist_enr': names_file,
             }
@@ -121,7 +121,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
                 'sisProfile': sis_profile,
             }
             self.fill_names_from_sis_profile(sis_api_feed, merged_profile)
-            feed_file.write(encoded_tsv_row([sid, uid, json.dumps(merged_profile)]) + b'\n')
+            feed_file.write(encoded_tsv_row([sid, json.dumps(merged_profile)]) + b'\n')
 
             first_name = merged_profile.get('firstName', '')
             last_name = merged_profile.get('lastName', '')
