@@ -34,8 +34,11 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_profiles_hist_enr
 INSERT INTO {rds_schema_student}.student_profiles_hist_enr (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT *
-    FROM {redshift_schema_student}.student_profiles_hist_enr
+    SELECT sp.sid, spi.uid, sp.profile
+    FROM {redshift_schema_student}.student_profiles sp
+    JOIN {redshift_schema_student}.student_profile_index spi
+    ON sp.sid = spi.sid
+    AND spi.hist_enr IS TRUE
   $REDSHIFT$)
   AS redshift_profiles (
     sid VARCHAR,

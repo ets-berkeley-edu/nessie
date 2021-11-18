@@ -37,10 +37,10 @@ def staging_schema():
     return f'{student_schema()}_staging'
 
 
-def refresh_all_from_staging(tables):
+def refresh_all_from_staging(tables, sids=None):
     with redshift.transaction() as transaction:
         for table in tables:
-            refresh_from_staging(table, None, None, transaction)
+            refresh_from_staging(table, None, sids, transaction)
         if not transaction.commit():
             raise BackgroundJobError(f'Final transaction commit failed for {student_schema()}.')
 
