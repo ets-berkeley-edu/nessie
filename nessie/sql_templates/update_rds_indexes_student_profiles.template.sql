@@ -81,7 +81,7 @@ UPDATE {rds_schema_student}.student_profile_index spidx
 DELETE FROM {rds_schema_student}.student_degrees WHERE hist_enr IS FALSE;
 
 INSERT INTO {rds_schema_student}.student_degrees
-SELECT sid, plan, date_awarded,
+SELECT DISTINCT sid, plan, date_awarded,
 CASE substr(date_awarded, 6, 2)
   WHEN '03' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '0'
   WHEN '05' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '2'
