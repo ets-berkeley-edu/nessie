@@ -120,16 +120,9 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_academic_status
     PRIMARY KEY (sid)
 );
 
-CREATE INDEX IF NOT EXISTS students_academic_status_first_name_idx ON {rds_schema_student}.student_academic_status (first_name);
-CREATE INDEX IF NOT EXISTS students_academic_status_last_name_idx ON {rds_schema_student}.student_academic_status (last_name);
-CREATE INDEX IF NOT EXISTS students_academic_status_level_idx ON {rds_schema_student}.student_academic_status (level);
-CREATE INDEX IF NOT EXISTS students_academic_status_gpa_idx ON {rds_schema_student}.student_academic_status (gpa);
-CREATE INDEX IF NOT EXISTS students_academic_status_units_idx ON {rds_schema_student}.student_academic_status (units);
-CREATE INDEX IF NOT EXISTS students_academic_status_transfer_idx ON {rds_schema_student}.student_academic_status (transfer);
-CREATE INDEX IF NOT EXISTS students_academic_status_email_address_idx ON {rds_schema_student}.student_academic_status (email_address);
+CREATE INDEX IF NOT EXISTS students_academic_status_sid_idx ON {rds_schema_student}.student_academic_status (sid);
+CREATE INDEX IF NOT EXISTS students_academic_status_uid_idx ON {rds_schema_student}.student_academic_status (uid);
 CREATE INDEX IF NOT EXISTS students_academic_status_entering_term_idx ON {rds_schema_student}.student_academic_status (entering_term);
-CREATE INDEX IF NOT EXISTS students_academic_status_grad_term_idx ON {rds_schema_student}.student_academic_status (expected_grad_term);
-CREATE INDEX IF NOT EXISTS students_academic_status_terms_in_attendance_idx ON {rds_schema_student}.student_academic_status (terms_in_attendance);
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_profile_index
 (
