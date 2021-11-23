@@ -1,0 +1,9 @@
+DROP INDEX student.students_academic_status_first_name_idx;
+DROP INDEX student.students_academic_status_last_name_idx;
+DROP INDEX student.students_academic_status_gpa_idx;
+DROP INDEX student.students_academic_status_units_idx;
+DROP INDEX student.students_academic_status_transfer_idx;
+DROP INDEX student.students_academic_status_email_address_idx;
+DROP INDEX student.students_academic_status_grad_term_idx;
+DROP INDEX student.students_academic_status_terms_in_attendance_idx;
+DROP INDEX student.students_academic_status_level_idx;
