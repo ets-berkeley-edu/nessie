@@ -44,58 +44,6 @@ SORTKEY(course_id);
 
 -- The following are derivative tables generated from previously stored data.
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles
-(
-    sid VARCHAR NOT NULL,
-    profile VARCHAR(max) NOT NULL
-)
-DISTKEY (sid)
-SORTKEY (sid);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_names_hist_enr
-(
-    sid VARCHAR NOT NULL,
-    uid VARCHAR NOT NULL,
-    first_name VARCHAR NOT NULL,
-    last_name VARCHAR NOT NULL
-)
-DISTKEY (sid)
-SORTKEY (sid);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index
-(
-    sid VARCHAR NOT NULL,
-    uid VARCHAR NOT NULL,
-    first_name VARCHAR,
-    last_name VARCHAR,
-    level VARCHAR,
-    gpa DECIMAL(5,3),
-    units DECIMAL (6,3),
-    transfer BOOLEAN,
-    expected_grad_term VARCHAR(4),
-    terms_in_attendance INT,
-    hist_enr BOOLEAN
-)
-DISTKEY (units)
-INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name, hist_enr);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_holds
-(
-    sid VARCHAR NOT NULL,
-    feed VARCHAR(max) NOT NULL
-)
-DISTKEY (sid)
-SORTKEY (sid);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_majors
-(
-    sid VARCHAR NOT NULL,
-    major VARCHAR NOT NULL,
-    college VARCHAR NOT NULL
-)
-DISTKEY (sid)
-SORTKEY (college, major);
-
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.academic_standing
 (
     sid VARCHAR NOT NULL,
@@ -140,14 +88,15 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.minors
 DISTKEY (sid)
 SORTKEY (sid, minor);
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.visas
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_canvas_site_memberships
 (
     sid VARCHAR NOT NULL,
-    visa_status VARCHAR,
-    visa_type VARCHAR
+    term_id VARCHAR(4) NOT NULL,
+    sis_section_ids VARCHAR,
+    feed VARCHAR(max) NOT NULL
 )
 DISTKEY (sid)
-SORTKEY (sid);
+SORTKEY (term_id, sid);
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_enrollment_terms
 (
@@ -158,21 +107,53 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_enrollment_terms
 DISTKEY (sid)
 SORTKEY (sid, term_id);
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_enrollment_terms_hist_enr
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_holds
 (
     sid VARCHAR NOT NULL,
-    term_id VARCHAR(4) NOT NULL,
-    enrollment_term VARCHAR(max) NOT NULL
-)
-DISTKEY (sid)
-SORTKEY (sid, term_id);
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_canvas_site_memberships
-(
-    sid VARCHAR NOT NULL,
-    term_id VARCHAR(4) NOT NULL,
-    sis_section_ids VARCHAR,
     feed VARCHAR(max) NOT NULL
 )
 DISTKEY (sid)
-SORTKEY (term_id, sid);
+SORTKEY (sid);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_majors
+(
+    sid VARCHAR NOT NULL,
+    major VARCHAR NOT NULL,
+    college VARCHAR NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (college, major);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index
+(
+    sid VARCHAR NOT NULL,
+    uid VARCHAR NOT NULL,
+    first_name VARCHAR,
+    last_name VARCHAR,
+    level VARCHAR,
+    gpa DECIMAL(5,3),
+    units DECIMAL (6,3),
+    transfer BOOLEAN,
+    expected_grad_term VARCHAR(4),
+    terms_in_attendance INT,
+    hist_enr BOOLEAN
+)
+DISTKEY (units)
+INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name, hist_enr);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles
+(
+    sid VARCHAR NOT NULL,
+    profile VARCHAR(max) NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.visas
+(
+    sid VARCHAR NOT NULL,
+    visa_status VARCHAR,
+    visa_type VARCHAR
+)
+DISTKEY (sid)
+SORTKEY (sid);

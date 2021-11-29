@@ -497,8 +497,11 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             f"""INSERT INTO {self.rds_schema}.student_enrollment_terms (
             SELECT *
                 FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
-                    SELECT sid, term_id, enrollment_term
-                    FROM {self.student_schema}.student_enrollment_terms
+                    SELECT set.sid, set.term_id, set.enrollment_term
+                    FROM {self.student_schema}.student_enrollment_terms set
+                    JOIN {self.student_schema}.student_profile_index spi
+                    ON set.sid = spi.sid
+                    AND spi.hist_enr IS FALSE
               $REDSHIFT$)
             AS redshift_enrollment_terms (
                 sid VARCHAR,
