@@ -51,6 +51,9 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     def run(self):
         app.logger.info('Starting merged profile generation job.')
 
+        app.logger.info('Cleaning up old data...')
+        redshift.execute('VACUUM; ANALYZE;')
+
         status = self.generate_feeds()
 
         # Clean up the workbench.
@@ -63,10 +66,10 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         self.successes = []
         self.failures = []
 
-        all_student_feed_elements = queries.get_advisee_student_profile_elements()
-        sids = [r['sid'] for r in all_student_feed_elements]
+        all_student_profile_elements = queries.get_all_student_profile_elements()
+        sids = [r['sid'] for r in all_student_profile_elements]
 
-        profile_tables = self.generate_student_profile_tables(all_student_feed_elements)
+        profile_tables = self.generate_student_profile_tables(all_student_profile_elements)
         if not profile_tables:
             raise BackgroundJobError('Failed to generate student profile tables.')
         refresh_all_from_staging(profile_tables, sids)
@@ -146,18 +149,19 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 'plan': a['plan'],
             })
 
+        # For now, whether a student counts as "hist_enr" is determined by whether they show up in the Calnet schema.
+        hist_enr = feed_elements.get('ldap_sid') is None
+
         merged_profile = {
             'sid': sid,
             'uid': uid,
-            'firstName': feed_elements.get('first_name'),
-            'lastName': feed_elements.get('last_name'),
-            'name': ' '.join([feed_elements.get('first_name'), feed_elements.get('last_name')]),
             'canvasUserId': feed_elements.get('canvas_user_id'),
             'canvasUserName': feed_elements.get('canvas_user_name'),
             'sisProfile': sis_profile,
             'demographics': demographics,
             'advisors': advisor_feed,
         }
+        self.fill_names(feed_elements, merged_profile, hist_enr)
         feed_counts['student_profiles'] += write_to_tsv_file(feed_files['student_profiles'], [sid, json.dumps(merged_profile)])
 
         if sis_profile:
@@ -172,9 +176,13 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
             feed_counts['student_profile_index'] += write_to_tsv_file(
                 feed_files['student_profile_index'],
-                [sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance, False],
+                [sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance, hist_enr],
             )
 
+            if hist_enr:
+                return merged_profile
+
+            # TODO In due time, populate these index tables for hist_enr students too.
             for plan in sis_profile.get('plans', []):
                 if plan.get('status') == 'Active':
                     feed_counts['student_majors'] += write_to_tsv_file(
@@ -190,6 +198,24 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                     feed_counts['minors'] += write_to_tsv_file(feed_files['minors'], [sid, plan.get('description', None)])
 
         return merged_profile
+
+    def fill_names(self, feed_elements, profile, hist_enr):
+        if hist_enr:
+            profile_feed = json.loads(feed_elements.get('sis_profile_feed', '{}'), strict=False)
+            for name_type in ['PRF', 'PRI']:
+                name_element = next((ne for ne in profile_feed.get('names', []) if ne['type']['code'] == name_type), None)
+                if name_element:
+                    break
+            if name_element:
+                profile['firstName'] = name_element.get('givenName')
+                profile['lastName'] = name_element.get('familyName')
+                profile['name'] = name_element.get('formattedName')
+            else:
+                app.logger.debug(f'No name parsed from SIS profile feed: {profile_feed}')
+        else:
+            profile['firstName'] = feed_elements.get('first_name')
+            profile['lastName'] = feed_elements.get('last_name')
+            profile['name'] = ' '.join([feed_elements.get('first_name'), feed_elements.get('last_name')])
 
     def map_advisors_to_students(self):
         advisors_by_student_id = {}
@@ -237,7 +263,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                         transaction=transaction,
                     )
 
-        app.logger.info(f'Advisee term enrollment generation complete ({row_count} feeds).')
+        app.logger.info(f'Enrollment term feed generation complete ({row_count} feeds).')
         return row_count
 
     def generate_term_feeds(self, sids, feed_file):

@@ -52,7 +52,6 @@ from nessie.jobs.create_ycbm_schema import CreateYcbmSchema
 from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
 from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
-from nessie.jobs.generate_merged_hist_enr_feeds import GenerateMergedHistEnrFeeds
 from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.jobs.import_calnet_data import ImportCalNetData
@@ -222,13 +221,6 @@ def generate_boac_analytics():
 @auth_required
 def generate_intermediate_tables():
     job_started = GenerateIntermediateTables().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/generate_merged_hist_enr_feeds', methods=['POST'])
-@auth_required
-def generate_merged_hist_enr_feeds():
-    job_started = GenerateMergedHistEnrFeeds().run_async()
     return respond_with_status(job_started)
 
 

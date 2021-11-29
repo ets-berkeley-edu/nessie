@@ -43,7 +43,6 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_IMPORT_ADMISSIONS': 1850,
     'JOB_IMPORT_SIS_DATA': 1900,
     'JOB_IMPORT_STUDENT_POPULATION': 2000,
-    'JOB_IMPORT_HIST_ENR': 2600,
     'JOB_IMPORT_CANVAS_ENROLLMENTS': 2900,
     'JOB_GENERATE_ALL_TABLES': 3000,
     'JOB_GENERATE_CURRENT_TERM_FEEDS': 3500,
@@ -83,7 +82,6 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.create_ycbm_schema import CreateYcbmSchema
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
     from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
-    from nessie.jobs.generate_merged_hist_enr_feeds import GenerateMergedHistEnrFeeds
     from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
     from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
     from nessie.jobs.import_piazza_api_data import ImportPiazzaApiData
@@ -103,14 +101,6 @@ def schedule_all_jobs(force=False):
     schedule_job(sched, 'JOB_IMPORT_ADVISORS', CreateAdvisorSchema, force)
     schedule_job(sched, 'JOB_IMPORT_ADMISSIONS', CreateOUASchema, force)
     schedule_job(sched, 'JOB_IMPORT_STUDENT_POPULATION', ChainedImportStudentPopulation, force)
-    schedule_chained_job(
-        sched,
-        'JOB_IMPORT_HIST_ENR',
-        [
-            GenerateMergedHistEnrFeeds,
-        ],
-        force,
-    )
     schedule_job(sched, 'JOB_IMPORT_SIS_DATA', CreateSisSchema, force)
     schedule_job(sched, 'JOB_IMPORT_CANVAS_ENROLLMENTS', ImportCanvasEnrollmentsApi, force)
     schedule_chained_job(

@@ -88,9 +88,6 @@ CURRENT_TERM = 'Fall 2017'
 FUTURE_TERM = 'Spring 2018'
 LOCH_S3_CANVAS_DATA_PATH_CURRENT_TERM = 'canvas/path/to/current/term'
 
-CYCLICAL_API_IMPORT_BATCH_SIZE = 5000
-HIST_ENR_REGISTRATIONS_IMPORT_BATCH_SIZE = 20000
-
 DEGREE_PROGRESS_API_URL = 'https://secreturl.berkeley.edu/PSFT_CS'
 DEGREE_PROGRESS_API_USERNAME = 'secretuser'
 DEGREE_PROGRESS_API_PASSWORD = 'secretpassword'
@@ -121,7 +118,6 @@ JOB_IMPORT_ADMISSIONS = {}
 JOB_IMPORT_SIS_DATA = {}
 JOB_IMPORT_CANVAS_ENROLLMENTS = {}
 JOB_IMPORT_STUDENT_POPULATION = {}
-JOB_IMPORT_HIST_ENR = {}
 JOB_GENERATE_ALL_TABLES = {}
 JOB_GENERATE_CURRENT_TERM_FEEDS = {}
 JOB_LOAD_ADVISING_NOTES = {}
@@ -252,14 +248,6 @@ REDSHIFT_SCHEMA_SIS_ADVISING_NOTES = 'External SIS Advising Notes schema name'
 REDSHIFT_SCHEMA_TERMS = 'External Terms schema name'
 REDSHIFT_SCHEMA_UNDERGRADS_EXTERNAL = 'External Undergrads schema name'
 REDSHIFT_SCHEMA_YCBM = 'External YCBM schema name'
-
-STUDENT_API_ID = 'secretid'
-STUDENT_API_KEY = 'secretkey'
-STUDENT_API_URL = 'https://secreturl.berkeley.edu/sis/v2/students'
-STUDENT_API_MAX_THREADS = 5
-# Although production API hosts use app_id/app_key headers, non-production environments may use basic auth.
-STUDENT_API_PWD = None
-STUDENT_API_USER = None
 
 SQLALCHEMY_DATABASE_URI = 'postgresql://nessie:nessie@localhost:5432/nessie'
 SQLALCHEMY_TRACK_MODIFICATIONS = False

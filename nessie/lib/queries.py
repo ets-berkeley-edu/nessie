@@ -139,13 +139,14 @@ def get_advisee_advisor_mappings():
     return redshift.fetch(sql)
 
 
-@fixture('query_advisee_student_profile_feeds.csv')
-def get_advisee_student_profile_elements():
-    sql = f"""SELECT DISTINCT ldap.ldap_uid, ldap.sid, ldap.first_name, ldap.last_name,
+@fixture('query_all_student_profile_feeds.csv')
+def get_all_student_profile_elements():
+    sql = f"""SELECT DISTINCT sis.sid, attrs.ldap_uid,
                 us.canvas_id AS canvas_user_id, us.name AS canvas_user_name,
                 sis.feed AS sis_profile_feed,
                 deg.feed AS degree_progress_feed,
                 demog.feed AS demographics_feed,
+                ldap.sid AS ldap_sid, ldap.first_name, ldap.last_name,
                 reg.feed AS last_registration_feed,
                 (
                     SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(saphd.academic_plan_nm, ''), ' || ')
@@ -154,18 +155,34 @@ def get_advisee_student_profile_elements():
                         ON im.plan_code = saphd.academic_plan_cd
                     WHERE im.sid = ldap.sid
                 ) AS intended_majors
-              FROM {calnet_schema()}.advisees ldap
+              FROM {edl_schema()}.student_profiles sis
+              LEFT JOIN {calnet_schema()}.advisees ldap
+                ON ldap.sid = sis.sid
               LEFT JOIN {intermediate_schema()}.users us
-                ON us.uid = ldap.ldap_uid
-              LEFT JOIN {edl_schema()}.student_profiles sis
-                ON sis.sid = ldap.sid
+                ON us.sis = sis.sid
               LEFT JOIN {edl_schema()}.student_degree_progress deg
-                ON deg.sid = ldap.sid
+                ON deg.sid = sis.sid
               LEFT JOIN {edl_schema()}.student_demographics demog
-                ON demog.sid = ldap.sid
+                ON demog.sid = sis.sid
               LEFT JOIN {edl_schema()}.student_last_registrations reg
-                ON reg.sid = ldap.sid
-              ORDER BY ldap.sid
+                ON reg.sid = sis.sid
+              LEFT JOIN (
+                SELECT a.sid, MAX(a.ldap_uid) AS ldap_uid FROM (
+                  SELECT sid, ldap_uid FROM {edl_schema()}.basic_attributes attrs
+                    WHERE (
+                      attrs.affiliations LIKE '%%STUDENT-TYPE%%'
+                      OR attrs.affiliations LIKE '%%SIS-EXTENDED%%'
+                      OR attrs.affiliations LIKE '%%FORMER-STUDENT%%'
+                    )
+                    AND attrs.person_type = 'S' AND char_length(attrs.sid) < 12
+                  UNION
+                  SELECT sis_id AS sid, ldap_uid FROM {edl_schema()}.enrollments
+                  GROUP BY sid, ldap_uid
+                ) a
+                GROUP BY sid
+              ) attrs
+              ON attrs.sid = sis.sid
+              ORDER BY sis.sid
         """
     return redshift.fetch(sql)
 
@@ -430,58 +447,6 @@ def get_enrolled_primary_sections(term_id=None):
           ORDER BY sec.sis_section_id
         """
     return redshift.fetch(sql)
-
-
-def get_fetched_non_advisees():
-    sql = f"""SELECT DISTINCT(hist.sid) AS sid
-            FROM {edl_schema()}.student_profiles hist
-            LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = hist.sid
-            LEFT JOIN {coe_schema()}.students coe ON coe.sid = hist.sid
-            LEFT JOIN (
-                 SELECT sid, ldap_uid FROM {edl_schema()}.basic_attributes attrs
-                 UNION
-                 SELECT sis_id AS sid, ldap_uid FROM {edl_schema()}.enrollments
-                 GROUP BY sid, ldap_uid
-            ) attrs
-            ON attrs.sid = hist.sid
-            LEFT JOIN {edl_external_schema()}.student_academic_plan_data ug ON ug.student_id = hist.sid
-                AND ug.academic_career_cd = 'UGRD'
-                AND ug.academic_program_status_cd = 'AC'
-                AND ug.academic_plan_type_cd != 'MIN'
-            WHERE ascs.sid IS NULL AND coe.sid IS NULL AND ug.student_id IS NULL
-            AND attrs.ldap_uid IS NOT NULL and attrs.ldap_uid != ''
-        """
-    return redshift.fetch(sql)
-
-
-def get_non_advisee_api_feeds(sids):
-    sql = f"""SELECT DISTINCT sis.sid,
-                attrs.ldap_uid AS uid,
-                sis.feed AS sis_feed,
-                reg.feed AS last_registration_feed
-              FROM {edl_schema()}.student_profiles sis
-              LEFT JOIN (
-                SELECT a.sid, MAX(a.ldap_uid) AS ldap_uid FROM (
-                  SELECT sid, ldap_uid FROM {edl_schema()}.basic_attributes attrs
-                    WHERE (
-                      attrs.affiliations LIKE '%%STUDENT-TYPE%%'
-                      OR attrs.affiliations LIKE '%%SIS-EXTENDED%%'
-                      OR attrs.affiliations LIKE '%%FORMER-STUDENT%%'
-                    )
-                    AND attrs.person_type = 'S' AND char_length(attrs.sid) < 12
-                  UNION
-                  SELECT sis_id AS sid, ldap_uid FROM {edl_schema()}.enrollments
-                  GROUP BY sid, ldap_uid
-                ) a
-                GROUP BY sid
-              ) attrs
-              ON attrs.sid = sis.sid
-              LEFT JOIN {edl_schema()}.student_last_registrations reg
-                ON reg.sid = sis.sid
-              WHERE sis.sid=ANY(%s)
-              ORDER BY sis.sid
-        """
-    return redshift.fetch(sql, params=(sids,))
 
 
 @fixture('query_advisee_sis_enrollments.csv')

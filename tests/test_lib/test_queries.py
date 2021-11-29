@@ -140,12 +140,12 @@ class TestQueries:
         } == data[0]
 
     def test_user_for_uid(self, app):
-        data = queries.get_advisee_student_profile_elements()
+        data = queries.get_all_student_profile_elements()
         oliver = next(r for r in data if r['ldap_uid'] == '2040')
         assert oliver['canvas_user_id'] == 10001
         assert oliver['canvas_user_name'] == 'Oliver Heyer'
         assert oliver['intended_majors'] == '25495U :: Latin BA'
-        paulk = next(r for r in data if r['ldap_uid'] == '242881')
-        assert paulk['canvas_user_id'] == 10002
-        assert paulk['canvas_user_name'] == 'Paul Kerschen'
-        assert paulk['intended_majors'] == '25345U :: English BA'
+        pauline = next(r for r in data if r['ldap_uid'] == '242881')
+        assert pauline['canvas_user_id'] == 10002
+        assert pauline['canvas_user_name'] == 'Pauline Kerschen'
+        assert pauline['intended_majors'] == '25345U :: English BA'
