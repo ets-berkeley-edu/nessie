@@ -103,7 +103,7 @@ VALUES
 ('11667051', '61889', 'Deborah', 'Davies', 'dd1@berkeley.edu', 'dd1@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
 ('1234567890', '12345', 'Osk', 'Bear', '', '', 'FORMER-STUDENT'),
 ('2345678901', '98765', 'Dave', 'Doolittle', 'dd2@berkeley.edu', 'dd2@berkeley', 'STUDENT-TYPE-REGISTERED'),
-('3456789012', '242881', 'Paul', 'Kerschen', 'pk@berkeley.edu', 'pk@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
+('3456789012', '242881', 'Pauline', 'Kerschen', 'pk@berkeley.edu', 'pk@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
 ('5000000000', '505050', 'Moon Unit', 'Zappa', 'muz@berkeley.edu', 'muz@berkeley.edu', 'FORMER-STUDENT'),
 ('5678901234', '9933311', 'Sandeep', 'Jayaprakash', 'sj@berkeley.edu', 'sj@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
 ('7890123456', '1049291', 'Paul', 'Farestveit', 'pf@berkeley.edu', 'pf@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
