@@ -135,8 +135,11 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_enrollment_terms_hist_en
 INSERT INTO {rds_schema_student}.student_enrollment_terms_hist_enr (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT *
-    FROM {redshift_schema_student}.student_enrollment_terms_hist_enr
+    SELECT set.sid, set.term_id, set.enrollment_term
+    FROM {redshift_schema_student}.student_enrollment_terms set
+    JOIN {redshift_schema_student}.student_profile_index spi
+    ON set.sid = spi.sid
+    AND spi.hist_enr IS TRUE
   $REDSHIFT$)
   AS redshift_profiles (
     sid VARCHAR,
@@ -158,7 +161,8 @@ INSERT INTO {rds_schema_student}.student_names_hist_enr (
   SELECT DISTINCT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT sid, uid, first_name, last_name
-    FROM {redshift_schema_student}.student_names_hist_enr
+    FROM {redshift_schema_student}.student_profile_index
+    WHERE hist_enr IS TRUE
   $REDSHIFT$)
   AS redshift_names (
     sid VARCHAR,

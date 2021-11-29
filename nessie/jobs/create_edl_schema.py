@@ -60,19 +60,10 @@ class CreateEdlSchema(BackgroundJob):
         app.logger.info('Executing SQL...')
         template_sql = 'create_edl_schema.template.sql'
         resolved_ddl = resolve_sql_template(template_sql)
-        if not redshift.execute_ddl_script(resolved_ddl):
-            raise BackgroundJobError('EDL SIS schema creation job failed.')
-        # Create staging schema
-        resolved_ddl_staging = resolve_sql_template(
-            template_sql,
-            redshift_schema_edl=f'{self.internal_schema}_staging',
-        )
-        if redshift.execute_ddl_script(resolved_ddl_staging):
-            app.logger.info(f"Schema '{self.internal_schema}_staging' found or created.")
+        if redshift.execute_ddl_script(resolved_ddl):
+            app.logger.info(f'{self.internal_schema} Redshift schema created.')
         else:
-            raise BackgroundJobError(f'{self.internal_schema} schema creation failed.')
-
-        app.logger.info('Redshift EDL schema created.')
+            raise BackgroundJobError(f'{self.internal_schema} Redshift schema creation failed.')
 
     def generate_feeds(self):
         app.logger.info('Building profile feeds...')

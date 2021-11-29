@@ -454,49 +454,6 @@ def get_fetched_non_advisees():
     return redshift.fetch(sql)
 
 
-def get_unfetched_non_advisees():
-
-    sql = f"""SELECT DISTINCT attrs.sid
-          FROM {edl_schema()}.basic_attributes attrs
-          LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = attrs.sid
-          LEFT JOIN {coe_schema()}.students coe ON coe.sid = attrs.sid
-          LEFT JOIN {student_schema()}.sis_api_profiles_hist_enr hist ON hist.sid = attrs.sid
-          LEFT JOIN {edl_external_schema()}.student_academic_plan_data ug ON ug.student_id = hist.sid
-            AND ug.academic_career_cd = 'UGRD'
-            AND ug.academic_program_status_cd = 'AC'
-            AND ug.academic_plan_type_cd != 'MIN'
-          WHERE ascs.sid IS NULL AND coe.sid IS NULL AND hist.sid IS NULL AND ug.student_id IS NULL
-            AND (
-              attrs.affiliations LIKE '%STUDENT-TYPE%'
-              OR attrs.affiliations LIKE '%SIS-EXTENDED%'
-              OR attrs.affiliations LIKE '%FORMER-STUDENT%'
-            )
-            AND attrs.person_type = 'S' AND char_length(attrs.sid) < 12
-        """
-    return redshift.fetch(sql)
-
-
-def get_non_advisees_without_registration_imports():
-    sql = f"""SELECT DISTINCT attrs.sid
-              FROM {edl_schema()}.basic_attributes attrs
-              LEFT JOIN {asc_schema()}.students ascs ON ascs.sid = attrs.sid
-              LEFT JOIN {coe_schema()}.students coe ON coe.sid = attrs.sid
-              LEFT JOIN {student_schema()}.hist_enr_last_registrations hist ON hist.sid = attrs.sid
-              LEFT JOIN {edl_external_schema()}.student_academic_plan_data ug ON ug.student_id = hist.sid
-              AND ug.academic_career_cd = 'UGRD'
-              AND ug.academic_program_status_cd = 'AC'
-              AND ug.academic_plan_type_cd != 'MIN'
-              WHERE ascs.sid IS NULL AND coe.sid IS NULL AND hist.sid IS NULL AND ug.student_id IS NULL
-                AND (
-                  attrs.affiliations LIKE '%STUDENT-TYPE%'
-                  OR attrs.affiliations LIKE '%SIS-EXTENDED%'
-                  OR attrs.affiliations LIKE '%FORMER-STUDENT%'
-                )
-                AND attrs.person_type = 'S' AND char_length(attrs.sid) < 12
-        """
-    return redshift.fetch(sql)
-
-
 def get_non_advisee_api_feeds(sids):
     sql = f"""SELECT DISTINCT sis.sid,
                 attrs.ldap_uid AS uid,

@@ -80,16 +80,15 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
 
     def generate_student_profile_table(self, non_advisee_sids):
         profile_count = 0
-        with tempfile.TemporaryFile() as feed_file, tempfile.TemporaryFile() as index_file, tempfile.TemporaryFile() as names_file:
+        with tempfile.TemporaryFile() as feed_file, tempfile.TemporaryFile() as index_file:
             tables = {
                 'student_profiles': feed_file,
                 'student_profile_index': index_file,
-                'student_names_hist_enr': names_file,
             }
             # Work in batches so as not to overload memory.
             for i in range(0, len(non_advisee_sids), BATCH_QUERY_MAXIMUM):
                 sids = non_advisee_sids[i:i + BATCH_QUERY_MAXIMUM]
-                profile_count += self.collect_merged_profiles(sids, feed_file, index_file, names_file)
+                profile_count += self.collect_merged_profiles(sids, feed_file, index_file)
             if profile_count:
                 with redshift.transaction() as transaction:
                     for table_name, data in tables.items():
@@ -104,7 +103,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
         app.logger.info('Non-advisee profile generation complete.')
         return profile_count
 
-    def collect_merged_profiles(self, sids, feed_file, index_file, names_file):
+    def collect_merged_profiles(self, sids, feed_file, index_file):
         successes = []
         sis_profile_feeds = queries.get_non_advisee_api_feeds(sids)
         for row in sis_profile_feeds:
@@ -135,15 +134,6 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
                 encoded_tsv_row(
                     [sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance, True]) + b'\n',
             )
-
-            names_file.write(
-                encoded_tsv_row([
-                    sid,
-                    merged_profile.get('uid'),
-                    merged_profile.get('firstName'),
-                    merged_profile.get('lastName'),
-                ]) + b'\n',
-            )
             successes.append(sid)
         return len(successes)
 
@@ -161,7 +151,7 @@ class GenerateMergedHistEnrFeeds(BackgroundJob):
             app.logger.debug(f'No name parsed in {api_json}')
 
     def generate_student_enrollments_table(self, non_advisee_sids):
-        table_name = 'student_enrollment_terms_hist_enr'
+        table_name = 'student_enrollment_terms'
         truncate_staging_table(table_name)
         with tempfile.TemporaryFile() as feed_file:
             row_count = self.generate_term_feeds(non_advisee_sids, feed_file)
