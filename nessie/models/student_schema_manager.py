@@ -45,7 +45,7 @@ def refresh_all_from_staging(tables):
             raise BackgroundJobError(f'Final transaction commit failed for {student_schema()}.')
 
 
-def refresh_from_staging(table, term_id, transaction, truncate_staging=True):
+def refresh_from_staging(table, term_id, transaction):
     # If our job is restricted to a particular term id, delete rows from the destination table for that term only.
     # Otherwise any row can be dropped from the destination table where the sid exists in the staging table.
     refresh_conditions = []
@@ -62,48 +62,31 @@ def refresh_from_staging(table, term_id, transaction, truncate_staging=True):
         transaction.rollback()
         raise BackgroundJobError(f'Failed to populate table {student_schema()}.{table} from staging schema.')
 
-    if not refresh_conditions:
-        transaction.execute(
-            'TRUNCATE {schema}.{table}',
-            schema=psycopg2.sql.Identifier(student_schema()),
-            table=psycopg2.sql.Identifier(table),
-        )
-        app.logger.info(f'Truncated destination table {student_schema()}.{table}.')
+    delete_sql = 'DELETE FROM {schema}.{table} WHERE ' + ' AND '.join(refresh_conditions)
+    transaction.execute(
+        delete_sql,
+        schema=psycopg2.sql.Identifier(student_schema()),
+        staging_schema=psycopg2.sql.Identifier(staging_schema()),
+        table=psycopg2.sql.Identifier(table),
+        params=tuple(refresh_params),
+    )
+    app.logger.info(f"Deleted existing rows from destination table {student_schema()}.{table} term_id={term_id or 'all'}.")
+    insert_sql = 'INSERT INTO {schema}.{table} (SELECT * FROM {staging_schema}.{table} WHERE ' + ' AND '.join(refresh_conditions) + ')'
 
-        _success() if transaction.execute(
-            'INSERT INTO {schema}.{table} (SELECT * FROM {staging_schema}.{table})',
-            schema=psycopg2.sql.Identifier(student_schema()),
-            staging_schema=psycopg2.sql.Identifier(staging_schema()),
-            table=psycopg2.sql.Identifier(table),
-        ) else _rollback()
+    _success() if transaction.execute(
+        insert_sql,
+        schema=psycopg2.sql.Identifier(student_schema()),
+        staging_schema=psycopg2.sql.Identifier(staging_schema()),
+        table=psycopg2.sql.Identifier(table),
+        params=tuple(refresh_params),
+    ) else _rollback()
 
-    else:
-        delete_sql = 'DELETE FROM {schema}.{table} WHERE ' + ' AND '.join(refresh_conditions)
-        transaction.execute(
-            delete_sql,
-            schema=psycopg2.sql.Identifier(student_schema()),
-            table=psycopg2.sql.Identifier(table),
-            params=tuple(refresh_params),
-        )
-        app.logger.info(f"Deleted existing rows from destination table {student_schema()}.{table} term_id={term_id or 'all'}.")
-        insert_sql = 'INSERT INTO {schema}.{table} (SELECT * FROM {staging_schema}.{table} WHERE ' + ' AND '.join(refresh_conditions) + ')'
-
-        _success() if transaction.execute(
-            insert_sql,
-            schema=psycopg2.sql.Identifier(student_schema()),
-            staging_schema=psycopg2.sql.Identifier(staging_schema()),
-            table=psycopg2.sql.Identifier(table),
-            params=tuple(refresh_params),
-        ) else _rollback()
-
-    # The staging table can now be truncated, unless we're running a job distributed between workers.
-    if truncate_staging:
-        transaction.execute(
-            'TRUNCATE {schema}.{table}',
-            schema=psycopg2.sql.Identifier(staging_schema()),
-            table=psycopg2.sql.Identifier(table),
-        )
-        app.logger.info(f'Truncated staging table {staging_schema()}.{table}.')
+    transaction.execute(
+        'TRUNCATE {schema}.{table}',
+        schema=psycopg2.sql.Identifier(staging_schema()),
+        table=psycopg2.sql.Identifier(table),
+    )
+    app.logger.info(f'Truncated staging table {staging_schema()}.{table}.')
 
 
 def truncate_staging_table(table):
