@@ -346,6 +346,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         with rds.transaction() as transaction:
             result = (
                 self._delete_rds_rows('student_enrollment_terms', None, transaction)
+                and self._delete_rds_rows('student_enrollment_terms_hist_enr', None, transaction)
                 and self._refresh_rds_enrollment_terms(transaction)
                 and self._index_rds_midpoint_deficient_grades(transaction)
                 and self._index_rds_enrolled_units(transaction)
@@ -481,8 +482,11 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             f"""INSERT INTO {self.rds_schema}.student_profiles (
             SELECT *
                 FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
-                    SELECT sid, profile
-                    FROM {self.student_schema}.student_profiles
+                    SELECT sp.sid, sp.profile
+                    FROM {self.student_schema}.student_profiles sp
+                    JOIN {self.student_schema}.student_profile_index spi
+                    ON sp.sid = spi.sid
+                    AND spi.hist_enr IS FALSE
               $REDSHIFT$)
             AS redshift_profiles (
                 sid VARCHAR,
@@ -519,8 +523,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         )
 
     def _refresh_rds_enrollment_terms(self, transaction):
-        return transaction.execute(
-            f"""INSERT INTO {self.rds_schema}.student_enrollment_terms (
+        advisee_refresh = f"""INSERT INTO {self.rds_schema}.student_enrollment_terms (
             SELECT *
                 FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
                     SELECT set.sid, set.term_id, set.enrollment_term
@@ -533,8 +536,23 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 sid VARCHAR,
                 term_id VARCHAR,
                 enrollment_term TEXT
-            ));""",
-        )
+            ));"""
+        non_advisee_refresh = f"""INSERT INTO {self.rds_schema}.student_enrollment_terms_hist_enr (
+            SELECT *
+            FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
+                SELECT set.sid, set.term_id, set.enrollment_term
+                FROM {self.student_schema}.student_enrollment_terms set
+                JOIN {self.student_schema}.student_profile_index spi
+                ON set.sid = spi.sid
+                AND spi.hist_enr IS TRUE
+            $REDSHIFT$)
+            AS redshift_profiles (
+                sid VARCHAR,
+                term_id VARCHAR,
+                enrollment_term TEXT
+            ));
+        """
+        return transaction.execute(advisee_refresh) and transaction.execute(non_advisee_refresh)
 
     def _index_rds_midpoint_deficient_grades(self, transaction):
         return transaction.execute(
