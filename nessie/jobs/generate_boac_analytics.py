@@ -117,6 +117,6 @@ class GenerateBoacAnalytics(BackgroundJob):
             with redshift.transaction() as transaction:
                 truncate_staging_table(table_name)
                 write_file_to_staging(table_name, output_file, membership_count, term_id)
-                refresh_from_staging(table_name, term_id, None, transaction)
+                refresh_from_staging(table_name, term_id, transaction)
                 if not transaction.commit():
                     raise BackgroundJobError(f'Final transaction commit failed on site membership refresh (term_id={term_id}).')
