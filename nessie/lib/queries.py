@@ -159,7 +159,7 @@ def get_all_student_profile_elements():
               LEFT JOIN {calnet_schema()}.advisees ldap
                 ON ldap.sid = sis.sid
               LEFT JOIN {intermediate_schema()}.users us
-                ON us.sis = sis.sid
+                ON us.sis_user_id = sis.sid
               LEFT JOIN {edl_schema()}.student_degree_progress deg
                 ON deg.sid = sis.sid
               LEFT JOIN {edl_schema()}.student_demographics demog
