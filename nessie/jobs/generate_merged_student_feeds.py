@@ -231,7 +231,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
     def update_rds_profile_indexes(self):
         with rds.transaction() as transaction:
-            if self.refresh_rds_indexes(None, transaction):
+            if self.refresh_rds_indexes(transaction):
                 transaction.commit()
                 app.logger.info('Refreshed RDS indexes.')
             else:
@@ -245,25 +245,20 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             raise BackgroundJobError('Failed to update RDS student profile indexes.')
 
     def generate_student_enrollments_table(self):
-        row_count = 0
-
-        with tempfile.TemporaryFile() as feed_file:
-            row_count = self.generate_term_feeds(feed_file)
-            if row_count:
-                table_name = 'student_enrollment_terms'
-                truncate_staging_table(table_name)
-                write_file_to_staging(table_name, feed_file, row_count)
-                with redshift.transaction() as transaction:
-                    refresh_from_staging(
-                        table_name,
-                        term_id=None,
-                        transaction=transaction,
-                    )
-
+        table_name = 'student_enrollment_terms'
+        truncate_staging_table(table_name)
+        row_count = self.generate_term_feeds(table_name)
+        if row_count:
+            with redshift.transaction() as transaction:
+                refresh_from_staging(
+                    table_name,
+                    term_id=None,
+                    transaction=transaction,
+                )
         app.logger.info(f'Enrollment term feed generation complete ({row_count} feeds).')
         return row_count
 
-    def generate_term_feeds(self, feed_file):
+    def generate_term_feeds(self, table_name):
         enrollment_stream = queries.stream_sis_enrollments()
         term_gpa_stream = queries.stream_term_gpas()
         canvas_site_stream = queries.stream_canvas_memberships()
@@ -281,31 +276,38 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 term_id = str(term_id)
                 term_name = berkeley.term_name_for_sis_id(term_id)
                 app.logger.info(f'Generating enrollment feeds for term {term_id}...')
-                for sid, enrollments_grp in groupby(term_enrollments_grp, operator.itemgetter('sid')):
-                    term_feed = None
-                    for is_dropped, enrollments_subgroup in groupby(enrollments_grp, operator.itemgetter('dropped')):
-                        if not is_dropped:
-                            term_feed = merge_enrollment(enrollments_subgroup, term_id, term_name)
-                        else:
-                            if not term_feed:
-                                term_feed = empty_term_feed(term_id, term_name)
-                            append_drops(term_feed, enrollments_subgroup)
+                term_row_count = 0
 
-                    while term_gpa_tracker['term_id'] > term_id or (term_gpa_tracker['term_id'] == term_id and term_gpa_tracker['sid'] < sid):
-                        (term_gpa_tracker['term_id'], term_gpa_tracker['sid']), term_gpa_tracker['term_gpas'] =\
-                            next(term_gpa_results, ((term_id, sid), []))
-                    if term_gpa_tracker['term_id'] == term_id and term_gpa_tracker['sid'] == sid:
-                        append_term_gpa(term_feed, term_gpa_tracker['term_gpas'])
+                with tempfile.TemporaryFile() as feed_file:
+                    for sid, enrollments_grp in groupby(term_enrollments_grp, operator.itemgetter('sid')):
+                        term_feed = None
+                        for is_dropped, enrollments_subgroup in groupby(enrollments_grp, operator.itemgetter('dropped')):
+                            if not is_dropped:
+                                term_feed = merge_enrollment(enrollments_subgroup, term_id, term_name)
+                            else:
+                                if not term_feed:
+                                    term_feed = empty_term_feed(term_id, term_name)
+                                append_drops(term_feed, enrollments_subgroup)
 
-                    while canvas_site_tracker['term_id'] > term_id or\
-                            (canvas_site_tracker['term_id'] == term_id and canvas_site_tracker['sid'] < sid):
-                        (canvas_site_tracker['term_id'], canvas_site_tracker['sid']), canvas_site_tracker['sites'] =\
-                            next(canvas_site_results, ((term_id, sid), []))
-                    if canvas_site_tracker['term_id'] == term_id and canvas_site_tracker['sid'] == sid:
-                        merge_canvas_site_memberships(term_feed, canvas_site_tracker['sites'])
+                        while term_gpa_tracker['term_id'] > term_id or (term_gpa_tracker['term_id'] == term_id and term_gpa_tracker['sid'] < sid):
+                            (term_gpa_tracker['term_id'], term_gpa_tracker['sid']), term_gpa_tracker['term_gpas'] =\
+                                next(term_gpa_results, ((term_id, sid), []))
+                        if term_gpa_tracker['term_id'] == term_id and term_gpa_tracker['sid'] == sid:
+                            append_term_gpa(term_feed, term_gpa_tracker['term_gpas'])
 
-                    feed_file.write(encoded_tsv_row([sid, term_id, json.dumps(term_feed)]) + b'\n')
-                    row_count += 1
+                        while canvas_site_tracker['term_id'] > term_id or\
+                                (canvas_site_tracker['term_id'] == term_id and canvas_site_tracker['sid'] < sid):
+                            (canvas_site_tracker['term_id'], canvas_site_tracker['sid']), canvas_site_tracker['sites'] =\
+                                next(canvas_site_results, ((term_id, sid), []))
+                        if canvas_site_tracker['term_id'] == term_id and canvas_site_tracker['sid'] == sid:
+                            merge_canvas_site_memberships(term_feed, canvas_site_tracker['sites'])
+
+                        feed_file.write(encoded_tsv_row([sid, term_id, json.dumps(term_feed)]) + b'\n')
+                        term_row_count += 1
+
+                    if term_row_count:
+                        write_file_to_staging(table_name, feed_file, term_row_count, term_id=term_id)
+                        row_count += term_row_count
 
         finally:
             enrollment_stream.close()

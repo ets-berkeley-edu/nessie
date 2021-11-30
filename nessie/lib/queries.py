@@ -504,12 +504,11 @@ def stream_term_gpas(sids=None, advisees_only=False):
     return redshift.fetch(sql, params=params, stream_results=True)
 
 
-def stream_canvas_memberships(sids):
+def stream_canvas_memberships():
     sql = f"""SELECT term_id, sid, sis_section_ids, feed
         FROM {student_schema()}.student_canvas_site_memberships
-        WHERE sid = ANY(%s)
         ORDER BY term_id DESC, sid"""
-    return redshift.fetch(sql, params=(sids,), stream_results=True)
+    return redshift.fetch(sql, stream_results=True)
 
 
 def get_sids_with_registration_imports():
