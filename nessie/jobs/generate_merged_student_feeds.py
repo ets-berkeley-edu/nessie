@@ -67,12 +67,10 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         self.failures = []
 
         all_student_profile_elements = queries.get_all_student_profile_elements()
-        sids = [r['sid'] for r in all_student_profile_elements]
-
         profile_tables = self.generate_student_profile_tables(all_student_profile_elements)
         if not profile_tables:
             raise BackgroundJobError('Failed to generate student profile tables.')
-        refresh_all_from_staging(profile_tables, sids)
+        refresh_all_from_staging(profile_tables)
 
         self.update_redshift_academic_standing()
         self.update_rds_profile_indexes()
@@ -80,7 +78,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         result = f'Generated merged profiles ({len(self.successes)} successes, {len(self.failures)} failures).'
 
         app.logger.info('Profile generation complete; will generate enrollment terms.')
-        row_count = self.generate_student_enrollments_table(sids)
+        row_count = self.generate_student_enrollments_table()
         if row_count:
             result += f' Generated merged enrollment terms ({row_count} feeds.)'
         else:
@@ -246,11 +244,11 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         else:
             raise BackgroundJobError('Failed to update RDS student profile indexes.')
 
-    def generate_student_enrollments_table(self, sids):
+    def generate_student_enrollments_table(self):
         row_count = 0
 
         with tempfile.TemporaryFile() as feed_file:
-            row_count = self.generate_term_feeds(sids, feed_file)
+            row_count = self.generate_term_feeds(feed_file)
             if row_count:
                 table_name = 'student_enrollment_terms'
                 truncate_staging_table(table_name)
@@ -259,17 +257,16 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                     refresh_from_staging(
                         table_name,
                         term_id=None,
-                        sids=sids,
                         transaction=transaction,
                     )
 
         app.logger.info(f'Enrollment term feed generation complete ({row_count} feeds).')
         return row_count
 
-    def generate_term_feeds(self, sids, feed_file):
-        enrollment_stream = queries.stream_sis_enrollments(sids=sids)
-        term_gpa_stream = queries.stream_term_gpas(sids=sids)
-        canvas_site_stream = queries.stream_canvas_memberships(sids=sids)
+    def generate_term_feeds(self, feed_file):
+        enrollment_stream = queries.stream_sis_enrollments()
+        term_gpa_stream = queries.stream_term_gpas()
+        canvas_site_stream = queries.stream_canvas_memberships()
 
         term_gpa_tracker = {'term_id': '9999', 'sid': '', 'term_gpas': []}
         canvas_site_tracker = {'term_id': '9999', 'sid': '', 'sites': []}
@@ -316,23 +313,23 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
         return row_count
 
-    def refresh_rds_indexes(self, sids, transaction):
+    def refresh_rds_indexes(self, transaction):
         if not (
-            self._delete_rds_rows('student_academic_status', sids, transaction)
+            self._delete_rds_rows('student_academic_status', transaction)
             and self._refresh_rds_academic_status(transaction)
-            and self._delete_rds_rows('student_holds', sids, transaction)
+            and self._delete_rds_rows('student_holds', transaction)
             and self._refresh_rds_holds(transaction)
-            and self._delete_rds_rows('student_names', sids, transaction)
+            and self._delete_rds_rows('student_names', transaction)
             and self._refresh_rds_names(transaction)
-            and self._delete_rds_rows('student_majors', sids, transaction)
+            and self._delete_rds_rows('student_majors', transaction)
             and self._refresh_rds_majors(transaction)
-            and self._delete_rds_rows('student_profiles', sids, transaction)
+            and self._delete_rds_rows('student_profiles', transaction)
             and self._refresh_rds_profiles(transaction)
-            and self._delete_rds_rows('intended_majors', sids, transaction)
+            and self._delete_rds_rows('intended_majors', transaction)
             and self._refresh_rds_intended_majors(transaction)
-            and self._delete_rds_rows('academic_standing', sids, transaction)
+            and self._delete_rds_rows('academic_standing', transaction)
             and self._refresh_rds_academic_standing(transaction)
-            and self._delete_rds_rows('minors', sids, transaction)
+            and self._delete_rds_rows('minors', transaction)
             and self._refresh_rds_minors(transaction)
             and self._index_rds_email_address(transaction)
             and self._index_rds_entering_term(transaction)
@@ -360,14 +357,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 transaction.rollback()
                 raise BackgroundJobError('Failed to refresh RDS enrollment terms.')
 
-    def _delete_rds_rows(self, table, sids, transaction):
-        if sids:
-            sql = f'DELETE FROM {self.rds_schema}.{table} WHERE sid = ANY(%s)'
-            params = (sids,)
-        else:
-            sql = f'TRUNCATE {self.rds_schema}.{table}'
-            params = None
-        return transaction.execute(sql, params)
+    def _delete_rds_rows(self, table, transaction):
+        return transaction.execute(f'TRUNCATE {self.rds_schema}.{table}')
 
     def _refresh_rds_academic_standing(self, transaction):
         return transaction.execute(

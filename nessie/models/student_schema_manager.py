@@ -37,25 +37,23 @@ def staging_schema():
     return f'{student_schema()}_staging'
 
 
-def refresh_all_from_staging(tables, sids=None):
+def refresh_all_from_staging(tables):
     with redshift.transaction() as transaction:
         for table in tables:
-            refresh_from_staging(table, None, sids, transaction)
+            refresh_from_staging(table, None, transaction)
         if not transaction.commit():
             raise BackgroundJobError(f'Final transaction commit failed for {student_schema()}.')
 
 
-def refresh_from_staging(table, term_id, sids, transaction, truncate_staging=True):
-    # If our job is restricted to a particular term id or set of sids, then drop rows from the destination table
-    # matching those restrictions. If there are no restrictions, the entire destination table can be truncated.
+def refresh_from_staging(table, term_id, transaction, truncate_staging=True):
+    # If our job is restricted to a particular term id, delete rows from the destination table for that term only.
+    # Otherwise any row can be dropped from the destination table where the sid exists in the staging table.
     refresh_conditions = []
     refresh_params = []
+    refresh_conditions.append('sid IN (SELECT sid FROM {staging_schema}.{table})')
     if term_id:
         refresh_conditions.append('term_id = %s')
         refresh_params.append(term_id)
-    if sids:
-        refresh_conditions.append('sid = ANY(%s)')
-        refresh_params.append(sids)
 
     def _success():
         app.logger.info(f'Populated {student_schema()}.{table} from staging schema.')
@@ -87,10 +85,7 @@ def refresh_from_staging(table, term_id, sids, transaction, truncate_staging=Tru
             table=psycopg2.sql.Identifier(table),
             params=tuple(refresh_params),
         )
-        app.logger.info(f"""
-            Deleted existing rows from destination table {student_schema()}.{table} '
-            term_id={term_id or 'all'}, {len(sids) if sids else 'all'} sids).
-        """)
+        app.logger.info(f"Deleted existing rows from destination table {student_schema()}.{table} term_id={term_id or 'all'}.")
         insert_sql = 'INSERT INTO {schema}.{table} (SELECT * FROM {staging_schema}.{table} WHERE ' + ' AND '.join(refresh_conditions) + ')'
 
         _success() if transaction.execute(
