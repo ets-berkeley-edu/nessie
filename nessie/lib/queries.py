@@ -141,48 +141,52 @@ def get_advisee_advisor_mappings():
 
 @fixture('query_all_student_profile_feeds.csv')
 def get_all_student_profile_elements():
-    sql = f"""SELECT DISTINCT sis.sid, attrs.ldap_uid,
-                us.canvas_id AS canvas_user_id, us.name AS canvas_user_name,
-                sis.feed AS sis_profile_feed,
-                deg.feed AS degree_progress_feed,
-                demog.feed AS demographics_feed,
-                ldap.sid AS ldap_sid, ldap.first_name, ldap.last_name,
-                reg.feed AS last_registration_feed,
-                (
-                    SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(saphd.academic_plan_nm, ''), ' || ')
-                    FROM {edl_schema()}.intended_majors im
-                    LEFT JOIN {edl_external_schema()}.student_academic_plan_hierarchy_data saphd
-                        ON im.plan_code = saphd.academic_plan_cd
-                    WHERE im.sid = ldap.sid
-                ) AS intended_majors
-              FROM {edl_schema()}.student_profiles sis
-              LEFT JOIN {calnet_schema()}.advisees ldap
-                ON ldap.sid = sis.sid
-              LEFT JOIN {intermediate_schema()}.users us
-                ON us.sis_user_id = sis.sid
-              LEFT JOIN {edl_schema()}.student_degree_progress deg
-                ON deg.sid = sis.sid
-              LEFT JOIN {edl_schema()}.student_demographics demog
-                ON demog.sid = sis.sid
-              LEFT JOIN {edl_schema()}.student_last_registrations reg
-                ON reg.sid = sis.sid
-              LEFT JOIN (
-                SELECT a.sid, MAX(a.ldap_uid) AS ldap_uid FROM (
-                  SELECT sid, ldap_uid FROM {edl_schema()}.basic_attributes attrs
-                    WHERE (
-                      attrs.affiliations LIKE '%%STUDENT-TYPE%%'
-                      OR attrs.affiliations LIKE '%%SIS-EXTENDED%%'
-                      OR attrs.affiliations LIKE '%%FORMER-STUDENT%%'
-                    )
-                    AND attrs.person_type = 'S' AND char_length(attrs.sid) < 12
-                  UNION
-                  SELECT sis_id AS sid, ldap_uid FROM {edl_schema()}.enrollments
-                  GROUP BY sid, ldap_uid
-                ) a
-                GROUP BY sid
-              ) attrs
-              ON attrs.sid = sis.sid
-              ORDER BY sis.sid
+    sql = f"""SELECT DISTINCT attrs.sid, attrs.ldap_uid,
+            us.canvas_id AS canvas_user_id, us.name AS canvas_user_name,
+            sis.feed AS sis_profile_feed,
+            deg.feed AS degree_progress_feed,
+            demog.feed AS demographics_feed,
+            ldap.sid IS NULL AS hist_enr,
+            COALESCE(ldap.first_name, attrs.first_name) AS first_name,
+            COALESCE(ldap.last_name, attrs.last_name) AS last_name,
+            reg.feed AS last_registration_feed,
+            (
+                SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(saphd.academic_plan_nm, ''), ' || ')
+                FROM {edl_schema()}.intended_majors im
+                LEFT JOIN {edl_external_schema()}.student_academic_plan_hierarchy_data saphd
+                    ON im.plan_code = saphd.academic_plan_cd
+                WHERE im.sid = ldap.sid
+            ) AS intended_majors
+        FROM (
+            SELECT a.sid, MAX(a.ldap_uid) AS ldap_uid, MAX(a.first_name) AS first_name, MAX(a.last_name) AS last_name FROM (
+              SELECT sid, ldap_uid, first_name, last_name FROM {edl_schema()}.basic_attributes attrs
+                WHERE (
+                  attrs.affiliations LIKE '%%STUDENT-TYPE%%'
+                  OR attrs.affiliations LIKE '%%SIS-EXTENDED%%'
+                  OR attrs.affiliations LIKE '%%FORMER-STUDENT%%'
+                  OR attrs.affiliations LIKE '%%ADVCON-STUDENT%%'
+                )
+                AND char_length(attrs.sid) < 12 AND attrs.ldap_uid IS NOT NULL
+              UNION
+              SELECT enr.sis_id AS sid, enr.ldap_uid, NULL AS first_name, NULL AS last_name
+              FROM {edl_schema()}.enrollments enr WHERE enr.ldap_uid IS NOT NULL
+              GROUP BY sid, ldap_uid
+            ) a
+            GROUP BY sid
+        ) attrs
+        LEFT JOIN {edl_schema()}.student_profiles sis
+            ON sis.sid = attrs.sid
+        LEFT JOIN {calnet_schema()}.advisees ldap
+            ON ldap.sid = attrs.sid
+        LEFT JOIN {intermediate_schema()}.users us
+            ON us.sis_user_id = attrs.sid
+        LEFT JOIN {edl_schema()}.student_degree_progress deg
+            ON deg.sid = attrs.sid
+        LEFT JOIN {edl_schema()}.student_demographics demog
+            ON demog.sid = attrs.sid
+        LEFT JOIN {edl_schema()}.student_last_registrations reg
+            ON reg.sid = attrs.sid
+        ORDER BY attrs.sid
         """
     return redshift.fetch(sql)
 
@@ -509,19 +513,3 @@ def stream_canvas_memberships():
         FROM {student_schema()}.student_canvas_site_memberships
         ORDER BY term_id DESC, sid"""
     return redshift.fetch(sql, stream_results=True)
-
-
-def get_sids_with_registration_imports():
-    sql = f"""SELECT sid
-        FROM {metadata_schema()}.registration_import_status
-        WHERE status = 'success'"""
-    return rds.fetch(sql)
-
-
-def get_active_sids_with_oldest_registration_imports(limit):
-    active_sids = [r['sid'] for r in get_all_student_ids()]
-    sql = f"""SELECT sid FROM {metadata_schema()}.registration_import_status
-        WHERE sid = ANY(%s)
-        AND status = 'success'
-        ORDER BY updated_at LIMIT %s"""
-    return rds.fetch(sql, params=(active_sids, limit))
