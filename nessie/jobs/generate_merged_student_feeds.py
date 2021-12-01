@@ -148,7 +148,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             })
 
         # For now, whether a student counts as "hist_enr" is determined by whether they show up in the Calnet schema.
-        hist_enr = feed_elements.get('ldap_sid') is None
+        hist_enr = feed_elements.get('hist_enr')
 
         merged_profile = {
             'sid': sid,
@@ -159,7 +159,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'demographics': demographics,
             'advisors': advisor_feed,
         }
-        self.fill_names(feed_elements, merged_profile, hist_enr)
+        self.fill_names(feed_elements, merged_profile)
         feed_counts['student_profiles'] += write_to_tsv_file(feed_files['student_profiles'], [sid, json.dumps(merged_profile)])
 
         if sis_profile:
@@ -197,9 +197,13 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
         return merged_profile
 
-    def fill_names(self, feed_elements, profile, hist_enr):
-        if hist_enr:
-            profile_feed = json.loads(feed_elements.get('sis_profile_feed', '{}'), strict=False)
+    def fill_names(self, feed_elements, profile):
+        if feed_elements.get('first_name') and feed_elements.get('last_name'):
+            profile['firstName'] = feed_elements['first_name']
+            profile['lastName'] = feed_elements['last_name']
+            profile['name'] = ' '.join([feed_elements['first_name'], feed_elements['last_name']])
+        elif feed_elements.get('sis_profile_feed'):
+            profile_feed = json.loads(feed_elements['sis_profile_feed'], strict=False)
             for name_type in ['PRF', 'PRI']:
                 name_element = next((ne for ne in profile_feed.get('names', []) if ne['type']['code'] == name_type), None)
                 if name_element:
@@ -210,10 +214,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 profile['name'] = name_element.get('formattedName')
             else:
                 app.logger.debug(f'No name parsed from SIS profile feed: {profile_feed}')
-        else:
-            profile['firstName'] = feed_elements.get('first_name')
-            profile['lastName'] = feed_elements.get('last_name')
-            profile['name'] = ' '.join([feed_elements.get('first_name'), feed_elements.get('last_name')])
 
     def map_advisors_to_students(self):
         advisors_by_student_id = {}
