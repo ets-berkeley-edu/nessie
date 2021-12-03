@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_academic_status
 
 CREATE INDEX IF NOT EXISTS students_academic_status_sid_idx ON {rds_schema_student}.student_academic_status (sid);
 CREATE INDEX IF NOT EXISTS students_academic_status_uid_idx ON {rds_schema_student}.student_academic_status (uid);
+CREATE INDEX IF NOT EXISTS students_academic_status_gpa_idx ON {rds_schema_student}.student_academic_status (gpa);
 CREATE INDEX IF NOT EXISTS students_academic_status_last_name_initial_idx ON {rds_schema_student}.student_academic_status (UPPER(SUBSTRING(last_name, 0, 2)));
 CREATE INDEX IF NOT EXISTS students_academic_status_entering_term_idx ON {rds_schema_student}.student_academic_status (entering_term);
 
