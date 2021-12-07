@@ -58,6 +58,40 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_edl} GRANT SELECT ON TABLES 
 -- Internal tables
 --------------------------------------------------------------------
 
+CREATE TABLE {redshift_schema_edl}.academic_plan_hierarchy
+SORTKEY (plan_code)
+AS (
+    SELECT
+      academic_plan_cd AS plan_code,
+      academic_plan_effdt AS effective_date,
+      academic_plan_status AS plan_status,
+      academic_plan_short_nm AS plan_short_name,
+      academic_plan_nm AS plan_name,
+      major_cd AS major_code,
+      major_nm AS major_name,
+      academic_plan_type_cd AS plan_type_code,
+      academic_plan_type_shrt_nm AS plan_type_short_name,
+      academic_plan_type_nm AS plan_type_name,
+      academic_department_cd AS department_code,
+      academic_department_short_nm AS department_short_name,
+      academic_department_nm AS department_name,
+      academic_division_cd AS division_code,
+      academic_division_shrt_nm AS division_short_name,
+      academic_division_nm AS division_name,
+      reporting_college_school_letter_cd AS college_code,
+      reporting_clg_school_short_nm AS college_short_name,
+      reporting_college_school_nm AS college_name,
+      academic_career_cd AS career_code,
+      academic_career_short_nm AS career_short_name,
+      academic_career_nm AS career_name,
+      academic_program_cd AS program_code,
+      academic_program_shrt_nm AS program_short_name,
+      academic_program_nm AS program_name,
+      degree_offered_cd AS degree_code,
+      degree_offered_nm AS degree_name
+    FROM {redshift_schema_edl_external}.student_academic_plan_hierarchy_data
+);
+
 CREATE TABLE {redshift_schema_edl}.academic_standing
 SORTKEY (sid)
 AS (

@@ -474,17 +474,17 @@ def stream_sis_enrollments(sids=None, advisees_only=False):
                 dr.ldap_uid, dr.sid,
                 dr.sis_course_title, dr.sis_course_name, dr.sis_section_id,
                 NULL::boolean as sis_primary, dr.sis_instruction_mode, dr.sis_instruction_format, dr.sis_section_num,
-                dd.date AS drop_date, TRUE as dropped,
+                LEFT(e.drop_date, 10) AS drop_date, TRUE as dropped,
                 r.maximum_term_enrollment_units_limit AS max_term_units_allowed,
                 r.minimum_term_enrollment_units_limit AS min_term_units_allowed
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
               LEFT JOIN {edl_external_schema()}.student_registration_term_data r
                   ON dr.sis_term_id = r.semester_year_term_cd AND dr.sid = r.student_id
               {'JOIN ' + calnet_schema() + '.advisees ldap ON dr.ldap_uid = ldap.ldap_uid' if advisees_only else ''}
-              LEFT JOIN {sis_schema_internal()}.drop_dates dd
-                ON dr.ldap_uid = dd.ldap_uid
-                AND dr.sis_term_id = dd.sis_term_id
-                AND dr.sis_section_id = dd.sis_section_id
+              LEFT JOIN {edl_schema()}.enrollments e
+                ON ldap.ldap_uid = e.ldap_uid
+                AND dr.sis_term_id = e.term_id
+                AND dr.sis_section_id = e.section_id
               {'WHERE dr.sid = ANY(%s)' if sids else ''}
               ORDER BY sis_term_id DESC, sid, dropped NULLS FIRST, sis_course_name, sis_primary DESC, sis_instruction_format, sis_section_num
         """

@@ -157,7 +157,7 @@ INSERT INTO {rds_schema_sis_internal}.academic_plan_hierarchy (
       department_code, department_name, division_code, division_name,
       college_code, college_name, career_code, career_name,
       program_code, program_name, degree_code, degree_name
-    FROM {redshift_schema_sis_internal}.academic_plan_hierarchy
+    FROM {redshift_schema_edl}.academic_plan_hierarchy
   $REDSHIFT$)
   AS redshift_academic_plan_hierarchy (
     plan_code VARCHAR,
