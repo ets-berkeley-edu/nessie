@@ -42,7 +42,7 @@ class TestGetSchedule:
     def test_get_schedule(self, app, client):
         """Returns job schedule based on default config values."""
         jobs = client.get('/api/schedule').json
-        assert len(jobs) == 10
+        assert len(jobs) == 9
         for job in jobs:
             assert job['locked'] is False
         assert next(job for job in jobs if job['id'] == 'job_sync_canvas_snapshots')
@@ -50,7 +50,6 @@ class TestGetSchedule:
         generate_tables_job = next(job for job in jobs if job['id'] == 'job_generate_all_tables')
         assert generate_tables_job['components'] == [
             'RefreshCanvasDataCatalog',
-            'CreateSisSchema',
             'GenerateIntermediateTables',
             'IndexEnrollments',
             'GenerateBoacAnalytics',
@@ -95,7 +94,7 @@ class TestUpdateSchedule:
         )
         assert response.status_code == 200
         jobs = response.json
-        assert len(jobs) == 10
+        assert len(jobs) == 9
         sync_job = next(job for job in jobs if job['id'] == 'job_sync_canvas_snapshots')
         assert sync_job['trigger'] == "cron[hour='1', minute='0']"
         resync_job = next(job for job in jobs if job['id'] == 'job_resync_canvas_snapshots')
@@ -109,7 +108,7 @@ class TestUpdateSchedule:
             credentials(app),
         )
         jobs = client.get('/api/schedule').json
-        assert len(jobs) == 10
+        assert len(jobs) == 9
         assert next((job for job in jobs if job['id'] == 'job_generate_all_tables'), None) is not None
         response = delete_basic_auth(
             client,
@@ -118,7 +117,7 @@ class TestUpdateSchedule:
         )
         assert response.status_code == 200
         jobs = response.json
-        assert len(jobs) == 9
+        assert len(jobs) == 8
         assert next((job for job in jobs if job['id'] == 'job_generate_all_tables'), None) is None
 
     def test_unknown_job_id(self, app, client):
