@@ -75,12 +75,15 @@
               </ul>
             </b-alert>
             <b-table
-              :fields="jobs.fields"
+              :fields="fields"
               hover
               :items="jobs.all"
               stacked="lg"
               striped
             >
+              <template #cell(id)="data">
+                {{ data.value.split('_')[0] }}
+              </template>
               <template #cell(status)="data">
                 <div class="align-items-center d-flex justify-content-center">
                   <div class="pr-1">
@@ -158,17 +161,17 @@ export default {
   data: () => ({
     alert: undefined,
     dateSelected: new Date(),
+    fields: [
+      {key: 'id', label: 'Job', sortable: true},
+      {key: 'status', sortable: true, class: 'text-center'},
+      {key: 'details', label: 'Summary'},
+      {key: 'started', label: 'Start (UTC)', sortable: true, class: 'text-nowrap text-right'},
+      {key: 'finished', label: 'End (UTC)', sortable: true, class: 'text-nowrap text-right'},
+      {key: 'duration', label: 'Duration (h:mm:ss)', sortable: true, class: 'text-nowrap text-right'}
+    ],
     jobs: {
       all: [],
       errored: [],
-      fields: [
-        {key: 'id', label: 'Job', sortable: true},
-        {key: 'status', sortable: true, class: 'text-center'},
-        {key: 'details', label: 'Summary'},
-        {key: 'started', label: 'Start (UTC)', sortable: true, class: 'text-nowrap text-right'},
-        {key: 'finished', label: 'End (UTC)', sortable: true, class: 'text-nowrap text-right'},
-        {key: 'duration', label: 'Duration (h:mm:ss)', sortable: true, class: 'text-nowrap text-right'}
-      ],
       started: []
     },
     pageRefresh: undefined,
