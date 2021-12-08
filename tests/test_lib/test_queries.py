@@ -57,7 +57,7 @@ class TestQueries:
         assert project_site_sections is None
 
     def test_sis_enrollments(self, app):
-        enrollments = queries.stream_sis_enrollments(advisees_only=True)
+        enrollments = queries.stream_sis_enrollments()
         assert len(enrollments) == 10
 
         for enr in enrollments:
