@@ -103,29 +103,6 @@ CREATE INDEX IF NOT EXISTS academic_standing_term_id_idx ON {rds_schema_student}
 CREATE INDEX IF NOT EXISTS academic_standing_action_idx ON {rds_schema_student}.academic_standing (acad_standing_action);
 CREATE INDEX IF NOT EXISTS academic_standing_status_idx ON {rds_schema_student}.academic_standing (acad_standing_status);
 
-CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_academic_status
-(
-    sid VARCHAR NOT NULL,
-    uid VARCHAR NOT NULL,
-    first_name VARCHAR,
-    last_name VARCHAR,
-    level VARCHAR,
-    gpa DECIMAL(5,3),
-    units DECIMAL (6,3),
-    transfer BOOLEAN,
-    expected_grad_term VARCHAR(4),
-    terms_in_attendance INT,
-    email_address VARCHAR,
-    entering_term VARCHAR(4),
-    PRIMARY KEY (sid)
-);
-
-CREATE INDEX IF NOT EXISTS students_academic_status_sid_idx ON {rds_schema_student}.student_academic_status (sid);
-CREATE INDEX IF NOT EXISTS students_academic_status_uid_idx ON {rds_schema_student}.student_academic_status (uid);
-CREATE INDEX IF NOT EXISTS students_academic_status_gpa_idx ON {rds_schema_student}.student_academic_status (gpa);
-CREATE INDEX IF NOT EXISTS students_academic_status_last_name_initial_idx ON {rds_schema_student}.student_academic_status (UPPER(SUBSTRING(last_name, 0, 2)));
-CREATE INDEX IF NOT EXISTS students_academic_status_entering_term_idx ON {rds_schema_student}.student_academic_status (entering_term);
-
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_profile_index
 (
     sid VARCHAR NOT NULL,
@@ -145,6 +122,7 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_profile_index
     PRIMARY KEY (sid)
 );
 
+CREATE INDEX IF NOT EXISTS student_profile_index_uid_idx ON {rds_schema_student}.student_profile_index (uid);
 CREATE INDEX IF NOT EXISTS student_profile_index_first_name_idx ON {rds_schema_student}.student_profile_index (first_name);
 CREATE INDEX IF NOT EXISTS student_profile_index_last_name_idx ON {rds_schema_student}.student_profile_index (last_name);
 CREATE INDEX IF NOT EXISTS student_profile_index_level_idx ON {rds_schema_student}.student_profile_index (level);

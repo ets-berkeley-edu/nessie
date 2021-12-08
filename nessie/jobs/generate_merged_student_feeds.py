@@ -317,9 +317,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
     def refresh_rds_indexes(self, transaction):
         if not (
-            self._delete_rds_rows('student_academic_status', transaction)
-            and self._refresh_rds_academic_status(transaction)
-            and self._delete_rds_rows('student_holds', transaction)
+            self._delete_rds_rows('student_holds', transaction)
             and self._refresh_rds_holds(transaction)
             and self._delete_rds_rows('student_names', transaction)
             and self._refresh_rds_names(transaction)
@@ -333,8 +331,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             and self._refresh_rds_academic_standing(transaction)
             and self._delete_rds_rows('minors', transaction)
             and self._refresh_rds_minors(transaction)
-            and self._index_rds_email_address(transaction)
-            and self._index_rds_entering_term(transaction)
             and refresh_rds_demographics(self.rds_schema, self.rds_dblink_to_redshift, self.student_schema, transaction)
         ):
             return False
@@ -379,53 +375,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             ));""",
         )
 
-    def _refresh_rds_academic_status(self, transaction):
-        return transaction.execute(
-            f"""INSERT INTO {self.rds_schema}.student_academic_status (
-            SELECT *
-            FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
-                SELECT DISTINCT sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance
-                FROM {self.student_schema}.student_profile_index
-                WHERE hist_enr IS FALSE
-              $REDSHIFT$)
-            AS redshift_profile_index (
-                sid VARCHAR,
-                uid VARCHAR,
-                first_name VARCHAR,
-                last_name VARCHAR,
-                level VARCHAR,
-                gpa NUMERIC,
-                units NUMERIC,
-                transfer BOOLEAN,
-                expected_grad_term VARCHAR,
-                terms_in_attendance INT
-            ));""",
-        )
-
-    def _index_rds_email_address(self, transaction):
-        return transaction.execute(
-            f"""UPDATE {self.rds_schema}.student_academic_status sas
-            SET email_address = lower(p.profile::json->'sisProfile'->>'emailAddress')
-            FROM {self.rds_schema}.student_profiles p
-            WHERE sas.sid = p.sid;""",
-        )
-
-    def _index_rds_entering_term(self, transaction):
-        return transaction.execute(
-            # Equivalent to lib.berkeley.sis_term_id_for_name.
-            f"""UPDATE {self.rds_schema}.student_academic_status sas
-            SET entering_term =
-            substr(split_part(p.profile::json->'sisProfile'->>'matriculation', ' ', 2), 1, 1)
-            ||
-            substr(split_part(p.profile::json->'sisProfile'->>'matriculation', ' ', 2), 3, 2)
-            ||
-            CASE split_part(p.profile::json->'sisProfile'->>'matriculation', ' ', 1)
-            WHEN 'Winter' THEN 0 WHEN 'Spring' THEN 2 WHEN 'Summer' THEN 5 WHEN 'Fall' THEN 8 END
-            FROM {self.rds_schema}.student_profiles p
-            WHERE p.sid = sas.sid
-            AND p.profile::json->'sisProfile'->>'matriculation' IS NOT NULL;""",
-        )
-
     def _refresh_rds_holds(self, transaction):
         return transaction.execute(
             f"""INSERT INTO {self.rds_schema}.student_holds (
@@ -446,12 +395,12 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             SELECT DISTINCT sid, unnest(string_to_array(
                 regexp_replace(upper(first_name), '[^\w ]', '', 'g'),
                 ' '
-            )) AS name FROM {self.rds_schema}.student_academic_status
+            )) AS name FROM {self.rds_schema}.student_profile_index WHERE hist_enr IS FALSE
             UNION
             SELECT DISTINCT sid, unnest(string_to_array(
                 regexp_replace(upper(last_name), '[^\w ]', '', 'g'),
                 ' '
-            )) AS name FROM {self.rds_schema}.student_academic_status
+            )) AS name FROM {self.rds_schema}.student_profile_index WHERE hist_enr IS FALSE
             );""",
         )
 
