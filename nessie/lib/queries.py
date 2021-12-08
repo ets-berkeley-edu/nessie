@@ -454,7 +454,7 @@ def get_enrolled_primary_sections(term_id=None):
 
 
 @fixture('query_advisee_sis_enrollments.csv')
-def stream_sis_enrollments(sids=None, advisees_only=False):
+def stream_sis_enrollments(sids=None):
     sql = f"""SELECT
                   enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id,
                   enr.ldap_uid, enr.sid,
@@ -466,7 +466,6 @@ def stream_sis_enrollments(sids=None, advisees_only=False):
               FROM {intermediate_schema()}.sis_enrollments enr
               LEFT JOIN {edl_external_schema()}.student_registration_term_data r
                   ON enr.sis_term_id = r.semester_year_term_cd AND enr.sid = r.student_id
-              {'JOIN ' + calnet_schema() + '.advisees ldap ON enr.ldap_uid = ldap.ldap_uid' if advisees_only else ''}
               {'WHERE enr.sid = ANY(%s)' if sids else ''}
               UNION
               SELECT
@@ -480,9 +479,8 @@ def stream_sis_enrollments(sids=None, advisees_only=False):
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
               LEFT JOIN {edl_external_schema()}.student_registration_term_data r
                   ON dr.sis_term_id = r.semester_year_term_cd AND dr.sid = r.student_id
-              {'JOIN ' + calnet_schema() + '.advisees ldap ON dr.ldap_uid = ldap.ldap_uid' if advisees_only else ''}
               LEFT JOIN {edl_schema()}.enrollments e
-                ON ldap.ldap_uid = e.ldap_uid
+                ON dr.ldap_uid = e.ldap_uid
                 AND dr.sis_term_id = e.term_id
                 AND dr.sis_section_id = e.section_id
               {'WHERE dr.sid = ANY(%s)' if sids else ''}
