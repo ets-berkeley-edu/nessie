@@ -35,7 +35,7 @@ from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib import berkeley, queries
 from nessie.lib.util import encoded_tsv_row, resolve_sql_template, write_to_tsv_file
 from nessie.merged.sis_profile import parse_merged_sis_profile
-from nessie.merged.student_demographics import add_demographics_rows, refresh_rds_demographics
+from nessie.merged.student_demographics import add_demographics_rows
 from nessie.merged.student_terms import append_drops, append_term_gpa, empty_term_feed, merge_canvas_site_memberships, merge_enrollment
 from nessie.models.student_schema_manager import refresh_all_from_staging, refresh_from_staging, truncate_staging_table, write_file_to_staging
 
@@ -230,14 +230,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         )
 
     def update_rds_profile_indexes(self):
-        with rds.transaction() as transaction:
-            if self.refresh_rds_indexes(transaction):
-                transaction.commit()
-                app.logger.info('Refreshed RDS indexes.')
-            else:
-                transaction.rollback()
-                raise BackgroundJobError('Failed to refresh RDS indexes.')
-
         resolved_ddl_rds = resolve_sql_template('update_rds_indexes_student_profiles.template.sql')
         if rds.execute(resolved_ddl_rds):
             app.logger.info('RDS student profile indexes updated.')
@@ -315,33 +307,11 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
         return row_count
 
-    def refresh_rds_indexes(self, transaction):
-        if not (
-            self._delete_rds_rows('student_holds', transaction)
-            and self._refresh_rds_holds(transaction)
-            and self._delete_rds_rows('student_names', transaction)
-            and self._refresh_rds_names(transaction)
-            and self._delete_rds_rows('student_majors', transaction)
-            and self._refresh_rds_majors(transaction)
-            and self._delete_rds_rows('student_profiles', transaction)
-            and self._refresh_rds_profiles(transaction)
-            and self._delete_rds_rows('intended_majors', transaction)
-            and self._refresh_rds_intended_majors(transaction)
-            and self._delete_rds_rows('academic_standing', transaction)
-            and self._refresh_rds_academic_standing(transaction)
-            and self._delete_rds_rows('minors', transaction)
-            and self._refresh_rds_minors(transaction)
-            and refresh_rds_demographics(self.rds_schema, self.rds_dblink_to_redshift, self.student_schema, transaction)
-        ):
-            return False
-        return True
-
     def refresh_rds_enrollment_terms(self):
         app.logger.info('Refreshing enrollment terms in RDS.')
         with rds.transaction() as transaction:
             result = (
                 self._delete_rds_rows('student_enrollment_terms', transaction)
-                and self._delete_rds_rows('student_enrollment_terms_hist_enr', transaction)
                 and self._refresh_rds_enrollment_terms(transaction)
                 and self._index_rds_midpoint_deficient_grades(transaction)
                 and self._index_rds_enrolled_units(transaction)
@@ -358,143 +328,21 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     def _delete_rds_rows(self, table, transaction):
         return transaction.execute(f'TRUNCATE {self.rds_schema}.{table}')
 
-    def _refresh_rds_academic_standing(self, transaction):
+    def _refresh_rds_enrollment_terms(self, transaction):
         return transaction.execute(
-            f"""INSERT INTO {self.rds_schema}.academic_standing (
-            SELECT *
-            FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
-                SELECT DISTINCT sid, term_id, acad_standing_action, acad_standing_status, LEFT(action_date, 10)
-                FROM {self.student_schema}.academic_standing
-              $REDSHIFT$)
-            AS redshift_academic_standing (
-                sid VARCHAR,
-                term_id VARCHAR,
-                acad_standing_action VARCHAR,
-                acad_standing_status VARCHAR,
-                action_date VARCHAR
-            ));""",
-        )
-
-    def _refresh_rds_holds(self, transaction):
-        return transaction.execute(
-            f"""INSERT INTO {self.rds_schema}.student_holds (
-            SELECT *
-                FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
-                    SELECT sid, feed
-                    FROM {self.student_schema}.student_holds
-              $REDSHIFT$)
-            AS redshift_holds (
-                sid VARCHAR,
-                feed TEXT
-            ));""",
-        )
-
-    def _refresh_rds_names(self, transaction):
-        return transaction.execute(
-            f"""INSERT INTO {self.rds_schema}.student_names (
-            SELECT DISTINCT sid, unnest(string_to_array(
-                regexp_replace(upper(first_name), '[^\w ]', '', 'g'),
-                ' '
-            )) AS name FROM {self.rds_schema}.student_profile_index WHERE hist_enr IS FALSE
-            UNION
-            SELECT DISTINCT sid, unnest(string_to_array(
-                regexp_replace(upper(last_name), '[^\w ]', '', 'g'),
-                ' '
-            )) AS name FROM {self.rds_schema}.student_profile_index WHERE hist_enr IS FALSE
+            f"""INSERT INTO {self.rds_schema}.student_enrollment_terms (
+                SELECT *
+                    FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
+                        SELECT sid, term_id, enrollment_term
+                        FROM {self.student_schema}.student_enrollment_terms
+                  $REDSHIFT$)
+                AS redshift_enrollment_terms (
+                    sid VARCHAR,
+                    term_id VARCHAR,
+                    enrollment_term TEXT
+                )
             );""",
         )
-
-    def _refresh_rds_majors(self, transaction):
-        return transaction.execute(
-            f"""INSERT INTO {self.rds_schema}.student_majors (
-            SELECT *
-            FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
-                SELECT DISTINCT sid, college, major
-                FROM {self.student_schema}.student_majors
-              $REDSHIFT$)
-            AS redshift_majors (
-                sid VARCHAR,
-                college VARCHAR,
-                major VARCHAR
-            ));""",
-        )
-
-    def _refresh_rds_profiles(self, transaction):
-        return transaction.execute(
-            f"""INSERT INTO {self.rds_schema}.student_profiles (
-            SELECT *
-                FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
-                    SELECT sp.sid, sp.profile
-                    FROM {self.student_schema}.student_profiles sp
-                    JOIN {self.student_schema}.student_profile_index spi
-                    ON sp.sid = spi.sid
-                    AND spi.hist_enr IS FALSE
-              $REDSHIFT$)
-            AS redshift_profiles (
-                sid VARCHAR,
-                profile TEXT
-            ));""",
-        )
-
-    def _refresh_rds_intended_majors(self, transaction):
-        return transaction.execute(
-            f"""INSERT INTO {self.rds_schema}.intended_majors (
-            SELECT DISTINCT *
-                FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
-                    SELECT sid, major
-                    FROM {self.student_schema}.intended_majors
-              $REDSHIFT$)
-            AS redshift_intended_majors (
-                sid VARCHAR,
-                major VARCHAR
-            ));""",
-        )
-
-    def _refresh_rds_minors(self, transaction):
-        return transaction.execute(
-            f"""INSERT INTO {self.rds_schema}.minors (
-            SELECT DISTINCT *
-                FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
-                    SELECT sid, minor
-                    FROM {self.student_schema}.minors
-              $REDSHIFT$)
-            AS redshift_minors (
-                sid VARCHAR,
-                minor VARCHAR
-            ));""",
-        )
-
-    def _refresh_rds_enrollment_terms(self, transaction):
-        advisee_refresh = f"""INSERT INTO {self.rds_schema}.student_enrollment_terms (
-            SELECT *
-                FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
-                    SELECT set.sid, set.term_id, set.enrollment_term
-                    FROM {self.student_schema}.student_enrollment_terms set
-                    JOIN {self.student_schema}.student_profile_index spi
-                    ON set.sid = spi.sid
-                    AND spi.hist_enr IS FALSE
-              $REDSHIFT$)
-            AS redshift_enrollment_terms (
-                sid VARCHAR,
-                term_id VARCHAR,
-                enrollment_term TEXT
-            ));"""
-        non_advisee_refresh = f"""INSERT INTO {self.rds_schema}.student_enrollment_terms_hist_enr (
-            SELECT *
-            FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
-                SELECT set.sid, set.term_id, set.enrollment_term
-                FROM {self.student_schema}.student_enrollment_terms set
-                JOIN {self.student_schema}.student_profile_index spi
-                ON set.sid = spi.sid
-                AND spi.hist_enr IS TRUE
-            $REDSHIFT$)
-            AS redshift_profiles (
-                sid VARCHAR,
-                term_id VARCHAR,
-                enrollment_term TEXT
-            ));
-        """
-        return transaction.execute(advisee_refresh) and transaction.execute(non_advisee_refresh)
 
     def _index_rds_midpoint_deficient_grades(self, transaction):
         return transaction.execute(

@@ -23,29 +23,30 @@
  * ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-DROP TABLE IF EXISTS {rds_schema_student}.student_profiles_hist_enr CASCADE;
-CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_profiles_hist_enr
-(
-    sid VARCHAR NOT NULL PRIMARY KEY,
-    uid VARCHAR,
-    profile TEXT NOT NULL
-);
 
-INSERT INTO {rds_schema_student}.student_profiles_hist_enr (
+BEGIN TRANSACTION;
+
+--
+-- Student profile feed table
+--
+
+TRUNCATE {rds_schema_student}.student_profiles;
+
+INSERT INTO {rds_schema_student}.student_profiles (
   SELECT *
-  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT sp.sid, spi.uid, sp.profile
-    FROM {redshift_schema_student}.student_profiles sp
-    JOIN {redshift_schema_student}.student_profile_index spi
-    ON sp.sid = spi.sid
-    AND spi.hist_enr IS TRUE
-  $REDSHIFT$)
+      FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+          SELECT sid, profile
+          FROM {redshift_schema_student}.student_profiles sp
+    $REDSHIFT$)
   AS redshift_profiles (
-    sid VARCHAR,
-    uid VARCHAR,
-    profile TEXT
+      sid VARCHAR,
+      profile TEXT
   )
 );
+
+--
+-- Main student profile index table
+--
 
 TRUNCATE {rds_schema_student}.student_profile_index;
 
@@ -79,26 +80,12 @@ ON CONFLICT (sid) DO UPDATE SET
 UPDATE {rds_schema_student}.student_profile_index spidx
   SET academic_career_status = lower(p.profile::json->'sisProfile'->>'academicCareerStatus')
   FROM {rds_schema_student}.student_profiles p
-  WHERE spidx.sid = p.sid
-  AND spidx.hist_enr IS FALSE;
-
-UPDATE {rds_schema_student}.student_profile_index spidx
-  SET academic_career_status = lower(p.profile::json->'sisProfile'->>'academicCareerStatus')
-  FROM {rds_schema_student}.student_profiles_hist_enr p
-  WHERE spidx.sid = p.sid
-  AND spidx.hist_enr IS TRUE;
+  WHERE spidx.sid = p.sid;
 
 UPDATE {rds_schema_student}.student_profile_index spidx
   SET email_address = lower(p.profile::json->'sisProfile'->>'emailAddress')
   FROM {rds_schema_student}.student_profiles p
-  WHERE spidx.sid = p.sid
-  AND spidx.hist_enr IS FALSE;
-
-UPDATE {rds_schema_student}.student_profile_index spidx
-  SET email_address = lower(p.profile::json->'sisProfile'->>'emailAddress')
-  FROM {rds_schema_student}.student_profiles_hist_enr p
-  WHERE spidx.sid = p.sid
-  AND spidx.hist_enr IS TRUE;
+  WHERE spidx.sid = p.sid;
 
 UPDATE {rds_schema_student}.student_profile_index spidx
   SET entering_term =
@@ -110,39 +97,105 @@ UPDATE {rds_schema_student}.student_profile_index spidx
   WHEN 'Winter' THEN 0 WHEN 'Spring' THEN 2 WHEN 'Summer' THEN 5 WHEN 'Fall' THEN 8 END
   FROM {rds_schema_student}.student_profiles p
   WHERE p.sid = spidx.sid
-  AND p.profile::json->'sisProfile'->>'matriculation' IS NOT NULL
-  AND spidx.hist_enr IS FALSE;
+  AND p.profile::json->'sisProfile'->>'matriculation' IS NOT NULL;
 
-UPDATE {rds_schema_student}.student_profile_index spidx
-  SET entering_term =
-  substr(split_part(p.profile::json->'sisProfile'->>'matriculation', ' ', 2), 1, 1)
-  ||
-  substr(split_part(p.profile::json->'sisProfile'->>'matriculation', ' ', 2), 3, 2)
-  ||
-  CASE split_part(p.profile::json->'sisProfile'->>'matriculation', ' ', 1)
-  WHEN 'Winter' THEN 0 WHEN 'Spring' THEN 2 WHEN 'Summer' THEN 5 WHEN 'Fall' THEN 8 END
-  FROM {rds_schema_student}.student_profiles_hist_enr p
-  WHERE p.sid = spidx.sid
-  AND p.profile::json->'sisProfile'->>'matriculation' IS NOT NULL
-  AND spidx.hist_enr IS TRUE;
+
+--
+-- Main student profile index table
+--
+
+
+TRUNCATE {rds_schema_student}.academic_standing;
+
+INSERT INTO {rds_schema_student}.academic_standing (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+      SELECT DISTINCT sid, term_id, acad_standing_action, acad_standing_status, LEFT(action_date, 10)
+      FROM {redshift_schema_student}.academic_standing
+    $REDSHIFT$)
+  AS redshift_academic_standing (
+      sid VARCHAR,
+      term_id VARCHAR,
+      acad_standing_action VARCHAR,
+      acad_standing_status VARCHAR,
+      action_date VARCHAR
+  )
+);
+
+TRUNCATE {rds_schema_student}.demographics;
+
+INSERT INTO {rds_schema_student}.demographics (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+      SELECT sid, gender, minority
+      FROM {redshift_schema_student}.demographics
+    $REDSHIFT$)
+  AS redshift_demographics (
+      sid VARCHAR,
+      gender VARCHAR,
+      minority BOOLEAN
+  )
+);
+
+TRUNCATE {rds_schema_student}.ethnicities;
+
+INSERT INTO {rds_schema_student}.ethnicities (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+      SELECT sid, ethnicity
+      FROM {redshift_schema_student}.ethnicities
+    $REDSHIFT$)
+  AS redshift_ethnicities (
+      sid VARCHAR,
+      ethnicity VARCHAR
+  )
+);
+
+TRUNCATE {rds_schema_student}.intended_majors;
+
+INSERT INTO {rds_schema_student}.intended_majors (
+  SELECT DISTINCT *
+      FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+          SELECT sid, major
+          FROM {redshift_schema_student}.intended_majors
+    $REDSHIFT$)
+  AS redshift_intended_majors (
+      sid VARCHAR,
+      major VARCHAR
+  )
+);
+
+TRUNCATE {rds_schema_student}.minors;
+
+INSERT INTO {rds_schema_student}.minors (
+  SELECT DISTINCT *
+      FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+          SELECT sid, minor
+          FROM {redshift_schema_student}.minors
+    $REDSHIFT$)
+  AS redshift_minors (
+      sid VARCHAR,
+      minor VARCHAR
+  )
+);
 
 TRUNCATE {rds_schema_student}.student_degrees;
 
 INSERT INTO {rds_schema_student}.student_degrees
 SELECT DISTINCT sid, plan, date_awarded,
-CASE substr(date_awarded, 6, 2)
-  WHEN '03' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '0'
-  WHEN '05' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '2'
-  WHEN '06' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '2'
-  WHEN '08' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '5'
-  WHEN '12' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '8'
-  END AS term_id,
-  FALSE AS hist_enr
+  CASE substr(date_awarded, 6, 2)
+    WHEN '03' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '0'
+    WHEN '05' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '2'
+    WHEN '06' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '2'
+    WHEN '08' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '5'
+    WHEN '12' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '8'
+    END AS term_id,
+  hist_enr
 FROM (
   SELECT sid, "dateAwarded" AS date_awarded, plans.*
   FROM
   (
-    SELECT sid, "dateAwarded", plans
+    SELECT sid, "dateAwarded", plans, hist_enr
     FROM {rds_schema_student}.student_profiles p,
     json_to_recordset(p.profile::json->'sisProfile'->'degrees') AS degrees("dateAwarded" varchar, "plans" varchar)
   ) p,
@@ -150,26 +203,64 @@ FROM (
 ) degrees
 ON CONFLICT (sid, plan, term_id) DO UPDATE SET
   sid=EXCLUDED.sid, plan=EXCLUDED.plan, date_awarded=EXCLUDED.date_awarded, term_id=EXCLUDED.term_id,
-  hist_enr=FALSE;
+  hist_enr=EXCLUDED.hist_enr;
 
-INSERT INTO {rds_schema_student}.student_degrees
-SELECT sid, plan, date_awarded,
-CASE substr(date_awarded, 6, 2)
-  WHEN '03' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '0'
-  WHEN '05' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '2'
-  WHEN '06' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '2'
-  WHEN '08' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '5'
-  WHEN '12' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '8'
-  END AS term_id,
-  TRUE AS hist_enr
-FROM (
-  SELECT sid, "dateAwarded" AS date_awarded, plans.*
-  FROM
-  (
-    SELECT sid, "dateAwarded", plans
-    FROM {rds_schema_student}.student_profiles_hist_enr p,
-    json_to_recordset(p.profile::json->'sisProfile'->'degrees') AS degrees("dateAwarded" varchar, "plans" varchar)
-  ) p,
-  json_to_recordset(plans::json) AS plans(plan varchar)
-) degrees
-ON CONFLICT (sid, plan, term_id) DO NOTHING;
+TRUNCATE {rds_schema_student}.student_holds;
+
+INSERT INTO {rds_schema_student}.student_holds (
+  SELECT *
+      FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
+          SELECT sid, feed
+          FROM {redshift_schema_student}.student_holds
+    $REDSHIFT$)
+  AS redshift_holds (
+      sid VARCHAR,
+      feed TEXT
+  )
+);
+
+TRUNCATE {rds_schema_student}.student_majors;
+
+INSERT INTO {rds_schema_student}.student_majors (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+      SELECT DISTINCT sid, college, major
+      FROM {redshift_schema_student}.student_majors
+    $REDSHIFT$)
+  AS redshift_majors (
+      sid VARCHAR,
+      college VARCHAR,
+      major VARCHAR
+  )
+);
+
+TRUNCATE {rds_schema_student}.student_names;
+
+INSERT INTO {rds_schema_student}.student_names (
+  SELECT DISTINCT sid, unnest(string_to_array(
+      regexp_replace(upper(first_name), '[^\w ]', '', 'g'),
+      ' '
+  )) AS name FROM {rds_schema_student}.student_profile_index WHERE hist_enr IS FALSE
+  UNION
+  SELECT DISTINCT sid, unnest(string_to_array(
+      regexp_replace(upper(last_name), '[^\w ]', '', 'g'),
+      ' '
+  )) AS name FROM {rds_schema_student}.student_profile_index WHERE hist_enr IS FALSE
+);
+
+COMMIT TRANSACTION;
+
+TRUNCATE {rds_schema_student}.visas;
+
+INSERT INTO {rds_schema_student}.visas (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+      SELECT sid, visa_status, visa_type
+      FROM {redshift_schema_student}.visas
+    $REDSHIFT$)
+  AS redshift_visas (
+      sid VARCHAR,
+      visa_status VARCHAR,
+      visa_type VARCHAR
+  )
+);
