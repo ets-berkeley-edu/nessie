@@ -209,7 +209,7 @@ TRUNCATE {rds_schema_student}.student_holds;
 
 INSERT INTO {rds_schema_student}.student_holds (
   SELECT *
-      FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
+      FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
           SELECT sid, feed
           FROM {redshift_schema_student}.student_holds
     $REDSHIFT$)
