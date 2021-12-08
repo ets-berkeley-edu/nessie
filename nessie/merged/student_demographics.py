@@ -54,54 +54,6 @@ def add_demographics_rows(sid, feed, feed_files, feed_counts):
     return feed
 
 
-def refresh_rds_demographics(rds_schema, rds_dblink_to_redshift, redshift_schema, transaction):
-    if not transaction.execute(f'TRUNCATE {rds_schema}.demographics'):
-        return False
-    sql = f"""INSERT INTO {rds_schema}.demographics (
-            SELECT *
-            FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-                SELECT sid, gender, minority
-                FROM {redshift_schema}.demographics
-              $REDSHIFT$)
-            AS redshift_demographics (
-                sid VARCHAR,
-                gender VARCHAR,
-                minority BOOLEAN
-            ));"""
-    if not transaction.execute(sql):
-        return False
-    if not transaction.execute(f'TRUNCATE {rds_schema}.ethnicities'):
-        return False
-    sql = f"""INSERT INTO {rds_schema}.ethnicities (
-            SELECT *
-            FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-                SELECT sid, ethnicity
-                FROM {redshift_schema}.ethnicities
-              $REDSHIFT$)
-            AS redshift_ethnicities (
-                sid VARCHAR,
-                ethnicity VARCHAR
-            ));"""
-    if not transaction.execute(sql):
-        return False
-    if not transaction.execute(f'TRUNCATE {rds_schema}.visas'):
-        return False
-    sql = f"""INSERT INTO {rds_schema}.visas (
-            SELECT *
-            FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-                SELECT sid, visa_status, visa_type
-                FROM {redshift_schema}.visas
-              $REDSHIFT$)
-            AS redshift_visas (
-                sid VARCHAR,
-                visa_status VARCHAR,
-                visa_type VARCHAR
-            ));"""
-    if not transaction.execute(sql):
-        return False
-    return True
-
-
 def filter_ethnicities(ethnicities):
     """Return White-only ethnicities rather than multi-ethnic values under a search for 'White'."""
     if len(ethnicities) > 1 and 'White' in ethnicities:
