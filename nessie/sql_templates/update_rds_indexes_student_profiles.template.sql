@@ -182,7 +182,7 @@ INSERT INTO {rds_schema_student}.minors (
 TRUNCATE {rds_schema_student}.student_degrees;
 
 INSERT INTO {rds_schema_student}.student_degrees
-SELECT DISTINCT sid, plan, date_awarded,
+SELECT DISTINCT degrees.sid, plan, date_awarded,
   CASE substr(date_awarded, 6, 2)
     WHEN '03' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '0'
     WHEN '05' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '2'
@@ -190,17 +190,18 @@ SELECT DISTINCT sid, plan, date_awarded,
     WHEN '08' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '5'
     WHEN '12' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '8'
     END AS term_id,
-  hist_enr
+  spi.hist_enr
 FROM (
   SELECT sid, "dateAwarded" AS date_awarded, plans.*
   FROM
   (
-    SELECT sid, "dateAwarded", plans, hist_enr
+    SELECT sid, "dateAwarded", plans
     FROM {rds_schema_student}.student_profiles p,
     json_to_recordset(p.profile::json->'sisProfile'->'degrees') AS degrees("dateAwarded" varchar, "plans" varchar)
   ) p,
   json_to_recordset(plans::json) AS plans(plan varchar)
 ) degrees
+LEFT JOIN student.student_profile_index spi on spi.sid = degrees.sid
 ON CONFLICT (sid, plan, term_id) DO UPDATE SET
   sid=EXCLUDED.sid, plan=EXCLUDED.plan, date_awarded=EXCLUDED.date_awarded, term_id=EXCLUDED.term_id,
   hist_enr=EXCLUDED.hist_enr;
