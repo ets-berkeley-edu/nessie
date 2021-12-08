@@ -473,7 +473,7 @@ def stream_sis_enrollments(sids=None):
                 dr.ldap_uid, dr.sid,
                 dr.sis_course_title, dr.sis_course_name, dr.sis_section_id,
                 NULL::boolean as sis_primary, dr.sis_instruction_mode, dr.sis_instruction_format, dr.sis_section_num,
-                LEFT(e.drop_date, 10) AS drop_date, TRUE as dropped,
+                LEFT(e.drop_date, 10)::date AS drop_date, TRUE as dropped,
                 r.maximum_term_enrollment_units_limit AS max_term_units_allowed,
                 r.minimum_term_enrollment_units_limit AS min_term_units_allowed
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
