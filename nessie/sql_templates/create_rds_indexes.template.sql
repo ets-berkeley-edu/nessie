@@ -256,7 +256,8 @@ CREATE INDEX IF NOT EXISTS student_holds_sid_idx ON {rds_schema_student}.student
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_profiles
 (
     sid VARCHAR NOT NULL PRIMARY KEY,
-    profile TEXT NOT NULL
+    profile TEXT NOT NULL,
+    profile_summary TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_term_gpas
