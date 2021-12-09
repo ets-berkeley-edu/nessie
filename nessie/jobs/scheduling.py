@@ -198,7 +198,6 @@ def start_chained_job(job_components, job_id, job_opts={}):
 
 def run_startup_jobs(_app):
     # Jobs to be run in the foreground on app startup.
-    from nessie.jobs.create_advisee_schema import CreateAdviseeSchema
     from nessie.jobs.create_asc_schema import CreateAscSchema
     from nessie.jobs.create_metadata_schema import CreateMetadataSchema
     from nessie.jobs.create_rds_indexes import CreateRdsIndexes
@@ -207,7 +206,6 @@ def run_startup_jobs(_app):
 
     if _app.config['JOB_SCHEDULING_ENABLED'] and os.environ.get('NESSIE_ENV') != 'test':
         _app.logger.info('Checking for required schemas...')
-        CreateAdviseeSchema().run()
         CreateAscSchema().run()
         CreateMetadataSchema().run()
         CreateRdsIndexes().run()

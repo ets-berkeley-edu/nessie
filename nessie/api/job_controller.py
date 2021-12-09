@@ -55,7 +55,6 @@ from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.jobs.import_calnet_data import ImportCalNetData
 from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
-from nessie.jobs.import_non_current_students import ImportNonCurrentStudents
 from nessie.jobs.import_piazza_api_data import ImportPiazzaApiData
 from nessie.jobs.import_student_photos import ImportStudentPhotos
 from nessie.jobs.import_ycbm_api import ImportYcbmApi
@@ -232,13 +231,6 @@ def import_canvas_enrollments_api():
     else:
         term_id = None
     job_started = ImportCanvasEnrollmentsApi(term_id=term_id).run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/import_non_current_students', methods=['POST'])
-@auth_required
-def import_non_current_students():
-    job_started = ImportNonCurrentStudents().run_async()
     return respond_with_status(job_started)
 
 
