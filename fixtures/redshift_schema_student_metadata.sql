@@ -1,10 +1,3 @@
-CREATE SCHEMA IF NOT EXISTS {redshift_schema_advisee};
-
-CREATE TABLE IF NOT EXISTS {redshift_schema_advisee}.non_current_students
-(
-    sid VARCHAR NOT NULL
-);
-
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_asc};
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_asc}.students
@@ -73,9 +66,6 @@ CREATE SCHEMA IF NOT EXISTS {redshift_schema_undergrads};
 CREATE TABLE {redshift_schema_undergrads}.students(
     sid VARCHAR
 );
-
-INSERT INTO {redshift_schema_advisee}.non_current_students (sid)
-VALUES ('5000000000');
 
 INSERT INTO {redshift_schema_asc}.students
 (sid, intensive, active, status_asc, group_code, group_name, team_code, team_name)

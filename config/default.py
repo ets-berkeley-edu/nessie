@@ -211,7 +211,6 @@ REDSHIFT_DBLINK_GROUP = 'nessie_dblink_group'
 REDSHIFT_DBLINK_GROUP_DIABLO = 'diablo_dblink_group'
 
 # The following internal schemas are consistent across environments and do not need to be overridden locally.
-REDSHIFT_SCHEMA_ADVISEE = 'boac_advisee'
 REDSHIFT_SCHEMA_ADVISOR_INTERNAL = 'boac_advisor'
 REDSHIFT_SCHEMA_ASC = 'boac_advising_asc'
 REDSHIFT_SCHEMA_ASC_ADVISING_NOTES_INTERNAL = 'asc_advising_notes'

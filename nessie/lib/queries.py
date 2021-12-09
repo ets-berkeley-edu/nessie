@@ -29,10 +29,6 @@ from nessie.lib.berkeley import term_name_for_sis_id
 from nessie.lib.mockingdata import fixture
 
 
-def advisee_schema():
-    return app.config['REDSHIFT_SCHEMA_ADVISEE']
-
-
 def advisor_schema():
     return app.config['REDSHIFT_SCHEMA_ADVISOR']
 
@@ -102,7 +98,6 @@ def get_all_student_ids():
             AND academic_plan_type_cd != 'MIN'
         UNION SELECT sid FROM {asc_schema()}.students
         UNION SELECT sid FROM {coe_schema()}.students
-        UNION SELECT sid FROM {advisee_schema()}.non_current_students
     """
     return redshift.fetch(sql)
 

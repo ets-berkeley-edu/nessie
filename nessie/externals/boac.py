@@ -29,15 +29,6 @@ from nessie.lib import http
 """BOAC auth API."""
 
 
-def get_manually_added_advisees():
-    response = authorized_request(app.config['BOA_ADVISEES_API_URL'], app.config['BOA_ADVISEES_API_KEY'])
-    if not response or not hasattr(response, 'json'):
-        error = f'BOA manually added advisees API unexpected response: {response}'
-        app.logger.error(error)
-        return {'error': error}
-    return {'feed': response.json()}
-
-
 def kickoff_refresh():
     successful = True
     for boac in app.config['BOAC_REFRESHERS']:
