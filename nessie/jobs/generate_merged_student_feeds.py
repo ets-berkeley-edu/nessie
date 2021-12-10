@@ -312,6 +312,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         with rds.transaction() as transaction:
             result = (
                 self._delete_rds_rows('student_enrollment_terms', transaction)
+                and self._delete_rds_rows('student_term_gpas', transaction)
                 and self._refresh_rds_enrollment_terms(transaction)
                 and self._index_rds_midpoint_deficient_grades(transaction)
                 and self._index_rds_enrolled_units(transaction)
@@ -362,11 +363,18 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         )
 
     def _index_rds_term_gpa(self, transaction):
-        return transaction.execute(
-            f"""UPDATE {self.rds_schema}.student_enrollment_terms
+        terms_table_update = f"""UPDATE {self.rds_schema}.student_enrollment_terms
             SET term_gpa = (enrollment_term::json->'termGpa'->>'gpa')::numeric
-            WHERE (enrollment_term::json->'termGpa'->>'unitsTakenForGpa')::numeric > 0;""",
-        )
+            WHERE (enrollment_term::json->'termGpa'->>'unitsTakenForGpa')::numeric > 0;"""
+        gpa_table_update = f"""INSERT INTO {self.rds_schema}.student_term_gpas
+            (sid, term_id, gpa, units_taken_for_gpa)
+            SELECT
+                sid, term_id,
+                (enrollment_term::json->'termGpa'->>'gpa')::numeric AS gpa,
+                (enrollment_term::json->'termGpa'->>'unitsTakenForGpa')::numeric AS units_taken_for_gpa
+            FROM {self.rds_schema}.student_enrollment_terms
+            WHERE (enrollment_term::json->'termGpa'->>'unitsTakenForGpa')::numeric > 0;"""
+        return transaction.execute(terms_table_update) and transaction.execute(gpa_table_update)
 
     def _index_rds_epn_grading_option(self, transaction):
         return transaction.execute(
