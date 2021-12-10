@@ -1,0 +1,1 @@
+ALTER TABLE student.student_profiles ADD COLUMN profile_summary TEXT NOT NULL;

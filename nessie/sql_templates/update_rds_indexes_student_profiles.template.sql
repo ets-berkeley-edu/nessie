@@ -35,12 +35,13 @@ TRUNCATE {rds_schema_student}.student_profiles;
 INSERT INTO {rds_schema_student}.student_profiles (
   SELECT *
       FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-          SELECT sid, profile
+          SELECT sid, profile, profile_summary
           FROM {redshift_schema_student}.student_profiles sp
     $REDSHIFT$)
   AS redshift_profiles (
       sid VARCHAR,
-      profile TEXT
+      profile TEXT,
+      profile_summary TEXT
   )
 );
 

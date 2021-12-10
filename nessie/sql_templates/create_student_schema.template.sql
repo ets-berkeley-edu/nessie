@@ -144,7 +144,8 @@ INTERLEAVED SORTKEY (sid, last_name, level, gpa, units, uid, first_name, hist_en
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles
 (
     sid VARCHAR NOT NULL,
-    profile VARCHAR(max) NOT NULL
+    profile VARCHAR(max) NOT NULL,
+    profile_summary VARCHAR(max) NOT NULL
 )
 DISTKEY (sid)
 SORTKEY (sid);
