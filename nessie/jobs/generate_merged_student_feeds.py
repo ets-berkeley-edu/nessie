@@ -187,10 +187,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 [sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance, hist_enr],
             )
 
-            if hist_enr:
-                return True
-
-            # TODO In due time, populate these index tables for hist_enr students too.
             for plan in sis_profile.get('plans', []):
                 if plan.get('status') == 'Active':
                     feed_counts['student_majors'] += write_to_tsv_file(
