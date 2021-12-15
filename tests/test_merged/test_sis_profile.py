@@ -249,7 +249,7 @@ class TestMergedSisProfile:
             assert len(degree['plans']) == 2
             assert degree['dateAwarded'] == '2018-05-17'
             assert degree['plans'][0]['group'] == 'College of Letters and Science'
-            assert degree['plans'][0]['plan'] == 'Physics'
+            assert degree['plans'][0]['plan'] == 'Physics BA'
             assert degree['plans'][0]['type'] == 'MAJ'
             assert degree['plans'][1]['group'] is None
             assert degree['plans'][1]['plan'] == 'Minor in Music'
