@@ -152,8 +152,8 @@ def merge_degrees(sis_profile_feed, sis_profile, academic_status):
             plan_type = plan.get('type', {}).get('code')
             target_degree = plan.get('targetDegree', {}).get('type', {}).get('description', {})
             if target_degree == description or plan_type == 'MIN':
-                # formalDescription seems to work for UGRD plans but gets too wordy for others.
-                if sis_profile.get('academicCareer') == 'UGRD':
+                # formalDescription seems helpful for MIN plans but not otherwise.
+                if plan_type == 'MIN':
                     plan_desc = plan.get('plan', {}).get('formalDescription')
                 else:
                     plan_desc = plan.get('plan', {}).get('description')
