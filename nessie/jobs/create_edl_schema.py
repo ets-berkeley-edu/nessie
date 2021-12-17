@@ -348,8 +348,9 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
             return
         feed['holds'] = []
         for r in hold_rows:
+            from_date = r['service_indicator_start_dt']
             feed['holds'].append({
-                'fromDate': str(r['service_indicator_start_dt'])[0:10],
+                'fromDate': str(from_date)[0:10] if from_date else None,
                 'reason': {
                     'description': r['service_indicator_reason_desc'],
                     'formalDescription': r['service_indicator_long_desc'],
