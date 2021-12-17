@@ -40,6 +40,17 @@ def empty_term_feed(term_id, term_name):
     }
 
 
+def append_academic_standing(term_feed, academic_standing_rows):
+    # In the case of multiple results per term id and SID, SQL ordering ensures the most recent
+    # status is first.
+    for row in academic_standing_rows:
+        term_feed['academicStanding'] = {
+            'status': row['status'],
+            'termId': row['term_id'],
+        }
+        break
+
+
 def append_drops(term_feed, drops):
     term_feed['droppedSections'] = []
     for row in drops:
