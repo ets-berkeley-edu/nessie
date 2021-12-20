@@ -271,14 +271,6 @@ def get_all_instructor_uids():
     return redshift.fetch(sql)
 
 
-def stream_edl_academic_standings(by_term=False):
-    order_by = 'term_id DESC, sid' if by_term else 'sid, term_id DESC'
-    sql = f"""SELECT sid, term_id, acad_standing_status as status, action_date
-        FROM {edl_schema()}.academic_standing
-        ORDER BY {order_by}, action_date DESC, acad_standing_status"""
-    return redshift.fetch(sql, stream_results=True)
-
-
 def stream_edl_demographics():
     sql = f"""SELECT
                 i.sid, i.gender, e.ethnicity, e.ethnic_group, c.citizenship_country, v.visa_status, v.visa_type
@@ -493,18 +485,17 @@ def stream_sis_enrollments(sids=None):
     return redshift.fetch(sql, params=params, stream_results=True)
 
 
-def stream_term_gpas(sids=None, advisees_only=False, by_term=False):
+def stream_term_gpas(sids=None, advisees_only=False):
     if sids:
         sid_filter = 'WHERE gp.sid = ANY(%s)'
     elif advisees_only:
         sid_filter = f'JOIN {calnet_schema()}.advisees ldap ON gp.sid = ldap.sid'
     else:
         sid_filter = ''
-    order_by = 'gp.term_id DESC, gp.sid' if by_term else 'gp.sid, gp.term_id DESC'
     sql = f"""SELECT gp.sid, gp.term_id, gp.gpa, gp.units_taken_for_gpa
               FROM {edl_schema()}.term_gpa gp
               {sid_filter}
-              ORDER BY {order_by}, CASE gp.career WHEN 'UGRD' THEN 1 ELSE 0 END
+              ORDER BY gp.term_id DESC, gp.sid, CASE gp.career WHEN 'UGRD' THEN 1 ELSE 0 END
         """
     params = (sids,) if sids else None
     return redshift.fetch(sql, params=params, stream_results=True)
