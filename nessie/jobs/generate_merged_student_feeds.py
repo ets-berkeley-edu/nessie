@@ -145,14 +145,15 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 'plan': a['plan'],
             })
 
+        academic_standing = sis_profile.pop('academicStanding') if sis_profile else None
         # For now, whether a student counts as "hist_enr" is determined by whether they show up in the Calnet schema.
         hist_enr = feed_elements.get('hist_enr')
-
         names = self.get_names(feed_elements)
+
         base_profile = {
             'sid': sid,
             'uid': uid,
-            'academicStanding': sis_profile.pop('academicStanding'),
+            'academicStanding': academic_standing,
             'advisors': advisor_feed,
             'canvasUserId': feed_elements.get('canvas_user_id'),
             'canvasUserName': feed_elements.get('canvas_user_name'),
