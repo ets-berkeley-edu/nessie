@@ -36,9 +36,9 @@ from threading import current_thread
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.berkeley import career_code_to_name, current_term_id, term_info_for_sis_term_id, term_name_for_sis_id
-from nessie.lib.queries import stream_edl_academic_standings, stream_edl_degrees, stream_edl_demographics, stream_edl_holds,\
-    stream_edl_plans, stream_edl_profile_terms, stream_edl_profiles, stream_edl_registrations, stream_term_gpas
+from nessie.lib.berkeley import career_code_to_name, current_term_id, term_info_for_sis_term_id
+from nessie.lib.queries import stream_edl_degrees, stream_edl_demographics, stream_edl_holds, stream_edl_plans,\
+    stream_edl_profile_terms, stream_edl_profiles, stream_edl_registrations
 from nessie.lib.util import get_s3_edl_daily_path, resolve_sql_template, write_to_tsv_file
 from nessie.merged.student_demographics import GENDER_CODE_MAP, merge_from_details, UNDERREPRESENTED_GROUPS
 
@@ -220,12 +220,10 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
     def fetch_source_feeds(self):
         profile_stream = stream_edl_profiles()
         supplemental_streams = {
-            'academic_standing': stream_edl_academic_standings(),
             'degrees': stream_edl_degrees(),
             'holds': stream_edl_holds(),
             'plans': stream_edl_plans(),
             'profile_terms': stream_edl_profile_terms(),
-            'term_gpas': stream_term_gpas(),
         }
 
         try:
@@ -291,11 +289,9 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
 
                 self._merge_profile(feed, feed_components.get('profile'))
                 self._merge_holds(feed, feed_components.get('holds'))
-                self._merge_academic_standing(feed, feed_components.get('academic_standing'))
                 self._merge_academic_status(feed, feed_components.get('profile_terms'), career_code)
                 self._merge_plans(feed, plans, career_code)
                 self._merge_degrees(feed, feed_components.get('degrees'))
-                self._merge_term_gpas(feed, feed_components.get('term_gpas'))
 
                 write_to_tsv_file(target_file, [sid, json.dumps(feed)])
 
@@ -360,20 +356,6 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                     'formalDescription': r['service_indicator_long_desc'],
                 },
             })
-
-    def _merge_academic_standing(self, feed, academic_standing_rows):
-        if not academic_standing_rows:
-            return
-
-        def _to_json(row):
-            return {
-                'actionDate': str(row['action_date']),
-                'sid': row['sid'],
-                'status': row['status'],
-                'termId': row['term_id'],
-                'termName': term_name_for_sis_id(row['term_id']),
-            }
-        feed['academicStanding'] = [_to_json(r) for r in academic_standing_rows]
 
     def _merge_academic_status(self, feed, profile_term_rows, career_code):
         if not profile_term_rows or not career_code:
@@ -559,11 +541,6 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 degree_feed['academicPlans'].append(plan_feed)
 
             feed['degrees'].append(degree_feed)
-
-    def _merge_term_gpas(self, feed, term_gpa_rows):
-        if not term_gpa_rows:
-            return
-        feed['termGpa'] = [{'termName': term_name_for_sis_id(r['term_id']), 'gpa': float(r['gpa'])} for r in term_gpa_rows]
 
     @staticmethod
     def _best_status(statuses):

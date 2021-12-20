@@ -36,8 +36,7 @@ from nessie.lib import berkeley, queries
 from nessie.lib.util import encoded_tsv_row, resolve_sql_template, write_to_tsv_file
 from nessie.merged.sis_profile import parse_merged_sis_profile
 from nessie.merged.student_demographics import add_demographics_rows
-from nessie.merged.student_terms import append_academic_standing, append_drops, append_term_gpa, empty_term_feed, merge_canvas_site_memberships,\
-    merge_enrollment
+from nessie.merged.student_terms import append_drops, append_term_gpa, empty_term_feed, merge_canvas_site_memberships, merge_enrollment
 from nessie.models.student_schema_manager import refresh_all_from_staging, refresh_from_staging, truncate_staging_table, write_file_to_staging
 
 """Logic for merged student profile and term generation."""
@@ -67,25 +66,27 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         self.successes = []
         self.failures = []
 
-        row_count = self.generate_student_enrollments_table()
-        if row_count:
-            result = f'Generated merged enrollment terms ({row_count} feeds.)'
-        else:
-            raise BackgroundJobError('Failed to generate student enrollment tables.')
-
-        self.refresh_rds_enrollment_terms()
-        truncate_staging_table('student_enrollment_terms')
-        app.logger.info('Enrollment term generation complete; will generate profiles.')
-
         all_student_profile_elements = queries.get_all_student_profile_elements()
         profile_tables = self.generate_student_profile_tables(all_student_profile_elements)
         if not profile_tables:
             raise BackgroundJobError('Failed to generate student profile tables.')
         refresh_all_from_staging(profile_tables)
 
+        self.update_redshift_academic_standing()
         self.update_rds_profile_indexes()
 
-        result += f' Generated merged profiles ({len(self.successes)} successes, {len(self.failures)} failures).'
+        result = f'Generated merged profiles ({len(self.successes)} successes, {len(self.failures)} failures).'
+
+        app.logger.info('Profile generation complete; will generate enrollment terms.')
+        row_count = self.generate_student_enrollments_table()
+        if row_count:
+            result += f' Generated merged enrollment terms ({row_count} feeds.)'
+        else:
+            raise BackgroundJobError('Failed to generate student enrollment tables.')
+
+        self.refresh_rds_enrollment_terms()
+        truncate_staging_table('student_enrollment_terms')
+
         return result
 
     def generate_student_profile_tables(self, all_student_feed_elements):
@@ -145,7 +146,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 'plan': a['plan'],
             })
 
-        academic_standing = sis_profile.pop('academicStanding') if sis_profile else None
         # For now, whether a student counts as "hist_enr" is determined by whether they show up in the Calnet schema.
         hist_enr = feed_elements.get('hist_enr')
         names = self.get_names(feed_elements)
@@ -153,14 +153,13 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         base_profile = {
             'sid': sid,
             'uid': uid,
-            'academicStanding': academic_standing,
             'advisors': advisor_feed,
             'canvasUserId': feed_elements.get('canvas_user_id'),
             'canvasUserName': feed_elements.get('canvas_user_name'),
             'demographics': demographics,
             **names,
         }
-        full_profile = {
+        merged_profile = {
             **base_profile,
             'sisProfile': sis_profile,
         }
@@ -170,12 +169,12 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         }
         feed_counts['student_profiles'] += write_to_tsv_file(
             feed_files['student_profiles'],
-            [sid, json.dumps(full_profile), json.dumps(profile_summary)],
+            [sid, json.dumps(merged_profile), json.dumps(profile_summary)],
         )
 
         if sis_profile:
-            first_name = full_profile['firstName'] or ''
-            last_name = full_profile['lastName'] or ''
+            first_name = merged_profile['firstName'] or ''
+            last_name = merged_profile['lastName'] or ''
             level = str(sis_profile.get('level', {}).get('code') or '')
             gpa = str(sis_profile.get('cumulativeGPA') or '')
             units = str(sis_profile.get('cumulativeUnits') or '')
@@ -217,7 +216,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'level': self.get_sis_level_description(sis_profile),
             'majors': self.get_active_plan_descriptions(sis_profile),
             'matriculation': sis_profile.get('matriculation'),
-            'termGpa': sis_profile.get('termGpa'),
             'termsInAttendance': sis_profile.get('termsInAttendance'),
             'transfer': sis_profile.get('transfer'),
         }
@@ -293,19 +291,16 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         return row_count
 
     def generate_term_feeds(self, table_name):
-        academic_standing_stream = queries.stream_edl_academic_standings(by_term=True)
         enrollment_stream = queries.stream_sis_enrollments()
-        term_gpa_stream = queries.stream_term_gpas(by_term=True)
+        term_gpa_stream = queries.stream_term_gpas()
         canvas_site_stream = queries.stream_canvas_memberships()
 
-        academic_standing_tracker = {'term_id': '9999', 'sid': '', 'academic_standings': []}
         term_gpa_tracker = {'term_id': '9999', 'sid': '', 'term_gpas': []}
         canvas_site_tracker = {'term_id': '9999', 'sid': '', 'sites': []}
 
         row_count = 0
 
         try:
-            academic_standing_results = groupby(academic_standing_stream, lambda r: (str(r['term_id']), r['sid']))
             term_gpa_results = groupby(term_gpa_stream, lambda r: (str(r['term_id']), r['sid']))
             canvas_site_results = groupby(canvas_site_stream, lambda r: (str(r['term_id']), r['sid']))
 
@@ -326,12 +321,18 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                                     term_feed = empty_term_feed(term_id, term_name)
                                 append_drops(term_feed, enrollments_subgroup)
 
-                        for merge_method, key, row_tracker, rows in [
-                            (append_academic_standing, 'academic_standings', academic_standing_tracker, academic_standing_results),
-                            (append_term_gpa, 'term_gpas', term_gpa_tracker, term_gpa_results),
-                            (merge_canvas_site_memberships, 'sites', canvas_site_tracker, canvas_site_results),
-                        ]:
-                            self._merge_supplemental_data(term_feed, term_id, sid, row_tracker, rows, merge_method, key)
+                        while term_gpa_tracker['term_id'] > term_id or (term_gpa_tracker['term_id'] == term_id and term_gpa_tracker['sid'] < sid):
+                            (term_gpa_tracker['term_id'], term_gpa_tracker['sid']), term_gpa_tracker['term_gpas'] =\
+                                next(term_gpa_results, ((term_id, sid), []))
+                        if term_gpa_tracker['term_id'] == term_id and term_gpa_tracker['sid'] == sid:
+                            append_term_gpa(term_feed, term_gpa_tracker['term_gpas'])
+
+                        while canvas_site_tracker['term_id'] > term_id or\
+                                (canvas_site_tracker['term_id'] == term_id and canvas_site_tracker['sid'] < sid):
+                            (canvas_site_tracker['term_id'], canvas_site_tracker['sid']), canvas_site_tracker['sites'] =\
+                                next(canvas_site_results, ((term_id, sid), []))
+                        if canvas_site_tracker['term_id'] == term_id and canvas_site_tracker['sid'] == sid:
+                            merge_canvas_site_memberships(term_feed, canvas_site_tracker['sites'])
 
                         feed_file.write(encoded_tsv_row([sid, term_id, json.dumps(term_feed)]) + b'\n')
                         term_row_count += 1
@@ -424,10 +425,3 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             AND t1.term_id = t2.term_id
             AND enr->>'gradingBasis' = 'EPN';""",
         )
-
-    def _merge_supplemental_data(self, enrollment_term_feed, term_id, sid, row_tracker, rows, merge_method, key):
-        while row_tracker['term_id'] > term_id or (row_tracker['term_id'] == term_id and row_tracker['sid'] < sid):
-            (row_tracker['term_id'], row_tracker['sid']), row_tracker[key] =\
-                next(rows, ((term_id, sid), []))
-        if row_tracker['term_id'] == term_id and row_tracker['sid'] == sid:
-            merge_method(enrollment_term_feed, row_tracker[key])
