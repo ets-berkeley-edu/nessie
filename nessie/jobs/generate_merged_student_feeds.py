@@ -156,11 +156,11 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'advisors': advisor_feed,
             'canvasUserId': feed_elements.get('canvas_user_id'),
             'canvasUserName': feed_elements.get('canvas_user_name'),
-            'demographics': demographics,
             **names,
         }
         merged_profile = {
             **base_profile,
+            'demographics': demographics,
             'sisProfile': sis_profile,
         }
         profile_summary = {
@@ -208,6 +208,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             return {}
         profile_summary = {
             'academicCareerStatus': sis_profile.get('academicCareerStatus'),
+            'academicStanding': sis_profile.get('academicStanding'),
             'cumulativeGPA': sis_profile.get('cumulativeGPA'),
             'cumulativeUnits': sis_profile.get('cumulativeUnits'),
             'currentTerm': sis_profile.get('currentTerm'),
@@ -216,6 +217,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'level': self.get_sis_level_description(sis_profile),
             'majors': self.get_active_plan_descriptions(sis_profile),
             'matriculation': sis_profile.get('matriculation'),
+            'termGpa': sis_profile.get('termGpa'),
             'termsInAttendance': sis_profile.get('termsInAttendance'),
             'transfer': sis_profile.get('transfer'),
         }
