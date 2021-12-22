@@ -103,7 +103,8 @@ AS (
         s.action_dt AS action_date
     FROM {redshift_schema_edl_external}.student_academic_standing_data s
     JOIN (
-      SELECT student_id, semester_year_term_cd, MAX(action_dt) AS action_dt
+      SELECT student_id, semester_year_term_cd, MAX(action_dt) AS action_dt, 
+          MAX(academic_standing_effective_dt_seq) AS seq_nr, MAX(academic_standing_effective_dt) AS eff_dt
       FROM {redshift_schema_edl_external}.student_academic_standing_data
       JOIN {redshift_schema_calnet}.advisees a ON a.sid = student_id
       GROUP BY student_id, semester_year_term_cd
@@ -111,6 +112,8 @@ AS (
         ON s.student_id = latest_actions.student_id
         AND s.semester_year_term_cd = latest_actions.semester_year_term_cd
         AND s.action_dt = latest_actions.action_dt
+        AND s.academic_standing_effective_dt_seq = latest_actions.seq_nr
+        AND s.academic_standing_effective_dt = latest_actions.eff_dt
     WHERE
         s.academic_standing_category_cd IS NOT NULL
         AND s.academic_standing_category_cd != ''
