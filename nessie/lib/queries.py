@@ -380,8 +380,17 @@ def stream_edl_profile_terms():
               r.term_berkeley_completed_gpa_units,
               r.terms_in_attendance,
               r.total_cumulative_gpa_nbr,
-              r.total_units_completed_qty
+              r.total_units_completed_qty,
+              a.acad_standing_status,
+              a.action_date,
+              t.gpa
             FROM {edl_external_schema()}.student_registration_term_data r
+            LEFT JOIN {edl_schema()}.academic_standing a
+              ON r.student_id = a.sid
+             AND r.semester_year_term_cd = a.term_id
+            LEFT JOIN {edl_schema()}.term_gpa t
+              ON r.student_id = t.sid
+             AND r.semester_year_term_cd = t.term_id
             ORDER BY r.student_id, r.semester_year_term_cd"""
     return redshift.fetch(sql, stream_results=True)
 

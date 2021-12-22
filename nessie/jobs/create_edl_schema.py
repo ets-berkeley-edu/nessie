@@ -36,7 +36,7 @@ from threading import current_thread
 from flask import current_app as app
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.berkeley import career_code_to_name, current_term_id, term_info_for_sis_term_id
+from nessie.lib.berkeley import career_code_to_name, current_term_id, term_info_for_sis_term_id, term_name_for_sis_id
 from nessie.lib.queries import stream_edl_degrees, stream_edl_demographics, stream_edl_holds, stream_edl_plans,\
     stream_edl_profile_terms, stream_edl_profiles, stream_edl_registrations
 from nessie.lib.util import get_s3_edl_daily_path, resolve_sql_template, write_to_tsv_file
@@ -289,7 +289,7 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
 
                 self._merge_profile(feed, feed_components.get('profile'))
                 self._merge_holds(feed, feed_components.get('holds'))
-                self._merge_academic_status(feed, feed_components.get('profile_terms'), career_code)
+                self._merge_profile_terms(feed, feed_components.get('profile_terms'), career_code)
                 self._merge_plans(feed, plans, career_code)
                 self._merge_degrees(feed, feed_components.get('degrees'))
 
@@ -357,16 +357,18 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 },
             })
 
-    def _merge_academic_status(self, feed, profile_term_rows, career_code):
+    def _merge_profile_terms(self, feed, profile_term_rows, career_code):
         if not profile_term_rows or not career_code:
             return
 
         latest_career_row = None
+        term_gpas = []
         # This crude calculation of total GPA units ignores transfer units and therefore won't agree with the number from the SIS API.
         # We only use it as a check for zero value to distinguish null from zero GPA.
         total_units_for_gpa = 0
         for row in profile_term_rows:
             if row['academic_career_cd'] == career_code:
+                term_gpas.append({'termName': term_name_for_sis_id(row['term_id']), 'gpa': float(row['gpa'])})
                 total_units_for_gpa += float(row['term_berkeley_completed_gpa_units'] or 0)
                 latest_career_row = row
         if not latest_career_row:
@@ -400,6 +402,12 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
             academic_status['termsInAttendance'] = int(latest_career_row['terms_in_attendance'])
 
         feed['academicStatuses'] = [academic_status]
+        if latest_career_row['acad_standing_status']:
+            feed['academicStanding'] = {
+                'status': latest_career_row['acad_standing_status'],
+                'actionDate': str(latest_career_row['action_date']),
+            }
+        feed['termGpa'] = term_gpas
 
     def _merge_plans(self, feed, plan_rows, career_code):
         if not plan_rows or not career_code or not feed.get('academicStatuses'):
