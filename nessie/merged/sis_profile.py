@@ -67,6 +67,10 @@ def parse_merged_sis_profile(feed_elements):
     return sis_profile
 
 
+def merge_academic_standing(sis_profile_feed, sis_profile):
+    sis_profile['academicStanding'] = sis_profile_feed.get('academicStanding', {})
+
+
 def merge_holds(sis_profile_feed, sis_profile):
     sis_profile['holds'] = sis_profile_feed.get('holds', [])
 
@@ -337,3 +341,7 @@ def merge_intended_majors(intended_majors_feed):
                 })
         intended_majors = sorted(intended_majors, key=itemgetter('description'))
     return intended_majors
+
+
+def merge_term_gpa(sis_profile_feed, sis_profile):
+    sis_profile['termGpa'] = sis_profile_feed.get('termGpa', [])
