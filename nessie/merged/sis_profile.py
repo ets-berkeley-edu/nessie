@@ -48,11 +48,13 @@ def parse_merged_sis_profile(feed_elements):
     # duplicate wrapped dictionaries (BOAC-362, NS-202, NS-203). Retrieve as much as we
     # can, separately handling exceptions in different parts of the feed.
     for merge_method in [
+        merge_academic_standing,
         merge_sis_profile_academic_status,
         merge_sis_profile_emails,
         merge_sis_profile_names,
         merge_sis_profile_phones,
         merge_holds,
+        merge_term_gpa,
     ]:
         try:
             merge_method(sis_profile_feed, sis_profile)
