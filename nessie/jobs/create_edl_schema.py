@@ -366,10 +366,16 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
         # This crude calculation of total GPA units ignores transfer units and therefore won't agree with the number from the SIS API.
         # We only use it as a check for zero value to distinguish null from zero GPA.
         total_units_for_gpa = 0
+
+        def _term_gpa(row):
+            return {'termName': term_name_for_sis_id(row['term_id']), 'gpa': float(row['gpa'])}
+
         for row in profile_term_rows:
             if row['academic_career_cd'] == career_code:
-                term_gpas.append({'termName': term_name_for_sis_id(row['term_id']), 'gpa': float(row['gpa'])})
-                total_units_for_gpa += float(row['term_berkeley_completed_gpa_units'] or 0)
+                term_units_for_gpa = float(row['term_berkeley_completed_gpa_units'] or 0)
+                total_units_for_gpa += term_units_for_gpa
+                if term_units_for_gpa > 0:
+                    term_gpas.append(_term_gpa(row))
                 latest_career_row = row
         if not latest_career_row:
             return
@@ -407,7 +413,7 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 'status': latest_career_row['acad_standing_status'],
                 'actionDate': str(latest_career_row['action_date']),
             }
-        feed['termGpa'] = term_gpas
+        feed['termGpa'] = term_gpas.reverse()
 
     def _merge_plans(self, feed, plan_rows, career_code):
         if not plan_rows or not career_code or not feed.get('academicStatuses'):
