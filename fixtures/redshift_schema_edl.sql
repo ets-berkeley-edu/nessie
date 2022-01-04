@@ -24,8 +24,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.advising_note_attachments (
     created_by VARCHAR NOT NULL,
     user_file_name VARCHAR NOT NULL,
     sis_file_name VARCHAR NOT NULL,
-    edl_load_date DATE,
-    is_historical BOOLEAN
+    edl_load_date DATE
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.advising_note_topics (

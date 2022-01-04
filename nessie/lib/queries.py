@@ -73,14 +73,6 @@ def metadata_schema():
     return app.config['RDS_SCHEMA_METADATA']
 
 
-def sis_schema():
-    return app.config['REDSHIFT_SCHEMA_SIS']
-
-
-def sis_schema_internal():
-    return app.config['REDSHIFT_SCHEMA_SIS_INTERNAL']
-
-
 def student_schema():
     return app.config['REDSHIFT_SCHEMA_STUDENT']
 

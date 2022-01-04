@@ -55,10 +55,6 @@ REDSHIFT_SCHEMA_DATA_SCIENCE_ADVISING_INTERNAL = 'testext_mynamehere_data_scienc
 REDSHIFT_SCHEMA_E_I_ADVISING_NOTES = 'testext_mynamehere_e_i_advising_notes_external'
 REDSHIFT_SCHEMA_E_I_ADVISING_NOTES_INTERNAL = 'testext_mynamehere_e_i_advising_notes'
 REDSHIFT_SCHEMA_INTERMEDIATE = 'testext_mynamehere_intermediate'
-REDSHIFT_SCHEMA_SIS = 'testext_mynamehere_sis'
-REDSHIFT_SCHEMA_SIS_ADVISING_NOTES = 'testext_mynamehere_sis_advising_notes_external'
-REDSHIFT_SCHEMA_SIS_ADVISING_NOTES_INTERNAL = 'testext_mynamehere_sis_advising_notes'
-REDSHIFT_SCHEMA_SIS_INTERNAL = 'testext_mynamehere_sis_internal'
 REDSHIFT_SCHEMA_STUDENT = 'testext_mynamehere_student'
 REDSHIFT_SCHEMA_TERMS = 'testext_mynamehere_terms'
 

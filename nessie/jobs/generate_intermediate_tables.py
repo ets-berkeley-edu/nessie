@@ -40,7 +40,6 @@ class GenerateIntermediateTables(BackgroundJob):
         resolved_ddl_redshift = resolve_sql_template(
             'create_intermediate_schema.template.sql',
             current_term_id=current_term_id(),
-            redshift_schema_sis=app.config['REDSHIFT_SCHEMA_EDL'],
             where_clause_exclude_withdrawn="AND en.enrollment_status_reason <> 'WDRW'",
         )
         if redshift.execute_ddl_script(resolved_ddl_redshift):
