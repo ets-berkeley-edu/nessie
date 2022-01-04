@@ -23,13 +23,11 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from datetime import datetime, timedelta
-
 from flask import current_app as app
-from nessie.externals import calnet, rds, redshift, s3
-from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
+from nessie.externals import calnet, rds
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.queries import get_advisor_sids
-from nessie.lib.util import get_s3_sis_sysadm_daily_path, resolve_sql_template
+from nessie.lib.util import resolve_sql_template
 
 """Logic for SIS Advising Notes schema creation job."""
 
@@ -39,43 +37,14 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
     def run(self):
         app.logger.info('Starting SIS Advising Notes schema creation job...')
 
-        daily_path = get_s3_sis_sysadm_daily_path()
-        bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
-        if not s3.get_keys_with_prefix(f'{daily_path}/advising-notes', bucket=bucket):
-            daily_path = get_s3_sis_sysadm_daily_path(datetime.now() - timedelta(days=1))
-            if not s3.get_keys_with_prefix(f'{daily_path}/advising-notes', bucket=bucket):
-                raise BackgroundJobError('No timely SIS advising notes data found, aborting')
-            else:
-                app.logger.info('Falling back to yesterday\'s SIS advising notes data')
-
         app.logger.info('Executing SQL...')
-        external_schema = app.config['REDSHIFT_SCHEMA_SIS_ADVISING_NOTES']
-        redshift.drop_external_schema(external_schema)
-        self.create_historical_tables(external_schema)
-        self.create_internal_schema(external_schema, daily_path)
-        app.logger.info('Redshift schema created. Creating RDS indexes...')
+        app.logger.info('Creating RDS indexes...')
         self.create_indexes()
         self.import_appointment_advisors()
         self.index_appointment_advisors()
         app.logger.info('RDS indexes created.')
 
         return 'SIS Advising Notes schema creation job completed.'
-
-    def create_historical_tables(self, external_schema):
-        resolved_ddl = resolve_sql_template('create_sis_advising_notes_historical_schema.template.sql')
-        if redshift.execute_ddl_script(resolved_ddl):
-            verify_external_schema(external_schema, resolved_ddl)
-        else:
-            raise BackgroundJobError('SIS Advising Notes schema creation job failed to load historical data.')
-
-    def create_internal_schema(self, external_schema, daily_path):
-        bucket = app.config['LOCH_S3_PROTECTED_BUCKET']
-        s3_data_url = f's3://{bucket}/{daily_path}/advising-notes'
-        resolved_ddl = resolve_sql_template('create_sis_advising_notes_schema.template.sql', loch_s3_sis_notes_path_today=s3_data_url)
-        if redshift.execute_ddl_script(resolved_ddl):
-            verify_external_schema(external_schema, resolved_ddl)
-        else:
-            raise BackgroundJobError('SIS Advising Notes schema creation job failed to load incremental data and create internal schema.')
 
     def create_indexes(self):
         resolved_ddl = resolve_sql_template(

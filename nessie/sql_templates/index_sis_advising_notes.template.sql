@@ -89,14 +89,15 @@ CREATE TABLE {rds_schema_sis_advising_notes}.advising_note_attachments (
     created_by VARCHAR,
     user_file_name VARCHAR,
     sis_file_name VARCHAR,
-    is_historical BOOLEAN
+    -- TODO Get rid of the all-FALSE is_historical column after BOA 5.4 production release.
+    is_historical BOOLEAN NOT NULL DEFAULT FALSE
 );
+
 
 INSERT INTO {rds_schema_sis_advising_notes}.advising_note_attachments (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT advising_note_id, sid, student_note_nr, created_by, user_file_name,
-      sis_file_name, is_historical
+    SELECT advising_note_id, sid, student_note_nr, created_by, user_file_name, sis_file_name
     FROM {redshift_schema}.advising_note_attachments
   $REDSHIFT$)
   AS redshift_notes (
@@ -105,8 +106,7 @@ INSERT INTO {rds_schema_sis_advising_notes}.advising_note_attachments (
     student_note_nr VARCHAR,
     created_by VARCHAR,
     user_file_name VARCHAR,
-    sis_file_name VARCHAR,
-    is_historical BOOLEAN
+    sis_file_name VARCHAR
   )
 );
 

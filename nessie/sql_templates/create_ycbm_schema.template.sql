@@ -109,14 +109,14 @@ DROP FUNCTION {redshift_schema_ycbm_internal}.to_utc_iso_string(VARCHAR);
 -- First pass: fill in UIDs from CalNet matches on SID.
 UPDATE {redshift_schema_ycbm_internal}.bookings
 SET ldap_uid = ba.ldap_uid
-FROM {redshift_schema_sis}.basic_attributes ba
+FROM {redshift_schema_edl}.basic_attributes ba
   JOIN {redshift_schema_ycbm_internal}.bookings b
   ON ba.sid = b.ycbm_sid;
 
 -- Second pass: try to fill in remaining UIDs from CalNet matches on email address.
 UPDATE {redshift_schema_ycbm_internal}.bookings
 SET ldap_uid = ba.ldap_uid
-FROM {redshift_schema_sis}.basic_attributes ba
+FROM {redshift_schema_edl}.basic_attributes ba
   JOIN {redshift_schema_ycbm_internal}.bookings b
   ON ba.email_address = b.ycbm_student_email
   AND b.ldap_uid IS NULL;

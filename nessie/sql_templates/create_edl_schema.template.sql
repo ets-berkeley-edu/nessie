@@ -150,8 +150,7 @@ AS (
       N.created_by_uid AS created_by,
       A.note_attachment_upload_filename AS user_file_name,
       A.note_attachment_derived_filename AS sis_file_name,
-      A.load_dt AS edl_load_date,
-      FALSE AS is_historical
+      A.load_dt AS edl_load_date
     FROM
         {redshift_schema_edl_external}.student_advising_note_attachments_data A
     JOIN

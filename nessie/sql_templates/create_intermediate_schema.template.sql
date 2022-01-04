@@ -56,8 +56,8 @@ AS (
         sc.instruction_format AS sis_instruction_format,
         sc.section_num AS sis_section_num,
         sc.instruction_mode AS sis_instruction_mode
-    FROM {redshift_schema_sis}.enrollments en
-    JOIN {redshift_schema_sis}.courses sc
+    FROM {redshift_schema_edl}.enrollments en
+    JOIN {redshift_schema_edl}.courses sc
         ON en.term_id = sc.term_id
         AND en.section_id = sc.section_id
     WHERE
@@ -93,7 +93,7 @@ AS (
         sc.meeting_end_time,
         sc.meeting_start_date,
         sc.meeting_end_date
-    FROM {redshift_schema_sis}.courses sc
+    FROM {redshift_schema_edl}.courses sc
 );
 
 /*
@@ -112,7 +112,7 @@ AS (
         tg.gpa,
         tg.units_total,
         tg.units_taken_for_gpa
-    FROM {redshift_schema_sis}.term_gpa tg
+    FROM {redshift_schema_edl}.term_gpa tg
     WHERE tg.units_taken_for_gpa > 0
     AND term_id < '{current_term_id}'
 );
@@ -178,7 +178,7 @@ AS (
     JOIN {redshift_schema_canvas}.enrollment_term_dim et
          ON c.enrollment_term_id = et.id
     LEFT JOIN extracted_section_ids ON s.canvas_id = extracted_section_ids.canvas_section_id
-    FULL OUTER JOIN {redshift_schema_sis}.courses sc
+    FULL OUTER JOIN {redshift_schema_edl}.courses sc
         ON extracted_section_ids.sis_term_id >= '{earliest_term_id}'
         AND extracted_section_ids.sis_term_id = sc.term_id::int
         AND extracted_section_ids.sis_section_id = sc.section_id::int
@@ -210,7 +210,7 @@ AS (
         crs.sis_instruction_format,
         crs.sis_section_num,
         crs.sis_instruction_mode
-    FROM {redshift_schema_sis}.enrollments en
+    FROM {redshift_schema_edl}.enrollments en
     JOIN {redshift_schema_intermediate}.course_sections crs
         ON crs.sis_section_id = en.section_id
         AND crs.sis_term_id = en.term_id
