@@ -412,7 +412,7 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
             feed['academicStanding'] = {
                 'actionDate': str(latest_career_row['action_date']),
                 'status': latest_career_row['acad_standing_status'],
-                'termName': term_name_for_sis_id(latest_career_row['semester_year_term_cd']),
+                'termName': term_name_for_sis_id(latest_career_row['term_id']),
             }
         feed['termGpa'] = term_gpas.reverse()
 
