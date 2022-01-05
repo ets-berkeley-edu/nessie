@@ -37,7 +37,6 @@ CREATE TABLE {rds_schema_history_dept}.advising_notes (
   student_first_name VARCHAR,
   student_last_name VARCHAR,
   note TEXT,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
   PRIMARY KEY (id)
 );
 
