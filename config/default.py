@@ -105,6 +105,9 @@ EMAIL_REDIRECT_WHEN_TESTING = ['__EMAIL_REDIRECT_WHEN_TESTING__at_berkeley.edu']
 EMAIL_SYSTEM_ERRORS_TO = ['__NESSIE_at_berkeley.edu']
 EMAIL_TEST_MODE = True
 
+# Notes imported from History dept do not ship with advisor UID
+HISTORY_DEPT_NOTES_DEFAULT_ADVISOR_UID = 82523
+
 # True on 'highlands' node, false on 'lowlands' nodes.
 # Override by embedding "highlands" or "lowlands" in the EB_ENVIRONMENT environment variable.
 JOB_SCHEDULING_ENABLED = True
