@@ -69,7 +69,7 @@ CREATE TABLE {redshift_schema_history_dept_advising_internal}.advising_notes
 SORTKEY (id)
 AS (
     SELECT
-      ROW_NUMBER() OVER (ORDER BY sid) AS id,
+      'history_dept_advising_note_' || (ROW_NUMBER() OVER (ORDER BY sid)) AS id,
       student_id AS sid,
       student_first_name,
       student_last_name,
