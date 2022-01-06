@@ -33,26 +33,34 @@ DROP TABLE IF EXISTS {rds_schema_history_dept}.advising_notes CASCADE;
 
 CREATE TABLE {rds_schema_history_dept}.advising_notes (
   id VARCHAR NOT NULL,
+  advisor_uid VARCHAR NOT NULL,
+  note TEXT,
   sid VARCHAR NOT NULL,
   student_first_name VARCHAR,
   student_last_name VARCHAR,
-  note TEXT,
   PRIMARY KEY (id)
 );
 
 INSERT INTO {rds_schema_history_dept}.advising_notes (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT DISTINCT id, sid, student_first_name, student_last_name, note
+    SELECT
+        DISTINCT id,
+        '{history_dept_notes_default_advisor_uid}' AS advisor_uid,
+        note,
+        sid,
+        student_first_name,
+        student_last_name
     FROM {redshift_schema_history_dept_advising_internal}.advising_notes
     WHERE sid <> ''
   $REDSHIFT$)
   AS redshift_notes (
     id VARCHAR,
+    advisor_uid VARCHAR,
+    note TEXT,
     sid VARCHAR,
     student_first_name VARCHAR,
-    student_last_name VARCHAR,
-    note TEXT
+    student_last_name VARCHAR
   )
 );
 

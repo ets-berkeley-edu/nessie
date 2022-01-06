@@ -193,6 +193,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'earliest_academic_history_term_id': app.config['EARLIEST_ACADEMIC_HISTORY_TERM_ID'],
         'earliest_term_id': earliest_term_id(),
         'edl_iam_role': app.config['AWS_EDL_ROLE_ARN'],
+        'history_dept_notes_default_advisor_uid': app.config['HISTORY_DEPT_NOTES_DEFAULT_ADVISOR_UID'],
         'rds_app_boa_user': app.config['RDS_APP_BOA_USER'],
         'rds_dblink_to_redshift': app.config['REDSHIFT_DATABASE'] + '_redshift',
         'rds_schema_advising_appointments': app.config['RDS_SCHEMA_ADVISING_APPOINTMENTS'],
