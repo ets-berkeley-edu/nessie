@@ -42,7 +42,7 @@ CREATE EXTERNAL TABLE {redshift_schema_history_dept_advising}.advising_notes
     student_first_name VARCHAR,
     student_last_name VARCHAR,
     student_id VARCHAR,
-    note VARCHAR
+    note VARCHAR(max)
 )
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
