@@ -414,7 +414,8 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 'status': latest_career_row['acad_standing_status'],
                 'termName': term_name_for_sis_id(latest_career_row['term_id']),
             }
-        feed['termGpa'] = term_gpas.reverse()
+        term_gpas.reverse()
+        feed['termGpa'] = term_gpas
 
     def _merge_plans(self, feed, plan_rows, career_code):
         if not plan_rows or not career_code or not feed.get('academicStatuses'):
