@@ -31,6 +31,7 @@ from tests.util import credentials, post_basic_auth
     'api_path_authenticated',
     [
         '/api/job/create_canvas_schema',
+        '/api/job/create_sis_schema',
         '/api/job/generate_boac_analytics',
         '/api/job/generate_intermediate_tables',
         '/api/job/generate_merged_student_feeds',
@@ -67,6 +68,7 @@ class TestJobControllerAuthentication:
     [
         '/api/job/create_canvas_schema',
         '/api/job/create_edl_schema',
+        '/api/job/create_sis_schema',
         '/api/job/generate_boac_analytics',
         '/api/job/generate_intermediate_tables',
         '/api/job/generate_merged_student_feeds',

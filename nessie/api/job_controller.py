@@ -46,6 +46,7 @@ from nessie.jobs.create_gradescope_schema import CreateGradescopeSchema
 from nessie.jobs.create_history_dept_advising_schema import CreateHistoryDeptAdvisingSchema
 from nessie.jobs.create_oua_schema import CreateOUASchema
 from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
+from nessie.jobs.create_sis_schema import CreateSisSchema
 from nessie.jobs.create_terms_schema import CreateTermsSchema
 from nessie.jobs.create_undergrads_schema import CreateUndergradsSchema
 from nessie.jobs.create_ycbm_schema import CreateYcbmSchema
@@ -163,6 +164,13 @@ def create_oua_schema():
 @auth_required
 def create_undergrads_schema():
     job_started = CreateUndergradsSchema().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/create_sis_schema', methods=['POST'])
+@auth_required
+def create_sis_schema():
+    job_started = CreateSisSchema().run_async()
     return respond_with_status(job_started)
 
 
