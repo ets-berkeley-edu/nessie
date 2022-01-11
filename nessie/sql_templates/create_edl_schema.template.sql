@@ -112,7 +112,6 @@ AS (
         ON s.student_id = latest_actions.student_id
         AND s.semester_year_term_cd = latest_actions.semester_year_term_cd
         AND s.action_dt = latest_actions.action_dt
-        AND s.academic_standing_effective_dt_seq = latest_actions.seq_nr
         AND s.academic_standing_effective_dt = latest_actions.eff_dt
     WHERE
         s.academic_standing_category_cd IS NOT NULL
