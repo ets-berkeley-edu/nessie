@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import json
+import os
 
 from flask import current_app as app
 from nessie import __version__ as version
@@ -59,6 +60,7 @@ def app_config():
             **{
                 'currentEnrollmentTerm': current_term_name(),
                 'currentEnrollmentTermId': int(current_term_id()),
+                'ec2InstanceId': os.environ.get('EC2_INSTANCE_ID'),
                 'futureTermId': int(future_term_id()),
             },
         },
