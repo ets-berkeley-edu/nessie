@@ -81,26 +81,23 @@ def undergrads_schema():
     return app.config['REDSHIFT_SCHEMA_UNDERGRADS']
 
 
-def get_all_student_ids():
-    sql = f"""SELECT DISTINCT student_id AS sid
-        FROM {edl_external_schema()}.student_academic_plan_data
-        WHERE
-            academic_career_cd='UGRD'
+def get_active_student_ids():
+    sql = f"""
+      SELECT sid, MAX(ldap_uid) AS ldap_uid
+      FROM {edl_schema()}.basic_attributes attrs
+      WHERE ldap_uid IS NOT NULL
+      AND sid IN (
+          SELECT DISTINCT student_id AS sid
+          FROM {edl_external_schema()}.student_academic_plan_data
+          WHERE
+            academic_career_cd IN ('UGRD', 'GRAD', 'UCBX')
             AND academic_program_status_cd='AC'
-            AND academic_plan_type_cd != 'MIN'
-        UNION SELECT sid FROM {asc_schema()}.students
-        UNION SELECT sid FROM {coe_schema()}.students
+          UNION SELECT sid FROM {asc_schema()}.students
+          UNION SELECT sid FROM {coe_schema()}.students
+        )
+      GROUP BY sid
     """
     return redshift.fetch(sql)
-
-
-def get_advisee_ids(csids=None):
-    csid_filter = 'WHERE sid = ANY(%s)' if csids is not None else ''
-    sql = f"""SELECT ldap_uid, sid
-              FROM {calnet_schema()}.advisees
-              {csid_filter}
-              ORDER BY sid"""
-    return redshift.fetch(sql, params=(csids,))
 
 
 def get_advisee_advisor_mappings():
@@ -116,9 +113,7 @@ def get_advisee_advisor_mappings():
             aa.title AS advisor_title,
             aa.campus_email AS advisor_campus_email,
             aa.email AS advisor_email
-        FROM {calnet_schema()}.advisees ldap
-        JOIN {advisor_schema_internal()}.advisor_students advs
-          ON ldap.sid = advs.student_sid
+        FROM {advisor_schema_internal()}.advisor_students advs
         LEFT JOIN {advisor_schema_internal()}.advisor_attributes aa
           ON advs.advisor_sid = aa.csid
         ORDER BY advs.student_sid, advs.advisor_type, advs.academic_plan, aa.first_name, aa.last_name
@@ -178,7 +173,7 @@ def get_all_student_profile_elements():
     return redshift.fetch(sql)
 
 
-def get_advisee_sids_with_photos():
+def get_sids_with_photos():
     sql = f"""SELECT sid
         FROM {metadata_schema()}.photo_import_status
         WHERE status = 'success'"""
@@ -486,11 +481,9 @@ def stream_sis_enrollments(sids=None):
     return redshift.fetch(sql, params=params, stream_results=True)
 
 
-def stream_term_gpas(sids=None, advisees_only=False):
+def stream_term_gpas(sids=None):
     if sids:
         sid_filter = 'WHERE gp.sid = ANY(%s)'
-    elif advisees_only:
-        sid_filter = f'JOIN {calnet_schema()}.advisees ldap ON gp.sid = ldap.sid'
     else:
         sid_filter = ''
     sql = f"""SELECT gp.sid, gp.term_id, gp.gpa, gp.units_taken_for_gpa
