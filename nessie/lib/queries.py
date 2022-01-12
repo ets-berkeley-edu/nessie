@@ -142,7 +142,7 @@ def get_all_student_profile_elements():
                 FROM {edl_schema()}.intended_majors im
                 LEFT JOIN {edl_external_schema()}.student_academic_plan_hierarchy_data saphd
                     ON im.plan_code = saphd.academic_plan_cd
-                WHERE im.sid = ldap.sid
+                WHERE im.sid = attrs.sid
             ) AS intended_majors
         FROM (
             SELECT a.sid, MAX(a.ldap_uid) AS ldap_uid, MAX(a.first_name) AS first_name, MAX(a.last_name) AS last_name FROM (
