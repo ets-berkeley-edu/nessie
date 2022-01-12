@@ -29,7 +29,7 @@ from flask import current_app as app
 from nessie.externals import calnet
 from nessie.externals import s3
 from nessie.jobs.background_job import BackgroundJob
-from nessie.lib.queries import get_all_instructor_uids, get_all_student_ids
+from nessie.lib.queries import get_active_student_ids, get_all_instructor_uids
 from nessie.lib.util import get_s3_calnet_daily_path
 
 
@@ -37,7 +37,7 @@ class ImportCalNetData(BackgroundJob):
 
     def run(self, advisee_csids=None, instructor_uids=None):
         if not advisee_csids:
-            advisee_csids = [row['sid'] for row in get_all_student_ids()]
+            advisee_csids = [row['sid'] for row in get_active_student_ids()]
         if not instructor_uids:
             instructor_uids = [row['instructor_uid'] for row in get_all_instructor_uids()]
         _put_advisee_data_to_s3(advisee_csids)

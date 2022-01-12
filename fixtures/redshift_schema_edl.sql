@@ -50,6 +50,16 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.advising_notes (
     edl_load_date DATE
 );
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.basic_attributes (
+    ldap_uid VARCHAR NOT NULL,
+    first_name VARCHAR,
+    last_name VARCHAR,
+    email_address VARCHAR,
+    sid VARCHAR,
+    affiliations VARCHAR,
+    person_type VARCHAR
+);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_citizenships (
     sid VARCHAR NOT NULL,
     citizenship_country VARCHAR,
@@ -125,6 +135,21 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.term_gpas
     gpa DECIMAL(5,3),
     units_taken_for_gpa DECIMAL(4,1)
 );
+
+INSERT INTO {redshift_schema_edl}.basic_attributes
+(sid, ldap_uid, first_name, last_name, email_address, affiliations, person_type)
+VALUES
+('11667051', '61889', 'Oski', 'Bear', 'a@berkeley.edu', 'STUDENT-TYPE-REGISTERED', 'S'),
+('1234567890', '12345', 'Oski', 'Bear', 'b@berkeley.edu', 'STUDENT-TYPE-REGISTERED', 'S'),
+('2345678901', '98765', 'Dave', 'Doolittle', 'c@berkeley.edu', 'STUDENT-TYPE-REGISTERED', 'S'),
+('3456789012', '242881', 'Pauline', 'Kerschen', 'd@berkeley.edu', 'STUDENT-TYPE-REGISTERED', 'S'),
+('5000000000', '505050', 'Moon Unit', 'Zappa', 'e@berkeley.edu', 'STUDENT-TYPE-REGISTERED', 'S'),
+('5678901234', '9933311', 'Sandeep', 'Jayaprakash', 'f@berkeley.edu', 'STUDENT-TYPE-REGISTERED', 'S'),
+('7890123456', '1049291', 'Paul', 'Farestveit', 'g@berkeley.edu', 'STUDENT-TYPE-REGISTERED', 'S'),
+('8901234567', '123456', 'John David', 'Crossman', 'h@berkeley.edu', 'STUDENT-TYPE-REGISTERED', 'S'),
+('890127492', '211159', 'Siegfried', 'Schlemiel', 'i@berkeley.edu', 'STUDENT-TYPE-REGISTERED', 'S'),
+('9000000000', '300847', 'Wolfgang', 'Pauli-O''Rourke', 'j@berkeley.edu', 'STUDENT-TYPE-REGISTERED', 'S'),
+('9100000000', '300848', 'Nora Stanton', 'Barney', 'k@berkeley.edu', 'STUDENT-TYPE-REGISTERED', 'S');
 
 INSERT INTO {redshift_schema_edl}.student_citizenships
 (sid, citizenship_country, edl_load_date)
