@@ -36,7 +36,6 @@ from nessie.lib.util import get_s3_sis_daily_path, resolve_sql_template
 """Logic for SIS schema creation job."""
 
 external_schema = app.config['REDSHIFT_SCHEMA_SIS']
-rds_schema = app.config['RDS_SCHEMA_SIS_INTERNAL']
 
 
 class CreateSisSchema(BackgroundJob):

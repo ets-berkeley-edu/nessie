@@ -195,6 +195,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'edl_iam_role': app.config['AWS_EDL_ROLE_ARN'],
         'history_dept_notes_default_advisor_uid': app.config['HISTORY_DEPT_NOTES_DEFAULT_ADVISOR_UID'],
         'rds_app_boa_user': app.config['RDS_APP_BOA_USER'],
+        'rds_dblink_role_sis_data': app.config['RDS_DBLINK_ROLE_SIS_DATA'],
         'rds_dblink_to_redshift': app.config['REDSHIFT_DATABASE'] + '_redshift',
         'rds_schema_advising_appointments': app.config['RDS_SCHEMA_ADVISING_APPOINTMENTS'],
         'rds_schema_advising_notes': app.config['RDS_SCHEMA_ADVISING_NOTES'],

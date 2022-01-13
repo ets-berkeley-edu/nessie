@@ -64,8 +64,6 @@ from nessie.jobs.index_advising_notes import IndexAdvisingNotes
 from nessie.jobs.index_enrollments import IndexEnrollments
 from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
 from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
-from nessie.jobs.restore_rds_user_privileges import RestoreRdsUserPrivileges
-from nessie.jobs.restore_redshift_user_privileges import RestoreRedshiftUserPrivileges
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.jobs.sync_canvas_requests_snapshots import SyncCanvasRequestsSnapshots
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
@@ -331,20 +329,6 @@ def verify_sis_advising_note_attachments(datestamp):
 @auth_required
 def refresh_canvas_data_catalog():
     job_started = RefreshCanvasDataCatalog().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/restore_rds_user_privileges', methods=['POST'])
-@auth_required
-def restore_rds_user_privileges():
-    job_started = RestoreRdsUserPrivileges().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/restore_redshift_user_privileges', methods=['POST'])
-@auth_required
-def restore_redshift_user_privileges():
-    job_started = RestoreRedshiftUserPrivileges().run_async()
     return respond_with_status(job_started)
 
 
