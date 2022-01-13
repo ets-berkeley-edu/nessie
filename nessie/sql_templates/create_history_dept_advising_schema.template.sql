@@ -42,6 +42,7 @@ CREATE EXTERNAL TABLE {redshift_schema_history_dept_advising}.advising_notes
     student_first_name VARCHAR,
     student_last_name VARCHAR,
     student_id VARCHAR,
+    created_at VARCHAR,
     note VARCHAR(max)
 )
 ROW FORMAT DELIMITED
@@ -65,6 +66,22 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_history_dept_advising_intern
 -- Internal tables
 --------------------------------------------------------------------
 
+CREATE OR REPLACE FUNCTION {redshift_schema_history_dept_advising_internal}.to_utc_iso_string(date_string VARCHAR)
+RETURNS VARCHAR
+STABLE
+AS $$
+  from datetime import datetime
+  import pytz
+
+  d = datetime.strptime(date_string, '%m/%d/%Y %H:%M:%S')
+  d = pytz.timezone('America/Los_Angeles').localize(d)
+  return d.astimezone(pytz.utc).isoformat()
+$$ language plpythonu;
+
+GRANT EXECUTE
+ON function {redshift_schema_history_dept_advising_internal}.to_utc_iso_string(VARCHAR)
+TO GROUP {redshift_app_boa_user}_group;
+
 CREATE TABLE {redshift_schema_history_dept_advising_internal}.advising_notes
 SORTKEY (id)
 AS (
@@ -73,6 +90,9 @@ AS (
       student_id AS sid,
       student_first_name,
       student_last_name,
+      TO_TIMESTAMP({redshift_schema_history_dept_advising_internal}.to_utc_iso_string(created_at || ' 12:00:00'), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at
       note
     FROM {redshift_schema_history_dept_advising}.advising_notes
 );
+
+DROP FUNCTION {redshift_schema_history_dept_advising_internal}.to_utc_iso_string(VARCHAR);
