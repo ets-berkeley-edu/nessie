@@ -34,6 +34,7 @@ DROP TABLE IF EXISTS {rds_schema_history_dept}.advising_notes CASCADE;
 CREATE TABLE {rds_schema_history_dept}.advising_notes (
   id VARCHAR NOT NULL,
   advisor_uid VARCHAR NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
   note TEXT,
   sid VARCHAR NOT NULL,
   student_first_name VARCHAR,
@@ -47,6 +48,7 @@ INSERT INTO {rds_schema_history_dept}.advising_notes (
     SELECT
         DISTINCT id,
         '{history_dept_notes_default_advisor_uid}' AS advisor_uid,
+        created_at,
         note,
         sid,
         student_first_name,
@@ -57,6 +59,7 @@ INSERT INTO {rds_schema_history_dept}.advising_notes (
   AS redshift_notes (
     id VARCHAR,
     advisor_uid VARCHAR,
+    created_at TIMESTAMP WITH TIME ZONE,
     note TEXT,
     sid VARCHAR,
     student_first_name VARCHAR,
@@ -65,6 +68,7 @@ INSERT INTO {rds_schema_history_dept}.advising_notes (
 );
 
 CREATE INDEX idx_history_dept_advising_notes_sid ON {rds_schema_history_dept}.advising_notes(sid);
+CREATE INDEX idx_history_dept_advising_notes_created_at ON {rds_schema_history_dept}.advising_notes(created_at);
 
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_history_dept}.advising_notes_search_index CASCADE;
 
