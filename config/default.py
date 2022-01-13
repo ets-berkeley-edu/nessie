@@ -212,7 +212,8 @@ REDSHIFT_IAM_ROLE = 'iam role'
 RDS_APP_BOA_USER = 'boa rds username'
 REDSHIFT_APP_BOA_USER = 'boa redshift username'
 
-# Redshift-side readonly roles for dblink user mapping
+# RDS and Redshift readonly roles for dblink user mapping
+RDS_DBLINK_ROLE_SIS_DATA = 'ro_sis_data_role'
 REDSHIFT_DBLINK_GROUP = 'nessie_dblink_group'
 REDSHIFT_DBLINK_GROUP_DIABLO = 'diablo_dblink_group'
 
