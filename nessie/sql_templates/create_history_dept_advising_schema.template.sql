@@ -73,7 +73,7 @@ AS $$
   from datetime import datetime
   import pytz
 
-  d = datetime.strptime(date_string, '%m/%d/%Y %H:%M:%S')
+  d = datetime.strptime(date_string, '%m/%d/%y %H:%M:%S')
   d = pytz.timezone('America/Los_Angeles').localize(d)
   return d.astimezone(pytz.utc).isoformat()
 $$ language plpythonu;
@@ -90,9 +90,10 @@ AS (
       student_id AS sid,
       student_first_name,
       student_last_name,
-      TO_TIMESTAMP({redshift_schema_history_dept_advising_internal}.to_utc_iso_string(created_at || ' 12:00:00'), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at
+      TO_TIMESTAMP({redshift_schema_history_dept_advising_internal}.to_utc_iso_string(created_at || ' 12:00:00'), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
       note
     FROM {redshift_schema_history_dept_advising}.advising_notes
+    WHERE created_at <> ''
 );
 
 DROP FUNCTION {redshift_schema_history_dept_advising_internal}.to_utc_iso_string(VARCHAR);
