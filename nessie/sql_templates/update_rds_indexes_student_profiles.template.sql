@@ -201,7 +201,8 @@ FROM (
 ) degrees
 LEFT JOIN student.student_profile_index spi on spi.sid = degrees.sid
 ON CONFLICT (sid, plan, term_id) DO UPDATE SET
-  sid=EXCLUDED.sid, plan=EXCLUDED.plan, date_awarded=EXCLUDED.date_awarded, term_id=EXCLUDED.term_id
+  sid=EXCLUDED.sid, plan=EXCLUDED.plan, date_awarded=EXCLUDED.date_awarded, term_id=EXCLUDED.term_id;
+
 TRUNCATE {rds_schema_student}.student_holds;
 
 INSERT INTO {rds_schema_student}.student_holds (
