@@ -163,7 +163,7 @@ def student_tables(app):
     for schema in ['asc_test', 'coe_test', 'student_test']:
         rds.execute(f'DROP SCHEMA {schema} CASCADE')
         redshift.execute(f'DROP SCHEMA IF EXISTS {schema} CASCADE')
-    for schema in ['advisee_test', 'calnet_test', 'edl_test', 'undergrads_test']:
+    for schema in ['advisee_test', 'edl_test', 'undergrads_test']:
         redshift.execute(f'DROP SCHEMA IF EXISTS {schema} CASCADE')
 
 

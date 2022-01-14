@@ -24,12 +24,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from nessie.jobs.background_job import ChainedBackgroundJob
-from nessie.jobs.create_calnet_schema import CreateCalNetSchema
 from nessie.jobs.create_coe_schema import CreateCoeSchema
 from nessie.jobs.create_undergrads_schema import CreateUndergradsSchema
 from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
-from nessie.jobs.import_calnet_data import ImportCalNetData
 from nessie.jobs.import_student_photos import ImportStudentPhotos
 
 
@@ -40,8 +38,6 @@ class ChainedImportStudentPopulation(ChainedBackgroundJob):
             ImportAscAthletes(),
             GenerateAscProfiles(),
             CreateUndergradsSchema(),
-            ImportCalNetData(),
-            CreateCalNetSchema(),
             ImportStudentPhotos(),
         ]
         super().__init__(steps=steps)

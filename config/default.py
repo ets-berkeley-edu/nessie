@@ -237,7 +237,6 @@ REDSHIFT_SCHEMA_YCBM_INTERNAL = 'ycbm_data'
 # The following external schemas vary between environments and do need to be overridden locally.
 REDSHIFT_SCHEMA_ADVISOR = 'External Advisor schema name'
 REDSHIFT_SCHEMA_ASC_ADVISING_NOTES = 'External ASC Advising Notes schema name'
-REDSHIFT_SCHEMA_CALNET = 'External CalNet schema name'
 REDSHIFT_SCHEMA_CANVAS = 'External Canvas schema name'
 REDSHIFT_SCHEMA_COE_EXTERNAL = 'External COE schema name'
 REDSHIFT_SCHEMA_DATA_SCIENCE_ADVISING = 'External Data Science Advising schema name'

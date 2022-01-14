@@ -20,8 +20,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index
     units DECIMAL (6,3),
     transfer BOOLEAN,
     expected_grad_term VARCHAR(4),
-    terms_in_attendance INT,
-    hist_enr BOOLEAN
+    terms_in_attendance INT
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_demographics
@@ -79,8 +78,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_profile_ind
     units DECIMAL (6,3),
     transfer BOOLEAN,
     expected_grad_term VARCHAR(4),
-    terms_in_attendance INT,
-    hist_enr BOOLEAN
+    terms_in_attendance INT
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_enrollment_terms

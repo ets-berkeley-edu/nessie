@@ -18,19 +18,6 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_asc}.student_profiles
     profile TEXT NOT NULL
 );
 
-CREATE SCHEMA IF NOT EXISTS {redshift_schema_calnet};
-
-CREATE TABLE {redshift_schema_calnet}.advisees
-(
-    sid VARCHAR,
-    ldap_uid VARCHAR,
-    first_name VARCHAR,
-    last_name VARCHAR,
-    campus_email VARCHAR,
-    email VARCHAR,
-    affiliations VARCHAR
-);
-
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_coe};
 
 CREATE TABLE {redshift_schema_coe}.students
@@ -86,21 +73,6 @@ VALUES
 ('890127492', TRUE, FALSE, 'Trouble', 'MTE', 'Men''s Tennis', 'TNM', 'Men''s Tennis'),
 ('890127492', TRUE, FALSE, 'Trouble', 'WFH', 'Women''s Field Hockey', 'FHW', 'Women''s Field Hockey'),
 ('890127492', TRUE, FALSE, 'Trouble', 'WTE', 'Women''s Tennis', 'TNW', 'Women''s Tennis');
-
-INSERT INTO {redshift_schema_calnet}.advisees
-(sid, ldap_uid, first_name, last_name, campus_email, email, affiliations)
-VALUES
-('11667051', '61889', 'Deborah', 'Davies', 'dd1@berkeley.edu', 'dd1@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
-('1234567890', '12345', 'Osk', 'Bear', '', '', 'FORMER-STUDENT'),
-('2345678901', '98765', 'Dave', 'Doolittle', 'dd2@berkeley.edu', 'dd2@berkeley', 'STUDENT-TYPE-REGISTERED'),
-('3456789012', '242881', 'Pauline', 'Kerschen', 'pk@berkeley.edu', 'pk@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
-('5000000000', '505050', 'Moon Unit', 'Zappa', 'muz@berkeley.edu', 'muz@berkeley.edu', 'FORMER-STUDENT'),
-('5678901234', '9933311', 'Sandeep', 'Jayaprakash', 'sj@berkeley.edu', 'sj@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
-('7890123456', '1049291', 'Paul', 'Farestveit', 'pf@berkeley.edu', 'pf@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
-('8901234567', '123456', 'John David', 'Crossman', 'jdc@berkeley.edu', 'jdc@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
-('890127492', '211159', 'Siegfried', 'Schlemiel', 'ss@berkeley.edu', 'ss@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
-('9000000000', '300847', 'Wolfgang', 'Pauli-O''Rourke', 'wpo@berkeley.edu', 'wpo@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
-('9100000000', '300848', 'Nora Stanton', 'Barney', 'nsb@berkeley.edu', 'nsb@berkeley.edu', 'STUDENT-TYPE-REGISTERED');
 
 INSERT INTO {redshift_schema_coe}.students
 (sid, advisor_ldap_uid, gender, ethnicity, minority, did_prep, prep_eligible, did_tprep, tprep_eligible,

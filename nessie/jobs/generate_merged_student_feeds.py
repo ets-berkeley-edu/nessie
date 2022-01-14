@@ -146,8 +146,6 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 'plan': a['plan'],
             })
 
-        # For now, whether a student counts as "hist_enr" is determined by whether they show up in the Calnet schema.
-        hist_enr = feed_elements.get('hist_enr')
         names = self.get_names(feed_elements)
 
         base_profile = {
@@ -184,7 +182,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
             feed_counts['student_profile_index'] += write_to_tsv_file(
                 feed_files['student_profile_index'],
-                [sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance, hist_enr],
+                [sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance],
             )
 
             for plan in sis_profile.get('plans', []):
