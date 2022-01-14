@@ -47,13 +47,6 @@ CREATE TABLE {redshift_schema_coe}.student_profiles
     profile TEXT NOT NULL
 );
 
-
-CREATE SCHEMA IF NOT EXISTS {redshift_schema_undergrads};
-
-CREATE TABLE {redshift_schema_undergrads}.students(
-    sid VARCHAR
-);
-
 INSERT INTO {redshift_schema_asc}.students
 (sid, intensive, active, status_asc, group_code, group_name, team_code, team_name)
 VALUES
@@ -82,6 +75,3 @@ VALUES
 ('7890123456', '1133399', 'F', 'B', TRUE, FALSE, TRUE, FALSE, FALSE, 510, 520, 620, FALSE, 'sp', '2020', FALSE, 'C'),
 ('9000000000', '1133399', 'F', 'B', TRUE, FALSE, TRUE, FALSE, FALSE, NULL, NULL, 720, FALSE, NULL, NULL, FALSE, 'Z'),
 ('9100000000', '90412', 'M', 'X', FALSE, FALSE, FALSE, FALSE, TRUE, 720, 760, 770, TRUE, 'fa', '2018', TRUE, 'N');
-
-INSERT INTO {redshift_schema_undergrads}.students (sid)
-VALUES ('1234567890');
