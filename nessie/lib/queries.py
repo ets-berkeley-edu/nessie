@@ -73,10 +73,6 @@ def student_schema():
     return app.config['REDSHIFT_SCHEMA_STUDENT']
 
 
-def undergrads_schema():
-    return app.config['REDSHIFT_SCHEMA_UNDERGRADS']
-
-
 def get_active_student_ids():
     sql = f"""
       SELECT sid, MAX(ldap_uid) AS ldap_uid

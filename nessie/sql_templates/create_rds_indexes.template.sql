@@ -65,25 +65,6 @@ CREATE TABLE IF NOT EXISTS {rds_schema_coe}.student_profiles
     profile TEXT NOT NULL
 );
 
-CREATE SCHEMA IF NOT EXISTS {rds_schema_undergrads};
-GRANT USAGE ON SCHEMA {rds_schema_undergrads} TO {rds_app_boa_user};
-GRANT SELECT ON ALL TABLES IN SCHEMA {rds_schema_undergrads} TO {rds_app_boa_user};
-ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_undergrads} GRANT SELECT ON TABLES TO {rds_app_boa_user};
-
-CREATE TABLE IF NOT EXISTS {rds_schema_undergrads}.students
-(
-    sid VARCHAR NOT NULL,
-    acadprog_code VARCHAR,
-    acadprog_descr VARCHAR,
-    acadplan_code VARCHAR,
-    acadplan_descr VARCHAR,
-    acadplan_type_code VARCHAR,
-    acadplan_ownedby_code VARCHAR,
-    PRIMARY KEY (sid, acadprog_code, acadplan_code)
-);
-
-CREATE INDEX IF NOT EXISTS students_undergrads_sid_idx ON {rds_schema_undergrads}.students (sid);
-
 CREATE SCHEMA IF NOT EXISTS {rds_schema_student};
 GRANT USAGE ON SCHEMA {rds_schema_student} TO {rds_app_boa_user};
 GRANT SELECT ON ALL TABLES IN SCHEMA {rds_schema_student} TO {rds_app_boa_user};
