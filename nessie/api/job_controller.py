@@ -36,7 +36,6 @@ from nessie.jobs.chained_import_student_population import ChainedImportStudentPo
 from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
 from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
 from nessie.jobs.create_berkeleyx_schema import CreateBerkeleyxSchema
-from nessie.jobs.create_calnet_schema import CreateCalNetSchema
 from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.create_coe_schema import CreateCoeSchema
 from nessie.jobs.create_data_science_advising_schema import CreateDataScienceAdvisingSchema
@@ -55,7 +54,6 @@ from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
 from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
 from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
-from nessie.jobs.import_calnet_data import ImportCalNetData
 from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
 from nessie.jobs.import_piazza_api_data import ImportPiazzaApiData
 from nessie.jobs.import_student_photos import ImportStudentPhotos
@@ -106,13 +104,6 @@ def create_canvas_schema():
 @auth_required
 def create_coe_schema():
     job_started = CreateCoeSchema().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/create_calnet_schema', methods=['POST'])
-@auth_required
-def create_calnet_schema():
-    job_started = CreateCalNetSchema().run_async()
     return respond_with_status(job_started)
 
 
@@ -374,13 +365,6 @@ def sync_file_to_s3():
 @auth_required
 def import_asc_athletes():
     job_started = ImportAscAthletes().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/import_calnet_data', methods=['POST'])
-@auth_required
-def import_calnet_data():
-    job_started = ImportCalNetData().run_async()
     return respond_with_status(job_started)
 
 

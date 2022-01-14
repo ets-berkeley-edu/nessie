@@ -222,7 +222,6 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_schema_asc_advising_notes': app.config['REDSHIFT_SCHEMA_ASC_ADVISING_NOTES'],
         'redshift_schema_asc_advising_notes_internal': app.config['REDSHIFT_SCHEMA_ASC_ADVISING_NOTES_INTERNAL'],
         'redshift_schema_boac': app.config['REDSHIFT_SCHEMA_BOAC'],
-        'redshift_schema_calnet': app.config['REDSHIFT_SCHEMA_CALNET'],
         'redshift_schema_canvas': app.config['REDSHIFT_SCHEMA_CANVAS'],
         'redshift_schema_coe': app.config['REDSHIFT_SCHEMA_COE'],
         'redshift_schema_coe_external': app.config['REDSHIFT_SCHEMA_COE_EXTERNAL'],

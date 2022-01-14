@@ -52,9 +52,9 @@ INSERT INTO {rds_schema_student}.student_profiles (
 TRUNCATE {rds_schema_student}.student_profile_index;
 
 INSERT INTO {rds_schema_student}.student_profile_index
-  (sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance, hist_enr)
+  (sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance)
 SELECT
-  sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance, hist_enr
+  sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance
 FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
   SELECT *
   FROM {redshift_schema_student}.student_profile_index
@@ -69,14 +69,12 @@ AS redshift_profile_index (
   units NUMERIC,
   transfer BOOLEAN,
   expected_grad_term VARCHAR,
-  terms_in_attendance INT,
-  hist_enr BOOLEAN
+  terms_in_attendance INT
 )
 ON CONFLICT (sid) DO UPDATE SET
   sid=EXCLUDED.sid, uid=EXCLUDED.uid, first_name=EXCLUDED.first_name, last_name=EXCLUDED.last_name,
   level=EXCLUDED.level, gpa=EXCLUDED.gpa, units=EXCLUDED.units, transfer=EXCLUDED.transfer,
-  expected_grad_term=EXCLUDED.expected_grad_term, terms_in_attendance=EXCLUDED.terms_in_attendance,
-  hist_enr=EXCLUDED.hist_enr;
+  expected_grad_term=EXCLUDED.expected_grad_term, terms_in_attendance=EXCLUDED.terms_in_attendance;
 
 UPDATE {rds_schema_student}.student_profile_index spidx
   SET academic_career_status = lower(p.profile::json->'sisProfile'->>'academicCareerStatus')
@@ -190,8 +188,7 @@ SELECT DISTINCT degrees.sid, plan, date_awarded,
     WHEN '06' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '2'
     WHEN '08' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '5'
     WHEN '12' THEN substr(date_awarded, 1, 1) || substr(date_awarded, 3, 2) || '8'
-    END AS term_id,
-  spi.hist_enr
+    END AS term_id
 FROM (
   SELECT sid, "dateAwarded" AS date_awarded, plans.*
   FROM
@@ -204,9 +201,7 @@ FROM (
 ) degrees
 LEFT JOIN student.student_profile_index spi on spi.sid = degrees.sid
 ON CONFLICT (sid, plan, term_id) DO UPDATE SET
-  sid=EXCLUDED.sid, plan=EXCLUDED.plan, date_awarded=EXCLUDED.date_awarded, term_id=EXCLUDED.term_id,
-  hist_enr=EXCLUDED.hist_enr;
-
+  sid=EXCLUDED.sid, plan=EXCLUDED.plan, date_awarded=EXCLUDED.date_awarded, term_id=EXCLUDED.term_id
 TRUNCATE {rds_schema_student}.student_holds;
 
 INSERT INTO {rds_schema_student}.student_holds (
@@ -242,12 +237,12 @@ INSERT INTO {rds_schema_student}.student_names (
   SELECT DISTINCT sid, unnest(string_to_array(
       regexp_replace(upper(first_name), '[^\w ]', '', 'g'),
       ' '
-  )) AS name FROM {rds_schema_student}.student_profile_index WHERE hist_enr IS FALSE
+  )) AS name FROM {rds_schema_student}.student_profile_index WHERE academic_career_status = 'active'
   UNION
   SELECT DISTINCT sid, unnest(string_to_array(
       regexp_replace(upper(last_name), '[^\w ]', '', 'g'),
       ' '
-  )) AS name FROM {rds_schema_student}.student_profile_index WHERE hist_enr IS FALSE
+  )) AS name FROM {rds_schema_student}.student_profile_index WHERE academic_career_status = 'active'
 );
 
 COMMIT TRANSACTION;

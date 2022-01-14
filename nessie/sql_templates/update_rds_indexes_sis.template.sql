@@ -23,6 +23,93 @@
  * ENHANCEMENTS, OR MODIFICATIONS.
  */
 
+DROP TABLE IF EXISTS {rds_schema_sis_internal}.academic_plan_hierarchy CASCADE;
+
+CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.academic_plan_hierarchy
+(
+    plan_code VARCHAR,
+    plan_status VARCHAR,
+    plan_name VARCHAR,
+    major_code VARCHAR,
+    major_name VARCHAR,
+    plan_type_code VARCHAR,
+    department_code VARCHAR,
+    department_name VARCHAR,
+    division_code VARCHAR,
+    division_name VARCHAR,
+    college_code VARCHAR,
+    college_name VARCHAR,
+    career_code VARCHAR,
+    career_name VARCHAR,
+    program_code VARCHAR,
+    program_name VARCHAR,
+    degree_code VARCHAR,
+    degree_name VARCHAR
+);
+
+INSERT INTO {rds_schema_sis_internal}.academic_plan_hierarchy (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+    SELECT plan_code, plan_status, plan_name, major_code, major_name, plan_type_code,
+      department_code, department_name, division_code, division_name,
+      college_code, college_name, career_code, career_name,
+      program_code, program_name, degree_code, degree_name
+    FROM {redshift_schema_edl}.academic_plan_hierarchy
+  $REDSHIFT$)
+  AS redshift_academic_plan_hierarchy (
+    plan_code VARCHAR,
+    plan_status VARCHAR,
+    plan_name VARCHAR,
+    major_code VARCHAR,
+    major_name VARCHAR,
+    plan_type_code VARCHAR,
+    department_code VARCHAR,
+    department_name VARCHAR,
+    division_code VARCHAR,
+    division_name VARCHAR,
+    college_code VARCHAR,
+    college_name VARCHAR,
+    career_code VARCHAR,
+    career_name VARCHAR,
+    program_code VARCHAR,
+    program_name VARCHAR,
+    degree_code VARCHAR,
+    degree_name VARCHAR
+  )
+);
+
+DROP TABLE IF EXISTS {rds_schema_sis_internal}.basic_attributes CASCADE;
+
+CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.basic_attributes (
+    ldap_uid VARCHAR,
+    sid VARCHAR,
+    first_name VARCHAR,
+    last_name VARCHAR,
+    email_address VARCHAR,
+    affiliations VARCHAR,
+    person_type VARCHAR
+);
+
+INSERT INTO {rds_schema_sis_internal}.basic_attributes (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+    SELECT ldap_uid, sid, first_name, last_name, email_address, affiliations, person_type
+    FROM {redshift_schema_edl}.basic_attributes
+  $REDSHIFT$)
+  AS redshift_basic_attributes (
+    ldap_uid VARCHAR,
+    sid VARCHAR,
+    first_name VARCHAR,
+    last_name VARCHAR,
+    email_address VARCHAR,
+    affiliations VARCHAR,
+    person_type VARCHAR
+  )
+);
+
+CREATE INDEX idx_basic_attributes_ldap_uid ON {rds_schema_sis_internal}.basic_attributes(ldap_uid);
+CREATE INDEX idx_basic_attributes_sid ON {rds_schema_sis_internal}.basic_attributes(sid);
+
 DROP TABLE IF EXISTS {rds_schema_sis_internal}.sis_enrollments CASCADE;
 
 CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.sis_enrollments
@@ -125,58 +212,3 @@ INSERT INTO {rds_schema_sis_internal}.sis_sections (
 );
 
 CREATE INDEX idx_sis_sections_term_id_section_id ON {rds_schema_sis_internal}.sis_sections(sis_term_id, sis_section_id);
-
-DROP TABLE IF EXISTS {rds_schema_sis_internal}.academic_plan_hierarchy CASCADE;
-
-CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.academic_plan_hierarchy
-(
-    plan_code VARCHAR,
-    plan_status VARCHAR,
-    plan_name VARCHAR,
-    major_code VARCHAR,
-    major_name VARCHAR,
-    plan_type_code VARCHAR,
-    department_code VARCHAR,
-    department_name VARCHAR,
-    division_code VARCHAR,
-    division_name VARCHAR,
-    college_code VARCHAR,
-    college_name VARCHAR,
-    career_code VARCHAR,
-    career_name VARCHAR,
-    program_code VARCHAR,
-    program_name VARCHAR,
-    degree_code VARCHAR,
-    degree_name VARCHAR
-);
-
-INSERT INTO {rds_schema_sis_internal}.academic_plan_hierarchy (
-  SELECT *
-  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT plan_code, plan_status, plan_name, major_code, major_name, plan_type_code,
-      department_code, department_name, division_code, division_name,
-      college_code, college_name, career_code, career_name,
-      program_code, program_name, degree_code, degree_name
-    FROM {redshift_schema_edl}.academic_plan_hierarchy
-  $REDSHIFT$)
-  AS redshift_academic_plan_hierarchy (
-    plan_code VARCHAR,
-    plan_status VARCHAR,
-    plan_name VARCHAR,
-    major_code VARCHAR,
-    major_name VARCHAR,
-    plan_type_code VARCHAR,
-    department_code VARCHAR,
-    department_name VARCHAR,
-    division_code VARCHAR,
-    division_name VARCHAR,
-    college_code VARCHAR,
-    college_name VARCHAR,
-    career_code VARCHAR,
-    career_name VARCHAR,
-    program_code VARCHAR,
-    program_name VARCHAR,
-    degree_code VARCHAR,
-    degree_name VARCHAR
-  )
-);

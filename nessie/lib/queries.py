@@ -45,10 +45,6 @@ def boac_schema():
     return app.config['REDSHIFT_SCHEMA_BOAC']
 
 
-def calnet_schema():
-    return app.config['REDSHIFT_SCHEMA_CALNET']
-
-
 def coe_schema():
     return app.config['REDSHIFT_SCHEMA_COE']
 
@@ -128,9 +124,8 @@ def get_all_student_profile_elements():
             sis.feed AS sis_profile_feed,
             deg.feed AS degree_progress_feed,
             demog.feed AS demographics_feed,
-            ldap.sid IS NULL AS hist_enr,
-            COALESCE(ldap.first_name, attrs.first_name) AS first_name,
-            COALESCE(ldap.last_name, attrs.last_name) AS last_name,
+            attrs.first_name,
+            attrs.last_name,
             reg.feed AS last_registration_feed,
             (
                 SELECT LISTAGG(im.plan_code || ' :: ' || coalesce(saphd.academic_plan_nm, ''), ' || ')
@@ -158,8 +153,6 @@ def get_all_student_profile_elements():
         ) attrs
         LEFT JOIN {edl_schema()}.student_profiles sis
             ON sis.sid = attrs.sid
-        LEFT JOIN {calnet_schema()}.advisees ldap
-            ON ldap.sid = attrs.sid
         LEFT JOIN {intermediate_schema()}.users us
             ON us.sis_user_id = attrs.sid
         LEFT JOIN {edl_schema()}.student_degree_progress deg

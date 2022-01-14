@@ -118,7 +118,6 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_profile_index
     email_address VARCHAR,
     entering_term VARCHAR(4),
     academic_career_status VARCHAR,
-    hist_enr BOOLEAN NOT NULL,
     PRIMARY KEY (sid)
 );
 
@@ -134,7 +133,6 @@ CREATE INDEX IF NOT EXISTS student_profile_index_entering_term_idx ON {rds_schem
 CREATE INDEX IF NOT EXISTS student_profile_index_grad_term_idx ON {rds_schema_student}.student_profile_index (expected_grad_term);
 CREATE INDEX IF NOT EXISTS student_profile_index_terms_in_attendance_idx ON {rds_schema_student}.student_profile_index (terms_in_attendance);
 CREATE INDEX IF NOT EXISTS student_profile_index_career_idx ON {rds_schema_student}.student_profile_index (academic_career_status);
-CREATE INDEX IF NOT EXISTS student_profile_index_hist_enr_idx ON {rds_schema_student}.student_profile_index (hist_enr);
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_degrees
 (
@@ -142,13 +140,11 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_degrees
     plan VARCHAR NOT NULL,
     date_awarded VARCHAR NOT NULL,
     term_id VARCHAR(4) NOT NULL,
-    hist_enr BOOLEAN NOT NULL,
     PRIMARY KEY (sid, plan, term_id)
 );
 
 CREATE INDEX IF NOT EXISTS student_degree_plan_idx ON {rds_schema_student}.student_degrees (plan);
 CREATE INDEX IF NOT EXISTS student_degree_term_id_idx ON {rds_schema_student}.student_degrees (term_id);
-CREATE INDEX IF NOT EXISTS student_degree_hist_enr_idx ON {rds_schema_student}.student_degrees (hist_enr);
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_names
 (
