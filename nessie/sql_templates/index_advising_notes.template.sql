@@ -81,9 +81,9 @@ SELECT ein.sid, ein.id, NULL AS note_body, NULL AS advisor_sid, ein.advisor_uid,
        NULL AS note_category, NULL AS note_subcategory, NULL AS created_by, ein.created_at, ein.updated_at
 FROM {rds_schema_e_i}.advising_notes ein
 UNION
-SELECT hist.sid, hist.id, hist.note AS note_body, NULL AS advisor_sid, NULL AS advisor_uid, NULL AS advisor_first_name,
-       NULL AS advisor_last_name, NULL AS note_category, NULL AS note_subcategory, NULL AS created_by,
-       created_at, created_at AS updated_at
+SELECT hist.sid, hist.id, hist.note AS note_body, NULL AS advisor_sid, hist.advisor_uid AS advisor_uid,
+       NULL AS advisor_first_name, NULL AS advisor_last_name, NULL AS note_category, NULL AS note_subcategory,
+       hist.advisor_uid AS created_by, hist.created_at, hist.created_at AS updated_at
 FROM {rds_schema_history_dept}.advising_notes hist
 );
 
