@@ -52,7 +52,7 @@
         <img src="@/assets/uc-berkeley-logo.svg" />
       </b-col>
       <b-col class="text-right">
-        &copy; 2021 The Regents of the University of California
+        &copy; 2022 The Regents of the University of California
       </b-col>
     </b-row>
   </b-container>
