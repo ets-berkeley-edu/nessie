@@ -82,6 +82,8 @@ AS (
         sc.course_title AS sis_course_title,
         sc.instruction_format AS sis_instruction_format,
         sc.section_num AS sis_section_num,
+        sc.cs_course_id,
+        sc.session_code,
         sc.allowed_units,
         sc.instruction_mode,
         sc.instructor_uid,

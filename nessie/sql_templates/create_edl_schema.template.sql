@@ -191,10 +191,12 @@ AS (
   SELECT
     class.class_number::int AS section_id,
     class.semester_year_term_cd AS term_id,
+    class.session_code AS session_code,
     class.instructional_format_nm AS instruction_format,
     class.class_section_cd AS section_num,
     class.course_id_display_desc AS course_display_name,
     class.course_title_long AS course_title,
+    class.course_id AS cs_course_id,
     DECODE(class.graded_section_flg,
       'N', '0',
       'Y', '1'
