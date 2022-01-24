@@ -361,6 +361,7 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
         if not profile_term_rows or not career_code:
             return
 
+        latest_academic_standing = None
         latest_career_row = None
         term_gpas = []
         # This crude calculation of total GPA units ignores transfer units and therefore won't agree with the number from the SIS API.
@@ -376,6 +377,8 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 total_units_for_gpa += term_units_for_gpa
                 if term_units_for_gpa > 0:
                     term_gpas.append(_term_gpa(row))
+                if row['acad_standing_status']:
+                    latest_academic_standing = row
                 latest_career_row = row
         if not latest_career_row:
             return
@@ -408,11 +411,11 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
             academic_status['termsInAttendance'] = int(latest_career_row['terms_in_attendance'])
 
         feed['academicStatuses'] = [academic_status]
-        if latest_career_row['acad_standing_status']:
+        if latest_academic_standing:
             feed['academicStanding'] = {
-                'actionDate': str(latest_career_row['action_date']),
-                'status': latest_career_row['acad_standing_status'],
-                'termName': term_name_for_sis_id(latest_career_row['term_id']),
+                'actionDate': str(latest_academic_standing['action_date']),
+                'status': latest_academic_standing['acad_standing_status'],
+                'termName': term_name_for_sis_id(latest_academic_standing['term_id']),
             }
         term_gpas.reverse()
         feed['termGpa'] = term_gpas
