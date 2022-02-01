@@ -234,7 +234,7 @@ AS (
   LEFT JOIN {redshift_schema_edl_external}.student_class_meeting_pattern_data meet
     ON class.class_number = meet.class_number
     AND class.semester_year_term_cd = meet.semester_year_term_cd
-    AND (meet.class_meeting_number = instr.class_meeting_number OR instr.class_meeting_number IS NULL)
+    AND (meet.class_meeting_number IS NOT NULL OR instr.class_meeting_number IS NULL)
 );
 
 CREATE TABLE {redshift_schema_edl}.enrollments
