@@ -36,7 +36,6 @@ const router = new VueRouter({
 
 router.beforeEach((to: any, from: any, next: Function) => {
   store.commit('context/loadingStart')
-  store.commit('context/clearErrors')
   next()
 })
 

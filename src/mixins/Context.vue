@@ -6,7 +6,6 @@ export default {
   computed: {
     ...mapGetters('context', [
       'apiBaseUrl',
-      'errors',
       'loading',
       'version'
     ])
