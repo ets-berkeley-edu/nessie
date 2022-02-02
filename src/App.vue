@@ -18,7 +18,6 @@
             <b-card-text>
               <LargeSpinner v-if="loading || isToggling" />
               <div v-show="!loading && !isToggling" class="mt-3 mx-4">
-                <DisplayError />
                 <router-view />
               </div>
             </b-card-text>
@@ -60,18 +59,13 @@
 
 <script>
 import Context from '@/mixins/Context'
-import DisplayError from './components/DisplayError'
 import Header from './components/Header'
 import LargeSpinner from '@/components/widgets/LargeSpinner'
 
 export default {
   name: 'App',
   mixins: [Context],
-  components: {
-    DisplayError,
-    Header,
-    LargeSpinner
-  },
+  components: {Header, LargeSpinner},
   data: () => ({
     isToggling: false,
     slides: [

@@ -13,15 +13,7 @@ import {BootstrapVue, BootstrapVueIcons} from 'bootstrap-vue'
 
 // Allow cookies in Access-Control requests
 axios.defaults.withCredentials = true
-axios.interceptors.response.use(response => response, function(error) {
-  store.commit('context/reportError', {
-    message: error.message,
-    text: _.get(error.response, 'text'),
-    status: _.get(error.response, 'status'),
-    stack: error.stack
-  })
-  return Promise.reject(error)
-})
+axios.interceptors.response.use(response => response, error => Promise.reject(error))
 
 Vue.config.productionTip = false
 Vue.use(BootstrapVue)
