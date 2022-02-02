@@ -254,9 +254,8 @@ CREATE SCHEMA IF NOT EXISTS {rds_schema_sis_internal};
 GRANT USAGE ON SCHEMA {rds_schema_sis_internal} TO {rds_app_boa_user};
 GRANT SELECT ON ALL TABLES IN SCHEMA {rds_schema_sis_internal} TO {rds_app_boa_user};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_sis_internal} GRANT SELECT ON TABLES TO {rds_app_boa_user};
-GRANT USAGE ON SCHEMA {rds_schema_sis_internal} TO {rds_dblink_role_sis_data};
-GRANT SELECT ON ALL TABLES IN SCHEMA {rds_schema_sis_internal} TO {rds_dblink_role_sis_data};
-ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_sis_internal} GRANT SELECT ON TABLES TO {rds_dblink_role_sis_data};
+GRANT USAGE ON SCHEMA {rds_schema_sis_internal} TO {rds_dblink_role_damien};
+GRANT USAGE ON SCHEMA {rds_schema_sis_internal} TO {rds_dblink_role_diablo};
 
 CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.enrolled_primary_sections
 (
