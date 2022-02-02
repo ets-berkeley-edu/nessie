@@ -110,6 +110,8 @@ INSERT INTO {rds_schema_sis_internal}.basic_attributes (
 CREATE INDEX idx_basic_attributes_ldap_uid ON {rds_schema_sis_internal}.basic_attributes(ldap_uid);
 CREATE INDEX idx_basic_attributes_sid ON {rds_schema_sis_internal}.basic_attributes(sid);
 
+GRANT SELECT ON TABLE {rds_schema_sis_internal}.basic_attributes to {rds_dblink_role_damien};
+
 DROP TABLE IF EXISTS {rds_schema_sis_internal}.sis_enrollments CASCADE;
 
 CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.sis_enrollments
@@ -155,6 +157,8 @@ INSERT INTO {rds_schema_sis_internal}.sis_enrollments (
 
 CREATE INDEX idx_sis_enrollments_term_id_section_id ON {rds_schema_sis_internal}.sis_enrollments(sis_term_id, sis_section_id);
 CREATE INDEX idx_sis_enrollments_ldap_uid ON {rds_schema_sis_internal}.sis_enrollments(ldap_uid);
+
+GRANT SELECT ON TABLE {rds_schema_sis_internal}.sis_enrollments to {rds_dblink_role_damien};
 
 DROP TABLE IF EXISTS {rds_schema_sis_internal}.sis_sections CASCADE;
 
@@ -216,3 +220,6 @@ INSERT INTO {rds_schema_sis_internal}.sis_sections (
 );
 
 CREATE INDEX idx_sis_sections_term_id_section_id ON {rds_schema_sis_internal}.sis_sections(sis_term_id, sis_section_id);
+
+GRANT SELECT ON TABLE {rds_schema_sis_internal}.sis_enrollments to {rds_dblink_role_damien};
+GRANT SELECT ON TABLE {rds_schema_sis_internal}.sis_sections to {rds_dblink_role_diablo};
