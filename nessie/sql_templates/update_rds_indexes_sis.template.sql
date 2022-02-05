@@ -217,5 +217,5 @@ INSERT INTO {rds_schema_sis_internal}.sis_sections (
 
 CREATE INDEX idx_sis_sections_term_id_section_id ON {rds_schema_sis_internal}.sis_sections(sis_term_id, sis_section_id);
 
-GRANT SELECT ON TABLE {rds_schema_sis_internal}.sis_enrollments to {rds_dblink_role_damien};
+GRANT SELECT ON TABLE {rds_schema_sis_internal}.sis_sections to {rds_dblink_role_damien};
 GRANT SELECT ON TABLE {rds_schema_sis_internal}.sis_sections to {rds_dblink_role_diablo};
