@@ -189,6 +189,18 @@ CREATE TABLE {redshift_schema_edl}.courses
 SORTKEY (section_id)
 AS (
   SELECT
+    DISTINCT(
+      class.class_number || '' ||
+      class.semester_year_term_cd || '' ||
+      class.class_section_cd || '' ||
+      class.instructional_format_nm || '' ||
+      class.class_section_cd || '' ||
+      ISNULL(instr.instructor_calnet_uid, 'NULL') || '-' ||
+      ISNULL(meet.room_desc, 'NULL') || '-' ||
+      ISNULL(meet.meeting_days_cd, 'NULL') || '-' ||
+      ISNULL(meet.meeting_start_time::VARCHAR, 'NULL') || '-' ||
+      ISNULL(meet.meeting_start_date::VARCHAR, 'NULL')
+    ) AS distinct_key,
     class.class_number::int AS section_id,
     class.semester_year_term_cd AS term_id,
     class.session_code AS session_code,
