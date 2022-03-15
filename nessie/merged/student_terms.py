@@ -207,9 +207,6 @@ def merge_canvas_site_membership(membership, sid, canvas_user_id, term_feed, can
                     if index not in enrollments_matched:
                         enrollments_matched.add(index)
                         enrollment['canvasSites'].append(canvas_site_element)
-    if not enrollments_matched:
-        term_feed['unmatchedCanvasSites'].append(canvas_site_element)
-
 
 def check_for_multiple_primary_sections(enrollment, class_name, enrollments_by_class, section_feed):
     # If we have seen this class name before, in most cases we'll just append the new section feed to the
@@ -300,7 +297,6 @@ def merge_enrollment(enrollments, term_id, term_name):
         'termName': term_name,
         'enrollments': enrollments_feed,
         'enrolledUnits': _to_float_cautiously(enrolled_units),
-        'unmatchedCanvasSites': [],
     }
     return term_feed
 

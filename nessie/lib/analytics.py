@@ -128,7 +128,6 @@ def canvas_courses_from_enrollment_term(advisee_term_feed):
     canvas_courses = []
     for enrollment in advisee_term_feed.get('enrollments', []):
         canvas_courses += enrollment['canvasSites']
-    canvas_courses += advisee_term_feed.get('unmatchedCanvasSites', [])
     return canvas_courses
 
 
