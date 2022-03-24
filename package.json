@@ -10,10 +10,14 @@
     "serve-vue": "vue-cli-service serve --open"
   },
   "dependencies": {
-    "axios": "0.24.0",
+    "ajv": "^8.11.0",
+    "ajv-keywords": "^5.1.0",
+    "axios": "0.26.1",
     "bootstrap-vue": "2.21.2",
     "lodash": "4.17.21",
     "mitt": "2.1.0",
+    "ora": "^6.1.0",
+    "tar-stream": "^2.2.0",
     "vue": "2.6.14",
     "vue-class-component": "7.2.6",
     "vue-lodash": "2.1.2",
@@ -29,11 +33,11 @@
     "@typescript-eslint/eslint-plugin-tslint": "^4.23.0",
     "@typescript-eslint/parser": "^4.23.0",
     "@typescript-eslint/typescript-estree": "^4.23.0",
-    "@vue/cli": "^4.5.15",
-    "@vue/cli-plugin-babel": "^4.5.15",
-    "@vue/cli-plugin-eslint": "^4.5.15",
-    "@vue/cli-plugin-typescript": "^4.5.15",
-    "@vue/cli-service": "^4.5.15",
+    "@vue/cli": "^5.0.4",
+    "@vue/cli-plugin-babel": "^5.0.4",
+    "@vue/cli-plugin-eslint": "^5.0.4",
+    "@vue/cli-plugin-typescript": "^5.0.4",
+    "@vue/cli-service": "^5.0.4",
     "@vue/eslint-config-typescript": "^7.0.0",
     "eslint": "^7.32.0",
     "eslint-plugin-import": "^2.22.1",
@@ -65,12 +69,13 @@
   },
   "license": "SEE LICENSE IN LICENSE",
   "resolutions": {
-    "bl": "^2.2.1",
+    "ajv": "^8.11.0",
+    "ajv-keywords": "^5.1.0",
     "elliptic": "^6.5.4",
     "execa": "4.0.3",
     "lodash": "4.17.21",
     "merge": "^2.1.1",
-    "minimist": ">=1.2.3",
+    "minimist": "1.2.6",
     "selfsigned": ">=1.10.8"
   }
 }
