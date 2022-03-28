@@ -165,7 +165,8 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_majors
     sid VARCHAR NOT NULL,
     college VARCHAR NOT NULL,
     major VARCHAR NOT NULL,
-    PRIMARY KEY (sid, college, major)
+    division VARCHAR NOT NULL,
+    PRIMARY KEY (sid, college, major, division)
 );
 
 CREATE INDEX IF NOT EXISTS student_majors_sid_idx ON {rds_schema_student}.student_majors (sid);

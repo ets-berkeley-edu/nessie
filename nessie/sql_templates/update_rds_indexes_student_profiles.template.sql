@@ -222,13 +222,16 @@ TRUNCATE {rds_schema_student}.student_majors;
 INSERT INTO {rds_schema_student}.student_majors (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-      SELECT DISTINCT sid, college, major
-      FROM {redshift_schema_student}.student_majors
+      SELECT DISTINCT sid, m.college, m.major, s.academic_division_shrt_nm
+      FROM {redshift_schema_student}.student_majors m
+      JOIN {redshift_schema_edl_external}.student_academic_plan_hierarchy_data s
+      ON m.major = s.academic_plan_nm
     $REDSHIFT$)
   AS redshift_majors (
       sid VARCHAR,
       college VARCHAR,
-      major VARCHAR
+      major VARCHAR,
+      division VARCHAR
   )
 );
 
