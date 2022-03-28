@@ -119,10 +119,11 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_majors
 (
     sid VARCHAR NOT NULL,
     major VARCHAR NOT NULL,
-    college VARCHAR NOT NULL
+    college VARCHAR NOT NULL,
+    division VARCHAR NOT NULL
 )
 DISTKEY (sid)
-SORTKEY (college, major);
+SORTKEY (college, major, division);
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index
 (
