@@ -172,6 +172,7 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_majors
 CREATE INDEX IF NOT EXISTS student_majors_sid_idx ON {rds_schema_student}.student_majors (sid);
 CREATE INDEX IF NOT EXISTS student_majors_college_idx ON {rds_schema_student}.student_majors (college);
 CREATE INDEX IF NOT EXISTS student_majors_major_idx ON {rds_schema_student}.student_majors (major);
+CREATE INDEX IF NOT EXISTS student_majors_division_idx ON {rds_schema_student}.student_majors (division);
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.demographics
 (
