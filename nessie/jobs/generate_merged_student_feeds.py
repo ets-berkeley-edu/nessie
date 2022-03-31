@@ -47,6 +47,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     rds_schema = app.config['RDS_SCHEMA_STUDENT']
     rds_dblink_to_redshift = app.config['REDSHIFT_DATABASE'] + '_redshift'
     student_schema = queries.student_schema()
+    redshift_edl_schema = queries.edl_external_schema()
 
     def run(self):
         app.logger.info('Starting merged profile generation job.')
@@ -185,11 +186,15 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 [sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance],
             )
 
+            major_divisions = self.get_majors_divisions()
+
             for plan in sis_profile.get('plans', []):
                 if plan.get('status') == 'Active':
+                    program = plan.get('program', None)
+
                     feed_counts['student_majors'] += write_to_tsv_file(
                         feed_files['student_majors'],
-                        [sid, plan.get('program', None), plan.get('description', None)],
+                        [sid, program, plan.get('description', None), major_divisions.get(program, None)],
                     )
             for hold in sis_profile.get('holds', []):
                 feed_counts['student_holds'] += write_to_tsv_file(feed_files['student_holds'], [sid, json.dumps(hold)])
@@ -254,6 +259,14 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             return None
         else:
             return level
+
+    def get_majors_divisions(self):
+        rows = redshift.fetch(
+            f"""SELECT academic_plan_nm, academic_division_shrt_nm
+                FROM {self.redshift_edl_schema}.student_academic_plan_hierarchy_data;""",
+        )
+
+        return {major: division for major, division in rows}
 
     def map_advisors_to_students(self):
         advisors_by_student_id = {}
