@@ -107,6 +107,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         with ExitStack() as stack:
             feed_files = {table: stack.enter_context(tempfile.TemporaryFile()) for table in tables}
             feed_counts = {table: 0 for table in tables}
+            major_divisions = self.get_majors_divisions()
+
             for index, feed_elements in enumerate(all_student_feed_elements):
                 sid = feed_elements['sid']
                 if self.generate_student_profile_feed(
@@ -114,6 +116,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                     all_student_advisor_mappings.get(sid, []),
                     feed_files,
                     feed_counts,
+                    major_divisions,
                 ):
                     self.successes.append(sid)
                 else:
@@ -123,7 +126,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                     write_file_to_staging(table, feed_files[table], feed_counts[table])
         return tables
 
-    def generate_student_profile_feed(self, feed_elements, advisors, feed_files, feed_counts):
+    def generate_student_profile_feed(self, feed_elements, advisors, feed_files, feed_counts, major_divisions):
         sid = feed_elements['sid']
         uid = feed_elements['ldap_uid']
         if not uid:
@@ -186,15 +189,13 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 [sid, uid, first_name, last_name, level, gpa, units, transfer, expected_grad_term, terms_in_attendance],
             )
 
-            major_divisions = self.get_majors_divisions()
-
             for plan in sis_profile.get('plans', []):
                 if plan.get('status') == 'Active':
-                    program = plan.get('program', None)
+                    plan_description = plan.get('description', None)
 
                     feed_counts['student_majors'] += write_to_tsv_file(
                         feed_files['student_majors'],
-                        [sid, program, plan.get('description', None), major_divisions.get(program, None)],
+                        [sid, plan.get('program', None), plan_description, major_divisions.get(plan_description, None)],
                     )
             for hold in sis_profile.get('holds', []):
                 feed_counts['student_holds'] += write_to_tsv_file(feed_files['student_holds'], [sid, json.dumps(hold)])
