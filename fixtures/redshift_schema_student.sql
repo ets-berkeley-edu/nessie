@@ -47,7 +47,8 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_majors
     sid VARCHAR NOT NULL,
     college VARCHAR NOT NULL,
     major VARCHAR NOT NULL,
-    PRIMARY KEY (sid, college, major)
+    division VARCHAR NOT NULL,
+    PRIMARY KEY (sid, college, major, division)
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles
@@ -99,7 +100,8 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_majors
     sid VARCHAR NOT NULL,
     college VARCHAR NOT NULL,
     major VARCHAR NOT NULL,
-    PRIMARY KEY (sid, college, major)
+    division VARCHAR NOT NULL,
+    PRIMARY KEY (sid, college, major, division)
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_profiles
