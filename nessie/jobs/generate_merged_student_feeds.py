@@ -267,7 +267,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 FROM {self.redshift_edl_schema}.student_academic_plan_hierarchy_data;""",
         )
 
-        return {major: division for major, division in rows}
+        return {r['academic_plan_nm']: r['academic_division_shrt_nm'] for r in rows}
 
     def map_advisors_to_students(self):
         advisors_by_student_id = {}
