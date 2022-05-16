@@ -282,7 +282,7 @@ def stream_edl_holds():
         WHERE
           ssid.positive_service_indicator_flag = 'N'
           AND ssid.deleted_flag = 'N'
-          AND NOT ssid.service_indicator_cd = ANY('{{A01, ARV, C01, CDP, CDR, R05, R14, RCL, S00, S03, S08, X00}}')
+          AND NOT ssid.service_indicator_cd = ANY('{{{{A01, ARV, C01, CDP, CDR, R05, R14, RCL, S00, S03, S08, X00}}}}')
         ORDER BY ssid.student_id, ssid.service_indicator_start_dt"""
     return redshift.fetch(sql, stream_results=True, unload_path='edl_holds')
 
