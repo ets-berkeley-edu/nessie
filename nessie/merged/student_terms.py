@@ -23,7 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from decimal import Decimal
 import json
 
 from nessie.lib import berkeley
@@ -137,7 +136,7 @@ def merge_enrollment(enrollments, term_id, term_name):
             'midtermGrade': enrollment['grade_midterm'],
             'primary': enrollment['sis_primary'],
             'sectionNumber': enrollment['sis_section_num'],
-            'units': _to_float_cautiously(enrollment['units']),
+            'units': to_float(enrollment['units']),
         }
 
         # The SIS enrollments API gives us no better unique identifier than the course display name.
@@ -178,7 +177,7 @@ def merge_enrollment(enrollments, term_id, term_name):
         'termId': term_id,
         'termName': term_name,
         'enrollments': enrollments_feed,
-        'enrolledUnits': _to_float_cautiously(enrolled_units),
+        'enrolledUnits': to_float(enrolled_units),
         'maxTermUnitsAllowed': max_term_units_allowed,
         'minTermUnitsAllowed': min_term_units_allowed,
     }
@@ -210,7 +209,3 @@ def sort_sections(enrollments_feed):
         )
     for enrollment in enrollments_feed:
         enrollment['sections'].sort(key=section_key)
-
-
-def _to_float_cautiously(v):
-    return (v is not None) and (float(v) if isinstance(v, Decimal) else v)

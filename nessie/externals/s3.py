@@ -23,16 +23,15 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import csv
 from gzip import GzipFile
 import io
 import json
-import socket
 import tempfile
 from zipfile import ZipFile
 
 import boto3
 from botocore.exceptions import ClientError, ConnectionError
-from botocore.vendored.requests.packages.urllib3.exceptions import TimeoutError
 from flask import current_app as app
 from nessie.lib import metadata
 import requests
@@ -191,20 +190,11 @@ def get_unzipped_text_reader(key):
         return None
 
 
-def get_retriable_csv_stream(columns, key, retries=1):
-    for attempt in range(retries):
-        try:
-            data = get_unzipped_text_reader(key)
-            for line in data:
-                yield dict(zip(columns, [(int(f) if f.isdigit() else None) for f in line.strip().split(',')]))
-        except (ClientError, ConnectionError, socket.error, TimeoutError) as e:
-            if attempt + 1 < retries:
-                app.logger.error(f'CSV stream attempt {attempt + 1} of {retries} failed, will retry: {e}')
-            else:
-                app.logger.error(f'CSV stream attempt {retries} of {retries} failed, aborting')
-                raise e
-        else:
-            break
+def get_tsv_stream(path, delimiter='\t'):
+    for key in get_keys_with_prefix(path):
+        data = get_unzipped_text_reader(key)
+        for row in csv.DictReader(data, delimiter='\t', escapechar='\\', quotechar='"'):
+            yield row
 
 
 def object_exists(key):
