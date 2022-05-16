@@ -31,6 +31,7 @@ import re
 from flask import current_app as app
 from nessie.externals import s3
 from nessie.lib.db import get_psycopg_cursor, get_psycopg_cursor_streaming
+from nessie.lib.util import get_s3_sis_daily_path
 import psycopg2
 import psycopg2.extras
 import psycopg2.sql
@@ -149,9 +150,19 @@ def drop_external_schema(schema_name):
 def fetch(sql, **kwargs):
     """Execute SQL read operation with optional keyword arguments for formatting."""
     if kwargs.pop('stream_results', None):
-        cursor = _get_streaming_cursor()
-        _execute_streaming(sql, cursor, **kwargs)
-        return cursor
+        if app.config['NESSIE_ENV'] == 'test':
+            cursor = _get_streaming_cursor()
+            _execute_streaming(sql, cursor, **kwargs)
+            return cursor
+        else:
+            # AWS recommends unloading large Redshift result sets to S3 and streaming from there.
+            with _get_cursor() as cursor:
+                if not cursor:
+                    return None
+                s3_prefix = _execute_unload(sql, cursor, **kwargs)
+                if not s3_prefix:
+                    return None
+                return s3.get_tsv_stream(s3_prefix)
     else:
         # If streaming is not requested, return an array of dictionaries.
         with _get_cursor(operation='read') as cursor:
@@ -276,3 +287,29 @@ def _execute_streaming(sql, cursor, **kwargs):
     sql_for_log = re.sub(r"CREDENTIALS '[^']+'", "CREDENTIALS '<credentials>'", str(sql))
     cursor.execute(sql, params)
     app.logger.debug(f'Redshift query (cursor {cursor.name} streaming results:\n{sql_for_log}\n{params or ""}')
+
+
+def _execute_unload(sql, cursor, **kwargs):
+    params = None
+    unload_path = None
+
+    if kwargs:
+        params = kwargs.pop('params', None)
+        unload_path = kwargs.pop('unload_path', None)
+        sql = psycopg2.sql.SQL(sql).format(**kwargs).as_string(cursor.connection)
+
+    destination_prefix = f'{get_s3_sis_daily_path()}/unloads/{unload_path}/'
+    destination_path = f"s3://{app.config['LOCH_S3_BUCKET']}/{destination_prefix}"
+    iam_role = app.config['REDSHIFT_IAM_ROLE']
+
+    # Escape SQL for insertion into UNLOAD
+    sql = sql.replace('\'', '\\\'')
+    sql = f"""UNLOAD ('{sql}') TO '{destination_path}' IAM_ROLE '{iam_role}'
+              DELIMITER AS '\\t' NULL AS ''
+              ADDQUOTES ALLOWOVERWRITE ENCRYPTED ESCAPE GZIP HEADER PARALLEL OFF"""
+    cursor.execute(sql, params)
+
+    # Don't log sensitive credentials in the SQL.
+    sql_for_log = re.sub(r"CREDENTIALS '[^']+'", "CREDENTIALS '<credentials>'", str(sql))
+    app.logger.debug(f'Redshift unloaded query results to {unload_path}: {sql_for_log}')
+    return destination_prefix

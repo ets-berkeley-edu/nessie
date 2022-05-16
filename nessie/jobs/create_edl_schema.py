@@ -25,6 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+from datetime import datetime
 from decimal import Decimal
 from itertools import groupby, islice, repeat
 import json
@@ -119,15 +120,9 @@ class ConcurrentFeedBuilder(object):
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
             app_obj = app._get_current_object()
             for result in executor.map(self.build_target_feeds, repeat(app_obj), source_files):
+                _upload_file_to_staging(self.filename, result)
                 target_files.append(result)
-
-        with TemporaryFile() as all_feeds:
-            for t in target_files:
-                t.seek(0)
-                for line in t:
-                    all_feeds.write(line)
-                t.close()
-            _upload_file_to_staging(self.filename, all_feeds)
+        app.logger.info(f'Uploaded {len(target_files)} TSV batches to Redshift table {self.filename})')
 
     # Subclasses implement.
     @contextmanager
@@ -723,7 +718,7 @@ def _str(v):
 
 
 def _upload_file_to_staging(table, _file):
-    tsv_filename = f'staging_{table}.tsv'
+    tsv_filename = f"staging_{table}_{datetime.utcnow().strftime('%H%M%s')}.tsv"
     s3_key = f'{get_s3_edl_daily_path()}/{tsv_filename}'
 
     app.logger.info(f'Will stash {table} feeds in S3: {s3_key}')
