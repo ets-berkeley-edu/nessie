@@ -63,6 +63,7 @@ AWS_DMS_VPC_ROLE = 'dms vpc role'
 AWS_EDL_ROLE_ARN = 'edl cross-account role'
 AWS_SECRET_ACCESS_KEY = 'secret'
 AWS_REGION = 'aws region'
+AWS_S3_SESSION_DURATION = 3600
 
 ASC_ATHLETES_API_URL = 'https://secreturl.berkeley.edu/intensives.php?AcadYr=2017-18'
 ASC_ATHLETES_API_KEY = 'secret'

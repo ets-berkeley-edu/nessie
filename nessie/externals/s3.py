@@ -105,7 +105,7 @@ def get_sts_credentials():
     assumed_role_object = sts_client.assume_role(
         RoleArn=role_arn,
         RoleSessionName='AssumeAppRoleSession',
-        DurationSeconds=900,
+        DurationSeconds=app.config['AWS_S3_SESSION_DURATION'],
     )
     return assumed_role_object['Credentials']
 
