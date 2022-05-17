@@ -74,15 +74,15 @@ class GenerateBoacAnalytics(BackgroundJob):
                 canvas_enrollments_stream = queries.stream_canvas_enrollments(term_id)
                 assignment_submissions_stream = queries.stream_canvas_assignment_submissions(term_id)
 
-                enrollments_by_course_id = groupby(canvas_enrollments_stream, lambda r: r['canvas_course_id'])
-                submissions_by_course_id = groupby(assignment_submissions_stream, lambda r: r['canvas_course_id'])
+                enrollments_by_course_id = groupby(canvas_enrollments_stream, lambda r: int(r['canvas_course_id']))
+                submissions_by_course_id = groupby(assignment_submissions_stream, lambda r: int(r['canvas_course_id']))
                 enr_tracker = {'course_id': 0, 'stream': []}
                 sub_tracker = {'course_id': 0, 'stream': []}
 
                 membership_count = 0
 
                 for canvas_site_row in canvas_sites_stream:
-                    course_site_id = canvas_site_row['canvas_course_id']
+                    course_site_id = int(canvas_site_row['canvas_course_id'])
                     app.logger.info(f'Generating analytics: course site {course_site_id}')
 
                     while enr_tracker['course_id'] < course_site_id:
