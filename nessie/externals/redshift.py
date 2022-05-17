@@ -188,7 +188,10 @@ def copy_for_pandas(rows):
                     copied[key] = None
         for key in {'canvas_course_id', 'canvas_user_id'}:
             if key in copied:
-                copied[key] = int(copied[key])
+                try:
+                    copied[key] = int(copied[key])
+                except (TypeError, ValueError):
+                    copied[key] = None
         return copied
     return [_transform_row(r) for r in rows]
 
