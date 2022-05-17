@@ -183,7 +183,9 @@ def get_unzipped_text_reader(key):
     bucket = app.config['LOCH_S3_BUCKET']
     try:
         _object = client.get_object(Bucket=bucket, Key=key)
-        gzipped = GzipFile(None, 'rb', fileobj=_object['Body'])
+        fileobj = _object['Body']
+        fileobj.set_socket_timeout(app.config['AWS_S3_SESSION_DURATION'])
+        gzipped = GzipFile(None, 'rb', fileobj=fileobj)
         return io.TextIOWrapper(gzipped)
     except (ClientError, ConnectionError, ValueError) as e:
         app.logger.error(f'Error retrieving S3 object text: bucket={bucket}, key={key}, error={e}')
