@@ -26,7 +26,6 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from itertools import groupby
 import json
 import math
-import operator
 
 from flask import current_app as app
 from nessie.externals.redshift import copy_for_pandas
@@ -39,7 +38,7 @@ from scipy.stats import percentileofscore
 def generate_analytics_feeds_for_course(output_file, term_id, canvas_site_row, site_enrollments_stream, site_submissions_stream):
     count = 0
 
-    course_id = canvas_site_row.get('canvas_course_id')
+    course_id = int(canvas_site_row.get('canvas_course_id'))
     sis_sections = canvas_site_row.get('sis_section_ids')
     if sis_sections:
         sis_sections = set([s for s in sis_sections.split(',')])
@@ -55,11 +54,11 @@ def generate_analytics_feeds_for_course(output_file, term_id, canvas_site_row, s
     course_distributions = get_distributions_for_metric(df, metrics)
     course_analytics = {metric: analytics_for_course(course_distributions, metric) for metric in metrics}
 
-    submissions_by_user_id = groupby(site_submissions_stream, operator.itemgetter('reference_user_id'))
+    submissions_by_user_id = groupby(site_submissions_stream, lambda r: int(r['reference_user_id']))
     submission_tracker = {'user_id': 0, 'submissions': []}
 
     for enrollment in enrollments:
-        user_id = enrollment['canvas_user_id']
+        user_id = int(enrollment['canvas_user_id'])
         df_enrollment = df.loc[df['canvas_user_id'].values == user_id]
 
         analytics_feed = _generate_analytics_feed(df_enrollment, course_analytics, course_distributions, len(enrollments))

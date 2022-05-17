@@ -176,8 +176,21 @@ def fetch(sql, **kwargs):
 
 
 def copy_for_pandas(rows):
-    # For Pandas compatibility, copy psycopg's list-like object of dict-like objects to a real list of dicts.
-    return [r.copy() for r in rows]
+    # For Pandas compatibility, copy psycopg's list-like object of dict-like objects to a real list of dicts. A handful of colimns need to be forced
+    # to numeric values.
+    def _transform_row(row):
+        copied = row.copy()
+        for key in {'current_score', 'last_activity_at', 'submissions_turned_in'}:
+            if key in copied:
+                try:
+                    copied[key] = float(copied[key])
+                except (TypeError, ValueError):
+                    copied[key] = None
+        for key in {'canvas_course_id', 'canvas_user_id'}:
+            if key in copied:
+                copied[key] = int(copied[key])
+        return copied
+    return [_transform_row(r) for r in rows]
 
 
 class Transaction():
