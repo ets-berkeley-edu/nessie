@@ -133,7 +133,7 @@ def merge_enrollment(enrollments, term_id, term_name):
             'grade': enrollment['grade'],
             'gradingBasis': berkeley.translate_grading_basis(enrollment['grading_basis']),
             'instructionMode': enrollment['sis_instruction_mode'],
-            'midtermGrade': enrollment['grade_midterm'],
+            'midtermGrade': (enrollment['grade_midterm'] or None),
             'primary': enrollment['sis_primary'],
             'sectionNumber': enrollment['sis_section_num'],
             'units': to_float(enrollment['units']),
