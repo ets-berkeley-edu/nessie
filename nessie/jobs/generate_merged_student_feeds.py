@@ -362,80 +362,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         return row_count
 
     def refresh_rds_enrollment_terms(self):
-        app.logger.info('Refreshing enrollment terms in RDS.')
-        with rds.transaction() as transaction:
-            result = (
-                self._delete_rds_rows('student_enrollment_terms', transaction)
-                and self._delete_rds_rows('student_term_gpas', transaction)
-                and self._refresh_rds_enrollment_terms(transaction)
-                and self._index_rds_midpoint_deficient_grades(transaction)
-                and self._index_rds_enrolled_units(transaction)
-                and self._index_rds_term_gpa(transaction)
-                and self._index_rds_epn_grading_option(transaction)
-            )
-            if result:
-                transaction.commit()
-                app.logger.info('Refreshed RDS enrollment terms.')
-            else:
-                transaction.rollback()
-                raise BackgroundJobError('Failed to refresh RDS enrollment terms.')
-
-    def _delete_rds_rows(self, table, transaction):
-        return transaction.execute(f'TRUNCATE {self.rds_schema}.{table}')
-
-    def _refresh_rds_enrollment_terms(self, transaction):
-        return transaction.execute(
-            f"""INSERT INTO {self.rds_schema}.student_enrollment_terms (
-                SELECT *
-                    FROM dblink('{self.rds_dblink_to_redshift}',$REDSHIFT$
-                        SELECT sid, term_id, enrollment_term
-                        FROM {self.student_schema}.student_enrollment_terms
-                  $REDSHIFT$)
-                AS redshift_enrollment_terms (
-                    sid VARCHAR,
-                    term_id VARCHAR,
-                    enrollment_term TEXT
-                )
-            );""",
-        )
-
-    def _index_rds_midpoint_deficient_grades(self, transaction):
-        return transaction.execute(
-            f"""UPDATE {self.rds_schema}.student_enrollment_terms t1
-            SET midpoint_deficient_grade = TRUE
-            FROM {self.rds_schema}.student_enrollment_terms t2, json_array_elements(t2.enrollment_term::json->'enrollments') enr
-            WHERE t1.sid = t2.sid
-            AND t1.term_id = t2.term_id
-            AND enr->>'midtermGrade' IS NOT NULL;""",
-        )
-
-    def _index_rds_enrolled_units(self, transaction):
-        return transaction.execute(
-            f"""UPDATE {self.rds_schema}.student_enrollment_terms
-            SET enrolled_units = (enrollment_term::json->>'enrolledUnits')::numeric
-            WHERE enrollment_term::json->>'enrolledUnits' IS NOT NULL;""",
-        )
-
-    def _index_rds_term_gpa(self, transaction):
-        terms_table_update = f"""UPDATE {self.rds_schema}.student_enrollment_terms
-            SET term_gpa = (enrollment_term::json->'termGpa'->>'gpa')::numeric
-            WHERE (enrollment_term::json->'termGpa'->>'unitsTakenForGpa')::numeric > 0;"""
-        gpa_table_update = f"""INSERT INTO {self.rds_schema}.student_term_gpas
-            (sid, term_id, gpa, units_taken_for_gpa)
-            SELECT
-                sid, term_id,
-                (enrollment_term::json->'termGpa'->>'gpa')::numeric AS gpa,
-                (enrollment_term::json->'termGpa'->>'unitsTakenForGpa')::numeric AS units_taken_for_gpa
-            FROM {self.rds_schema}.student_enrollment_terms
-            WHERE (enrollment_term::json->'termGpa'->>'unitsTakenForGpa')::numeric > 0;"""
-        return transaction.execute(terms_table_update) and transaction.execute(gpa_table_update)
-
-    def _index_rds_epn_grading_option(self, transaction):
-        return transaction.execute(
-            f"""UPDATE {self.rds_schema}.student_enrollment_terms t1
-            SET epn_grading_option = TRUE
-            FROM {self.rds_schema}.student_enrollment_terms t2, json_array_elements(t2.enrollment_term::json->'enrollments') enr
-            WHERE t1.sid = t2.sid
-            AND t1.term_id = t2.term_id
-            AND enr->>'gradingBasis' = 'EPN';""",
-        )
+        resolved_ddl_rds = resolve_sql_template('update_rds_indexes_student_enrollment_terms.template.sql')
+        if rds.execute(resolved_ddl_rds):
+            app.logger.info('RDS student enrollment term indexes updated.')
+        else:
+            raise BackgroundJobError('Failed to update RDS student enrollment term indexes.')
