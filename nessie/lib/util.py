@@ -276,6 +276,16 @@ def resolve_sql_template(sql_filename, **kwargs):
     return resolve_sql_template_string(template_string, **kwargs)
 
 
+def to_boolean(s):
+    try:
+        if isinstance(s, str):
+            return s.lower().startswith('t')
+        else:
+            return bool(s)
+    except (TypeError, ValueError):
+        return False
+
+
 def to_float(s):
     try:
         return float(s)

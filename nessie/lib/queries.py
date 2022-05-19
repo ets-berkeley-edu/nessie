@@ -189,7 +189,7 @@ def stream_canvas_sites(term_id):
         GROUP BY enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code, enr.canvas_course_term
         ORDER BY enr.canvas_course_id
         """
-    return redshift.fetch(sql, stream_results=True, unload_path='canvas_sites')
+    return redshift.fetch(sql, stream_redshift=True)
 
 
 @fixture('query_enrollments_in_advisee_canvas_sites_{term_id}.csv')
@@ -212,7 +212,7 @@ def stream_canvas_enrollments(term_id):
               WHERE ce.term_id='{term_id}'
               ORDER BY ce.course_id, ce.canvas_user_id
         """
-    return redshift.fetch(sql, stream_results=True, unload_path='canvas_enrollments')
+    return redshift.fetch(sql, stream_redshift=True)
 
 
 @fixture('query_advisee_submissions_comparisons_{term_id}.csv')
@@ -236,7 +236,7 @@ def stream_canvas_assignment_submissions(term_id):
             WHERE canvas_user_id = reference_user_id AND course_id = ac1.course_id
         )
         ORDER BY canvas_course_id, reference_user_id, ac2.canvas_user_id"""
-    return redshift.fetch(sql, stream_results=True, unload_path='canvas_assignment_submissions')
+    return redshift.fetch(sql, stream_redshift=True)
 
 
 def get_all_instructor_uids():
@@ -255,7 +255,7 @@ def stream_edl_demographics():
               LEFT JOIN {edl_schema()}.student_citizenships c ON i.sid = c.sid
               LEFT JOIN {edl_schema()}.student_visas v ON i.sid = v.sid
               ORDER by i.sid, i.gender, e.ethnicity, e.ethnic_group, c.citizenship_country, v.visa_status, v.visa_type"""
-    return redshift.fetch(sql, stream_results=True, unload_path='edl_demographics')
+    return redshift.fetch(sql, stream_s3=True, unload_path='edl_demographics')
 
 
 def stream_edl_degrees():
@@ -270,7 +270,7 @@ def stream_edl_degrees():
         sadd.degree_desc
         FROM {edl_external_schema()}.student_awarded_degree_data sadd
         ORDER BY sadd.student_id, sadd.degree_conferred_dt DESC, sadd.degree_desc"""
-    return redshift.fetch(sql, stream_results=True, unload_path='edl_degrees')
+    return redshift.fetch(sql, stream_s3=True, unload_path='edl_degrees')
 
 
 def stream_edl_holds():
@@ -284,7 +284,7 @@ def stream_edl_holds():
           AND ssid.deleted_flag = 'N'
           AND NOT ssid.service_indicator_cd = ANY('{{{{A01, ARV, C01, CDP, CDR, R05, R14, RCL, S00, S03, S08, X00}}}}')
         ORDER BY ssid.student_id, ssid.service_indicator_start_dt"""
-    return redshift.fetch(sql, stream_results=True, unload_path='edl_holds')
+    return redshift.fetch(sql, stream_s3=True, unload_path='edl_holds')
 
 
 def stream_edl_plans():
@@ -317,7 +317,7 @@ def stream_edl_plans():
           END,
           sapd.career_program_sequence_nbr,
           sapd.academic_program_cd"""
-    return redshift.fetch(sql, stream_results=True, unload_path='edl_plans')
+    return redshift.fetch(sql, stream_s3=True, unload_path='edl_plans')
 
 
 def stream_edl_profiles():
@@ -344,7 +344,7 @@ def stream_edl_profiles():
         ) cppp
         ON spd.student_id = cppp.emplid and seqnum = 1
         ORDER BY spd.student_id"""
-    return redshift.fetch(sql, stream_results=True, unload_path='edl_profiles')
+    return redshift.fetch(sql, stream_s3=True, unload_path='edl_profiles')
 
 
 def stream_edl_profile_terms():
@@ -368,7 +368,7 @@ def stream_edl_profile_terms():
               ON r.student_id = t.sid
              AND r.semester_year_term_cd = t.term_id
             ORDER BY r.student_id, r.semester_year_term_cd"""
-    return redshift.fetch(sql, stream_results=True, unload_path='edl_profile_terms')
+    return redshift.fetch(sql, stream_s3=True, unload_path='edl_profile_terms')
 
 
 def stream_edl_registrations():
@@ -392,7 +392,7 @@ def stream_edl_registrations():
                 ON r.student_id = s.emplid AND r.semester_year_term_cd = s.strm
               ORDER BY r.student_id, r.semester_year_term_cd
         """
-    return redshift.fetch(sql, stream_results=True, unload_path='edl_registrations')
+    return redshift.fetch(sql, stream_s3=True, unload_path='edl_registrations')
 
 
 def get_enrolled_canvas_sites_for_term(term_id):
@@ -467,7 +467,7 @@ def stream_sis_enrollments(sids=None):
               ORDER BY sis_term_id DESC, sid, dropped NULLS FIRST, sis_course_name, sis_primary DESC, sis_instruction_format, sis_section_num
         """
     params = (sids, sids) if sids else None
-    return redshift.fetch(sql, params=params, stream_results=True, unload_path='sis_enrollments')
+    return redshift.fetch(sql, params=params, stream_s3=True, unload_path='sis_enrollments')
 
 
 def stream_term_gpas(sids=None):
@@ -481,11 +481,11 @@ def stream_term_gpas(sids=None):
               ORDER BY gp.term_id DESC, gp.sid, CASE gp.career WHEN 'UGRD' THEN 1 ELSE 0 END
         """
     params = (sids,) if sids else None
-    return redshift.fetch(sql, params=params, stream_results=True, unload_path='term_gpas')
+    return redshift.fetch(sql, params=params, stream_s3=True, unload_path='term_gpas')
 
 
 def stream_canvas_memberships():
     sql = f"""SELECT term_id, sid, sis_section_ids, feed
         FROM {student_schema()}.student_canvas_site_memberships
         ORDER BY term_id DESC, sid"""
-    return redshift.fetch(sql, stream_results=True, unload_path='canvas_memberships')
+    return redshift.fetch(sql, stream_s3=True, unload_path='canvas_memberships')
