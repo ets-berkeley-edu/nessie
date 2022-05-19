@@ -149,13 +149,17 @@ def drop_external_schema(schema_name):
 
 def fetch(sql, **kwargs):
     """Execute SQL read operation with optional keyword arguments for formatting."""
-    if kwargs.pop('stream_results', None):
+    if kwargs.pop('stream_redshift', None):
+        cursor = _get_streaming_cursor()
+        _execute_streaming(sql, cursor, **kwargs)
+        return cursor
+    # For very large Redshift result sets, AWS recommends unloading to S3 rather than using a server-side cursor.
+    elif kwargs.pop('stream_s3', None):
         if app.config['NESSIE_ENV'] == 'test':
             cursor = _get_streaming_cursor()
             _execute_streaming(sql, cursor, **kwargs)
             return cursor
         else:
-            # AWS recommends unloading large Redshift result sets to S3 and streaming from there.
             with _get_cursor() as cursor:
                 if not cursor:
                     return None

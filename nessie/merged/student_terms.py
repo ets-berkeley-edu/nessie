@@ -26,7 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import json
 
 from nessie.lib import berkeley
-from nessie.lib.util import to_float
+from nessie.lib.util import to_boolean, to_float
 
 
 def empty_term_feed(term_id, term_name):
@@ -121,20 +121,20 @@ def merge_enrollment(enrollments, term_id, term_name):
 
     for enrollment in enrollments:
         # Skip this class section if we've seen it already.
-        section_id = enrollment.get('sis_section_id')
+        section_id = int(enrollment.get('sis_section_id'))
         if section_id in term_section_ids:
             continue
         term_section_ids[section_id] = True
 
         section_feed = {
-            'ccn': enrollment['sis_section_id'],
+            'ccn': section_id,
             'component': enrollment['sis_instruction_format'],
             'enrollmentStatus': enrollment['sis_enrollment_status'],
             'grade': enrollment['grade'],
             'gradingBasis': berkeley.translate_grading_basis(enrollment['grading_basis']),
             'instructionMode': enrollment['sis_instruction_mode'],
             'midtermGrade': (enrollment['grade_midterm'] or None),
-            'primary': enrollment['sis_primary'],
+            'primary': to_boolean(enrollment['sis_primary']),
             'sectionNumber': enrollment['sis_section_num'],
             'units': to_float(enrollment['units']),
         }

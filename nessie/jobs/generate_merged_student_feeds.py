@@ -33,7 +33,7 @@ from flask import current_app as app
 from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib import berkeley, queries
-from nessie.lib.util import encoded_tsv_row, resolve_sql_template, write_to_tsv_file
+from nessie.lib.util import encoded_tsv_row, resolve_sql_template, to_boolean, write_to_tsv_file
 from nessie.merged.sis_profile import parse_merged_sis_profile
 from nessie.merged.student_demographics import add_demographics_rows
 from nessie.merged.student_terms import append_drops, append_term_gpa, empty_term_feed, merge_canvas_site_memberships, merge_enrollment
@@ -321,6 +321,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             for term_id, term_enrollments_grp in groupby(enrollment_stream, operator.itemgetter('sis_term_id')):
                 term_id = str(term_id)
                 term_name = berkeley.term_name_for_sis_id(term_id)
+
                 app.logger.info(f'Generating enrollment feeds for term {term_id}...')
                 term_row_count = 0
 
@@ -328,7 +329,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                     for sid, enrollments_grp in groupby(term_enrollments_grp, operator.itemgetter('sid')):
                         term_feed = None
                         for is_dropped, enrollments_subgroup in groupby(enrollments_grp, operator.itemgetter('dropped')):
-                            if not is_dropped:
+                            if not to_boolean(is_dropped):
                                 term_feed = merge_enrollment(enrollments_subgroup, term_id, term_name)
                             else:
                                 if not term_feed:
