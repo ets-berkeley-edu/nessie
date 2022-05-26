@@ -358,7 +358,8 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
 
         latest_academic_standing = None
         latest_career_row = None
-        term_gpas = []
+        term_gpas = {}
+
         # This crude calculation of total GPA units ignores transfer units and therefore won't agree with the number from the SIS API.
         # We only use it as a check for zero value to distinguish null from zero GPA.
         total_units_for_gpa = 0
@@ -371,10 +372,14 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 term_units_for_gpa = float(row['term_berkeley_completed_gpa_units'] or 0)
                 total_units_for_gpa += term_units_for_gpa
                 if term_units_for_gpa > 0:
-                    term_gpas.append(_term_gpa(row))
+                    term_gpas[row['term_id']] = _term_gpa(row)
                 if row['acad_standing_status']:
                     latest_academic_standing = row
                 latest_career_row = row
+            else:
+                # Include term GPAs from other academic careers only if our preferred academic career provides no GPA for that term.
+                if row['term_berkeley_completed_gpa_units'] and (row['term_id'] not in term_gpas):
+                    term_gpas[row['term_id']] = _term_gpa(row)
         if not latest_career_row:
             return
 
@@ -412,8 +417,7 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 'status': latest_academic_standing['acad_standing_status'],
                 'termName': term_name_for_sis_id(latest_academic_standing['term_id']),
             }
-        term_gpas.reverse()
-        feed['termGpa'] = term_gpas
+        feed['termGpa'] = [term_gpas[k] for k in sorted(term_gpas.keys(), reverse=True)]
 
     def _merge_plans(self, feed, plan_rows, career_code):
         if not plan_rows or not career_code or not feed.get('academicStatuses'):
