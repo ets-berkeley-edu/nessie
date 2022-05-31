@@ -57,9 +57,9 @@ INSERT INTO {rds_schema_student}.student_enrollment_terms (
   SELECT * FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
       SELECT sid, term_id, enrollment_term,
           CHARINDEX('"midtermGrade": "', enrollment_term) != 0 AS midpoint_deficient_grade,
-          json_extract_path_text(enrollment_term, 'enrolledUnits')::numeric AS enrolled_units,
-          CASE NULLIF(json_extract_path_text(enrollment_term, 'termGpa', 'unitsTakenForGpa'), '')::decimal > 0
-              WHEN TRUE THEN NULLIF(json_extract_path_text(enrollment_term, 'termGpa', 'gpa'), '')::decimal
+          json_extract_path_text(enrollment_term, 'enrolledUnits')::decimal(3,1) AS enrolled_units,
+          CASE NULLIF(json_extract_path_text(enrollment_term, 'termGpa', 'unitsTakenForGpa'), '')::decimal(4,1) > 0
+              WHEN TRUE THEN NULLIF(json_extract_path_text(enrollment_term, 'termGpa', 'gpa'), '')::decimal(5,3)
               ELSE NULL END
               AS term_gpa,
           CHARINDEX('"gradingBasis": "EPN"', enrollment_term) != 0 AS epn_grading_option
@@ -80,7 +80,7 @@ INSERT INTO {rds_schema_student}.student_term_gpas
 (sid, term_id, gpa, units_taken_for_gpa)
 SELECT
     sid, term_id, term_gpa AS gpa,
-    (enrollment_term::json->'termGpa'->>'unitsTakenForGpa')::numeric AS units_taken_for_gpa
+    (enrollment_term::json->'termGpa'->>'unitsTakenForGpa')::decimal(4,1) AS units_taken_for_gpa
 FROM {rds_schema_student}.student_enrollment_terms
 WHERE term_gpa IS NOT NULL;
 
