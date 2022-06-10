@@ -23,16 +23,29 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from flask import current_app as app
-from nessie.externals import boac
-from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
+from urllib.parse import urlparse
 
-"""Logic for BOAC cache refresh kickoff."""
+from flask import current_app as app
+from nessie.externals import boac, s3
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
+from nessie.lib.util import get_s3_boa_api_daily_path
+
+
+"""Logic for BOAC metadata export and cache refresh kickoff."""
 
 
 class RefreshBoacCache(BackgroundJob):
 
     def run(self):
+        app.logger.info('Starting BOA notes metadata export...')
+        for boa_credentials in app.config['BOAC_REFRESHERS']:
+            with boac.export_notes_metadata(boa_credentials) as export:
+                hostname = urlparse(boa_credentials['API_BASE_URL']).hostname.split('.')[0]
+                s3_key = f'{get_s3_boa_api_daily_path()}/{hostname}/advising_notes_metadata.csv'
+                app.logger.info(f"Will upload BOA notes metadata to S3: url={boa_credentials['API_BASE_URL']}, key={s3_key}")
+                s3.upload_from_response(export, s3_key)
+        app.logger.info('Notes metadata export complete.')
+
         app.logger.info('Starting BOAC refresh kickoffs...')
         if boac.kickoff_refresh():
             app.logger.info('BOAC refresh kickoffs completed.')

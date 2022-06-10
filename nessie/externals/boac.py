@@ -23,21 +23,35 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from contextlib import contextmanager
+
 from flask import current_app as app
 from nessie.lib import http
+import requests
 
 """BOAC auth API."""
+
+
+@contextmanager
+def export_notes_metadata(boa_credentials):
+    url = f"{boa_credentials['API_BASE_URL']}/reports/boa_notes/metadata"
+    header = _auth_header(boa_credentials['API_KEY'])
+    with requests.get(url, headers=header, stream=True) as response:
+        yield response
 
 
 def kickoff_refresh():
     successful = True
     for boac in app.config['BOAC_REFRESHERS']:
-        successful = authorized_request(boac['URL'], boac['API_KEY']) and successful
+        successful = _authorized_request(f"{boac['API_BASE_URL']}/admin/cachejob/refresh", boac['API_KEY']) and successful
     return successful
 
 
-def authorized_request(url, api_key):
+def _authorized_request(url, api_key):
+    return http.request(url, _auth_header(api_key))
+
+
+def _auth_header(api_key):
     # The more typical underscored "app_key" header will be stripped out by the AWS load balancer.
     # A hyphened "app-key" header passes through.
-    auth_headers = {'app-key': api_key}
-    return http.request(url, auth_headers)
+    return {'app-key': api_key}

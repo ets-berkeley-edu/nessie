@@ -242,41 +242,46 @@ def upload_json(obj, s3_key, bucket=None):
         return upload_file(f, s3_key, bucket)
 
 
-def upload_from_url(url, s3_key, on_stream_opened=None):
+def upload_from_response(response, s3_key, on_stream_opened=None):
     bucket = app.config['LOCH_S3_BUCKET']
     s3_url = build_s3_url(s3_key)
-    with requests.get(url, stream=True) as response:
-        if response.status_code != 200:
-            app.logger.error(
-                f'Received unexpected status code, aborting S3 upload '
-                f'(status={response.status_code}, body={response.text}, key={s3_key} url={url})')
-            raise ConnectionError(f'Response {response.status_code}: {response.text}')
-        if on_stream_opened:
-            on_stream_opened(response.headers)
-        try:
-            s3_upload_args = {'ServerSideEncryption': app.config['LOCH_S3_ENCRYPTION']}
-            if s3_url.endswith('.gz'):
-                s3_upload_args.update({
-                    'ContentEncoding': 'gzip',
-                    'ContentType': 'text/plain',
-                })
-            session = get_session()
-            # smart_open needs to be told to ignore the .gz extension, or it will smartly attempt to double-compress it.
-            with smart_open.open(
-                s3_url,
-                'wb',
-                ignore_ext=True,
-                transport_params=dict(session=session, multipart_upload_kwargs=s3_upload_args),
-            ) as s3_out:
-                for chunk in response.iter_content(chunk_size=1024):
-                    s3_out.write(chunk)
-        except (ClientError, ConnectionError, ValueError) as e:
-            app.logger.error(f'Error on S3 upload: source_url={url}, bucket={bucket}, key={s3_key}, error={e}')
-            raise e
+    if response.status_code != 200:
+        app.logger.error(
+            f'Received unexpected status code, aborting S3 upload '
+            f'(status={response.status_code}, body={response.text}, key={s3_key})')
+        raise ConnectionError(f'Response {response.status_code}: {response.text}')
+    if on_stream_opened:
+        on_stream_opened(response.headers)
+    try:
+        s3_upload_args = {'ServerSideEncryption': app.config['LOCH_S3_ENCRYPTION']}
+        if s3_url.endswith('.gz'):
+            s3_upload_args.update({
+                'ContentEncoding': 'gzip',
+                'ContentType': 'text/plain',
+            })
+        session = get_session()
+        # smart_open needs to be told to ignore the .gz extension, or it will smartly attempt to double-compress it.
+        with smart_open.open(
+            s3_url,
+            'wb',
+            ignore_ext=True,
+            transport_params=dict(session=session, multipart_upload_kwargs=s3_upload_args),
+        ) as s3_out:
+            for chunk in response.iter_content(chunk_size=1024):
+                s3_out.write(chunk)
+    except (ClientError, ConnectionError, ValueError) as e:
+        app.logger.error(f'Error on S3 upload: bucket={bucket}, key={s3_key}, error={e}')
+        raise e
     s3_response = get_client().head_object(Bucket=bucket, Key=s3_key)
     if s3_response:
-        app.logger.info(f'S3 upload complete: source_url={url}, bucket={bucket}, key={s3_key}')
+        app.logger.info(f'S3 upload complete: bucket={bucket}, key={s3_key}')
         return s3_response
+
+
+def upload_from_url(url, s3_key, on_stream_opened=None):
+    app.logger.info(f'Will upload URL to S3: url={url}, key={s3_key}')
+    with requests.get(url, stream=True) as response:
+        return upload_from_response(response, s3_key, on_stream_opened)
 
 
 def upload_tsv_rows(rows, s3_key):
