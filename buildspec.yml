@@ -3,9 +3,10 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      nodejs: 14.17
+      nodejs: 12
       python: 3.8
     commands:
+      - n 16  # Force Node update to v16
       - npm -v
       - npm install
 
