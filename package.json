@@ -10,8 +10,8 @@
     "serve-vue": "vue-cli-service serve --open"
   },
   "dependencies": {
-    "ajv": "^8.11.0",
-    "ajv-keywords": "^5.1.0",
+    "ajv": "8.11.0",
+    "ajv-keywords": "5.1.0",
     "axios": "0.26.1",
     "bootstrap-vue": "2.21.2",
     "lodash": "4.17.21",
@@ -69,13 +69,13 @@
   },
   "license": "SEE LICENSE IN LICENSE",
   "resolutions": {
-    "ajv": "^8.11.0",
-    "ajv-keywords": "^5.1.0",
+    "ajv": "8.11.0",
+    "ajv-keywords": "5.1.0",
     "elliptic": "^6.5.4",
     "execa": "4.0.3",
     "lodash": "4.17.21",
     "merge": "^2.1.1",
     "minimist": "1.2.6",
-    "selfsigned": ">=1.10.8"
+    "selfsigned": "1.10.8"
   }
 }
