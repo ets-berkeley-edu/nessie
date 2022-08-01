@@ -1,170 +1,168 @@
 {
-  "academicStatuses": [
-    {
-      "cumulativeGPA": {
-        "average": 3.2999999999999998,
-        "source": "UCB",
+  "academicStatus": {
+    "cumulativeGPA": {
+      "average": 3.2999999999999998,
+      "source": "UCB",
+      "type": {
+        "code": "Cumulative"
+      }
+    },
+    "cumulativeUnits": [
+      {
         "type": {
-          "code": "Cumulative"
+          "code": "Total"
+        },
+        "unitsCumulative": 98.0,
+        "unitsOther": 0,
+        "unitsPassed": 62,
+        "unitsTaken": 8,
+        "unitsTest": 3.3,
+        "unitsTransferAccepted": 25,
+        "unitsTransferEarned": 25
+      },
+      {
+        "type": {
+          "code": "For GPA"
+        },
+        "unitsPassed": 8,
+        "unitsTaken": 8,
+        "unitsTransferEarned": 0
+      },
+      {
+        "type": {
+          "code": "Not For GPA"
+        },
+        "unitsPassed": 0,
+        "unitsTaken": 0,
+        "unitsTransferEarned": 0
+      }
+    ],
+    "studentCareer": {
+      "academicCareer": {
+        "code": "UGRD",
+        "description": "Undergraduate"
+      },
+      "fromDate": "2016-01-12",
+      "matriculation": {
+        "term": {
+          "id": "2155",
+          "name": "2015 Summer"
+        },
+        "type": {
+          "code": "TRN",
+          "description": "Transfer"
+        }
+      }
+    },
+    "studentPlans": [
+      {
+        "academicPlan": {
+          "academicProgram": {
+            "program": {
+              "code": "UCLS",
+              "description": "Undergrad Letters & Science"
+            }
+          },
+          "plan": {
+            "code": "25345U",
+            "description": "English BA",
+            "fromDate": "2016-01-12"
+          },
+          "targetDegree": {
+            "type": {
+              "code": "AB",
+              "description": "Bachelor of Arts"
+            }
+          },
+          "type": {
+            "code": "MAJ",
+            "description": "Major - Regular Acad/Prfnl"
+          }
+        },
+        "expectedGraduationTerm": {
+          "id": "2198",
+          "name": "2019 Fall"
+        },
+        "primary": true,
+        "statusInPlan": {
+          "action": {
+            "code": "DATA",
+            "description": "Data Change"
+          },
+          "reason": {
+            "code": "GTOI",
+            "description": "Grad Term - Auto Opt-In"
+          },
+          "status": {
+            "code": "AC",
+            "description": "Active in Program"
+          }
         }
       },
-      "cumulativeUnits": [
-        {
-          "type": {
-            "code": "Total"
+      {
+        "academicPlan": {
+          "academicProgram": {
+            "program": {
+              "code": "UCLS",
+              "description": "Undergrad Letters & Science"
+            }
           },
-          "unitsCumulative": 98.0,
-          "unitsOther": 0,
-          "unitsPassed": 62,
-          "unitsTaken": 8,
-          "unitsTest": 3.3,
-          "unitsTransferAccepted": 25,
-          "unitsTransferEarned": 25
+          "plan": {
+            "code": "25345U",
+            "description": "Astrophysics BS",
+            "fromDate": "2016-01-12"
+          },
+          "targetDegree": {
+            "type": {
+              "code": "SB",
+              "description": "Bachelor of Science"
+            }
+          },
+          "type": {
+            "code": "SP",
+            "description": "Major - UG Specialization"
+          }
         },
-        {
-          "type": {
-            "code": "For GPA"
-          },
-          "unitsPassed": 8,
-          "unitsTaken": 8,
-          "unitsTransferEarned": 0
+        "expectedGraduationTerm": {
+          "id": "2192",
+          "name": "2019 Spring"
         },
-        {
-          "type": {
-            "code": "Not For GPA"
+        "primary": false,
+        "statusInPlan": {
+          "action": {
+            "code": "DATA",
+            "description": "Data Change"
           },
-          "unitsPassed": 0,
-          "unitsTaken": 0,
-          "unitsTransferEarned": 0
-        }
-      ],
-      "studentCareer": {
-        "academicCareer": {
-          "code": "UGRD",
-          "description": "Undergraduate"
-        },
-        "fromDate": "2016-01-12",
-        "matriculation": {
-          "term": {
-            "id": "2155",
-            "name": "2015 Summer"
+          "reason": {
+            "code": "GTOI",
+            "description": "Grad Term - Auto Opt-In"
           },
-          "type": {
-            "code": "TRN",
-            "description": "Transfer"
+          "status": {
+            "code": "AC",
+            "description": "Active in Program"
           }
         }
       },
-      "studentPlans": [
-        {
-          "academicPlan": {
-            "academicProgram": {
-              "program": {
-                "code": "UCLS",
-                "description": "Undergrad Letters & Science"
-              }
-            },
-            "plan": {
-              "code": "25345U",
-              "description": "English BA",
-              "fromDate": "2016-01-12"
-            },
-            "targetDegree": {
-              "type": {
-                "code": "AB",
-                "description": "Bachelor of Arts"
-              }
-            },
-            "type": {
-              "code": "MAJ",
-              "description": "Major - Regular Acad/Prfnl"
+      {
+        "academicPlan": {
+          "academicProgram": {
+            "program": {
+              "code": "UCLS",
+              "description": "Undergrad Letters & Science"
             }
           },
-          "expectedGraduationTerm": {
-            "id": "2198",
-            "name": "2019 Fall"
+          "plan": {
+            "description": "Art History",
+            "fromDate": "2016-01-12"
           },
-          "primary": true,
-          "statusInPlan": {
-            "action": {
-              "code": "DATA",
-              "description": "Data Change"
-            },
-            "reason": {
-              "code": "GTOI",
-              "description": "Grad Term - Auto Opt-In"
-            },
-            "status": {
-              "code": "AC",
-              "description": "Active in Program"
-            }
-          }
-        },
-        {
-          "academicPlan": {
-            "academicProgram": {
-              "program": {
-                "code": "UCLS",
-                "description": "Undergrad Letters & Science"
-              }
-            },
-            "plan": {
-              "code": "25345U",
-              "description": "Astrophysics BS",
-              "fromDate": "2016-01-12"
-            },
-            "targetDegree": {
-              "type": {
-                "code": "SB",
-                "description": "Bachelor of Science"
-              }
-            },
-            "type": {
-              "code": "SP",
-              "description": "Major - UG Specialization"
-            }
-          },
-          "expectedGraduationTerm": {
-            "id": "2192",
-            "name": "2019 Spring"
-          },
-          "primary": false,
-          "statusInPlan": {
-            "action": {
-              "code": "DATA",
-              "description": "Data Change"
-            },
-            "reason": {
-              "code": "GTOI",
-              "description": "Grad Term - Auto Opt-In"
-            },
-            "status": {
-              "code": "AC",
-              "description": "Active in Program"
-            }
-          }
-        },
-        {
-          "academicPlan": {
-            "academicProgram": {
-              "program": {
-                "code": "UCLS",
-                "description": "Undergrad Letters & Science"
-              }
-            },
-            "plan": {
-              "description": "Art History",
-              "fromDate": "2016-01-12"
-            },
-            "type": {
-              "code": "MIN"
-            }
+          "type": {
+            "code": "MIN"
           }
         }
-      ],
-      "termsInAttendance": 5
-    }
-  ],
+      }
+    ],
+    "termsInAttendance": 5
+  },
   "affiliations": [
     {
       "detail": "",
