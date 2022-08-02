@@ -260,18 +260,22 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
             index = None
 
             for sid, feed_components, index in self.get_pickled_feeds(source_file):
-                # We may see results from multiple academic careers. We prefer a UGRD career if present; otherwise we look
-                # for a non-Law career with the most recent entering term.
+                # We may see results from multiple academic careers. We prefer the UGRD or GRAD career with the most recent entering term,
+                # falling back to UCBX if no UGRD or GRAD is available.
                 plans = feed_components.get('plans', [])
                 career_code = None
                 career_admit_term = ''
                 for plan_row in feed_components.get('plans', []):
-                    if plan_row['academic_career_cd'] == 'UGRD':
-                        career_code = 'UGRD'
-                        break
-                    elif plan_row['academic_career_cd'] in {'UCBX', 'GRAD'} and plan_row['current_admit_term'] > career_admit_term:
-                        career_code = plan_row['academic_career_cd']
-                        career_admit_term = plan_row['current_admit_term']
+                    if plan_row['academic_career_cd'] in {'UGRD', 'GRAD'}:
+                        if career_code in {'UGRD', 'GRAD'} and career_admit_term > plan_row['current_admit_term']:
+                            continue
+                    elif plan_row['academic_career_cd'] == 'UCBX':
+                        if career_code in {'UGRD', 'GRAD'} or career_admit_term > plan_row['current_admit_term']:
+                            continue
+                    else:
+                        continue
+                    career_code = plan_row['academic_career_cd']
+                    career_admit_term = plan_row['current_admit_term']
 
                 feed = {
                     'identifiers': [
@@ -410,7 +414,7 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
         if latest_career_row['terms_in_attendance']:
             academic_status['termsInAttendance'] = int(latest_career_row['terms_in_attendance'])
 
-        feed['academicStatuses'] = [academic_status]
+        feed['academicStatus'] = academic_status
         if latest_academic_standing:
             feed['academicStanding'] = {
                 'actionDate': str(latest_academic_standing['action_date']),
@@ -420,10 +424,10 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
         feed['termGpa'] = [term_gpas[k] for k in sorted(term_gpas.keys(), reverse=True)]
 
     def _merge_plans(self, feed, plan_rows, career_code):
-        if not plan_rows or not career_code or not feed.get('academicStatuses'):
+        if not plan_rows or not career_code or not feed.get('academicStatus'):
             return
 
-        academic_status = feed['academicStatuses'][0]
+        academic_status = feed['academicStatus']
         academic_status['studentPlans'] = []
         effective_date = ''
         ldap_affiliations = None

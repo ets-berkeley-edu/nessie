@@ -78,17 +78,7 @@ def merge_holds(sis_profile_feed, sis_profile):
 
 
 def merge_sis_profile_academic_status(sis_profile_feed, sis_profile):
-    # It is possible to receive multiple academic statuses. We'll prefer an undergraduate enrollment, but
-    # otherwise select the first well-formed status that is not a Law enrollment.
-    academic_status = None
-    for status in sis_profile_feed.get('academicStatuses', []):
-        status_code = status.get('studentCareer', {}).get('academicCareer', {}).get('code')
-        if status_code and status_code == 'UGRD':
-            academic_status = status
-            break
-        elif status_code in {'UCBX', 'GRAD'}:
-            academic_status = status
-            next
+    academic_status = sis_profile_feed.get('academicStatus')
     if not academic_status:
         return
     career_code = academic_status['studentCareer']['academicCareer']['code']
@@ -136,7 +126,7 @@ def parse_career_status(career_code, sis_profile_feed):
                     career_status = affiliation.get('status', {}).get('formalDescription')
             break
     if not career_status:
-        app.logger.warning(f'Conflict between affiliations and academicStatuses in profile feed: {sis_profile_feed}')
+        app.logger.warning(f'Conflict between affiliations and academicStatus in profile feed: {sis_profile_feed}')
     return career_status
 
 

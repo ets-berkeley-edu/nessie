@@ -76,205 +76,203 @@
             "fromDate": "2018-09-28"
         }
     ],
-    "academicStatuses": [
-        {
-            "studentCareer": {
-                "academicCareer": {
-                    "code": "GRAD",
-                    "description": "Graduate",
-                    "formalDescription": "Graduate",
-                    "fromDate": "2015-08-19",
-                    "toDate": "2018-08-10"
-                },
+    "academicStatus": {
+        "studentCareer": {
+            "academicCareer": {
+                "code": "GRAD",
+                "description": "Graduate",
+                "formalDescription": "Graduate",
                 "fromDate": "2015-08-19",
                 "toDate": "2018-08-10"
             },
-            "studentPlans": [
-                {
-                    "academicPlan": {
-                        "plan": {
-                            "code": "962C4MPHG",
-                            "description": "On-Campus/Online Prfsnl MPH",
-                            "fromDate": "2018-09-28",
-                            "toDate": "2018-08-10"
-                        },
+            "fromDate": "2015-08-19",
+            "toDate": "2018-08-10"
+        },
+        "studentPlans": [
+            {
+                "academicPlan": {
+                    "plan": {
+                        "code": "962C4MPHG",
+                        "description": "On-Campus/Online Prfsnl MPH",
+                        "fromDate": "2018-09-28",
+                        "toDate": "2018-08-10"
+                    },
+                    "type": {
+                        "code": "SS",
+                        "description": "Major - Self-Supporting"
+                    },
+                    "targetDegree": {
                         "type": {
-                            "code": "SS",
-                            "description": "Major - Self-Supporting"
-                        },
-                        "targetDegree": {
-                            "type": {
-                                "code": "36",
-                                "description": "Master of Public Health"
-                            }
-                        },
-                        "academicProgram": {
-                            "program": {
-                                "code": "GSSDP",
-                                "description": "Graduate Self-Supporting Pgms"
-                            },
-                            "academicCareer": {
-                                "code": "GRAD",
-                                "description": "Graduate",
-                                "formalDescription": "Graduate",
-                                "fromDate": "2015-08-19",
-                                "toDate": "2018-08-10"
-                            }
+                            "code": "36",
+                            "description": "Master of Public Health"
                         }
                     },
-                    "statusInPlan": {
-                        "status": {
-                            "code": "CM",
-                            "description": "Completed Program"
+                    "academicProgram": {
+                        "program": {
+                            "code": "GSSDP",
+                            "description": "Graduate Self-Supporting Pgms"
                         },
-                        "action": {
-                            "code": "COMP",
-                            "description": "Completion of Program"
-                        },
-                        "reason": {
-                            "code": "",
-                            "description": ""
+                        "academicCareer": {
+                            "code": "GRAD",
+                            "description": "Graduate",
+                            "formalDescription": "Graduate",
+                            "fromDate": "2015-08-19",
+                            "toDate": "2018-08-10"
                         }
-                    },
-                    "primary": false,
-                    "expectedGraduationTerm": {
-                        "id": "2185",
-                        "name": "2018 Summer"
                     }
-                }
-            ],
-            "cumulativeGPA": {
-                "type": {
-                    "code": "Cumulative"
                 },
-                "average": 3.704,
-                "source": "UCB"
+                "statusInPlan": {
+                    "status": {
+                        "code": "CM",
+                        "description": "Completed Program"
+                    },
+                    "action": {
+                        "code": "COMP",
+                        "description": "Completion of Program"
+                    },
+                    "reason": {
+                        "code": "",
+                        "description": ""
+                    }
+                },
+                "primary": false,
+                "expectedGraduationTerm": {
+                    "id": "2185",
+                    "name": "2018 Summer"
+                }
+            }
+        ],
+        "cumulativeGPA": {
+            "type": {
+                "code": "Cumulative"
             },
-            "cumulativeUnits": [
+            "average": 3.704,
+            "source": "UCB"
+        },
+        "cumulativeUnits": [
+            {
+                "type": {
+                    "code": "Total"
+                },
+                "unitsEnrolled": 0,
+                "unitsWaitlisted": 0,
+                "unitsTaken": 42,
+                "unitsPassed": 42,
+                "unitsIncomplete": 0,
+                "unitsTransferEarned": 0,
+                "unitsTransferAccepted": 0,
+                "unitsTest": 0,
+                "unitsOther": 0,
+                "unitsCumulative": 42
+            },
+            {
+                "type": {
+                    "code": "For GPA"
+                },
+                "unitsEnrolled": 0,
+                "unitsWaitlisted": 0,
+                "unitsTaken": 42,
+                "unitsPassed": 42,
+                "unitsIncomplete": 0,
+                "unitsTransferEarned": 0,
+                "unitsTransferAccepted": 0
+            },
+            {
+                "type": {
+                    "code": "Not For GPA"
+                },
+                "unitsEnrolled": 0,
+                "unitsWaitlisted": 0,
+                "unitsTaken": 0,
+                "unitsPassed": 0,
+                "unitsIncomplete": 0,
+                "unitsTransferEarned": 0,
+                "unitsTransferAccepted": 0
+            }
+        ],
+        "currentRegistration": {
+            "term": {
+                "id": "2185",
+                "name": "2018 Summer"
+            },
+            "academicCareer": {
+                "code": "GRAD",
+                "description": "Graduate"
+            },
+            "eligibleToRegister": true,
+            "eligibilityStatus": {
+                "code": "C",
+                "description": "Continuing"
+            },
+            "registered": true,
+            "academicLevel": {
+                "type": {
+                    "code": "Begining of Term"
+                },
+                "level": {
+                    "code": "GR",
+                    "description": "Graduate"
+                }
+            },
+            "termUnits": [
                 {
                     "type": {
-                        "code": "Total"
+                        "code": "Total",
+                        "description": "Total"
                     },
+                    "unitsMin": 0,
+                    "unitsMax": 0,
                     "unitsEnrolled": 0,
                     "unitsWaitlisted": 0,
-                    "unitsTaken": 42,
-                    "unitsPassed": 42,
+                    "unitsTaken": 3,
+                    "unitsPassed": 3,
                     "unitsIncomplete": 0,
                     "unitsTransferEarned": 0,
                     "unitsTransferAccepted": 0,
                     "unitsTest": 0,
-                    "unitsOther": 0,
-                    "unitsCumulative": 42
+                    "unitsOther": 0
                 },
                 {
                     "type": {
-                        "code": "For GPA"
+                        "code": "For GPA",
+                        "description": "For GPA"
                     },
+                    "unitsMin": 0,
+                    "unitsMax": 0,
                     "unitsEnrolled": 0,
                     "unitsWaitlisted": 0,
-                    "unitsTaken": 42,
-                    "unitsPassed": 42,
+                    "unitsTaken": 3,
+                    "unitsPassed": 3,
                     "unitsIncomplete": 0,
-                    "unitsTransferEarned": 0,
-                    "unitsTransferAccepted": 0
+                    "unitsTransferEarned": 0
                 },
                 {
                     "type": {
-                        "code": "Not For GPA"
+                        "code": "Not For GPA",
+                        "description": "Not For GPA"
                     },
+                    "unitsMin": 0,
+                    "unitsMax": 0,
                     "unitsEnrolled": 0,
                     "unitsWaitlisted": 0,
                     "unitsTaken": 0,
                     "unitsPassed": 0,
                     "unitsIncomplete": 0,
-                    "unitsTransferEarned": 0,
-                    "unitsTransferAccepted": 0
+                    "unitsTransferEarned": 0
                 }
             ],
-            "currentRegistration": {
-                "term": {
-                    "id": "2185",
-                    "name": "2018 Summer"
+            "termGPA": {
+                "type": {
+                    "code": "Term GPA",
+                    "description": "Term GPA"
                 },
-                "academicCareer": {
-                    "code": "GRAD",
-                    "description": "Graduate"
-                },
-                "eligibleToRegister": true,
-                "eligibilityStatus": {
-                    "code": "C",
-                    "description": "Continuing"
-                },
-                "registered": true,
-                "academicLevel": {
-                    "type": {
-                        "code": "Begining of Term"
-                    },
-                    "level": {
-                        "code": "GR",
-                        "description": "Graduate"
-                    }
-                },
-                "termUnits": [
-                    {
-                        "type": {
-                            "code": "Total",
-                            "description": "Total"
-                        },
-                        "unitsMin": 0,
-                        "unitsMax": 0,
-                        "unitsEnrolled": 0,
-                        "unitsWaitlisted": 0,
-                        "unitsTaken": 3,
-                        "unitsPassed": 3,
-                        "unitsIncomplete": 0,
-                        "unitsTransferEarned": 0,
-                        "unitsTransferAccepted": 0,
-                        "unitsTest": 0,
-                        "unitsOther": 0
-                    },
-                    {
-                        "type": {
-                            "code": "For GPA",
-                            "description": "For GPA"
-                        },
-                        "unitsMin": 0,
-                        "unitsMax": 0,
-                        "unitsEnrolled": 0,
-                        "unitsWaitlisted": 0,
-                        "unitsTaken": 3,
-                        "unitsPassed": 3,
-                        "unitsIncomplete": 0,
-                        "unitsTransferEarned": 0
-                    },
-                    {
-                        "type": {
-                            "code": "Not For GPA",
-                            "description": "Not For GPA"
-                        },
-                        "unitsMin": 0,
-                        "unitsMax": 0,
-                        "unitsEnrolled": 0,
-                        "unitsWaitlisted": 0,
-                        "unitsTaken": 0,
-                        "unitsPassed": 0,
-                        "unitsIncomplete": 0,
-                        "unitsTransferEarned": 0
-                    }
-                ],
-                "termGPA": {
-                    "type": {
-                        "code": "Term GPA",
-                        "description": "Term GPA"
-                    },
-                    "average": 4
-                },
-                "specialStudyPrograms": [],
-                "withdrawalCancel": {},
-                "new": false
-            }
+                "average": 4
+            },
+            "specialStudyPrograms": [],
+            "withdrawalCancel": {},
+            "new": false
         }
-    ],
+    },
     "holds": [],
     "degrees": [
         {

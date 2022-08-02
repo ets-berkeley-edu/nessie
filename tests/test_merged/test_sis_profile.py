@@ -161,7 +161,7 @@ class TestMergedSisProfile:
         for row in edl_profiles:
             if row['sid'] == '11667051':
                 feed = json.loads(row['feed'], strict=False)
-                feed['academicStatuses'][1]['cumulativeGPA']['average'] = 0
+                feed['academicStatus']['cumulativeGPA']['average'] = 0
                 row['feed'] = json.dumps(feed)
                 break
         profile = merged_profile('11667051', edl_profiles, edl_degree_progress, edl_last_registrations)
@@ -171,8 +171,8 @@ class TestMergedSisProfile:
         for row in edl_profiles:
             if row['sid'] == '11667051':
                 feed = json.loads(row['feed'], strict=False)
-                feed['academicStatuses'][1]['cumulativeGPA']['average'] = 0
-                feed['academicStatuses'][1]['cumulativeUnits'][1]['unitsTaken'] = 0
+                feed['academicStatus']['cumulativeGPA']['average'] = 0
+                feed['academicStatus']['cumulativeUnits'][1]['unitsTaken'] = 0
                 row['feed'] = json.dumps(feed)
                 break
         profile = merged_profile('11667051', edl_profiles, edl_degree_progress, edl_last_registrations)
@@ -202,10 +202,7 @@ class TestMergedSisProfile:
 
         def test_discontinued_ugrd_active_ucbx(self, app):
             feed = {
-                'academicStatuses': [
-                    _active_ucbx_academic_status(),
-                    _discontinued_ugrd_academic_status(),
-                ],
+                'academicStatus': _discontinued_ugrd_academic_status(),
                 'affiliations': [
                     _active_ucbx_affiliation(),
                     _discontinued_ugrd_affiliation(),
@@ -224,10 +221,7 @@ class TestMergedSisProfile:
 
         def test_completed_ugrd_active_grad(self, app):
             feed = {
-                'academicStatuses': [
-                    _active_grad_academic_status(),
-                    _completed_ugrd_academic_status(),
-                ],
+                'academicStatus': _active_grad_academic_status(),
                 'affiliations': [
                     _active_grad_affiliation(),
                     _completed_ugrd_affiliation(),
@@ -239,21 +233,8 @@ class TestMergedSisProfile:
             }
             profile = {}
             merge_sis_profile_academic_status(feed, profile)
-            assert profile['academicCareer'] == 'UGRD'
-            assert profile['academicCareerStatus'] == 'Completed'
-            assert profile['academicCareerCompleted'] == '2018-05-17'
-
-            assert len(profile['degrees']) == 2
-            degree = next((d for d in profile['degrees'] if d['description'] == 'Bachelor of Arts'), None)
-            assert degree
-            assert len(degree['plans']) == 2
-            assert degree['dateAwarded'] == '2018-05-17'
-            assert degree['plans'][0]['group'] == 'College of Letters and Science'
-            assert degree['plans'][0]['plan'] == 'Physics BA'
-            assert degree['plans'][0]['type'] == 'MAJ'
-            assert degree['plans'][1]['group'] is None
-            assert degree['plans'][1]['plan'] == 'Minor in Music'
-            assert degree['plans'][1]['type'] == 'MIN'
+            assert profile['academicCareer'] == 'GRAD'
+            assert profile['academicCareerStatus'] == 'Active'
 
         def test_pre_cs_degree(self, app):
             # Older feeds may be missing normal post-CS fields.
@@ -270,9 +251,7 @@ class TestMergedSisProfile:
 
         def test_affiliations_conflict(self, app, caplog):
             feed = {
-                'academicStatuses': [
-                    _active_grad_academic_status(),
-                ],
+                'academicStatus': _active_grad_academic_status(),
                 'affiliations': [
                     _active_ucbx_affiliation(),
                 ],
@@ -284,7 +263,7 @@ class TestMergedSisProfile:
                 assert profile.get('academicCareerStatus') is None
                 assert profile['plans'][0]['description'] == 'On-Campus/Online Prfsnl MPH'
                 assert profile['plans'][0]['status'] == 'Active'
-                assert 'Conflict between affiliations and academicStatuses' in caplog.text
+                assert 'Conflict between affiliations and academicStatus' in caplog.text
 
 
 def _active_grad_affiliation():
@@ -877,91 +856,89 @@ def _ugrd_degree():
 
 def _pre_cs_completed_ugrd():
     return {
-        'academicStatuses': [
-            {
-                'studentCareer': {
-                    'academicCareer': {
-                        'code': 'UGRD',
-                        'description': 'Undergrad',
-                        'formalDescription': 'Undergraduate',
+        'academicStatus': {
+            'studentCareer': {
+                'academicCareer': {
+                    'code': 'UGRD',
+                    'description': 'Undergrad',
+                    'formalDescription': 'Undergraduate',
+                },
+            },
+            'studentPlans': [
+                {
+                    'academicPlan': {
+                        'academicProgram': {
+                            'academicCareer': {
+                                'code': 'UGRD',
+                                'description': 'Undergrad',
+                                'formalDescription': 'Undergraduate',
+                            },
+                            'academicGroup': {
+                                'code': 'CLS',
+                                'description': 'L&S',
+                                'formalDescription': 'College of Letters and Science',
+                            },
+                            'program': {
+                                'code': 'UCLS',
+                                'description': 'UG L&S',
+                                'formalDescription': 'Undergrad Letters & Science',
+                            },
+                        },
+                        'cipCode': '42.2799',
+                        'ownedBy': [
+                            {
+                                'organization': {
+                                    'code': 'PSYCH',
+                                    'description': 'Psychology',
+                                    'formalDescription': 'Psychology',
+                                },
+                                'percentage': 100.0,
+                            },
+                        ],
+                        'plan': {
+                            'code': '25780U',
+                            'description': 'Psychology BA',
+                            'formalDescription': 'Psychology',
+                        },
+                        'targetDegree': {
+                            'type': {
+                                'code': 'AB',
+                                'description': 'Bachelor of Arts',
+                                'formalDescription': 'Bachelor of Arts',
+                            },
+                        },
+                        'type': {
+                            'code': 'MAJ',
+                            'description': 'Major - Regular Acad/Prfnl',
+                            'formalDescription': 'Major - Regular Acad/Prfnl',
+                        },
+                    },
+                    'degreeCheckoutStatus': {
+                        'code': 'AW',
+                        'description': 'Awarded',
+                        'formalDescription': 'Degree Awarded',
+                    },
+                    'fromDate': '1995-08-22',
+                    'primary': False,
+                    'statusInPlan': {
+                        'action': {
+                            'code': 'COMP',
+                            'description': 'Completion',
+                            'formalDescription': 'Completion of Program',
+                        },
+                        'reason': {
+                            'code': 'CONV',
+                            'description': 'Conversion',
+                        },
+                        'status': {
+                            'code': 'CM',
+                            'description': 'Completed',
+                            'formalDescription': 'Completed Program',
+                        },
                     },
                 },
-                'studentPlans': [
-                    {
-                        'academicPlan': {
-                            'academicProgram': {
-                                'academicCareer': {
-                                    'code': 'UGRD',
-                                    'description': 'Undergrad',
-                                    'formalDescription': 'Undergraduate',
-                                },
-                                'academicGroup': {
-                                    'code': 'CLS',
-                                    'description': 'L&S',
-                                    'formalDescription': 'College of Letters and Science',
-                                },
-                                'program': {
-                                    'code': 'UCLS',
-                                    'description': 'UG L&S',
-                                    'formalDescription': 'Undergrad Letters & Science',
-                                },
-                            },
-                            'cipCode': '42.2799',
-                            'ownedBy': [
-                                {
-                                    'organization': {
-                                        'code': 'PSYCH',
-                                        'description': 'Psychology',
-                                        'formalDescription': 'Psychology',
-                                    },
-                                    'percentage': 100.0,
-                                },
-                            ],
-                            'plan': {
-                                'code': '25780U',
-                                'description': 'Psychology BA',
-                                'formalDescription': 'Psychology',
-                            },
-                            'targetDegree': {
-                                'type': {
-                                    'code': 'AB',
-                                    'description': 'Bachelor of Arts',
-                                    'formalDescription': 'Bachelor of Arts',
-                                },
-                            },
-                            'type': {
-                                'code': 'MAJ',
-                                'description': 'Major - Regular Acad/Prfnl',
-                                'formalDescription': 'Major - Regular Acad/Prfnl',
-                            },
-                        },
-                        'degreeCheckoutStatus': {
-                            'code': 'AW',
-                            'description': 'Awarded',
-                            'formalDescription': 'Degree Awarded',
-                        },
-                        'fromDate': '1995-08-22',
-                        'primary': False,
-                        'statusInPlan': {
-                            'action': {
-                                'code': 'COMP',
-                                'description': 'Completion',
-                                'formalDescription': 'Completion of Program',
-                            },
-                            'reason': {
-                                'code': 'CONV',
-                                'description': 'Conversion',
-                            },
-                            'status': {
-                                'code': 'CM',
-                                'description': 'Completed',
-                                'formalDescription': 'Completed Program',
-                            },
-                        },
-                    },
-                ],
-            },
-        ],
+            ],
+        },
         'affiliations': [
             {
                 'detail': 'Alumni',

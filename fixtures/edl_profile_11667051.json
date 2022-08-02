@@ -1,372 +1,178 @@
 {
-  "academicStatuses": [
-    {
-      "cumulativeGPA": {
-        "average": 0,
+  "academicStatus": {
+    "cumulativeGPA": {
+      "average": 3.7999999999999998,
+      "source": "UCB",
+      "type": {
+        "code": "Cumulative"
+      }
+    },
+    "cumulativeUnits": [
+      {
         "type": {
-          "code": "Cumulative"
-        }
+          "code": "Total"
+        },
+        "unitsCumulative": 101.3,
+        "unitsOther": 0,
+        "unitsPassed": 73,
+        "unitsTaken": 8,
+        "unitsTest": 3.3,
+        "unitsTransferAccepted": 25,
+        "unitsTransferEarned": 25
       },
-      "cumulativeUnits": [
-        {
-          "type": {
-            "code": "Total"
-          },
-          "unitsCumulative": 0,
-          "unitsEnrolled": 4,
-          "unitsIncomplete": 0,
-          "unitsOther": 0,
-          "unitsPassed": 0,
-          "unitsTaken": 0,
-          "unitsTest": 0,
-          "unitsTransferAccepted": 0,
-          "unitsTransferEarned": 0,
-          "unitsWaitlisted": 0
+      {
+        "type": {
+          "code": "For GPA"
         },
-        {
-          "type": {
-            "code": "For GPA"
-          },
-          "unitsEnrolled": 4,
-          "unitsIncomplete": 0,
-          "unitsPassed": 0,
-          "unitsTaken": 0,
-          "unitsTransferAccepted": 0,
-          "unitsTransferEarned": 0,
-          "unitsWaitlisted": 0
+        "unitsPassed": 8,
+        "unitsTaken": 8,
+        "unitsTransferEarned": 0
+      },
+      {
+        "type": {
+          "code": "Not For GPA"
         },
-        {
-          "type": {
-            "code": "Not For GPA"
-          },
-          "unitsEnrolled": 0,
-          "unitsIncomplete": 0,
-          "unitsPassed": 0,
-          "unitsTaken": 0,
-          "unitsTransferAccepted": 0,
-          "unitsTransferEarned": 0,
-          "unitsWaitlisted": 0
-        }
-      ],
-      "currentRegistration": {
-        "academicCareer": {
-          "code": "UCBX",
-          "description": "UC Berkeley Extension"
-        },
-        "academicLevel": {
-          "level": {
-            "code": "00",
-            "description": "Not Set"
-          },
-          "type": {
-            "code": "Begining of Term"
-          }
-        },
-        "eligibleToRegister": true,
-        "intendsToGraduate": false,
-        "registered": false,
+        "unitsPassed": 0,
+        "unitsTaken": 0,
+        "unitsTransferEarned": 0
+      }
+    ],
+    "studentCareer": {
+      "academicCareer": {
+        "code": "UGRD",
+        "description": "Undergraduate"
+      },
+      "fromDate": "2016-01-12",
+      "matriculation": {
         "term": {
-          "id": "2182",
-          "name": "2018 Spring"
+          "id": "2155",
+          "name": "2015 Summer"
         },
-        "termGPA": {
-          "average": 0,
+        "type": {
+          "code": "",
+          "description": ""
+        }
+      }
+    },
+    "studentPlans": [
+      {
+        "academicPlan": {
+          "academicProgram": {
+            "program": {
+              "code": "UCLS",
+              "description": "Undergrad Letters & Science"
+            }
+          },
+          "plan": {
+            "code": "25345U",
+            "description": "English BA",
+            "fromDate": "2016-01-12"
+          },
+          "targetDegree": {
+            "type": {
+              "code": "AB",
+              "description": "Bachelor of Arts"
+            }
+          },
           "type": {
-            "code": "Term GPA",
-            "description": "Term GPA"
+            "code": "MAJ",
+            "description": "Major - Regular Acad/Prfnl"
           }
         },
-        "termUnits": [
+        "academicSubPlans": [
           {
-            "type": {
-              "code": "Total",
-              "description": "Total"
-            },
-            "unitsEnrolled": 4,
-            "unitsIncomplete": 0,
-            "unitsMax": 0,
-            "unitsMin": 0,
-            "unitsOther": 0,
-            "unitsPassed": 0,
-            "unitsTaken": 0,
-            "unitsTest": 0,
-            "unitsTransferAccepted": 0,
-            "unitsTransferEarned": 0,
-            "unitsWaitlisted": 0
-          },
-          {
-            "type": {
-              "code": "For GPA",
-              "description": "For GPA"
-            },
-            "unitsEnrolled": 4,
-            "unitsIncomplete": 0,
-            "unitsMax": 0,
-            "unitsMin": 0,
-            "unitsPassed": 0,
-            "unitsTaken": 0,
-            "unitsTransferEarned": 0,
-            "unitsWaitlisted": 0
-          },
-          {
-            "type": {
-              "code": "Not For GPA",
-              "description": "Not For GPA"
-            },
-            "unitsEnrolled": 0,
-            "unitsIncomplete": 0,
-            "unitsMax": 0,
-            "unitsMin": 0,
-            "unitsPassed": 0,
-            "unitsTaken": 0,
-            "unitsTransferEarned": 0,
-            "unitsWaitlisted": 0
+            "cipCode": "03.0103",
+            "subPlan": {
+              "code": "04683SP01G",
+              "description": "Ecosystem Sciences",
+              "formalDescription": "Concentration in Ecosystem Sciences"
+            }
           }
         ],
-        "withdrawalCancel": {}
-      },
-      "studentCareer": {
-        "academicCareer": {
-          "code": "UCBX",
-          "description": "UCB Ext",
-          "formalDescription": "UC Berkeley Extension",
-          "fromDate": "2018-01-09"
+        "expectedGraduationTerm": {
+          "id": "2198",
+          "name": "2019 Fall"
         },
-        "fromDate": "2018-01-09",
-        "matriculation": {
-          "term": {
-            "id": "2182",
-            "name": "2018 Spring"
+        "primary": true,
+        "statusInPlan": {
+          "action": {
+            "code": "DATA",
+            "description": "Data Change"
           },
-          "type": {
-            "code": "NON",
-            "description": "Non Degree/Course Work Only"
+          "reason": {
+            "code": "GTOI",
+            "description": "Grad Term - Auto Opt-In"
+          },
+          "status": {
+            "code": "AC",
+            "description": "Active in Program"
           }
         }
       },
-      "studentPlans": [
-        {
-          "academicPlan": {
-            "academicProgram": {
-              "academicCareer": {
-                "code": "UCBX",
-                "description": "UCB Ext",
-                "formalDescription": "UC Berkeley Extension",
-                "fromDate": "2018-01-09"
-              },
-              "program": {
-                "code": "XCCRT",
-                "description": "UCBX Concurrent Enrollment"
-              }
-            },
-            "plan": {
-              "code": "30XCECCENX",
-              "description": "UCBX Concurrent Enrollment",
-              "fromDate": "2017-12-06"
-            },
-            "targetDegree": {},
+      {
+        "academicPlan": {
+          "academicProgram": {
+            "program": {
+              "code": "UCLS",
+              "description": "Undergrad Letters & Science"
+            }
+          },
+          "plan": {
+            "code": "25345U",
+            "description": "Astrophysics BS",
+            "fromDate": "2016-01-12"
+          },
+          "targetDegree": {
             "type": {
-              "code": "SS",
-              "description": "Major - Self-Supporting"
+              "code": "SB",
+              "description": "Bachelor of Science"
             }
           },
-          "expectedGraduationTerm": {
-            "id": "2182",
-            "name": "2018 Spring"
-          },
-          "primary": true,
-          "statusInPlan": {
-            "action": {
-              "code": "MATR",
-              "description": "Matriculation"
-            },
-            "reason": {
-              "code": "NEW",
-              "description": "New Admits"
-            },
-            "status": {
-              "code": "AC",
-              "description": "Active in Program"
-            }
+          "type": {
+            "code": "SP",
+            "description": "Major - UG Specialization"
           }
-        }
-      ]
-    },
-    {
-      "cumulativeGPA": {
-        "average": 3.7999999999999998,
-        "source": "UCB",
-        "type": {
-          "code": "Cumulative"
-        }
-      },
-      "cumulativeUnits": [
-        {
-          "type": {
-            "code": "Total"
-          },
-          "unitsCumulative": 101.3,
-          "unitsOther": 0,
-          "unitsPassed": 73,
-          "unitsTaken": 8,
-          "unitsTest": 3.3,
-          "unitsTransferAccepted": 25,
-          "unitsTransferEarned": 25
         },
-        {
-          "type": {
-            "code": "For GPA"
-          },
-          "unitsPassed": 8,
-          "unitsTaken": 8,
-          "unitsTransferEarned": 0
+        "expectedGraduationTerm": {
+          "id": "2192",
+          "name": "2019 Spring"
         },
-        {
-          "type": {
-            "code": "Not For GPA"
+        "primary": false,
+        "statusInPlan": {
+          "action": {
+            "code": "DATA",
+            "description": "Data Change"
           },
-          "unitsPassed": 0,
-          "unitsTaken": 0,
-          "unitsTransferEarned": 0
-        }
-      ],
-      "studentCareer": {
-        "academicCareer": {
-          "code": "UGRD",
-          "description": "Undergraduate"
-        },
-        "fromDate": "2016-01-12",
-        "matriculation": {
-          "term": {
-            "id": "2155",
-            "name": "2015 Summer"
+          "reason": {
+            "code": "GTOI",
+            "description": "Grad Term - Auto Opt-In"
           },
-          "type": {
-            "code": "",
-            "description": ""
+          "status": {
+            "code": "AC",
+            "description": "Active in Program"
           }
         }
       },
-      "studentPlans": [
-        {
-          "academicPlan": {
-            "academicProgram": {
-              "program": {
-                "code": "UCLS",
-                "description": "Undergrad Letters & Science"
-              }
-            },
-            "plan": {
-              "code": "25345U",
-              "description": "English BA",
-              "fromDate": "2016-01-12"
-            },
-            "targetDegree": {
-              "type": {
-                "code": "AB",
-                "description": "Bachelor of Arts"
-              }
-            },
-            "type": {
-              "code": "MAJ",
-              "description": "Major - Regular Acad/Prfnl"
+      {
+        "academicPlan": {
+          "academicProgram": {
+            "program": {
+              "code": "UCLS",
+              "description": "Undergrad Letters & Science"
             }
           },
-          "academicSubPlans": [
-            {
-              "cipCode": "03.0103",
-              "subPlan": {
-                "code": "04683SP01G",
-                "description": "Ecosystem Sciences",
-                "formalDescription": "Concentration in Ecosystem Sciences"
-              }
-            }
-          ],
-          "expectedGraduationTerm": {
-            "id": "2198",
-            "name": "2019 Fall"
+          "plan": {
+            "description": "Art History",
+            "fromDate": "2016-01-12"
           },
-          "primary": true,
-          "statusInPlan": {
-            "action": {
-              "code": "DATA",
-              "description": "Data Change"
-            },
-            "reason": {
-              "code": "GTOI",
-              "description": "Grad Term - Auto Opt-In"
-            },
-            "status": {
-              "code": "AC",
-              "description": "Active in Program"
-            }
-          }
-        },
-        {
-          "academicPlan": {
-            "academicProgram": {
-              "program": {
-                "code": "UCLS",
-                "description": "Undergrad Letters & Science"
-              }
-            },
-            "plan": {
-              "code": "25345U",
-              "description": "Astrophysics BS",
-              "fromDate": "2016-01-12"
-            },
-            "targetDegree": {
-              "type": {
-                "code": "SB",
-                "description": "Bachelor of Science"
-              }
-            },
-            "type": {
-              "code": "SP",
-              "description": "Major - UG Specialization"
-            }
-          },
-          "expectedGraduationTerm": {
-            "id": "2192",
-            "name": "2019 Spring"
-          },
-          "primary": false,
-          "statusInPlan": {
-            "action": {
-              "code": "DATA",
-              "description": "Data Change"
-            },
-            "reason": {
-              "code": "GTOI",
-              "description": "Grad Term - Auto Opt-In"
-            },
-            "status": {
-              "code": "AC",
-              "description": "Active in Program"
-            }
-          }
-        },
-        {
-          "academicPlan": {
-            "academicProgram": {
-              "program": {
-                "code": "UCLS",
-                "description": "Undergrad Letters & Science"
-              }
-            },
-            "plan": {
-              "description": "Art History",
-              "fromDate": "2016-01-12"
-            },
-            "type": {
-              "code": "MIN"
-            }
+          "type": {
+            "code": "MIN"
           }
         }
-      ],
-      "termsInAttendance": 5
-    }
-  ],
+      }
+    ],
+    "termsInAttendance": 5
+  },
   "affiliations": [
     {
       "detail": "Admitted",
