@@ -65,7 +65,7 @@ def parse_merged_sis_profile(feed_elements):
     merge_registration(sis_profile_feed, last_registration_feed, sis_profile)
     if sis_profile.get('academicCareer') == 'UGRD':
         sis_profile['degreeProgress'] = degree_progress_feed and json.loads(degree_progress_feed)
-    sis_profile['intendedMajors'] = merge_intended_majors(intended_majors_feed)
+        sis_profile['intendedMajors'] = merge_intended_majors(intended_majors_feed)
     return sis_profile
 
 
