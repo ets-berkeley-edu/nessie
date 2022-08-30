@@ -38,7 +38,6 @@ import pytz
 class CreateTermsSchema(BackgroundJob):
 
     rds_schema = app.config['RDS_SCHEMA_TERMS']
-    redshift_schema = app.config['REDSHIFT_SCHEMA_TERMS']
 
     def run(self):
         app.logger.info('Starting SIS terms schema creation job...')

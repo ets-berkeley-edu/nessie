@@ -239,7 +239,6 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_schema_lrs_external': app.config['REDSHIFT_SCHEMA_LRS'],
         'redshift_schema_oua': app.config['REDSHIFT_SCHEMA_OUA'],
         'redshift_schema_student': app.config['REDSHIFT_SCHEMA_STUDENT'],
-        'redshift_schema_terms': app.config['REDSHIFT_SCHEMA_TERMS'],
         'redshift_schema_ycbm': app.config['REDSHIFT_SCHEMA_YCBM'],
         'redshift_schema_ycbm_internal': app.config['REDSHIFT_SCHEMA_YCBM_INTERNAL'],
         'redshift_iam_role': app.config['REDSHIFT_IAM_ROLE'],
@@ -260,7 +259,6 @@ def resolve_sql_template_string(template_string, **kwargs):
         'loch_s3_slate_sftp_path': s3_protected_prefix + app.config['LOCH_S3_SLATE_DATA_SFTP_PATH'],
         'loch_s3_sis_data_path': s3_prefix + app.config['LOCH_S3_SIS_DATA_PATH'],
         'loch_s3_sis_api_data_path': s3_prefix + get_s3_sis_api_daily_path(),
-        'loch_s3_sis_data_protected_path': s3_protected_prefix + app.config['LOCH_S3_SIS_DATA_PATH'],
         'loch_s3_ycbm_data_path': s3_prefix + app.config['LOCH_S3_YCBM_DATA_PATH'],
     }
     # Kwargs may be passed in to modify default template data.
