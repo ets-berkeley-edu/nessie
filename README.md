@@ -17,6 +17,8 @@ source venv/bin/activate
 pip3 install -r requirements.txt [--upgrade]
 ```
 
+**Tip:** [pyenv](https://github.com/pyenv/pyenv) is a good tool for managing Python versions locally.
+
 ### Front-end dependencies
 
 [Vue CLI 3](https://cli.vuejs.org/) was used to provision the front-end.
