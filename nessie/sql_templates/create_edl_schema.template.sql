@@ -103,7 +103,7 @@ AS (
         s.action_dt AS action_date
     FROM {redshift_schema_edl_external}.student_academic_standing_data s
     JOIN (
-      SELECT student_id, semester_year_term_cd, 
+      SELECT student_id, semester_year_term_cd,
       MAX(academic_standing_effective_dt || academic_standing_effective_dt_seq) AS eff_dt_seq
       FROM {redshift_schema_edl_external}.student_academic_standing_data
       GROUP BY student_id, semester_year_term_cd
@@ -261,6 +261,12 @@ AS (
     sed.student_id AS sis_id,
     sed.enrollment_action_cd AS enrollment_status,
     sed.enrollment_status_reason_cd as enrollment_status_reason,
+    sed.incomplete_comments,
+    sed.incomplete_lapse_grade_dt AS incomplete_lapse_grade_date,
+    sed.incomplete_lapse_to_grade,
+    sed.incomplete_frozen_flg AS incomplete_frozen_flag,
+    sed.incomplete_status_cd AS incomplete_status_code,
+    sed.incomplete_status_desc AS incomplete_status_description,
     sed.wait_list_position_cd AS waitlist_position,
     sed.enrollment_drop_dt AS drop_date,
     sed.units AS units,

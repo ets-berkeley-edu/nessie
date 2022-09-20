@@ -436,13 +436,31 @@ def get_enrolled_primary_sections(term_id=None):
 @fixture('query_advisee_sis_enrollments.csv')
 def stream_sis_enrollments(sids=None):
     sql = f"""SELECT
-                  enr.grade, enr.grade_midterm, enr.units, enr.grading_basis, enr.sis_enrollment_status, enr.sis_term_id,
-                  enr.ldap_uid, enr.sid,
-                  enr.sis_course_title, enr.sis_course_name, enr.sis_section_id,
-                  enr.sis_primary, enr.sis_instruction_mode, enr.sis_instruction_format, enr.sis_section_num,
-                  NULL::date AS drop_date, NULL::boolean AS dropped,
-                  r.maximum_term_enrollment_units_limit AS max_term_units_allowed,
-                  r.minimum_term_enrollment_units_limit AS min_term_units_allowed
+                enr.grade,
+                enr.grade_midterm,
+                enr.units,
+                enr.grading_basis,
+                enr.sis_enrollment_status,
+                enr.sis_term_id,
+                enr.ldap_uid,
+                enr.sid,
+                enr.sis_course_title,
+                enr.sis_course_name,
+                enr.sis_section_id,
+                enr.sis_primary,
+                enr.sis_instruction_mode,
+                enr.sis_instruction_format,
+                enr.sis_section_num,
+                NULL::date AS drop_date,
+                NULL::boolean AS dropped,
+                r.maximum_term_enrollment_units_limit AS max_term_units_allowed,
+                r.minimum_term_enrollment_units_limit AS min_term_units_allowed,
+                enr.incomplete_comments,
+                enr.incomplete_frozen_flg AS incomplete_frozen_flag,
+                enr.incomplete_lapse_grade_dt AS incomplete_lapse_grade_date,
+                enr.incomplete_lapse_to_grade,
+                enr.incomplete_status_cd AS incomplete_status_code,
+                enr.incomplete_status_desc AS incomplete_status_description
               FROM {intermediate_schema()}.sis_enrollments enr
               LEFT JOIN {edl_external_schema()}.student_registration_term_data r
                   ON enr.sis_term_id = r.semester_year_term_cd AND enr.sid = r.student_id
