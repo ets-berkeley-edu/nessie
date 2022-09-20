@@ -456,11 +456,11 @@ def stream_sis_enrollments(sids=None):
                 r.maximum_term_enrollment_units_limit AS max_term_units_allowed,
                 r.minimum_term_enrollment_units_limit AS min_term_units_allowed,
                 enr.incomplete_comments,
-                enr.incomplete_frozen_flg AS incomplete_frozen_flag,
-                enr.incomplete_lapse_grade_dt AS incomplete_lapse_grade_date,
+                enr.incomplete_frozen_flag,
+                enr.incomplete_lapse_grade_date,
                 enr.incomplete_lapse_to_grade,
-                enr.incomplete_status_cd AS incomplete_status_code,
-                enr.incomplete_status_desc AS incomplete_status_description
+                enr.incomplete_status_code,
+                enr.incomplete_status_description
               FROM {intermediate_schema()}.sis_enrollments enr
               LEFT JOIN {edl_external_schema()}.student_registration_term_data r
                   ON enr.sis_term_id = r.semester_year_term_cd AND enr.sid = r.student_id

@@ -211,7 +211,13 @@ AS (
         crs.sis_primary,
         crs.sis_instruction_format,
         crs.sis_section_num,
-        crs.sis_instruction_mode
+        crs.sis_instruction_mode,
+        en.incomplete_comments,
+        en.incomplete_frozen_flag,
+        en.incomplete_lapse_grade_date,
+        en.incomplete_lapse_to_grade,
+        en.incomplete_status_code,
+        en.incomplete_status_description
     FROM {redshift_schema_edl}.enrollments en
     JOIN {redshift_schema_intermediate}.course_sections crs
         ON crs.sis_section_id = en.section_id
