@@ -467,13 +467,31 @@ def stream_sis_enrollments(sids=None):
               {'WHERE enr.sid = ANY(%s)' if sids else ''}
               UNION
               SELECT
-                dr.grade, dr.grade_midterm, NULL::int as units, NULL::varchar as grading_basis, dr.sis_enrollment_status, dr.sis_term_id,
-                dr.ldap_uid, dr.sid,
-                dr.sis_course_title, dr.sis_course_name, dr.sis_section_id,
-                NULL::boolean as sis_primary, dr.sis_instruction_mode, dr.sis_instruction_format, dr.sis_section_num,
-                LEFT(e.drop_date, 10)::date AS drop_date, TRUE as dropped,
+                dr.grade,
+                dr.grade_midterm,
+                NULL::int as units,
+                NULL::varchar as grading_basis,
+                dr.sis_enrollment_status,
+                dr.sis_term_id,
+                dr.ldap_uid,
+                dr.sid,
+                dr.sis_course_title,
+                dr.sis_course_name,
+                dr.sis_section_id,
+                NULL::boolean as sis_primary,
+                dr.sis_instruction_mode,
+                dr.sis_instruction_format,
+                dr.sis_section_num,
+                LEFT(e.drop_date, 10)::date AS drop_date,
+                TRUE as dropped,
                 r.maximum_term_enrollment_units_limit AS max_term_units_allowed,
-                r.minimum_term_enrollment_units_limit AS min_term_units_allowed
+                r.minimum_term_enrollment_units_limit AS min_term_units_allowed,
+                NULL::varchar AS incomplete_comments,
+                NULL::varchar AS incomplete_frozen_flag,
+                NULL::timestamp AS incomplete_lapse_grade_date,
+                NULL::varchar AS incomplete_lapse_to_grade,
+                NULL::varchar AS incomplete_status_code,
+                NULL::varchar AS incomplete_status_description
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
               LEFT JOIN {edl_external_schema()}.student_registration_term_data r
                   ON dr.sis_term_id = r.semester_year_term_cd AND dr.sid = r.student_id
