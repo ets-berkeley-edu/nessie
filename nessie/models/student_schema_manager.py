@@ -47,10 +47,12 @@ def refresh_all_from_staging(tables):
 
 def refresh_from_staging(table, term_id, transaction):
     # If our job is restricted to a particular term id, delete rows from the destination table for that term only.
-    # Otherwise any row can be dropped from the destination table where the sid exists in the staging table.
+    # Otherwise, any row can be dropped from the destination table where the sid exists in the staging table.
     refresh_conditions = []
     refresh_params = []
-    refresh_conditions.append('sid IN (SELECT sid FROM {staging_schema}.{table})')
+    if table not in ('student_canvas_site_memberships', 'student_holds'):
+        # The following condition limits the scope of the 'DELETE' below.
+        refresh_conditions.append('sid IN (SELECT sid FROM {staging_schema}.{table})')
     if term_id:
         refresh_conditions.append('term_id = %s')
         refresh_params.append(term_id)
