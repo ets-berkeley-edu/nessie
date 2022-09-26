@@ -23,8 +23,6 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-import os
-
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -196,20 +194,3 @@ def start_chained_job(job_components, job_id, job_opts={}):
     with app.app_context():
         initialized_components = [c() for c in job_components]
         ChainedBackgroundJob(steps=initialized_components).run_async(**job_opts)
-
-
-def run_startup_jobs(_app):
-    # Jobs to be run in the foreground on app startup.
-    from nessie.jobs.create_asc_schema import CreateAscSchema
-    from nessie.jobs.create_metadata_schema import CreateMetadataSchema
-    from nessie.jobs.create_rds_indexes import CreateRdsIndexes
-    from nessie.jobs.create_student_schema import CreateStudentSchema
-    from nessie.jobs.create_terms_schema import CreateTermsSchema
-
-    if _app.config['JOB_SCHEDULING_ENABLED'] and os.environ.get('NESSIE_ENV') != 'test':
-        _app.logger.info('Checking for required schemas...')
-        CreateAscSchema().run()
-        CreateMetadataSchema().run()
-        CreateRdsIndexes().run()
-        CreateTermsSchema().run()
-        CreateStudentSchema().run()
