@@ -53,6 +53,8 @@ def refresh_from_staging(table, term_id, transaction):
     if table not in ('student_canvas_site_memberships', 'student_holds'):
         # The following condition limits the scope of the 'DELETE' below.
         refresh_conditions.append('sid IN (SELECT sid FROM {staging_schema}.{table})')
+    else:
+        refresh_conditions.append('TRUE')
     if term_id:
         refresh_conditions.append('term_id = %s')
         refresh_params.append(term_id)
