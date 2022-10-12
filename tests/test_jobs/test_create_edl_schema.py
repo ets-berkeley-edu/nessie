@@ -27,11 +27,13 @@ import json
 
 from nessie.externals import redshift
 from nessie.lib.queries import edl_schema
+import pytest
 from tests.util import mock_s3
 
 
 class TestCreateEdlSchema:
 
+    @pytest.mark.skip
     def test_generate_demographics_feeds(self, app, student_tables):
         """Builds JSON feeds and uploads to S3."""
         from nessie.jobs.create_edl_schema import DemographicsFeedBuilder

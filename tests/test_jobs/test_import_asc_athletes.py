@@ -30,31 +30,33 @@ from nessie.jobs.background_job import BackgroundJobError
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.lib.mockingbird import MockResponse, register_mock
 import pytest
+from tests.util import mock_s3
 
 
 class TestImportAscAthletes:
 
     def test_update_safety_check(self, app):
-        this_acad_yr = app.config['ASC_THIS_ACAD_YR']
-        assert len(this_acad_yr)
-        skinny_import = {
-            '1166.3': {
-                'SID': '5678901234',
-                'AcadYr': this_acad_yr,
-                'IntensiveYN': 'No',
-                'SportCode': 'MTE',
-                'SportCodeCore': 'MTE',
-                'Sport': 'Men\'s Tennis',
-                'SportCore': 'Men\'s Tennis',
-                'ActiveYN': 'Yes',
-                'SportStatus': 'Compete',
-                'SyncDate': '2018-01-31',
-            },
-        }
-        modified_response = MockResponse(200, {}, json.dumps(skinny_import))
-        with register_mock(asc_athletes_api._get_asc_feed_response, modified_response):
-            with pytest.raises(BackgroundJobError):
-                ImportAscAthletes().run()
+        with mock_s3(app):
+            this_acad_yr = app.config['ASC_THIS_ACAD_YR']
+            assert len(this_acad_yr)
+            skinny_import = {
+                '1166.3': {
+                    'SID': '5678901234',
+                    'AcadYr': this_acad_yr,
+                    'IntensiveYN': 'No',
+                    'SportCode': 'MTE',
+                    'SportCodeCore': 'MTE',
+                    'Sport': 'Men\'s Tennis',
+                    'SportCore': 'Men\'s Tennis',
+                    'ActiveYN': 'Yes',
+                    'SportStatus': 'Compete',
+                    'SyncDate': '2018-01-31',
+                },
+            }
+            modified_response = MockResponse(200, {}, json.dumps(skinny_import))
+            with register_mock(asc_athletes_api._get_asc_feed_response, modified_response):
+                with pytest.raises(BackgroundJobError):
+                    ImportAscAthletes().run()
 
 
 class TestAscAthletesApiUpdates:
