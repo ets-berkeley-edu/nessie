@@ -49,8 +49,12 @@ def capture_app_logs(app):
 @contextmanager
 def mock_s3(app, bucket=None):
     with moto.mock_s3(), moto.mock_sts():
-        s3 = boto3.resource('s3', app.config['LOCH_S3_REGION'])
-        s3.create_bucket(Bucket=bucket or app.config['LOCH_S3_BUCKET'])
+        region_name = app.config['LOCH_S3_REGION']
+        s3 = boto3.resource('s3', region_name=region_name)
+        s3.create_bucket(
+            Bucket=bucket or app.config['LOCH_S3_BUCKET'],
+            CreateBucketConfiguration={'LocationConstraint': region_name},
+        )
         yield s3
 
 

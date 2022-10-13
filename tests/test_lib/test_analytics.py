@@ -203,18 +203,18 @@ class TestStudentAnalytics:
         site_map['2178'][7654321]['enrollments'] = enrollments
         digested = self.digest_for_user(9000071, site_map)
         low_student_score = digested['lastActivity']['student']
-        assert(low_student_score['raw']) == 0
-        assert(low_student_score['matrixyPercentile']) == 0
-        assert(low_student_score['roundedUpPercentile']) == 25
+        assert (low_student_score['raw']) == 0
+        assert (low_student_score['matrixyPercentile']) == 0
+        assert (low_student_score['roundedUpPercentile']) == 25
         mean = digested['lastActivity']['courseMean']
         assert mean['raw'] == 1535340481
         assert mean['percentile'] == 50
         assert mean['roundedUpPercentile'] > 50
         middling_student = self.digest_for_user(9000073, site_map)
         middling_student_score = middling_student['lastActivity']['student']
-        assert(middling_student_score['raw']) == mean['raw']
-        assert(middling_student_score['matrixyPercentile']) == mean['matrixyPercentile']
-        assert(middling_student_score['roundedUpPercentile']) == mean['roundedUpPercentile']
+        assert (middling_student_score['raw']) == mean['raw']
+        assert (middling_student_score['matrixyPercentile']) == mean['matrixyPercentile']
+        assert (middling_student_score['roundedUpPercentile']) == mean['roundedUpPercentile']
 
     def test_mean_with_low_dates(self, app):
         site_map = self.canvas_site_map(app)

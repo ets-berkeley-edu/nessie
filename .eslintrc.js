@@ -68,7 +68,7 @@ module.exports = {
     'vue/v-bind-style': 2,
     'vue/v-on-function-call': 2,
     'vue/v-on-style': 2,
-    'vue/v-slot-style': 0
+    'vue/v-slot-style': 2
   },
   parserOptions: {
     parser: require.resolve('@typescript-eslint/parser')
