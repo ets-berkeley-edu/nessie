@@ -85,5 +85,5 @@ def register_routes(app):
                 app.logger.warning(log_message)
             elif not request.full_path.startswith('/api/ping'):
                 # Do not litter the logs with 'pings'
-                app.logger.debug(log_message)
+                app.logger.info(log_message)
         return response
