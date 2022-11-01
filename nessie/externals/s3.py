@@ -249,7 +249,7 @@ def upload_from_response(response, s3_key, on_stream_opened=None):
         app.logger.error(
             f'Received unexpected status code, aborting S3 upload '
             f'(status={response.status_code}, body={response.text}, key={s3_key})')
-        raise ConnectionError(f'Response {response.status_code}: {response.text}')
+        raise ConnectionError(error=f'Response {response.status_code}: {response.text}')
     if on_stream_opened:
         on_stream_opened(response.headers)
     try:
