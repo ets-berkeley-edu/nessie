@@ -59,6 +59,7 @@ from nessie.jobs.import_ycbm_api import ImportYcbmApi
 from nessie.jobs.index_advising_notes import IndexAdvisingNotes
 from nessie.jobs.index_enrollments import IndexEnrollments
 from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
+from nessie.jobs.refresh_boac_cache import RefreshBoacCache
 from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.jobs.sync_canvas_requests_snapshots import SyncCanvasRequestsSnapshots
@@ -349,6 +350,13 @@ def sync_file_to_s3():
 @auth_required
 def import_asc_athletes():
     job_started = ImportAscAthletes().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/refresh_boac_cache', methods=['POST'])
+@auth_required
+def refresh_boac_cache():
+    job_started = RefreshBoacCache().run_async()
     return respond_with_status(job_started)
 
 
