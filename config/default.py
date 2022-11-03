@@ -69,7 +69,13 @@ ASC_ATHLETES_API_URL = 'https://secreturl.berkeley.edu/intensives.php?AcadYr=201
 ASC_ATHLETES_API_KEY = 'secret'
 ASC_THIS_ACAD_YR = '2017-18'
 
-BOAC_REFRESHERS = [{'API_KEY': 'Regents of the University of California', 'API_BASE_URL': 'https://ets-boac.example.com/api'}]
+BOAC_REFRESHERS = [
+    {
+        'API_KEY': 'Regents of the University of California',
+        'API_BASE_URL': 'https://ets-boac.example.com/api',
+        'SKIP_NOTES_METADATA_EXPORT': False,  # [Optional] Defaults to False.
+    },
+]
 
 CAL1CARD_PHOTO_API_URL = 'https://secreturl.berkeley.edu/photos'
 CAL1CARD_PHOTO_API_USERNAME = 'secretuser'
