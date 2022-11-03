@@ -184,6 +184,7 @@ CREATE TABLE {rds_schema_sis_advising_notes}.student_late_drop_eforms
     requested_action VARCHAR,
     requested_grading_basis_code VARCHAR,
     requested_grading_basis_description VARCHAR,
+    requested_units_taken VARCHAR,
     section_id INTEGER,
     section_num VARCHAR,
     sid VARCHAR NOT NULL,
@@ -200,7 +201,7 @@ INSERT INTO {rds_schema_sis_advising_notes}.student_late_drop_eforms (
     SELECT
         id, career_code, course_display_name, course_title, created_at, edl_load_date, eform_id, eform_status, eform_type,
         grading_basis_code, grading_basis_description, requested_action, requested_grading_basis_code,
-        requested_grading_basis_description, section_id, section_num, sid, student_name, term_id, units_taken,
+        requested_grading_basis_description, requested_units_taken, section_id, section_num, sid, student_name, term_id, units_taken,
         updated_at
     FROM {redshift_schema_edl}.student_late_drop_eforms
     ORDER BY created_at
@@ -220,6 +221,7 @@ INSERT INTO {rds_schema_sis_advising_notes}.student_late_drop_eforms (
     requested_action VARCHAR,
     requested_grading_basis_code VARCHAR,
     requested_grading_basis_description VARCHAR,
+    requested_units_taken VARCHAR,
     section_id INTEGER,
     section_num VARCHAR,
     sid VARCHAR,
