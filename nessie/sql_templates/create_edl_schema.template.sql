@@ -391,6 +391,7 @@ AS (
     requested_action_desc AS requested_action,
     requested_grading_basis_cd AS requested_grading_basis_code,
     requested_grading_basis_desc AS requested_grading_basis_description,
+    requested_units_change_nbr AS requested_units_taken,
     units_taken
   FROM {redshift_schema_edl_external}.student_late_drop_eform_data
 );
