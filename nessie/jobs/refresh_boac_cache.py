@@ -39,12 +39,14 @@ class RefreshBoacCache(BackgroundJob):
     def run(self):
         app.logger.info('Starting BOA notes metadata export...')
         for boa_credentials in app.config['BOAC_REFRESHERS']:
-            with boac.export_notes_metadata(boa_credentials) as export:
-                hostname = urlparse(boa_credentials['API_BASE_URL']).hostname.split('.')[0]
-                s3_key = f'{get_s3_boa_api_daily_path()}/{hostname}/advising_notes_metadata.csv'
-                app.logger.info(f"Will upload BOA notes metadata to S3: url={boa_credentials['API_BASE_URL']}, key={s3_key}")
-                s3.upload_from_response(export, s3_key)
-        app.logger.info('Notes metadata export complete.')
+            skip_notes_metadata_export = boa_credentials.get('SKIP_NOTES_METADATA_EXPORT', False)
+            if not skip_notes_metadata_export:
+                with boac.export_notes_metadata(boa_credentials) as export:
+                    hostname = urlparse(boa_credentials['API_BASE_URL']).hostname.split('.')[0]
+                    s3_key = f'{get_s3_boa_api_daily_path()}/{hostname}/advising_notes_metadata.csv'
+                    app.logger.info(f"Will upload BOA notes metadata to S3: url={boa_credentials['API_BASE_URL']}, key={s3_key}")
+                    s3.upload_from_response(export, s3_key)
+                app.logger.info('Notes metadata export complete.')
 
         app.logger.info('Starting BOAC refresh kickoffs...')
         if boac.kickoff_refresh():
