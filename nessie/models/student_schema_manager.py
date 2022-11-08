@@ -50,7 +50,7 @@ def refresh_from_staging(table, term_id, transaction):
     # Otherwise, any row can be dropped from the destination table where the sid exists in the staging table.
     refresh_conditions = []
     refresh_params = []
-    if table not in ('student_canvas_site_memberships', 'student_holds'):
+    if table not in ('student_canvas_site_memberships', 'student_enrollment_terms', 'student_holds'):
         # The following condition limits the scope of the 'DELETE' below.
         refresh_conditions.append('sid IN (SELECT sid FROM {staging_schema}.{table})')
     else:
