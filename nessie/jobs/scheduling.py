@@ -157,7 +157,7 @@ def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):
         except ModuleNotFoundError:
             sched.remove_job(job_id)
             existing_job = None
-        if existing_job and (force is False):
+        if existing_job and existing_job.next_run_time and (force is False):
             app.logger.info(f'Found existing cron trigger for job {job_id}, will not reschedule: {existing_job.next_run_time}')
             return False
         else:
