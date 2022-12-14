@@ -89,19 +89,21 @@ AS (
   SELECT
     t.id,
     NULL::VARCHAR(10) AS ldap_uid,
-    t.answers.sid AS ycbm_sid, t.answers.email AS ycbm_student_email, t.answers.fname AS ycbm_student_name,
+    t.answers.sid AS ycbm_sid,
+    t.answers.email AS ycbm_student_email,
+    t.answers.fname AS ycbm_student_name,
     t.title,
     TO_TIMESTAMP({redshift_schema_ycbm_internal}.to_utc_iso_string(t.startsat), 'YYYY-MM-DD"T"HH.MI.SS%z') AS starts_at,
     TO_TIMESTAMP({redshift_schema_ycbm_internal}.to_utc_iso_string(t.endsat), 'YYYY-MM-DD"T"HH.MI.SS%z') AS ends_at,
-    t.cancelled, t.cancellationreason AS cancellation_reason,
-    t.teammember.id AS advisor_id, t.teammember.name AS advisor_name, t.teammember.email AS advisor_email,
-    t.answers.q5 AS q5, t.answers.q6 AS q6,
-    MAX(t.importedat) AS imported_at
+    t.cancelled,
+    t.cancellationreason AS cancellation_reason,
+    t.teammember.id AS advisor_id,
+    t.teammember.name AS advisor_name,
+    t.teammember.email AS advisor_email,
+    t.answers.q5 AS q5,
+    t.answers.q6 AS q6,
+    GETDATE()::VARCHAR(256) AS imported_at -- TODO: Bring back MAX(t.importedat)
   FROM {redshift_schema_ycbm}.bookings t
-  GROUP BY
-    t.id, t.title, t.startsat, t.endsat, t.cancelled, t.cancellationreason,
-    t.teammember.id, t.teammember.name, t.teammember.email,
-    t.answers.sid, t.answers.email, t.answers.fname, t.answers.q5, t.answers.q6
 );
 
 DROP FUNCTION {redshift_schema_ycbm_internal}.to_utc_iso_string(VARCHAR);
