@@ -50,6 +50,7 @@ CREATE EXTERNAL TABLE {redshift_schema_ycbm}.bookings(
       importedAt VARCHAR
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
+WITH SERDEPROPERTIES ('ignore.malformed.json' = 'true')
 LOCATION '{loch_s3_ycbm_data_path}/archive';
 
 --------------------------------------------------------------------
