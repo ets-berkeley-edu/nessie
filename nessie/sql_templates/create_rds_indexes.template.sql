@@ -282,8 +282,11 @@ ON {rds_schema_sis_internal}.enrolled_primary_sections (sis_catalog_id);
 
 CREATE SCHEMA IF NOT EXISTS {rds_schema_terms};
 GRANT USAGE ON SCHEMA {rds_schema_terms} TO {rds_app_boa_user};
+GRANT USAGE ON SCHEMA {rds_schema_terms} TO {rds_dblink_role_damien};
 GRANT SELECT ON ALL TABLES IN SCHEMA {rds_schema_terms} TO {rds_app_boa_user};
+GRANT SELECT ON ALL TABLES IN SCHEMA {rds_schema_terms} TO {rds_dblink_role_damien};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_terms} GRANT SELECT ON TABLES TO {rds_app_boa_user};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_terms} GRANT SELECT ON TABLES TO {rds_dblink_role_damien};
 
 CREATE TABLE IF NOT EXISTS {rds_schema_terms}.term_definitions
 (
