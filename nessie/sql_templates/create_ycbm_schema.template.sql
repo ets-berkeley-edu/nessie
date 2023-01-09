@@ -102,15 +102,13 @@ AS (
     t.teammember.name AS advisor_name,
     t.teammember.email AS advisor_email,
     t.answers.q5 AS q5,
-    -- t.answers.q6 AS q6, -- TODO: Investigate bookings.json files in S3. Query fails due to invalid struct?!
-    NULL AS q6,
+    t.answers.q6 AS q6,
     MAX(t.importedat) AS imported_at
   FROM {redshift_schema_ycbm}.bookings t
   GROUP BY
     t.id, t.title, t.startsat, t.endsat, t.cancelled, t.cancellationreason,
     t.teammember.id, t.teammember.name, t.teammember.email,
-    t.answers.sid, t.answers.email, t.answers.fname, t.answers.q5
-    --  , t.answers.q6 -- TODO: Investigate bookings.json files in S3. Query fails due to invalid struct?!
+    t.answers.sid, t.answers.email, t.answers.fname, t.answers.q5, t.answers.q6
 );
 
 DROP FUNCTION {redshift_schema_ycbm_internal}.to_utc_iso_string(VARCHAR);
