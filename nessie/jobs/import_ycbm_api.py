@@ -64,7 +64,12 @@ def _put_booking_data_to_s3(date):
         answers_dict = {}
         for a in b.get('answers', []):
             if 'code' in a and 'string' in a:
-                answers_dict[a['code'].lower()] = a['string']
+                # 4096 bytes is Redshift's maxiumum for a CHAR column.
+                if a['string'] and len(a['string']) > 4000:
+                    answer_string = a['string'][0:4000] + '...'
+                else:
+                    answer_string = a['string']
+                answers_dict[a['code'].lower()] = answer_string
         b['answers'] = answers_dict
         serialized_data += json.dumps(b) + '\n'
     # Upload one copy to the daily path, which we keep for a few days in S3 in case something goes wrong and we need to
