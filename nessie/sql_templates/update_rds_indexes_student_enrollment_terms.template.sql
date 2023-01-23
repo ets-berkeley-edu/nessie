@@ -27,6 +27,7 @@
 BEGIN TRANSACTION;
 
 DROP INDEX IF EXISTS {rds_schema_student}.students_enrollment_terms_midpoint_deficient_grade;
+DROP INDEX IF EXISTS {rds_schema_student}.students_enrollment_terms_incomplete_grade;
 DROP INDEX IF EXISTS {rds_schema_student}.students_enrollment_terms_enrolled_units;
 DROP INDEX IF EXISTS {rds_schema_student}.students_enrollment_terms_term_gpa;
 DROP INDEX IF EXISTS {rds_schema_student}.students_enrollment_terms_epn_grading_option;
@@ -41,6 +42,8 @@ TRUNCATE {rds_schema_student}.student_term_gpas;
 
 CREATE INDEX students_enrollment_terms_midpoint_deficient_grade
 ON {rds_schema_student}.student_enrollment_terms (midpoint_deficient_grade);
+CREATE INDEX students_enrollment_terms_incomplete_grade
+ON {rds_schema_student}.student_enrollment_terms (incomplete_grade);
 CREATE INDEX students_enrollment_terms_enrolled_units
 ON {rds_schema_student}.student_enrollment_terms (enrolled_units);
 CREATE INDEX students_enrollment_terms_term_gpa
@@ -57,6 +60,9 @@ INSERT INTO {rds_schema_student}.student_enrollment_terms (
   SELECT * FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
       SELECT sid, term_id, enrollment_term,
           CHARINDEX('"midtermGrade": "', enrollment_term) != 0 AS midpoint_deficient_grade,
+          (CHARINDEX('"incompleteStatusCode": "I"', enrollment_term) != 0
+              AND CHARINDEX ('"incompleteFrozenFlag": "Y"', enrollment_term) = 0)
+              AS incomplete_grade,
           json_extract_path_text(enrollment_term, 'enrolledUnits')::decimal(3,1) AS enrolled_units,
           CASE NULLIF(json_extract_path_text(enrollment_term, 'termGpa', 'unitsTakenForGpa'), '')::decimal(4,1) > 0
               WHEN TRUE THEN NULLIF(json_extract_path_text(enrollment_term, 'termGpa', 'gpa'), '')::decimal(5,3)
@@ -70,6 +76,7 @@ INSERT INTO {rds_schema_student}.student_enrollment_terms (
       term_id VARCHAR,
       enrollment_term TEXT,
       midpoint_deficient_grade BOOLEAN,
+      incomplete_grade BOOLEAN,
       enrolled_units DECIMAL,
       term_gpa DECIMAL,
       epn_grading_option BOOLEAN 
