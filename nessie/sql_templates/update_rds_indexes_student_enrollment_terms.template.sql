@@ -27,10 +27,10 @@
 BEGIN TRANSACTION;
 
 DROP INDEX IF EXISTS {rds_schema_student}.students_enrollment_terms_midpoint_deficient_grade;
-DROP INDEX IF EXISTS {rds_schema_student}.students_enrollment_terms_incomplete_grade;
 DROP INDEX IF EXISTS {rds_schema_student}.students_enrollment_terms_enrolled_units;
 DROP INDEX IF EXISTS {rds_schema_student}.students_enrollment_terms_term_gpa;
 DROP INDEX IF EXISTS {rds_schema_student}.students_enrollment_terms_epn_grading_option;
+DROP INDEX IF EXISTS {rds_schema_student}.students_enrollment_terms_incomplete_grade;
 
 DROP INDEX IF EXISTS {rds_schema_student}.students_term_gpa_sid_idx;
 DROP INDEX IF EXISTS {rds_schema_student}.students_term_gpa_term_idx;
@@ -42,14 +42,14 @@ TRUNCATE {rds_schema_student}.student_term_gpas;
 
 CREATE INDEX students_enrollment_terms_midpoint_deficient_grade
 ON {rds_schema_student}.student_enrollment_terms (midpoint_deficient_grade);
-CREATE INDEX students_enrollment_terms_incomplete_grade
-ON {rds_schema_student}.student_enrollment_terms (incomplete_grade);
 CREATE INDEX students_enrollment_terms_enrolled_units
 ON {rds_schema_student}.student_enrollment_terms (enrolled_units);
 CREATE INDEX students_enrollment_terms_term_gpa
 ON {rds_schema_student}.student_enrollment_terms (term_gpa);
 CREATE INDEX students_enrollment_terms_epn_grading_option
 ON {rds_schema_student}.student_enrollment_terms (epn_grading_option);
+CREATE INDEX students_enrollment_terms_incomplete_grade
+ON {rds_schema_student}.student_enrollment_terms (incomplete_grade);
 
 CREATE INDEX students_term_gpa_sid_idx ON {rds_schema_student}.student_term_gpas (sid);
 CREATE INDEX students_term_gpa_term_idx ON {rds_schema_student}.student_term_gpas (term_id);
@@ -60,15 +60,15 @@ INSERT INTO {rds_schema_student}.student_enrollment_terms (
   SELECT * FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
       SELECT sid, term_id, enrollment_term,
           CHARINDEX('"midtermGrade": "', enrollment_term) != 0 AS midpoint_deficient_grade,
-          (CHARINDEX('"incompleteStatusCode": "I"', enrollment_term) != 0
-              AND CHARINDEX ('"incompleteFrozenFlag": "Y"', enrollment_term) = 0)
-              AS incomplete_grade,
           json_extract_path_text(enrollment_term, 'enrolledUnits')::decimal(3,1) AS enrolled_units,
           CASE NULLIF(json_extract_path_text(enrollment_term, 'termGpa', 'unitsTakenForGpa'), '')::decimal(4,1) > 0
               WHEN TRUE THEN NULLIF(json_extract_path_text(enrollment_term, 'termGpa', 'gpa'), '')::decimal(5,3)
               ELSE NULL END
               AS term_gpa,
-          CHARINDEX('"gradingBasis": "EPN"', enrollment_term) != 0 AS epn_grading_option
+          CHARINDEX('"gradingBasis": "EPN"', enrollment_term) != 0 AS epn_grading_option,
+          (CHARINDEX('"incompleteStatusCode": "I"', enrollment_term) != 0
+              AND CHARINDEX ('"incompleteFrozenFlag": "Y"', enrollment_term) = 0)
+              AS incomplete_grade
       FROM {redshift_schema_student}.student_enrollment_terms
       $REDSHIFT$)
   AS redshift_enrollment_terms (
@@ -76,10 +76,10 @@ INSERT INTO {rds_schema_student}.student_enrollment_terms (
       term_id VARCHAR,
       enrollment_term TEXT,
       midpoint_deficient_grade BOOLEAN,
-      incomplete_grade BOOLEAN,
       enrolled_units DECIMAL,
       term_gpa DECIMAL,
-      epn_grading_option BOOLEAN 
+      epn_grading_option BOOLEAN,
+      incomplete_grade BOOLEAN
   )
 );
 

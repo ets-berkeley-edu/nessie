@@ -142,10 +142,10 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_enrollment_terms
     term_id VARCHAR(4) NOT NULL,
     enrollment_term TEXT NOT NULL,
     midpoint_deficient_grade BOOLEAN NOT NULL,
-    incomplete_grade BOOLEAN NOT NULL DEFAULT FALSE,
     enrolled_units DECIMAL (3,1) NOT NULL DEFAULT 0,
     term_gpa DECIMAL(5,3),
     epn_grading_option BOOLEAN NOT NULL,
+    incomplete_grade BOOLEAN NOT NULL DEFAULT FALSE,
     PRIMARY KEY (sid, term_id)
 );
 
