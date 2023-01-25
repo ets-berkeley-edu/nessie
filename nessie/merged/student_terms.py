@@ -129,7 +129,7 @@ def merge_enrollment(enrollments, term_id, term_name):
         section_feed = {
             'ccn': section_id,
             'component': enrollment['sis_instruction_format'],
-            'courseRequirements': enrollment['course_requirements'],
+            'courseRequirements': enrollment['course_requirements'] and json.loads(enrollment['course_requirements']),
             'enrollmentStatus': enrollment['sis_enrollment_status'],
             'grade': enrollment['grade'],
             'gradingBasis': berkeley.translate_grading_basis(enrollment['grading_basis']),
