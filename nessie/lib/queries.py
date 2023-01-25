@@ -500,7 +500,7 @@ def stream_sis_enrollments(sids=None):
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
               LEFT JOIN
                   {intermediate_schema()}.sis_sections s
-                  ON s.sis_term_id = enr.sis_term_id AND s.sis_section_id = enr.sis_section_id
+                  ON s.sis_term_id = dr.sis_term_id AND s.sis_section_id = dr.sis_section_id
               LEFT JOIN {edl_external_schema()}.student_registration_term_data r
                   ON dr.sis_term_id = r.semester_year_term_cd AND dr.sid = r.student_id
               LEFT JOIN {edl_schema()}.enrollments e
