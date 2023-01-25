@@ -451,6 +451,7 @@ def stream_sis_enrollments(sids=None):
                 enr.sis_instruction_mode,
                 enr.sis_instruction_format,
                 enr.sis_section_num,
+                s.course_requirements,
                 NULL::date AS drop_date,
                 NULL::boolean AS dropped,
                 r.maximum_term_enrollment_units_limit AS max_term_units_allowed,
@@ -462,6 +463,9 @@ def stream_sis_enrollments(sids=None):
                 enr.incomplete_status_code,
                 enr.incomplete_status_description
               FROM {intermediate_schema()}.sis_enrollments enr
+              LEFT JOIN
+                  {intermediate_schema()}.sis_sections s
+                  ON s.sis_term_id = enr.sis_term_id AND s.sis_section_id = enr.sis_section_id
               LEFT JOIN {edl_external_schema()}.student_registration_term_data r
                   ON enr.sis_term_id = r.semester_year_term_cd AND enr.sid = r.student_id
               {'WHERE enr.sid = ANY(%s)' if sids else ''}
@@ -482,6 +486,7 @@ def stream_sis_enrollments(sids=None):
                 dr.sis_instruction_mode,
                 dr.sis_instruction_format,
                 dr.sis_section_num,
+                s.course_requirements,
                 LEFT(e.drop_date, 10)::date AS drop_date,
                 TRUE as dropped,
                 r.maximum_term_enrollment_units_limit AS max_term_units_allowed,
@@ -493,6 +498,9 @@ def stream_sis_enrollments(sids=None):
                 NULL::varchar AS incomplete_status_code,
                 NULL::varchar AS incomplete_status_description
               FROM {intermediate_schema()}.sis_dropped_classes AS dr
+              LEFT JOIN
+                  {intermediate_schema()}.sis_sections s
+                  ON s.sis_term_id = enr.sis_term_id AND s.sis_section_id = enr.sis_section_id
               LEFT JOIN {edl_external_schema()}.student_registration_term_data r
                   ON dr.sis_term_id = r.semester_year_term_cd AND dr.sid = r.student_id
               LEFT JOIN {edl_schema()}.enrollments e

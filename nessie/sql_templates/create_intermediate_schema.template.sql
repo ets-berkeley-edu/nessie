@@ -94,8 +94,19 @@ AS (
         sc.meeting_start_time,
         sc.meeting_end_time,
         sc.meeting_start_date,
-        sc.meeting_end_date
+        sc.meeting_end_date,
+        r.course_requirements
     FROM {redshift_schema_edl}.courses sc
+    LEFT JOIN (
+        SELECT
+            cr.term_id,
+            cr.section_id,
+            SPLIT_TO_ARRAY(LISTAGG(cr.requirement_description, '|'), '|') AS course_requirements
+            FROM edl_sis_data.course_requirements cr
+            GROUP BY cr.term_id, cr.section_id
+        ) AS r
+    ON r.term_id = sc.term_id
+    AND r.section_id = sc.section_id
 );
 
 /*

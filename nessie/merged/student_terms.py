@@ -129,6 +129,7 @@ def merge_enrollment(enrollments, term_id, term_name):
         section_feed = {
             'ccn': section_id,
             'component': enrollment['sis_instruction_format'],
+            'courseRequirements': enrollment['course_requirements'],
             'enrollmentStatus': enrollment['sis_enrollment_status'],
             'grade': enrollment['grade'],
             'gradingBasis': berkeley.translate_grading_basis(enrollment['grading_basis']),
@@ -167,6 +168,7 @@ def merge_enrollment(enrollments, term_id, term_name):
         # association unless we've already done it with a different section (this case may not arise in practice).
         if is_enrolled_primary_section(section_feed) or (
                 section_feed['primary'] and 'units' not in enrollments_by_class[class_name]):
+            enrollments_by_class[class_name]['courseRequirements'] = section_feed['courseRequirements']
             enrollments_by_class[class_name]['grade'] = section_feed['grade']
             enrollments_by_class[class_name]['midtermGrade'] = section_feed['midtermGrade']
             enrollments_by_class[class_name]['gradingBasis'] = section_feed['gradingBasis']

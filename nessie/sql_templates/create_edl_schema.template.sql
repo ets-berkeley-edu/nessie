@@ -185,6 +185,18 @@ AS (
   FROM {redshift_schema_edl_external_edw}.edw_caldap_person
 );
 
+CREATE TABLE {redshift_schema_edl}.course_requirements
+SORTKEY (term_id, section_id)
+AS (
+  SELECT
+    semester_year_term_cd AS term_id,
+    class_number AS section_id,
+    course_attribute_value_cd AS requirement_code,
+    course_attribute_value_formal_desc AS requirement_description
+  FROM {redshift_schema_edl_external}.student_class_attribute_data
+  WHERE course_attribute_cd = 'GE'
+);
+
 CREATE TABLE {redshift_schema_edl}.courses
 SORTKEY (section_id)
 AS (
