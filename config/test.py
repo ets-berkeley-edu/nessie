@@ -79,6 +79,7 @@ REDSHIFT_SCHEMA_EDL_EXTERNAL_STAGING = 'edl_external_staging_test'
 REDSHIFT_SCHEMA_HISTORY_DEPT_ADVISING = 'history_dept_advising_external_test'
 REDSHIFT_SCHEMA_HISTORY_DEPT_ADVISING_INTERNAL = 'history_dept_advising_test'
 REDSHIFT_SCHEMA_INTERMEDIATE = 'intermediate_test'
+REDSHIFT_SCHEMA_SISEDO = 'sisedo_test'
 REDSHIFT_SCHEMA_STUDENT = 'student_test'
 
 SQLALCHEMY_DATABASE_URI = 'postgresql://nessie:nessie@localhost:5432/nessie_test'
