@@ -137,7 +137,7 @@ CREATE EXTERNAL TABLE {redshift_schema_sisedo}.instructor_updates
    course_id VARCHAR,
    ldap_uid VARCHAR,
    role_code VARCHAR,
-   primary VARCHAR,
+   is_primary VARCHAR,
    last_updated VARCHAR
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
@@ -148,3 +148,58 @@ WITH SERDEPROPERTIES (
 )
 STORED AS TEXTFILE
 LOCATION '{sisedo_data_path}/instructor_updates';
+
+--------------------------------------------------------------------
+-- Internal Schema
+--------------------------------------------------------------------
+
+DROP SCHEMA IF EXISTS {redshift_schema_sisedo_internal} CASCADE;
+CREATE SCHEMA {redshift_schema_sisedo_internal};
+
+--------------------------------------------------------------------
+-- Internal Tables
+--------------------------------------------------------------------
+
+CREATE TABLE {redshift_schema_sisedo_internal}.courses
+SORTKEY (sis_term_id, sis_section_id)
+AS (
+  SELECT DISTINCT
+    term_id AS sis_term_id,
+    section_id AS sis_section_id,
+    is_primary AS is_primary,
+    section_display_name AS sis_course_name,
+    course_title AS sis_course_title,
+    instruction_format AS sis_instruction_format,
+    section_num AS sis_section_num,
+    course_version_independent_id AS cs_course_id,
+    session_id AS session_code,
+    instruction_mode,
+    instructor_uid,
+    instructor_name,
+    instructor_role_code,
+    location AS meeting_location,
+    meeting_days,
+    meeting_start_time,
+    meeting_end_time,
+    meeting_start_date,
+    meeting_end_date,
+    enrollment_count,
+    enroll_limit,
+    waitlist_limit
+  FROM {redshift_schema_sisedo}.courses
+);
+
+CREATE TABLE {redshift_schema_sisedo_internal}.enrollments
+SORTKEY (sis_term_id, sis_section_id)
+AS (
+  SELECT DISTINCT
+    term_id AS sis_term_id,
+    section_id AS sis_section_id,
+    ldap_uid AS ldap_uid,
+    enrollment_status AS sis_enrollment_status,
+    units,
+    grading_basis,
+    grade,
+    grade_midterm
+  FROM {redshift_schema_sisedo}.enrollments
+);

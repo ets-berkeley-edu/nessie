@@ -238,6 +238,8 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_schema_intermediate': app.config['REDSHIFT_SCHEMA_INTERMEDIATE'],
         'redshift_schema_lrs_external': app.config['REDSHIFT_SCHEMA_LRS'],
         'redshift_schema_oua': app.config['REDSHIFT_SCHEMA_OUA'],
+        'redshift_schema_sisedo': app.config['REDSHIFT_SCHEMA_SISEDO'],
+        'redshift_schema_sisedo_internal': app.config['REDSHIFT_SCHEMA_SISEDO_INTERNAL'],
         'redshift_schema_student': app.config['REDSHIFT_SCHEMA_STUDENT'],
         'redshift_schema_ycbm': app.config['REDSHIFT_SCHEMA_YCBM'],
         'redshift_schema_ycbm_internal': app.config['REDSHIFT_SCHEMA_YCBM_INTERNAL'],

@@ -48,7 +48,7 @@ class CreateSisedoSchema(BackgroundJob):
         s3_sis_daily = get_s3_sis_daily_path()
         if not s3.get_keys_with_prefix(s3_sis_daily):
             s3_sis_daily = _get_yesterdays_sis_data()
-        s3_path = '/'.join([f"s3://{app.config['LOCH_S3_BUCKET']}", s3_sis_daily, 'advisors'])
+        s3_path = '/'.join([f"s3://{app.config['LOCH_S3_BUCKET']}", s3_sis_daily])
 
         sql_filename = 'create_sisedo_schema.template.sql'
         resolved_ddl = resolve_sql_template(sql_filename, sisedo_data_path=s3_path)
