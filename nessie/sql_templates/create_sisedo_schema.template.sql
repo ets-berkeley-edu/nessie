@@ -155,6 +155,8 @@ LOCATION '{sisedo_data_path}/instructor_updates';
 
 DROP SCHEMA IF EXISTS {redshift_schema_sisedo_internal} CASCADE;
 CREATE SCHEMA {redshift_schema_sisedo_internal};
+GRANT USAGE ON SCHEMA {redshift_schema_sisedo_internal} TO GROUP {redshift_dblink_group};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_sisedo_internal} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
 
 --------------------------------------------------------------------
 -- Internal Tables
