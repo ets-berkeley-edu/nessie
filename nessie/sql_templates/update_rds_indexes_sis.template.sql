@@ -112,6 +112,72 @@ CREATE INDEX idx_basic_attributes_sid ON {rds_schema_sis_internal}.basic_attribu
 
 GRANT SELECT ON TABLE {rds_schema_sis_internal}.basic_attributes to {rds_dblink_role_damien};
 
+DROP TABLE IF EXISTS {rds_schema_sis_internal}.edo_sections CASCADE;
+
+CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.edo_sections
+(
+    sis_term_id VARCHAR,
+    sis_section_id VARCHAR,
+    is_primary BOOLEAN,
+    sis_course_name VARCHAR,
+    sis_course_title VARCHAR,
+    sis_instruction_format VARCHAR,
+    sis_section_num VARCHAR,
+    cs_course_id VARCHAR,
+    session_code VARCHAR,
+    instruction_mode VARCHAR,
+    instructor_uid VARCHAR,
+    instructor_name VARCHAR,
+    instructor_role_code VARCHAR,
+    meeting_location VARCHAR,
+    meeting_days VARCHAR,
+    meeting_start_time VARCHAR,
+    meeting_end_time VARCHAR,
+    meeting_start_date VARCHAR,
+    meeting_end_date VARCHAR,
+    enrollment_count INTEGER,
+    enroll_limit INTEGER,
+    waitlist_limit INTEGER
+);
+
+INSERT INTO {rds_schema_sis_internal}.edo_sections (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+    SELECT sis_term_id, sis_section_id, is_primary, sis_course_name, sis_course_title, sis_instruction_format,
+      sis_section_num, cs_course_id, session_code, instruction_mode,
+      instructor_uid, instructor_name, instructor_role_code, meeting_location,
+      meeting_days, meeting_start_time, meeting_end_time, meeting_start_date, meeting_end_date,
+      enrollment_count, enroll_limit, waitlist_limit
+    FROM {redshift_schema_sisedo_internal}.courses
+  $REDSHIFT$)
+  AS redshift_edo_sections (
+    sis_term_id VARCHAR,
+    sis_section_id VARCHAR,
+    is_primary BOOLEAN,
+    sis_course_name VARCHAR,
+    sis_course_title VARCHAR,
+    sis_instruction_format VARCHAR,
+    sis_section_num VARCHAR,
+    cs_course_id VARCHAR,
+    session_code VARCHAR,
+    instruction_mode VARCHAR,
+    instructor_uid VARCHAR,
+    instructor_name VARCHAR,
+    instructor_role_code VARCHAR,
+    meeting_location VARCHAR,
+    meeting_days VARCHAR,
+    meeting_start_time VARCHAR,
+    meeting_end_time VARCHAR,
+    meeting_start_date VARCHAR,
+    meeting_end_date VARCHAR,
+    enrollment_count INTEGER,
+    enroll_limit INTEGER,
+    waitlist_limit INTEGER
+  )
+);
+
+CREATE INDEX idx_edo_sections_term_id_section_id ON {rds_schema_sis_internal}.edo_sections(sis_term_id, sis_section_id);
+
 DROP TABLE IF EXISTS {rds_schema_sis_internal}.sis_enrollments CASCADE;
 
 CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.sis_enrollments
