@@ -112,6 +112,42 @@ CREATE INDEX idx_basic_attributes_sid ON {rds_schema_sis_internal}.basic_attribu
 
 GRANT SELECT ON TABLE {rds_schema_sis_internal}.basic_attributes to {rds_dblink_role_damien};
 
+DROP TABLE IF EXISTS {rds_schema_sis_internal}.edo_enrollments CASCADE;
+
+CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.edo_enrollments
+(
+    sis_term_id VARCHAR,
+    sis_section_id VARCHAR,
+    ldap_uid VARCHAR,
+    sis_enrollment_status VARCHAR,
+    units DOUBLE PRECISION,
+    grading_basis VARCHAR,
+    grade VARCHAR,
+    grade_midterm VARCHAR
+);
+
+INSERT INTO {rds_schema_sis_internal}.edo_enrollments (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+    SELECT sis_term_id, sis_section_id, ldap_uid, sis_enrollment_status, units,
+      grading_basis, grade, grade_midterm
+    FROM {redshift_schema_sisedo_internal}.enrollments
+  $REDSHIFT$)
+  AS redshift_sis_enrollments (
+    sis_term_id VARCHAR,
+    sis_section_id VARCHAR,
+    ldap_uid VARCHAR,
+    sis_enrollment_status VARCHAR,
+    units DOUBLE PRECISION,
+    grading_basis VARCHAR,
+    grade VARCHAR,
+    grade_midterm VARCHAR
+  )
+);
+
+CREATE INDEX idx_edo_enrollments_term_id_section_id ON {rds_schema_sis_internal}.edo_enrollments(sis_term_id, sis_section_id);
+CREATE INDEX idx_edo_enrollments_ldap_uid ON {rds_schema_sis_internal}.edo_enrollments(ldap_uid);
+
 DROP TABLE IF EXISTS {rds_schema_sis_internal}.edo_sections CASCADE;
 
 CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.edo_sections
