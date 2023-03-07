@@ -257,6 +257,8 @@ REDSHIFT_SCHEMA_YCBM = 'External YCBM schema name'
 SQLALCHEMY_DATABASE_URI = 'postgresql://nessie:nessie@localhost:5432/nessie'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+TEMPFILE_DIR = '/var/tmp'
+
 TIMEZONE = 'America/Los_Angeles'
 
 VUE_LOCALHOST_BASE_URL = None
