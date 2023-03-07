@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import os
+import tempfile
 
 from flask import Flask
 from nessie import db
@@ -42,6 +43,8 @@ def create_app():
     initialize_logger(app)
     configure_scheduler_mode(app)
     db.init_app(app)
+
+    tempfile.tempdir = app.config['TEMPFILE_DIR']
 
     with app.app_context():
         register_routes(app)
