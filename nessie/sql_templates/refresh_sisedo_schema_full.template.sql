@@ -1,5 +1,5 @@
 /**
- * Copyright ©2022. The Regents of the University of California (Regents). All Rights Reserved.
+ * Copyright ©2023. The Regents of the University of California (Regents). All Rights Reserved.
  *
  * Permission to use, copy, modify, and distribute this software and its documentation
  * for educational, research, and not-for-profit purposes, without fee and without a
@@ -153,14 +153,15 @@ LOCATION '{sisedo_data_path}/instructor_updates';
 -- Internal Schema
 --------------------------------------------------------------------
 
-DROP SCHEMA IF EXISTS {redshift_schema_sisedo_internal} CASCADE;
-CREATE SCHEMA {redshift_schema_sisedo_internal};
+CREATE SCHEMA IF NOT EXISTS {redshift_schema_sisedo_internal};
 GRANT USAGE ON SCHEMA {redshift_schema_sisedo_internal} TO GROUP {redshift_dblink_group};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_sisedo_internal} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
 
 --------------------------------------------------------------------
 -- Internal Tables
 --------------------------------------------------------------------
+
+DROP TABLE IF EXISTS {redshift_schema_sisedo_internal}.courses;
 
 CREATE TABLE {redshift_schema_sisedo_internal}.courses
 SORTKEY (sis_term_id, sis_section_id)
@@ -190,6 +191,8 @@ AS (
     waitlist_limit
   FROM {redshift_schema_sisedo}.courses
 );
+
+DROP TABLE IF EXISTS {redshift_schema_sisedo_internal}.enrollments;
 
 CREATE TABLE {redshift_schema_sisedo_internal}.enrollments
 SORTKEY (sis_term_id, sis_section_id)

@@ -217,6 +217,9 @@ REDSHIFT_IAM_ROLE = 'iam role'
 RDS_APP_BOA_USER = 'boa rds username'
 REDSHIFT_APP_BOA_USER = 'boa redshift username'
 
+# Ripley limited access credentials to nessie rds and redshift
+RDS_APP_RIPLEY_USER = 'ripley rds username'
+
 # RDS and Redshift readonly roles for dblink user mapping
 RDS_DBLINK_ROLE_DAMIEN = 'damien_role'
 RDS_DBLINK_ROLE_DIABLO = 'diablo_role'
