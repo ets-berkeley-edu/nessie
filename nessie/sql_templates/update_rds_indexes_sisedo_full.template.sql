@@ -96,7 +96,7 @@ INSERT INTO {rds_schema_sis_internal}.edo_sections (
       instructor_uid, instructor_name, instructor_role_code, meeting_location,
       meeting_days, meeting_start_time, meeting_end_time, meeting_start_date, meeting_end_date,
       enrollment_count, enroll_limit, waitlist_limit
-    FROM {redshift_schema_sisedo_internal}.sections
+    FROM {redshift_schema_sisedo_internal}.courses
   $REDSHIFT$)
   AS redshift_edo_sections (
     sis_term_id VARCHAR,
