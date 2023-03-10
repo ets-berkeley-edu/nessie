@@ -51,7 +51,7 @@ AS (
     ldap_uid,
     sis_id,
     role_code,
-    is_primay,
+    is_primary,
     last_updated
   FROM {redshift_schema_sisedo}.instructor_updates
 );
