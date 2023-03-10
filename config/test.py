@@ -55,6 +55,7 @@ REDSHIFT_USER = 'nessie'
 
 # Set all these users to 'nessie' to avoid creating a bunch of new roles for tests.
 RDS_APP_BOA_USER = 'nessie'
+RDS_APP_RIPLEY_USER = 'nessie'
 REDSHIFT_APP_BOA_USER = 'nessie'
 RDS_DBLINK_ROLE_DAMIEN = 'nessie'
 RDS_DBLINK_ROLE_DIABLO = 'nessie'

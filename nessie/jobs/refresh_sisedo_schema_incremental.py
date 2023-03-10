@@ -1,5 +1,5 @@
 """
-Copyright ©2022. The Regents of the University of California (Regents). All Rights Reserved.
+Copyright ©2023. The Regents of the University of California (Regents). All Rights Reserved.
 
 Permission to use, copy, modify, and distribute this software and its documentation
 for educational, research, and not-for-profit purposes, without fee and without a
@@ -23,48 +23,32 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from datetime import datetime, timedelta
-
 from flask import current_app as app
-from nessie.externals import redshift, s3
-from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
-from nessie.lib.util import get_s3_sis_daily_path, resolve_sql_template
+from nessie.externals import rds, redshift
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
+from nessie.lib.util import resolve_sql_template
 
 """Logic for SISEDO schema creation job."""
 
 
-class CreateSisedoSchema(BackgroundJob):
-
-    external_schema = app.config['REDSHIFT_SCHEMA_SISEDO']
+class RefreshSisedoSchemaIncremental(BackgroundJob):
 
     def run(self):
-        app.logger.info('Starting Advisor schema creation job...')
+        app.logger.info('Starting incremental SISEDO refresh...')
         return self.create_schema()
 
     def create_schema(self):
         app.logger.info('Executing SQL...')
-        redshift.drop_external_schema(self.external_schema)
 
-        s3_sis_daily = get_s3_sis_daily_path()
-        if not s3.get_keys_with_prefix(s3_sis_daily):
-            s3_sis_daily = _get_yesterdays_sis_data()
-        s3_path = '/'.join([f"s3://{app.config['LOCH_S3_BUCKET']}", s3_sis_daily])
-
-        sql_filename = 'create_sisedo_schema.template.sql'
-        resolved_ddl = resolve_sql_template(sql_filename, sisedo_data_path=s3_path)
+        sql_filename = 'refresh_sisedo_schema_incremental.template.sql'
+        resolved_ddl = resolve_sql_template(sql_filename)
         if not redshift.execute_ddl_script(resolved_ddl):
             raise BackgroundJobError(f'Redshift execute_ddl_script failed on {sql_filename}')
+        app.logger.info('Redshift tables created.')
 
-        verify_external_schema(self.external_schema, resolved_ddl, is_zero_count_acceptable=True)
-        app.logger.info('Redshift schema created.')
+        resolved_ddl_rds = resolve_sql_template('update_rds_indexes_sisedo_incremental.template.sql')
+        if not rds.execute(resolved_ddl_rds):
+            raise BackgroundJobError('Failed to update RDS indexes for incremental SISEDO refresh.')
+        app.logger.info('RDS indexes updated.')
 
         return True
-
-
-def _get_yesterdays_sis_data():
-    s3_sis_daily = get_s3_sis_daily_path(datetime.now() - timedelta(days=1))
-    if not s3.get_keys_with_prefix(s3_sis_daily):
-        raise BackgroundJobError('No timely SISEDO S3 data found')
-
-    app.logger.info('Falling back to SISEDO S3  data for yesterday')
-    return s3_sis_daily

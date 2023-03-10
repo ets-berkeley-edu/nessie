@@ -45,7 +45,6 @@ from nessie.jobs.create_gradescope_schema import CreateGradescopeSchema
 from nessie.jobs.create_history_dept_advising_schema import CreateHistoryDeptAdvisingSchema
 from nessie.jobs.create_oua_schema import CreateOUASchema
 from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
-from nessie.jobs.create_sisedo_schema import CreateSisedoSchema
 from nessie.jobs.create_terms_schema import CreateTermsSchema
 from nessie.jobs.create_ycbm_schema import CreateYcbmSchema
 from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
@@ -62,6 +61,8 @@ from nessie.jobs.index_enrollments import IndexEnrollments
 from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
 from nessie.jobs.refresh_boac_cache import RefreshBoacCache
 from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
+from nessie.jobs.refresh_sisedo_schema_full import RefreshSisedoSchemaFull
+from nessie.jobs.refresh_sisedo_schema_incremental import RefreshSisedoSchemaIncremental
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
 from nessie.jobs.sync_canvas_requests_snapshots import SyncCanvasRequestsSnapshots
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
@@ -146,13 +147,6 @@ def create_history_dept_advising_schema():
 @auth_required
 def create_oua_schema():
     job_started = CreateOUASchema().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/create_sisedo_schema', methods=['POST'])
-@auth_required
-def create_sisedo_schema():
-    job_started = CreateSisedoSchema().run_async()
     return respond_with_status(job_started)
 
 
@@ -313,6 +307,20 @@ def verify_sis_advising_note_attachments(datestamp):
 @auth_required
 def refresh_canvas_data_catalog():
     job_started = RefreshCanvasDataCatalog().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/refresh_sisedo_schema_full', methods=['POST'])
+@auth_required
+def refresh_sisedo_schema_full():
+    job_started = RefreshSisedoSchemaFull().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/refresh_sisedo_schema_incremental', methods=['POST'])
+@auth_required
+def refresh_sisedo_schema_incremental():
+    job_started = RefreshSisedoSchemaIncremental().run_async()
     return respond_with_status(job_started)
 
 
