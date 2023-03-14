@@ -358,7 +358,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
         return row_count
 
-    def generate_term_feeds_for_sid(self, sid, term_id, term_name, enrollments_grp, incompletes_feed_file, incompletes_row_count):
+    def generate_term_feed_for_sid(self, sid, term_id, term_name, enrollments_grp, incompletes_feed_file, incompletes_row_count):
         term_feed = None
         for is_dropped, enrollments_subgroup in groupby(enrollments_grp, operator.itemgetter('dropped')):
             if not to_boolean(is_dropped):
