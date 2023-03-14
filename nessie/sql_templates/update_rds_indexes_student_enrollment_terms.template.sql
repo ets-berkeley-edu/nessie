@@ -83,6 +83,24 @@ INSERT INTO {rds_schema_student}.student_enrollment_terms (
   )
 );
 
+INSERT INTO {rds_schema_student}.student_incompletes (
+  SELECT * FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+    SELECT
+      sid, term_id, status,
+      (frozen = 'Y') AS frozen,
+      lapse_date, grade
+    FROM {redshift_schema_student}.student_incompletes
+    $REDSHIFT$)
+  AS redshift_incompletes (
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    status VARCHAR NOT NULL,
+    frozen BOOLEAN,
+    lapse_date VARCHAR,
+    grade VARCHAR
+  )
+);
+
 INSERT INTO {rds_schema_student}.student_term_gpas
 (sid, term_id, gpa, units_taken_for_gpa)
 SELECT

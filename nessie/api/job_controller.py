@@ -44,7 +44,9 @@ from nessie.jobs.create_edl_schema import CreateEdlSchema
 from nessie.jobs.create_gradescope_schema import CreateGradescopeSchema
 from nessie.jobs.create_history_dept_advising_schema import CreateHistoryDeptAdvisingSchema
 from nessie.jobs.create_oua_schema import CreateOUASchema
+from nessie.jobs.create_rds_indexes import CreateRdsIndexes
 from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
+from nessie.jobs.create_student_schema import CreateStudentSchema
 from nessie.jobs.create_terms_schema import CreateTermsSchema
 from nessie.jobs.create_ycbm_schema import CreateYcbmSchema
 from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
@@ -150,6 +152,13 @@ def create_oua_schema():
     return respond_with_status(job_started)
 
 
+@app.route('/api/job/create_rds_indexes', methods=['POST'])
+@auth_required
+def create_rds_indexes():
+    job_started = CreateRdsIndexes().run_async()
+    return respond_with_status(job_started)
+
+
 @app.route('/api/job/create_terms_schema', methods=['POST'])
 @auth_required
 def create_terms_schema():
@@ -161,6 +170,13 @@ def create_terms_schema():
 @auth_required
 def create_sis_advising_notes_schema():
     job_started = CreateSisAdvisingNotesSchema().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/create_student_schema', methods=['POST'])
+@auth_required
+def create_student_schema():
+    job_started = CreateStudentSchema().run_async()
     return respond_with_status(job_started)
 
 
