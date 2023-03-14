@@ -37,7 +37,7 @@ from nessie.lib.util import encoded_tsv_row, resolve_sql_template, to_boolean, w
 from nessie.merged.sis_profile import parse_merged_sis_profile
 from nessie.merged.student_demographics import add_demographics_rows
 from nessie.merged.student_terms import append_drops, append_term_gpa, empty_term_feed, merge_canvas_site_memberships, merge_enrollment
-from nessie.models.student_schema_manager import refresh_all_from_staging, refresh_from_staging, truncate_staging_table, write_file_to_staging
+from nessie.models.student_schema_manager import refresh_all_from_staging, truncate_staging_table, write_file_to_staging
 
 """Logic for merged student profile and term generation."""
 
@@ -291,20 +291,18 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             raise BackgroundJobError('Failed to update RDS student profile indexes.')
 
     def generate_student_enrollments_table(self):
-        table_name = 'student_enrollment_terms'
-        truncate_staging_table(table_name)
-        row_count = self.generate_term_feeds(table_name)
+        table_name_terms = 'student_enrollment_terms'
+        table_name_incompletes = 'student_incompletes'
+        tables = (table_name_terms, table_name_incompletes)
+        for table in tables:
+            truncate_staging_table(table)
+        row_count = self.generate_term_feeds(*tables)
         if row_count:
-            with redshift.transaction() as transaction:
-                refresh_from_staging(
-                    table_name,
-                    term_id=None,
-                    transaction=transaction,
-                )
+            refresh_all_from_staging(tables)
         app.logger.info(f'Enrollment term feed generation complete ({row_count} feeds).')
         return row_count
 
-    def generate_term_feeds(self, table_name):
+    def generate_term_feeds(self, table_name_terms, table_name_incompletes):
         enrollment_stream = queries.stream_sis_enrollments()
         term_gpa_stream = queries.stream_term_gpas()
         canvas_site_stream = queries.stream_canvas_memberships()
@@ -324,17 +322,12 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
                 app.logger.info(f'Generating enrollment feeds for term {term_id}...')
                 term_row_count = 0
+                incompletes_row_count = 0
 
-                with tempfile.TemporaryFile() as feed_file:
+                with tempfile.TemporaryFile() as term_feed_file, tempfile.TemporaryFile() as incompletes_feed_file:
                     for sid, enrollments_grp in groupby(term_enrollments_grp, operator.itemgetter('sid')):
-                        term_feed = None
-                        for is_dropped, enrollments_subgroup in groupby(enrollments_grp, operator.itemgetter('dropped')):
-                            if not to_boolean(is_dropped):
-                                term_feed = merge_enrollment(enrollments_subgroup, term_id, term_name)
-                            else:
-                                if not term_feed:
-                                    term_feed = empty_term_feed(term_id, term_name)
-                                append_drops(term_feed, enrollments_subgroup)
+                        term_feed = self.generate_term_feed_for_sid(
+                            sid, term_id, term_name, enrollments_grp, incompletes_feed_file, incompletes_row_count)
 
                         while term_gpa_tracker['term_id'] > term_id or (term_gpa_tracker['term_id'] == term_id and term_gpa_tracker['sid'] < sid):
                             (term_gpa_tracker['term_id'], term_gpa_tracker['sid']), term_gpa_tracker['term_gpas'] =\
@@ -349,11 +342,14 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                         if canvas_site_tracker['term_id'] == term_id and canvas_site_tracker['sid'] == sid:
                             merge_canvas_site_memberships(term_feed, canvas_site_tracker['sites'])
 
-                        feed_file.write(encoded_tsv_row([sid, term_id, json.dumps(term_feed)]) + b'\n')
+                        term_feed_file.write(encoded_tsv_row([sid, term_id, json.dumps(term_feed)]) + b'\n')
                         term_row_count += 1
 
                     if term_row_count:
-                        write_file_to_staging(table_name, feed_file, term_row_count, term_id=term_id)
+                        write_file_to_staging(table_name_terms, term_feed_file, term_row_count, term_id=term_id)
+                        row_count += term_row_count
+                    if incompletes_row_count:
+                        write_file_to_staging(table_name_incompletes, incompletes_feed_file, incompletes_row_count, term_id=term_id)
                         row_count += term_row_count
 
         finally:
@@ -361,6 +357,28 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             term_gpa_stream.close()
 
         return row_count
+
+    def generate_term_feeds_for_sid(self, sid, term_id, term_name, enrollments_grp, incompletes_feed_file, incompletes_row_count):
+        term_feed = None
+        for is_dropped, enrollments_subgroup in groupby(enrollments_grp, operator.itemgetter('dropped')):
+            if not to_boolean(is_dropped):
+                term_feed, incompletes = merge_enrollment(enrollments_subgroup, term_id, term_name)
+                if len(incompletes):
+                    for incomplete in incompletes:
+                        incompletes_feed_file.write(encoded_tsv_row([
+                            sid,
+                            term_id,
+                            incomplete['status'],
+                            incomplete['frozen'],
+                            incomplete['lapseDate'],
+                            incomplete['grade'],
+                        ]) + b'\n')
+                    incompletes_row_count += len(incompletes)
+            else:
+                if not term_feed:
+                    term_feed = empty_term_feed(term_id, term_name)
+                append_drops(term_feed, enrollments_subgroup)
+            return term_feed
 
     def refresh_rds_enrollment_terms(self):
         resolved_ddl_rds = resolve_sql_template('update_rds_indexes_student_enrollment_terms.template.sql')

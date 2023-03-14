@@ -164,6 +164,31 @@ ON {rds_schema_student}.student_enrollment_terms (term_gpa);
 CREATE INDEX IF NOT EXISTS students_enrollment_terms_epn_grading_option
 ON {rds_schema_student}.student_enrollment_terms (epn_grading_option);
 
+CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_incompletes
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    status VARCHAR NOT NULL,
+    frozen BOOLEAN,
+    lapse_date VARCHAR,
+    grade VARCHAR
+);
+
+CREATE INDEX IF NOT EXISTS student_incompletes_sid
+ON {rds_schema_student}.student_incompletes (sid);
+
+CREATE INDEX IF NOT EXISTS student_incompletes_status
+ON {rds_schema_student}.student_incompletes (status);
+
+CREATE INDEX IF NOT EXISTS student_incompletes_frozen
+ON {rds_schema_student}.student_incompletes (frozen);
+
+CREATE INDEX IF NOT EXISTS student_incompletes_lapse_date
+ON {rds_schema_student}.student_incompletes (lapse_date);
+
+CREATE INDEX IF NOT EXISTS student_incompletes_grade
+ON {rds_schema_student}.student_incompletes (grade);
+
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_majors
 (
     sid VARCHAR NOT NULL,

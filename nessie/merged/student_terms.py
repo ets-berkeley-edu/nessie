@@ -115,6 +115,7 @@ def is_enrolled_primary_section(section_feed):
 def merge_enrollment(enrollments, term_id, term_name):
     enrollments_by_class = {}
     term_section_ids = {}
+    incompletes = []
     enrolled_units = 0
     max_term_units_allowed = None
     min_term_units_allowed = None
@@ -134,17 +135,27 @@ def merge_enrollment(enrollments, term_id, term_name):
             'grade': enrollment['grade'],
             'gradingBasis': berkeley.translate_grading_basis(enrollment['grading_basis']),
             'instructionMode': enrollment['sis_instruction_mode'],
-            'incompleteComments': enrollment['incomplete_comments'],
-            'incompleteFrozenFlag': enrollment['incomplete_frozen_flag'],
-            'incompleteLapseGradeDate': enrollment['incomplete_lapse_grade_date'],
-            'incompleteLapseToGrade': enrollment['incomplete_lapse_to_grade'],
-            'incompleteStatusCode': enrollment['incomplete_status_code'],
-            'incompleteStatusDescription': enrollment['incomplete_status_description'],
             'midtermGrade': (enrollment['grade_midterm'] or None),
             'primary': to_boolean(enrollment['sis_primary']),
             'sectionNumber': enrollment['sis_section_num'],
             'units': to_float(enrollment['units']),
         }
+
+        if len(enrollment['incomplete_status_code'] or ''):
+            section_feed.update({
+                'incompleteComments': enrollment['incomplete_comments'],
+                'incompleteFrozenFlag': enrollment['incomplete_frozen_flag'],
+                'incompleteLapseGradeDate': enrollment['incomplete_lapse_grade_date'],
+                'incompleteLapseToGrade': enrollment['incomplete_lapse_to_grade'],
+                'incompleteStatusCode': enrollment['incomplete_status_code'],
+                'incompleteStatusDescription': enrollment['incomplete_status_description'],
+            })
+            incompletes.push({
+                'status': enrollment['incomplete_status_code'],
+                'frozen': enrollment['incomplete_frozen_flag'],
+                'lapseDate': enrollment['incomplete_lapse_grade_date'],
+                'grade': enrollment['grade'],
+            })
 
         # The SIS enrollments API gives us no better unique identifier than the course display name.
         class_name = enrollment['sis_course_name']
@@ -189,7 +200,7 @@ def merge_enrollment(enrollments, term_id, term_name):
         'maxTermUnitsAllowed': max_term_units_allowed,
         'minTermUnitsAllowed': min_term_units_allowed,
     }
-    return term_feed
+    return term_feed, incompletes
 
 
 def sis_enrollment_class_feed(enrollment):

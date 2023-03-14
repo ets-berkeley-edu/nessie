@@ -187,5 +187,5 @@ class TestMergedSisEnrollments:
                 'units': 3.3,
             },
         ]
-        parsed = merge_enrollment(enrollments, '2182', 'Spring 2018')
+        parsed, incompletes = merge_enrollment(enrollments, '2182', 'Spring 2018')
         assert str(parsed['enrolledUnits']) == '14.9'

@@ -24,8 +24,6 @@
  */
 
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_student};
-GRANT USAGE ON SCHEMA {redshift_schema_student} TO GROUP {redshift_app_boa_user}_group;
-ALTER default PRIVILEGES IN SCHEMA {redshift_schema_student} GRANT SELECT ON TABLES TO GROUP {redshift_app_boa_user}_group;
 GRANT USAGE ON SCHEMA {redshift_schema_student} TO GROUP {redshift_dblink_group};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_student} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
 
@@ -114,6 +112,18 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_holds
 )
 DISTKEY (sid)
 SORTKEY (sid);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_incompletes
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    status VARCHAR NOT NULL,
+    frozen VARCHAR,
+    lapse_date VARCHAR,
+    grade VARCHAR
+)
+DISTKEY (sid)
+SORTKEY (term_id, sid);
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_majors
 (
