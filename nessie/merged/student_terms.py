@@ -150,7 +150,7 @@ def merge_enrollment(enrollments, term_id, term_name):
                 'incompleteStatusCode': enrollment['incomplete_status_code'],
                 'incompleteStatusDescription': enrollment['incomplete_status_description'],
             })
-            incompletes.push({
+            incompletes.append({
                 'status': enrollment['incomplete_status_code'],
                 'frozen': enrollment['incomplete_frozen_flag'],
                 'lapseDate': enrollment['incomplete_lapse_grade_date'],
