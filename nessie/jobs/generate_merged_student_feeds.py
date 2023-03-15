@@ -326,8 +326,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
                 with tempfile.TemporaryFile() as term_feed_file, tempfile.TemporaryFile() as incompletes_feed_file:
                     for sid, enrollments_grp in groupby(term_enrollments_grp, operator.itemgetter('sid')):
-                        term_feed = self.generate_term_feed_for_sid(
-                            sid, term_id, term_name, enrollments_grp, incompletes_feed_file, incompletes_row_count)
+                        term_feed, term_incompletes_count_for_sid = self.generate_term_feed_for_sid(
+                            sid, term_id, term_name, enrollments_grp, incompletes_feed_file)
 
                         while term_gpa_tracker['term_id'] > term_id or (term_gpa_tracker['term_id'] == term_id and term_gpa_tracker['sid'] < sid):
                             (term_gpa_tracker['term_id'], term_gpa_tracker['sid']), term_gpa_tracker['term_gpas'] =\
@@ -344,6 +344,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
                         term_feed_file.write(encoded_tsv_row([sid, term_id, json.dumps(term_feed)]) + b'\n')
                         term_row_count += 1
+                        incompletes_row_count += term_incompletes_count_for_sid
 
                     if term_row_count:
                         write_file_to_staging(table_name_terms, term_feed_file, term_row_count, term_id=term_id)
@@ -358,8 +359,9 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
         return row_count
 
-    def generate_term_feed_for_sid(self, sid, term_id, term_name, enrollments_grp, incompletes_feed_file, incompletes_row_count):
+    def generate_term_feed_for_sid(self, sid, term_id, term_name, enrollments_grp, incompletes_feed_file):
         term_feed = None
+        incompletes_row_count = 0
         for is_dropped, enrollments_subgroup in groupby(enrollments_grp, operator.itemgetter('dropped')):
             if not to_boolean(is_dropped):
                 term_feed, incompletes = merge_enrollment(enrollments_subgroup, term_id, term_name)
@@ -378,7 +380,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 if not term_feed:
                     term_feed = empty_term_feed(term_id, term_name)
                 append_drops(term_feed, enrollments_subgroup)
-            return term_feed
+            return term_feed, incompletes_row_count
 
     def refresh_rds_enrollment_terms(self):
         resolved_ddl_rds = resolve_sql_template('update_rds_indexes_student_enrollment_terms.template.sql')
