@@ -92,9 +92,9 @@ INSERT INTO {rds_schema_student}.student_incompletes (
     FROM {redshift_schema_student}.student_incompletes
     $REDSHIFT$)
   AS redshift_incompletes (
-    sid VARCHAR NOT NULL,
-    term_id VARCHAR(4) NOT NULL,
-    status VARCHAR NOT NULL,
+    sid VARCHAR,
+    term_id VARCHAR,
+    status VARCHAR,
     frozen BOOLEAN,
     lapse_date VARCHAR,
     grade VARCHAR
