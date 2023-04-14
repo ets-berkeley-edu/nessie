@@ -428,21 +428,23 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
             return
 
         academic_status = feed['academicStatus']
-        academic_status['studentPlans'] = []
         effective_date = ''
         ldap_affiliations = None
         matriculation_term_cd = None
-        plans = set()
+        plan_rows_by_name = {}
         statuses = set()
         transfer_student = False
 
         for row in plan_rows:
             if row['academic_career_cd'] == career_code:
                 ldap_affiliations = row['ldap_affiliations']
-                statuses.add(self._simplified_career_status(row))
-                if row['academic_plan_nm'] not in plans:
-                    plans.add(row['academic_plan_nm'])
-                    academic_status['studentPlans'].append(self._construct_plan_feed(row))
+                status = self._simplified_career_status(row)
+                statuses.add(status)
+
+                # It's uncommon that we get multiple rows with the same plan name. When we do, give precedence to any that are active.
+                existing_plan_row = plan_rows_by_name.get(row['academic_plan_nm'], None)
+                if not existing_plan_row or (status == 'Active' and self._simplified_career_status(existing_plan_row) != 'Active'):
+                    plan_rows_by_name[row['academic_plan_nm']] = row
 
                 if not matriculation_term_cd:
                     matriculation_term_cd = self._get_matriculation_term(row)
@@ -451,6 +453,8 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                     effective_date = str(row['academic_program_effective_dt'])
                 if row['transfer_student'] == 'Y':
                     transfer_student = True
+
+        academic_status['studentPlans'] = [self._construct_plan_feed(row) for row in plan_rows_by_name.values()]
 
         matriculation = {}
         if matriculation_term_cd:
