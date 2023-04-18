@@ -380,7 +380,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                 if not term_feed:
                     term_feed = empty_term_feed(term_id, term_name)
                 append_drops(term_feed, enrollments_subgroup)
-            return term_feed, incompletes_row_count
+        return term_feed, incompletes_row_count
 
     def refresh_rds_enrollment_terms(self):
         resolved_ddl_rds = resolve_sql_template('update_rds_indexes_student_enrollment_terms.template.sql')
