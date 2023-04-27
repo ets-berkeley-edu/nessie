@@ -41,6 +41,7 @@ from nessie.jobs.create_coe_schema import CreateCoeSchema
 from nessie.jobs.create_data_science_advising_schema import CreateDataScienceAdvisingSchema
 from nessie.jobs.create_e_i_advising_notes_schema import CreateEIAdvisingNotesSchema
 from nessie.jobs.create_edl_schema import CreateEdlSchema
+from nessie.jobs.create_eop_advising_notes_schema import CreateEopAdvisingNotesSchema
 from nessie.jobs.create_gradescope_schema import CreateGradescopeSchema
 from nessie.jobs.create_history_dept_advising_schema import CreateHistoryDeptAdvisingSchema
 from nessie.jobs.create_oua_schema import CreateOUASchema
@@ -128,6 +129,13 @@ def create_e_and_i_advising_notes_schema():
 @auth_required
 def create_edl_schema():
     job_started = CreateEdlSchema().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/create_eop_schema', methods=['POST'])
+@auth_required
+def create_eop_schema():
+    job_started = CreateEopAdvisingNotesSchema().run_async()
     return respond_with_status(job_started)
 
 
