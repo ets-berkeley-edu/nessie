@@ -26,9 +26,9 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from datetime import datetime
 import logging
+from unittest import mock
 
 from botocore.exceptions import ClientError, ConnectionError
-import mock
 from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
 import pytest
 from tests.util import capture_app_logs, mock_s3

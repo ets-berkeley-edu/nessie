@@ -24,8 +24,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from datetime import datetime
+from unittest import mock
 
-import mock
 from nessie.externals import rds
 from nessie.lib.util import resolve_sql_template
 import pytest
