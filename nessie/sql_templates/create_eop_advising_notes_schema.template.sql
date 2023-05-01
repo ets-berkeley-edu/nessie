@@ -42,8 +42,7 @@ CREATE EXTERNAL TABLE {redshift_schema_eop_advising_notes}.advising_notes
   advisor_name VARCHAR,
   advisor_uid VARCHAR,
   student_sid VARCHAR,
-  student_first_name VARCHAR,
-  student_last_name VARCHAR,
+  student_name VARCHAR,
   overview VARCHAR,
   note VARCHAR(MAX),
   topic_1 VARCHAR,
@@ -52,8 +51,7 @@ CREATE EXTERNAL TABLE {redshift_schema_eop_advising_notes}.advising_notes
   privacy_permissions VARCHAR,
   contact_method VARCHAR,
   meeting_date VARCHAR,
-  attachment_url VARCHAR,
-  status VARCHAR
+  attachment_url VARCHAR
 )
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
@@ -76,14 +74,29 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_eop_advising_notes_internal}
 -- Internal tables
 --------------------------------------------------------------------
 
+CREATE OR REPLACE FUNCTION {redshift_schema_eop_advising_notes_internal}.to_utc_iso_string(date_string VARCHAR)
+RETURNS VARCHAR
+STABLE
+AS $$
+  from datetime import datetime
+  import pytz
+
+  d = datetime.strptime(date_string, '%m/%d/%Y %H:%M:%S')
+  d = pytz.timezone('America/Los_Angeles').localize(d)
+  return d.astimezone(pytz.utc).isoformat()
+$$ language plpythonu;
+
+GRANT EXECUTE
+ON function {redshift_schema_eop_advising_notes_internal}.to_utc_iso_string(VARCHAR)
+TO GROUP {redshift_app_boa_user}_group;
+
 CREATE TABLE {redshift_schema_eop_advising_notes_internal}.advising_notes
 SORTKEY (sid)
 AS (
     SELECT
       'eop_advising_note_' || (ROW_NUMBER() OVER (ORDER BY meeting_date)) AS id,
       student_sid AS sid,
-      student_first_name,
-      student_last_name,
+      student_name,
       advisor_uid,
       split_part(advisor_name, ' ', 1) AS advisor_first_name,
       split_part(advisor_name, ' ', 2) AS advisor_last_name,
@@ -93,8 +106,8 @@ AS (
       note,
       meeting_date,
       DECODE(attachment_url, 'N/A', NULL, attachment_url) AS attachment_url,
-      status,
-      ARRAY(topic_1, topic_2, topic_3) AS topics
+      ARRAY(topic_1, topic_2, topic_3) AS topics,
+      TO_TIMESTAMP({redshift_schema_eop_advising_notes_internal}.to_utc_iso_string(meeting_date || ' 12:00:00'), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at
     FROM {redshift_schema_eop_advising_notes}.advising_notes
 );
 
@@ -109,3 +122,5 @@ AS (
     JOIN n.topics AS t ON TRUE
     WHERE t IS NOT NULL
 );
+
+DROP FUNCTION {redshift_schema_eop_advising_notes_internal}.to_utc_iso_string(VARCHAR);
