@@ -81,6 +81,11 @@ SELECT ein.sid, ein.id, NULL AS note_body, NULL AS advisor_sid, ein.advisor_uid,
        NULL AS note_category, NULL AS note_subcategory, NULL AS created_by, ein.created_at, ein.updated_at
 FROM {rds_schema_e_i}.advising_notes ein
 UNION
+SELECT eop.sid, eop.id, eop.note AS note_body, NULL AS advisor_sid, eop.advisor_uid AS advisor_uid,
+       advisor_first_name, advisor_last_name, NULL AS note_category, NULL AS note_subcategory,
+       eop.advisor_uid AS created_by, eop.created_at, eop.created_at AS updated_at
+FROM {rds_schema_eop}.advising_notes eop
+UNION
 SELECT hist.sid, hist.id, hist.note AS note_body, NULL AS advisor_sid, hist.advisor_uid AS advisor_uid,
        NULL AS advisor_first_name, NULL AS advisor_last_name, NULL AS note_category, NULL AS note_subcategory,
        hist.advisor_uid AS created_by, hist.created_at, hist.created_at AS updated_at
@@ -101,6 +106,7 @@ CREATE MATERIALIZED VIEW {rds_schema_advising_notes}.advising_notes_search_index
   SELECT id, fts_index FROM {rds_schema_asc}.advising_notes_search_index
   UNION SELECT id, fts_index FROM {rds_schema_data_science}.advising_notes_search_index
   UNION SELECT id, fts_index FROM {rds_schema_e_i}.advising_notes_search_index
+  UNION SELECT id, fts_index FROM {rds_schema_eop}.advising_notes_search_index
   UNION SELECT id, fts_index FROM {rds_schema_history_dept}.advising_notes_search_index
   UNION SELECT id, fts_index FROM {rds_schema_sis_advising_notes}.advising_notes_search_index
   UNION SELECT id, fts_index FROM {rds_schema_sis_advising_notes}.student_late_drop_eforms_search_index
@@ -115,7 +121,7 @@ DROP TABLE IF EXISTS {rds_schema_advising_appointments}.ycbm_advising_appointmen
 CREATE TABLE {rds_schema_advising_appointments}.ycbm_advising_appointments (
   id VARCHAR NOT NULL,
   student_uid VARCHAR,
-  student_sid VARCHAR,  
+  student_sid VARCHAR,
   title VARCHAR,
   starts_at TIMESTAMP WITH TIME ZONE,
   ends_at TIMESTAMP WITH TIME ZONE,

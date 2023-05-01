@@ -34,8 +34,7 @@ DROP TABLE IF EXISTS {rds_schema_eop}.advising_notes CASCADE;
 CREATE TABLE {rds_schema_eop}.advising_notes (
   id VARCHAR NOT NULL,
   sid VARCHAR NOT NULL,
-  student_first_name VARCHAR,
-  student_last_name VARCHAR,
+  student_name VARCHAR,
   meeting_date VARCHAR,
   advisor_uid VARCHAR,
   advisor_first_name VARCHAR,
@@ -47,27 +46,23 @@ CREATE TABLE {rds_schema_eop}.advising_notes (
   privacy_permissions VARCHAR,
   searchable_topics VARCHAR,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
   PRIMARY KEY (id)
 );
 
 INSERT INTO {rds_schema_eop}.advising_notes (
-  SELECT id, sid, student_first_name, student_last_name, meeting_date, advisor_uid, advisor_first_name,
+  SELECT id, sid, student_name, meeting_date, advisor_uid, advisor_first_name,
     advisor_last_name, overview, note, contact_method, attachment_url, privacy_permissions,
-    regexp_replace(topics, '(,?null)+', '') AS searchable_topics,
-    CAST (created_at AS TIMESTAMP WITH TIME ZONE), CAST (updated_at AS TIMESTAMP WITH TIME ZONE)
+    regexp_replace(topics, '(,?null)+', '') AS searchable_topics, created_at
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT DISTINCT id, sid, student_first_name, student_last_name, meeting_date, advisor_uid, advisor_first_name,
-      advisor_last_name, overview, note, contact_method, attachment_url, privacy_permissions, topics,
-      to_timestamp(COALESCE(meeting_date, '3/1/2023'), 'MM/DD/YYYY') AT TIME ZONE 'America/Los_Angeles' AT TIME ZONE 'UTC' AS created_at,
-      to_timestamp(COALESCE(meeting_date, '3/1/2023'), 'MM/DD/YYYY') AT TIME ZONE 'America/Los_Angeles' AT TIME ZONE 'UTC' AS updated_at
+    SELECT DISTINCT id, sid, student_name, meeting_date, advisor_uid, advisor_first_name,
+      advisor_last_name, overview, note, contact_method, attachment_url, privacy_permissions,
+      topics, created_at
     FROM {redshift_schema_eop_advising_notes_internal}.advising_notes
   $REDSHIFT$)
   AS redshift_notes (
     id VARCHAR,
     sid VARCHAR,
-    student_first_name VARCHAR,
-    student_last_name VARCHAR,
+    student_name VARCHAR,
     meeting_date VARCHAR,
     advisor_uid VARCHAR,
     advisor_first_name VARCHAR,
@@ -78,14 +73,13 @@ INSERT INTO {rds_schema_eop}.advising_notes (
     attachment_url VARCHAR,
     privacy_permissions VARCHAR,
     topics VARCHAR,
-    created_at TIMESTAMP WITH TIME ZONE,
-    updated_at TIMESTAMP WITH TIME ZONE
+    created_at TIMESTAMP WITH TIME ZONE
   )
 );
 
 CREATE INDEX idx_eop_advising_notes_sid ON {rds_schema_eop}.advising_notes(sid);
 CREATE INDEX idx_eop_advising_notes_advisor_uid ON {rds_schema_eop}.advising_notes(advisor_uid);
-CREATE INDEX idx_eop_advising_notes_updated_at ON {rds_schema_eop}.advising_notes(updated_at);
+CREATE INDEX idx_eop_advising_notes_created_at ON {rds_schema_eop}.advising_notes(created_at);
 
 DROP TABLE IF EXISTS {rds_schema_eop}.advising_note_topics CASCADE;
 

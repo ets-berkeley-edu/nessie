@@ -132,9 +132,9 @@ def create_edl_schema():
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/create_eop_schema', methods=['POST'])
+@app.route('/api/job/create_eop_advising_notes_schema', methods=['POST'])
 @auth_required
-def create_eop_schema():
+def create_eop_advising_notes_schema():
     job_started = CreateEopAdvisingNotesSchema().run_async()
     return respond_with_status(job_started)
 
