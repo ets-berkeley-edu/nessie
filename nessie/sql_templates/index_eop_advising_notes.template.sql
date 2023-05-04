@@ -42,7 +42,7 @@ CREATE TABLE {rds_schema_eop}.advising_notes (
   overview VARCHAR,
   note TEXT,
   contact_method VARCHAR,
-  attachment_url VARCHAR,
+  attachment VARCHAR,
   privacy_permissions VARCHAR,
   searchable_topics VARCHAR,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -51,12 +51,12 @@ CREATE TABLE {rds_schema_eop}.advising_notes (
 
 INSERT INTO {rds_schema_eop}.advising_notes (
   SELECT id, sid, student_name, meeting_date, advisor_uid, advisor_first_name,
-    advisor_last_name, overview, note, contact_method, attachment_url, privacy_permissions,
+    advisor_last_name, overview, note, contact_method, attachment, privacy_permissions,
     regexp_replace(topics, '(,?null)+', '') AS searchable_topics, created_at
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT DISTINCT id, sid, student_name, meeting_date, advisor_uid, advisor_first_name,
-      advisor_last_name, overview, note, contact_method, attachment_url, privacy_permissions,
-      topics, created_at
+      advisor_last_name, overview, note, contact_method, id || '_' || attachment AS attachment,
+      privacy_permissions, topics, created_at
     FROM {redshift_schema_eop_advising_notes_internal}.advising_notes
   $REDSHIFT$)
   AS redshift_notes (
@@ -70,7 +70,7 @@ INSERT INTO {rds_schema_eop}.advising_notes (
     overview VARCHAR,
     note TEXT,
     contact_method VARCHAR,
-    attachment_url VARCHAR,
+    attachment VARCHAR,
     privacy_permissions VARCHAR,
     topics VARCHAR,
     created_at TIMESTAMP WITH TIME ZONE

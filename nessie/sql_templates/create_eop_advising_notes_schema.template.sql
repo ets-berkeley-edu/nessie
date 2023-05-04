@@ -51,7 +51,7 @@ CREATE EXTERNAL TABLE {redshift_schema_eop_advising_notes}.advising_notes
   privacy_permissions VARCHAR,
   contact_method VARCHAR,
   meeting_date VARCHAR,
-  attachment_url VARCHAR
+  attachment VARCHAR
 )
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
@@ -105,7 +105,7 @@ AS (
       overview,
       note,
       meeting_date,
-      DECODE(attachment_url, 'N/A', NULL, attachment_url) AS attachment_url,
+      attachment,
       ARRAY(topic_1, topic_2, topic_3) AS topics,
       TO_TIMESTAMP({redshift_schema_eop_advising_notes_internal}.to_utc_iso_string(meeting_date || ' 12:00:00'), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at
     FROM {redshift_schema_eop_advising_notes}.advising_notes
