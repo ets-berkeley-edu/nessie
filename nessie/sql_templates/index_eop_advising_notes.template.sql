@@ -55,7 +55,7 @@ INSERT INTO {rds_schema_eop}.advising_notes (
     regexp_replace(topics, '(,?null)+', '') AS searchable_topics, created_at
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT DISTINCT id, sid, student_name, meeting_date, advisor_uid, advisor_first_name,
-      advisor_last_name, overview, note, contact_method, id || '_' || attachment AS attachment,
+      advisor_last_name, overview, note, contact_method, attachment,
       privacy_permissions, topics, created_at
     FROM {redshift_schema_eop_advising_notes_internal}.advising_notes
   $REDSHIFT$)
