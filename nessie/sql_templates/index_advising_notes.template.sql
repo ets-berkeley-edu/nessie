@@ -62,33 +62,37 @@ DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_notes CASCADE;
 CREATE TABLE {rds_schema_advising_notes}.advising_notes AS (
 SELECT sis.sid, sis.id, sis.note_body, sis.advisor_sid,
        NULL::varchar AS advisor_uid, NULL::varchar AS advisor_first_name, NULL::varchar AS advisor_last_name,
-       sis.note_category, sis.note_subcategory, sis.created_by, sis.created_at, sis.updated_at
+       sis.note_category, sis.note_subcategory, FALSE AS is_private, sis.created_by, sis.created_at, sis.updated_at
 FROM {rds_schema_sis_advising_notes}.advising_notes sis
 UNION
 SELECT ascn.sid, ascn.id,
        COALESCE(ascn.subject || ' ', '') || COALESCE(ascn.body, '') AS note_body,
        NULL AS advisor_sid, ascn.advisor_uid, ascn.advisor_first_name, ascn.advisor_last_name,
-       NULL AS note_category, NULL AS note_subcategory, NULL AS created_by, ascn.created_at, ascn.updated_at
+       NULL AS note_category, NULL AS note_subcategory, FALSE AS is_private, NULL AS created_by,
+       ascn.created_at, ascn.updated_at
 FROM {rds_schema_asc}.advising_notes ascn
 UNION
 SELECT dsn.sid, dsn.id, dsn.body AS note_body, dsna.sid AS advisor_sid, dsna.uid AS advisor_uid, dsna.first_name AS advisor_first_name,
-       dsna.last_name AS advisor_last_name, NULL AS note_category, NULL AS note_subcategory, NULL AS created_by, dsn.created_at,
-       dsn.created_at AS updated_at
+       dsna.last_name AS advisor_last_name, NULL AS note_category, NULL AS note_subcategory, FALSE AS is_private,
+       NULL AS created_by, dsn.created_at, dsn.created_at AS updated_at
 FROM {rds_schema_data_science}.advising_notes dsn
 JOIN {rds_schema_advising_notes}.advising_note_authors dsna ON dsn.advisor_email = dsna.campus_email
 UNION
 SELECT ein.sid, ein.id, NULL AS note_body, NULL AS advisor_sid, ein.advisor_uid, ein.advisor_first_name, ein.advisor_last_name,
-       NULL AS note_category, NULL AS note_subcategory, NULL AS created_by, ein.created_at, ein.updated_at
+       NULL AS note_category, NULL AS note_subcategory, FALSE AS is_private, NULL AS created_by, ein.created_at, ein.updated_at
 FROM {rds_schema_e_i}.advising_notes ein
 UNION
 SELECT eop.sid, eop.id, eop.note AS note_body, NULL AS advisor_sid, eop.advisor_uid AS advisor_uid,
        advisor_first_name, advisor_last_name, NULL AS note_category, NULL AS note_subcategory,
-       eop.advisor_uid AS created_by, eop.created_at, eop.created_at AS updated_at
+       CASE
+          WHEN eop.privacy_permissions IS NOT NULL THEN TRUE
+          ELSE FALSE
+       END AS is_private, eop.advisor_uid AS created_by, eop.created_at, eop.created_at AS updated_at
 FROM {rds_schema_eop}.advising_notes eop
 UNION
 SELECT hist.sid, hist.id, hist.note AS note_body, NULL AS advisor_sid, hist.advisor_uid AS advisor_uid,
        NULL AS advisor_first_name, NULL AS advisor_last_name, NULL AS note_category, NULL AS note_subcategory,
-       hist.advisor_uid AS created_by, hist.created_at, hist.created_at AS updated_at
+       FALSE AS is_private, hist.advisor_uid AS created_by, hist.created_at, hist.created_at AS updated_at
 FROM {rds_schema_history_dept}.advising_notes hist
 );
 
