@@ -137,7 +137,7 @@ ACADEMIC_PLAN_TO_DEGREE_PROGRAM_PAGE = {
     'Landscape Architecture': 'landscape-architecture',
     'Latin': 'latin',
     'Legal Studies': 'legal-studies',
-    'LGBT Studies': 'esbian-gay-bisexual-transgender-studies',
+    'LGBT Studies': 'lesbian-gay-bisexual-transgender-studies',
     'Linguistics': 'linguistics',
     'Logic': 'logic',
     'Marine Science': 'marine-science',
