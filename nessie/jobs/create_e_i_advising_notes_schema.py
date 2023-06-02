@@ -48,11 +48,11 @@ class CreateEIAdvisingNotesSchema(BackgroundJob):
         notes = []
         topics = []
         for key in s3.get_keys_with_prefix(base_s3_key):
-            if key.endswith('.json'):
+            if key.endswith('.json') and 'aggregated_' not in key:
                 notes_json = s3.get_object_json(key)
                 if notes_json and 'notes' in notes_json:
                     notes += notes_json['notes']
-                    for note in notes:
+                    for note in notes_json['notes']:
                         topics += _extract_topics(note)
 
         if s3.upload_json(obj=notes, s3_key=f'{base_s3_key}/aggregated_notes/data.json') \
