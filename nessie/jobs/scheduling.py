@@ -37,6 +37,8 @@ sched = None
 PG_ADVISORY_LOCK_IDS = {
     'JOB_SYNC_CANVAS_SNAPSHOTS': 1000,
     'JOB_RESYNC_CANVAS_SNAPSHOTS': 1500,
+    'JOB_REFRESH_SISEDO_FULL': 1600,
+    'JOB_REFRESH_SISEDO_INCREMENTAL': 1700,
     'JOB_IMPORT_ADVISORS': 1800,
     'JOB_IMPORT_ADMISSIONS': 1850,
     'JOB_IMPORT_STUDENT_POPULATION': 2000,
@@ -88,6 +90,8 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
     from nessie.jobs.refresh_boac_cache import RefreshBoacCache
     from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
+    from nessie.jobs.refresh_sisedo_schema_full import RefreshSisedoSchemaFull
+    from nessie.jobs.refresh_sisedo_schema_incremental import RefreshSisedoSchemaIncremental
     from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
     from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
     from nessie.jobs.transform_piazza_api_data import TransformPiazzaApiData
@@ -97,6 +101,8 @@ def schedule_all_jobs(force=False):
     schedule_job(sched, 'JOB_RESYNC_CANVAS_SNAPSHOTS', ResyncCanvasSnapshots, force)
     schedule_job(sched, 'JOB_IMPORT_ADVISORS', CreateAdvisorSchema, force)
     schedule_job(sched, 'JOB_IMPORT_ADMISSIONS', CreateOUASchema, force)
+    schedule_job(sched, 'JOB_REFRESH_SISEDO_FULL', RefreshSisedoSchemaFull, force)
+    schedule_job(sched, 'JOB_REFRESH_SISEDO_INCREMENTAL', RefreshSisedoSchemaIncremental, force)
     schedule_job(sched, 'JOB_IMPORT_STUDENT_POPULATION', ChainedImportStudentPopulation, force)
     schedule_job(sched, 'JOB_IMPORT_CANVAS_ENROLLMENTS', ImportCanvasEnrollmentsApi, force)
     schedule_chained_job(
