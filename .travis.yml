@@ -2,9 +2,6 @@ sudo: required
 language: python
 python: "3.8"
 
-addons:
-  postgresql: "9.6"
-
 before_install:
   - cd ${TRAVIS_BUILD_DIR}
   - nvm install 16
@@ -30,3 +27,6 @@ install:
 
 script:
   - tox
+
+services:
+  - postgresql
