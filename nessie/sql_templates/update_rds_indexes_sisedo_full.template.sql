@@ -57,6 +57,17 @@ INSERT INTO {rds_schema_sis_internal}.edo_enrollments (
   )
 );
 
+-- Copy over past-term enrollments from EDL-sourced sis_enrollments table.
+
+INSERT INTO {rds_schema_sis_internal}.edo_enrollments
+(sis_term_id, sis_section_id, ldap_uid, sis_enrollment_status, units, grading_basis,
+      grade, grade_midterm)
+SELECT sis_term_id, sis_section_id, ldap_uid, sis_enrollment_status, units, grading_basis,
+      grade, grade_midterm
+FROM {rds_schema_sis_internal}.sis_enrollments
+WHERE sis_term_id NOT IN
+(SELECT DISTINCT sis_term_id FROM {rds_schema_sis_internal}.edo_enrollments);
+
 CREATE INDEX idx_edo_enrollments_term_id_section_id ON {rds_schema_sis_internal}.edo_enrollments(sis_term_id, sis_section_id);
 CREATE INDEX idx_edo_enrollments_ldap_uid ON {rds_schema_sis_internal}.edo_enrollments(ldap_uid);
 
@@ -123,5 +134,20 @@ INSERT INTO {rds_schema_sis_internal}.edo_sections (
     waitlist_limit INTEGER
   )
 );
+
+-- Copy over past-term sections from EDL-sourced sis_sections table.
+
+INSERT INTO {rds_schema_sis_internal}.edo_sections
+(sis_term_id, sis_section_id, is_primary, sis_course_name, sis_course_title, sis_instruction_format,
+      sis_section_num, cs_course_id, session_code, instruction_mode,
+      instructor_uid, instructor_name, instructor_role_code, meeting_location,
+      meeting_days, meeting_start_time, meeting_end_time, meeting_start_date, meeting_end_date)
+SELECT sis_term_id, sis_section_id, is_primary, sis_course_name, sis_course_title, sis_instruction_format,
+      sis_section_num, cs_course_id, session_code, instruction_mode,
+      instructor_uid, instructor_name, instructor_role_code, meeting_location,
+      meeting_days, meeting_start_time, meeting_end_time, meeting_start_date, meeting_end_date
+FROM {rds_schema_sis_internal}.sis_sections
+WHERE sis_term_id NOT IN
+(SELECT DISTINCT sis_term_id FROM {rds_schema_sis_internal}.edo_sections);
 
 CREATE INDEX idx_edo_sections_term_id_section_id ON {rds_schema_sis_internal}.edo_sections(sis_term_id, sis_section_id);
