@@ -207,7 +207,7 @@ AS (
 CREATE TABLE {redshift_schema_intermediate}.sis_enrollments
 INTERLEAVED SORTKEY (sis_term_id, sis_section_id, ldap_uid)
 AS (
-    SELECT
+    SELECT DISTINCT
         en.term_id AS sis_term_id,
         en.section_id AS sis_section_id,
         en.ldap_uid,
