@@ -195,6 +195,14 @@ AS (
     course_attribute_value_formal_desc AS requirement_description
   FROM {redshift_schema_edl_external}.student_class_attribute_data
   WHERE course_attribute_cd = 'GE'
+  UNION
+  SELECT
+    semester_year_term_cd AS term_id,
+    class_number AS section_id,
+    requirement_designation AS requirement_code,
+    requirement_designation_desc AS requirement_description
+   FROM {redshift_schema_edl_external}.student_class_data
+   WHERE requirement_designation IN ('ACAH', 'ACAI', 'AHI', 'AHIC', 'AC', 'AH', 'AI', 'ELRC', 'ELW')
 );
 
 CREATE TABLE {redshift_schema_edl}.courses
