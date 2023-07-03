@@ -37,6 +37,25 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 -- External Tables
 --------------------------------------------------------------------
 
+CREATE EXTERNAL TABLE {redshift_schema_sisedo}.basic_attributes
+(
+   ldap_uid VARCHAR,
+   sid VARCHAR,
+   first_name VARCHAR,
+   last_name VARCHAR,
+   email_address VARCHAR,
+   affiliations VARCHAR,
+   person_type VARCHAR
+)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
+WITH SERDEPROPERTIES (
+  'separatorChar' = ',',
+  'quoteChar' = '\"',
+  'escapeChar' = '\\'
+)
+STORED AS TEXTFILE
+LOCATION '{sisedo_data_path}/basic-attributes';
+
 CREATE EXTERNAL TABLE {redshift_schema_sisedo}.courses
 (
    section_id VARCHAR,
@@ -160,6 +179,22 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_sisedo_internal} GRANT SELEC
 --------------------------------------------------------------------
 -- Internal Tables
 --------------------------------------------------------------------
+
+DROP TABLE IF EXISTS {redshift_schema_sisedo_internal}.basic_attributes;
+
+CREATE TABLE {redshift_schema_sisedo_internal}.basic_attributes
+SORTKEY (ldap_uid)
+AS (
+  SELECT DISTINCT
+   ldap_uid,
+   sid,
+   first_name,
+   last_name,
+   email_address,
+   affiliations,
+   person_type
+  FROM {redshift_schema_sisedo}.basic_attributes
+);
 
 DROP TABLE IF EXISTS {redshift_schema_sisedo_internal}.courses;
 
