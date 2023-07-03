@@ -200,7 +200,7 @@ AS (
     semester_year_term_cd AS term_id,
     class_number AS section_id,
     requirement_designation AS requirement_code,
-    requirement_designation_desc AS requirement_description
+    'Meets ' || requirement_designation_desc || ' requirement' AS requirement_description
    FROM {redshift_schema_edl_external}.student_class_data
    WHERE requirement_designation IN ('ACAH', 'ACAI', 'AHI', 'AHIC', 'AC', 'AH', 'AI', 'ELRC', 'ELW')
 );
