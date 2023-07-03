@@ -23,6 +23,38 @@
  * ENHANCEMENTS, OR MODIFICATIONS.
  */
 
+DROP TABLE IF EXISTS {rds_schema_sis_internal}.edo_basic_attributes CASCADE;
+
+CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.edo_basic_attributes
+(
+   ldap_uid VARCHAR,
+   sid VARCHAR,
+   first_name VARCHAR,
+   last_name VARCHAR,
+   email_address VARCHAR,
+   affiliations VARCHAR,
+   person_type VARCHAR
+);
+
+INSERT INTO {rds_schema_sis_internal}.edo_basic_attributes (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+    SELECT ldap_uid, sid, first_name, last_name, email_address, affiliations, person_type
+    FROM {redshift_schema_sisedo_internal}.basic_attributes
+  $REDSHIFT$)
+  AS redshift_edo_basic_attributes (
+    ldap_uid VARCHAR,
+    sid VARCHAR,
+    first_name VARCHAR,
+    last_name VARCHAR,
+    email_address VARCHAR,
+    affiliations VARCHAR,
+    person_type VARCHAR
+  )
+);
+
+CREATE INDEX idx_edo_basic_attributes_ldap_uid ON {rds_schema_sis_internal}.edo_basic_attributes(ldap_uid);
+CREATE INDEX idx_edo_basic_attributes_sid ON {rds_schema_sis_internal}.edo_basic_attributes(sid);
 
 DROP TABLE IF EXISTS {rds_schema_sis_internal}.edo_enrollments CASCADE;
 
