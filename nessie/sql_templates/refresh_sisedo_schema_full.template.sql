@@ -45,7 +45,8 @@ CREATE EXTERNAL TABLE {redshift_schema_sisedo}.basic_attributes
    last_name VARCHAR,
    email_address VARCHAR,
    affiliations VARCHAR,
-   person_type VARCHAR
+   person_type VARCHAR,
+   alternateid VARCHAR
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
 WITH SERDEPROPERTIES (
@@ -192,7 +193,8 @@ AS (
    last_name,
    email_address,
    affiliations,
-   person_type
+   person_type,
+   alternateid
   FROM {redshift_schema_sisedo}.basic_attributes
 );
 

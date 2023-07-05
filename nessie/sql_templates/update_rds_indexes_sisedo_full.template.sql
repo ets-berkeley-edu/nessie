@@ -39,7 +39,9 @@ CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.edo_basic_attributes
 INSERT INTO {rds_schema_sis_internal}.edo_basic_attributes (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT ldap_uid, sid, first_name, last_name, email_address, affiliations, person_type
+    SELECT ldap_uid, sid, first_name, last_name, 
+        COALESCE(NULLIF(alternateid, ''), email_address) AS email_address,
+        affiliations, person_type
     FROM {redshift_schema_sisedo_internal}.basic_attributes
   $REDSHIFT$)
   AS redshift_edo_basic_attributes (
