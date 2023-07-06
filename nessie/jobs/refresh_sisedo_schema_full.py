@@ -54,7 +54,11 @@ class RefreshSisedoSchemaFull(BackgroundJob):
         resolved_ddl = resolve_sql_template(sql_filename, sisedo_data_path=s3_path)
         if not redshift.execute_ddl_script(resolved_ddl):
             raise BackgroundJobError(f'Redshift execute_ddl_script failed on {sql_filename}')
-        verify_external_schema(self.external_schema, resolved_ddl)
+        verify_external_schema(
+            self.external_schema,
+            resolved_ddl,
+            is_zero_count_acceptable=app.config['SISEDO_ZERO_COUNT_ACCEPTABLE'],
+        )
         app.logger.info('Redshift schema created.')
 
         resolved_ddl_rds = resolve_sql_template('update_rds_indexes_sisedo_full.template.sql')
