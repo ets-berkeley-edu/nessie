@@ -189,7 +189,8 @@ AS (
   SELECT DISTINCT
    ldap_uid,
    sid,
-   first_name,
+   -- First names occasionally come in with quote literals that require unescaping.
+   replace(first_name, '""', '"') AS first_name,
    last_name,
    email_address,
    affiliations,
