@@ -214,6 +214,7 @@ AS (
     section_num AS sis_section_num,
     course_version_independent_id AS cs_course_id,
     session_id AS session_code,
+    primary_associated_section_id,
     instruction_mode,
     instructor_uid,
     instructor_name,
