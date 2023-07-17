@@ -119,6 +119,7 @@ CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.edo_sections
     cs_course_id VARCHAR,
     session_code VARCHAR,
     instruction_mode VARCHAR,
+    primary_associated_section_id VARCHAR,
     instructor_uid VARCHAR,
     instructor_name VARCHAR,
     instructor_role_code VARCHAR,
@@ -137,7 +138,7 @@ INSERT INTO {rds_schema_sis_internal}.edo_sections (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT sis_term_id, sis_section_id, is_primary, sis_course_name, sis_course_title, sis_instruction_format,
-      sis_section_num, cs_course_id, session_code, instruction_mode,
+      sis_section_num, cs_course_id, session_code, instruction_mode, primary_associated_section_id,
       instructor_uid, instructor_name, instructor_role_code, meeting_location,
       meeting_days, meeting_start_time, meeting_end_time, meeting_start_date, meeting_end_date,
       enrollment_count, enroll_limit, waitlist_limit
@@ -154,6 +155,7 @@ INSERT INTO {rds_schema_sis_internal}.edo_sections (
     cs_course_id VARCHAR,
     session_code VARCHAR,
     instruction_mode VARCHAR,
+    primary_associated_section_id VARCHAR,
     instructor_uid VARCHAR,
     instructor_name VARCHAR,
     instructor_role_code VARCHAR,
@@ -173,11 +175,11 @@ INSERT INTO {rds_schema_sis_internal}.edo_sections (
 
 INSERT INTO {rds_schema_sis_internal}.edo_sections
 (sis_term_id, sis_section_id, is_primary, sis_course_name, sis_course_title, sis_instruction_format,
-      sis_section_num, cs_course_id, session_code, instruction_mode,
+      sis_section_num, cs_course_id, session_code, instruction_mode, primary_associated_section_id,
       instructor_uid, instructor_name, instructor_role_code, meeting_location,
       meeting_days, meeting_start_time, meeting_end_time, meeting_start_date, meeting_end_date)
 SELECT sis_term_id, sis_section_id, is_primary, sis_course_name, sis_course_title, sis_instruction_format,
-      sis_section_num, cs_course_id, session_code, instruction_mode,
+      sis_section_num, cs_course_id, session_code, instruction_mode, NULL as primary_associated_section_id,
       instructor_uid, instructor_name, instructor_role_code, meeting_location,
       meeting_days, meeting_start_time, meeting_end_time, meeting_start_date, meeting_end_date
 FROM {rds_schema_sis_internal}.sis_sections
