@@ -262,7 +262,7 @@ REDSHIFT_SCHEMA_OUA = 'External OUA schema name'
 REDSHIFT_SCHEMA_SISEDO = 'External SISEDO schema name'
 REDSHIFT_SCHEMA_YCBM = 'External YCBM schema name'
 
-SISEDO_ZERO_COUNT_ACCEPTABLE = True
+SISEDO_ZERO_COUNT_ACCEPTABLE = False
 
 SQLALCHEMY_DATABASE_URI = 'postgresql://nessie:nessie@localhost:5432/nessie'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
