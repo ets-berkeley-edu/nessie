@@ -171,6 +171,17 @@ INSERT INTO {rds_schema_sis_internal}.edo_sections (
   )
 );
 
+-- Patch a bug in SISEDO data by overwriting the cs_course_id with EDL data in cases where it comes in from SISEDO
+-- as a meaningless string.
+
+UPDATE sis_data.edo_sections edo
+SET cs_course_id = sis.cs_course_id
+FROM sis_data.sis_sections sis
+WHERE edo.sis_term_id = sis.sis_term_id
+AND edo.sis_section_id = sis.sis_section_id
+AND edo.cs_course_id = 'cms-version-independent-id';
+
+
 -- Copy over past-term sections from EDL-sourced sis_sections table.
 
 INSERT INTO {rds_schema_sis_internal}.edo_sections
