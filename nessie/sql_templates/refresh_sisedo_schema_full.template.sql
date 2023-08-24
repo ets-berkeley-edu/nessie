@@ -208,6 +208,7 @@ AS (
     term_id AS sis_term_id,
     section_id AS sis_section_id,
     is_primary AS is_primary,
+    dept_name,
     section_display_name AS sis_course_name,
     course_title AS sis_course_title,
     instruction_format AS sis_instruction_format,

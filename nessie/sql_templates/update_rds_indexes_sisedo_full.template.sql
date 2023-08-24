@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.edo_sections
     sis_term_id VARCHAR,
     sis_section_id VARCHAR,
     is_primary BOOLEAN,
+    dept_name VARCHAR,
     sis_course_name VARCHAR,
     sis_course_title VARCHAR,
     sis_instruction_format VARCHAR,
@@ -137,7 +138,7 @@ CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.edo_sections
 INSERT INTO {rds_schema_sis_internal}.edo_sections (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT sis_term_id, sis_section_id, is_primary, sis_course_name, sis_course_title, sis_instruction_format,
+    SELECT sis_term_id, sis_section_id, is_primary, dept_name, sis_course_name, sis_course_title, sis_instruction_format,
       sis_section_num, cs_course_id, session_code, instruction_mode, primary_associated_section_id,
       instructor_uid, instructor_name, instructor_role_code, meeting_location,
       meeting_days, meeting_start_time, meeting_end_time, meeting_start_date, meeting_end_date,
@@ -148,6 +149,7 @@ INSERT INTO {rds_schema_sis_internal}.edo_sections (
     sis_term_id VARCHAR,
     sis_section_id VARCHAR,
     is_primary BOOLEAN,
+    dept_name VARCHAR,
     sis_course_name VARCHAR,
     sis_course_title VARCHAR,
     sis_instruction_format VARCHAR,
@@ -185,11 +187,12 @@ AND edo.cs_course_id = 'cms-version-independent-id';
 -- Copy over past-term sections from EDL-sourced sis_sections table.
 
 INSERT INTO {rds_schema_sis_internal}.edo_sections
-(sis_term_id, sis_section_id, is_primary, sis_course_name, sis_course_title, sis_instruction_format,
+(sis_term_id, sis_section_id, is_primary, dept_name, sis_course_name, sis_course_title, sis_instruction_format,
       sis_section_num, cs_course_id, session_code, instruction_mode, primary_associated_section_id,
       instructor_uid, instructor_name, instructor_role_code, meeting_location,
       meeting_days, meeting_start_time, meeting_end_time, meeting_start_date, meeting_end_date)
-SELECT sis_term_id, sis_section_id, is_primary, sis_course_name, sis_course_title, sis_instruction_format,
+SELECT sis_term_id, sis_section_id, is_primary, split_part(sis_course_name, ' ', 1)  as dept_name,
+      sis_course_name, sis_course_title, sis_instruction_format,
       sis_section_num, cs_course_id, session_code, instruction_mode, NULL as primary_associated_section_id,
       instructor_uid, instructor_name, instructor_role_code, meeting_location,
       meeting_days, meeting_start_time, meeting_end_time, meeting_start_date, meeting_end_date
