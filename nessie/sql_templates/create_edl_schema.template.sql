@@ -424,7 +424,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_last_registrations
 DISTKEY(sid)
 SORTKEY(sid);
 
-CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_levels
+CREATE TABLE {redshift_schema_edl}.student_levels
 DISTKEY (sid)
 SORTKEY (sid)
 AS (
