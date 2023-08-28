@@ -631,6 +631,49 @@ class RegistrationsFeedBuilder(ConcurrentFeedBuilder):
             return target_file
 
     def _generate_feed(self, row):
+
+        def _feed_from_non_exam_level(level):
+            if level == '5':
+                return {
+                    'code': '5',
+                    'description': 'Masters and/or Professional',
+                }
+            elif level == '6':
+                return {
+                    'code': '6',
+                    'description': 'Doctoral Students Not Advanced to Candidacy',
+                }
+            elif level == '7':
+                return {
+                    'code': '7',
+                    'description': 'Doctoral Advanced to Candidacy <= 6 Terms',
+                }
+            elif level == '8':
+                return {
+                    'code': '8',
+                    'description': 'Doctoral Advanced to Candidacy > 6 Terms',
+                }
+            else:
+                return None
+
+        bot_level = None
+        if row['academic_level_beginning_of_term_cd'] == 'GR':
+            bot_level = _feed_from_non_exam_level(row['education_non_exam_level_cd'])
+        if not bot_level:
+            bot_level = {
+                'code': row['academic_level_beginning_of_term_cd'],
+                'description': row['academic_level_beginning_of_term_desc'],
+            }
+
+        eot_level = None
+        if row['academic_level_end_of_term_cd'] == 'GR':
+            eot_level = _feed_from_non_exam_level(row['education_non_exam_level_cd'])
+        if not eot_level:
+            eot_level = {
+                'code': row['academic_level_end_of_term_cd'],
+                'description': row['academic_level_end_of_term_desc'],
+            }
+
         feed = {
             'term': {
                 'id': _str(row['term_id']),
@@ -644,20 +687,14 @@ class RegistrationsFeedBuilder(ConcurrentFeedBuilder):
                         'code': 'BOT',
                         'description': 'Beginning of Term',
                     },
-                    'level': {
-                        'code': _str(row['academic_level_beginning_of_term_cd']),
-                        'description': row['academic_level_beginning_of_term_desc'],
-                    },
+                    'level': bot_level,
                 },
                 {
                     'type': {
                         'code': 'EOT',
                         'description': 'End of Term',
                     },
-                    'level': {
-                        'code': _str(row['academic_level_end_of_term_cd']),
-                        'description': row['academic_level_end_of_term_desc'],
-                    },
+                    'level': eot_level,
                 },
             ],
             'termUnits': [

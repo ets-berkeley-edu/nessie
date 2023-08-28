@@ -384,12 +384,15 @@ def stream_edl_registrations():
                 r.minimum_term_enrollment_units_limit,
                 r.term_enrolled_units,
                 r.term_berkeley_completed_total_units,
+                l.education_non_exam_level_cd,
                 s.withdraw_code,
                 s.withdraw_date,
                 s.withdraw_reason
               FROM {edl_external_schema()}.student_registration_term_data r
               JOIN {edl_external_schema_staging()}.cs_ps_stdnt_car_term s
                 ON r.student_id = s.emplid AND r.semester_year_term_cd = s.strm
+              LEFT JOIN {edl_schema()}.student_levels l
+                ON l.sid = r.student_id
               ORDER BY r.student_id, r.semester_year_term_cd
         """
     return redshift.fetch(sql, stream_s3=True, unload_path='edl_registrations')
