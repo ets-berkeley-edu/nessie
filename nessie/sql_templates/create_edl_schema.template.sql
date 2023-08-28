@@ -424,6 +424,22 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_last_registrations
 DISTKEY(sid)
 SORTKEY(sid);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_levels
+DISTKEY (sid)
+SORTKEY (sid)
+AS (
+  SELECT
+    sssd_a.student_id AS sid,
+    sssd_a.snapshot_dt,
+    sssd_a.education_non_exam_level_cd
+  FROM edl_cs_analytics_ext_dev.student_semester_snapshot_data sssd_a
+  -- We have many snapshot rows per student id; pull the most recent available.
+  LEFT JOIN edl_cs_analytics_ext_dev.student_semester_snapshot_data sssd_b
+    ON sssd_a.student_id = sssd_b.student_id
+    AND sssd_a.snapshot_dt < sssd_b.snapshot_dt
+  WHERE sssd_b.snapshot_dt IS NULL
+);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_profiles
 (
     sid VARCHAR NOT NULL,
