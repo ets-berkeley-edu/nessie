@@ -636,22 +636,22 @@ class RegistrationsFeedBuilder(ConcurrentFeedBuilder):
             if level == '5':
                 return {
                     'code': '5',
-                    'description': 'Masters and/or Professional',
+                    'description': 'Masters/Professional',
                 }
             elif level == '6':
                 return {
                     'code': '6',
-                    'description': 'Doctoral Students Not Advanced to Candidacy',
+                    'description': 'Doctoral Pre-Candidacy',
                 }
             elif level == '7':
                 return {
                     'code': '7',
-                    'description': 'Doctoral Advanced to Candidacy <= 6 Terms',
+                    'description': 'Doctoral Candidate',
                 }
             elif level == '8':
                 return {
                     'code': '8',
-                    'description': 'Doctoral Advanced to Candidacy > 6 Terms',
+                    'description': 'Doctoral Candidate',
                 }
             else:
                 return None
