@@ -433,7 +433,7 @@ AS (
     sssd_a.snapshot_dt,
     sssd_a.education_non_exam_level_cd
   FROM edl_cs_analytics_ext_dev.student_semester_snapshot_data sssd_a
-  -- We have many snapshot rows per student id; pull the most recent available.
+  -- We have many snapshot rows per student id: pull the most recent available.
   LEFT JOIN edl_cs_analytics_ext_dev.student_semester_snapshot_data sssd_b
     ON sssd_a.student_id = sssd_b.student_id
     AND sssd_a.snapshot_dt < sssd_b.snapshot_dt
