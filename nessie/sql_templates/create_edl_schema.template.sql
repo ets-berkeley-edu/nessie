@@ -432,9 +432,9 @@ AS (
     sssd_a.student_id AS sid,
     sssd_a.snapshot_dt,
     sssd_a.education_non_exam_level_cd
-  FROM edl_cs_analytics_ext_dev.student_semester_snapshot_data sssd_a
+  FROM {redshift_schema_edl_external}.student_semester_snapshot_data sssd_a
   -- We have many snapshot rows per student id: pull the most recent available.
-  LEFT JOIN edl_cs_analytics_ext_dev.student_semester_snapshot_data sssd_b
+  LEFT JOIN {redshift_schema_edl_external}.student_semester_snapshot_data sssd_b
     ON sssd_a.student_id = sssd_b.student_id
     AND sssd_a.snapshot_dt < sssd_b.snapshot_dt
   WHERE sssd_b.snapshot_dt IS NULL
