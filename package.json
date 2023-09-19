@@ -7,7 +7,7 @@
     "lint-vue": "vue-cli-service lint --no-fix src",
     "lint-vue-fix": "vue-cli-service lint src",
     "preinstall": "npx npm-force-resolutions",
-    "serve-vue": "vue-cli-service serve --open"
+    "serve-vue": "vue-cli-service serve --open --host localhost"
   },
   "dependencies": {
     "ajv": "8.11.0",

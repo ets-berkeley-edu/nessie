@@ -263,6 +263,7 @@ def merge_sis_profile_phones(sis_profile_feed, sis_profile):
 def merge_sis_profile_plans(academic_status, sis_profile):
     plans = []
     plans_minor = []
+    # TODO: Remove this line after BOAC-4985 lands in production
     subplans = set()
     for student_plan in academic_status.get('studentPlans', []):
         academic_plan = student_plan.get('academicPlan', {})
@@ -297,6 +298,12 @@ def merge_sis_profile_plans(academic_status, sis_profile):
             # A plan with no status is considered discontinued. (NS-689)
             plan_feed['status'] = 'Discontinued'
 
+        # Add any subplans.
+        if student_plan.get('academicSubPlan', None):
+            plan_feed['subplan'] = student_plan['academicSubPlan']
+            # TODO: Remove this line after BOAC-4985 lands in production
+            subplans.add(student_plan['academicSubPlan'])
+
         # Add plan unless it's a duplicate.
         if academic_plan.get('type', {}).get('code') == 'MIN':
             plan_collection = plans_minor
@@ -305,14 +312,9 @@ def merge_sis_profile_plans(academic_status, sis_profile):
         if not next((p for p in plan_collection if p.get('description') == plan_feed.get('description')), None):
             plan_collection.append(plan_feed)
 
-        # Add any subplans.
-        for academic_subplan in student_plan.get('academicSubPlans', []):
-            subplan_description = academic_subplan.get('subPlan', {}).get('description')
-            if subplan_description:
-                subplans.add(subplan_description)
-
     sis_profile['plans'] = sorted(plans, key=itemgetter('description'))
     sis_profile['plansMinor'] = sorted(plans_minor, key=itemgetter('description'))
+    # TODO: Remove this line after BOAC-4985 lands in production
     sis_profile['subplans'] = sorted(list(subplans))
 
 

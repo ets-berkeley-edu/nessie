@@ -97,8 +97,11 @@ class TestMergedSisProfile:
         assert len(profile['plansMinor']) == 1
         assert [p['description'] for p in profile['plansMinor']] == ['Art History']
 
-    def test_subplans(self, app, edl_profiles, edl_degree_progress, edl_last_registrations):
+    def test_subplans(self, edl_profiles, edl_degree_progress, edl_last_registrations):
         profile = merged_profile('11667051', edl_profiles, edl_degree_progress, edl_last_registrations)
+        assert 'subplan' not in profile['plans'][0]
+        assert profile['plans'][1]['subplan'] == 'Ecosystem Sciences'
+        # TODO: Remove this line after BOAC-4985 lands in production
         assert profile['subplans'] == ['Ecosystem Sciences']
 
     def test_intended_major_ignored_if_empty(self, edl_profiles, edl_degree_progress, edl_last_registrations):
