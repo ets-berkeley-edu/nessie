@@ -513,13 +513,7 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 'id': row['degree_expected_year_term_cd'],
             }
         if row['academic_subplan_nm']:
-            plan_feed['academicSubPlans'] = [
-                {
-                    'subPlan': {
-                        'description': row['academic_subplan_nm'],
-                    },
-                },
-            ]
+            plan_feed['academicSubPlan'] = row['academic_subplan_nm']
         return plan_feed
 
     def _merge_degrees(self, feed, degree_rows):
