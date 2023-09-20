@@ -377,9 +377,9 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 total_units_for_gpa += term_units_for_gpa
                 if term_units_for_gpa > 0:
                     term_gpas[row['term_id']] = _term_gpa(row)
-                if row['acad_standing_status']:
-                    latest_academic_standing = row
                 latest_career_row = row
+            if row['acad_standing_status']:
+                latest_academic_standing = row
             else:
                 # Include term GPAs from other academic careers only if our preferred academic career provides no GPA for that term.
                 if row['term_berkeley_completed_gpa_units'] and (row['term_id'] not in term_gpas):
