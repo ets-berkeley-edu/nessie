@@ -372,18 +372,18 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
             return {'termName': term_name_for_sis_id(row['term_id']), 'gpa': float(row['gpa'])}
 
         for row in profile_term_rows:
+            term_units_for_gpa = float(row['term_berkeley_completed_gpa_units'] or 0)
             if row['academic_career_cd'] == career_code:
-                term_units_for_gpa = float(row['term_berkeley_completed_gpa_units'] or 0)
                 total_units_for_gpa += term_units_for_gpa
                 if term_units_for_gpa > 0:
                     term_gpas[row['term_id']] = _term_gpa(row)
                 latest_career_row = row
-            if row['acad_standing_status']:
-                latest_academic_standing = row
             else:
                 # Include term GPAs from other academic careers only if our preferred academic career provides no GPA for that term.
-                if row['term_berkeley_completed_gpa_units'] and (row['term_id'] not in term_gpas):
+                if term_units_for_gpa > 0 and (row['term_id'] not in term_gpas):
                     term_gpas[row['term_id']] = _term_gpa(row)
+            if row['acad_standing_status']:
+                latest_academic_standing = row
         if not latest_career_row:
             return
 
