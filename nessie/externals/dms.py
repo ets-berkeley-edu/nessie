@@ -24,7 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import boto3
-from botocore.exceptions import ClientError, ConnectionError
+from botocore.exceptions import ClientError as BotoClientError, ConnectionError as BotoConnectionError
 from flask import current_app as app
 
 """Client code to run AWS DMS operations."""
@@ -53,7 +53,7 @@ def create_s3_target(identifier, path):
         else:
             app.logger.info(f'Failed to create DMS S3 target (identifier={identifier}, path={path}, response={response})')
             return None
-    except (ClientError, ConnectionError) as e:
+    except (BotoClientError, BotoConnectionError) as e:
         app.logger.error(f'Error creating DMS S3 target (path={path}, error={e})')
         return None
 
@@ -109,7 +109,7 @@ def get_replication_tasks(identifier=None):
         else:
             app.logger.error('Failed to get DMS replication tasks')
             return None
-    except (ClientError, ConnectionError) as e:
+    except (BotoClientError, BotoConnectionError) as e:
         app.logger.error(f'Error retrieving DMS replication tasks (error={e})')
         return None
 
@@ -123,7 +123,7 @@ def list_endpoints():
         else:
             app.logger.error('Failed to get DMS endpoints')
             return None
-    except (ClientError, ConnectionError) as e:
+    except (BotoClientError, BotoConnectionError) as e:
         app.logger.error(f'Error retrieving DMS endpoints (error={e})')
         return None
 
@@ -146,6 +146,6 @@ def start_replication_task(identifier):
         else:
             app.logger.error(f'Failed to start replication tasks (id={identifier}, arn={task_arn}, response={response})')
             return None
-    except (ClientError, ConnectionError) as e:
+    except (BotoClientError, BotoConnectionError) as e:
         app.logger.error(f'Error starting replication task (id={identifier}, arn={task_arn}, error={e})')
         return None
