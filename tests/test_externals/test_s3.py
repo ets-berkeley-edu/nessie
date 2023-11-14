@@ -23,7 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from botocore.exceptions import ConnectionError
+from botocore.exceptions import ConnectionError as BotoConnectionError
 from nessie.externals import s3
 import pytest
 import responses
@@ -70,7 +70,7 @@ class TestS3Testext:
             url = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
             key = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001/sonnet-xlv.html'
             responses.add(responses.GET, url, status=500, body='{"message": "Internal server error."}')
-            with pytest.raises(ConnectionError):
+            with pytest.raises(BotoConnectionError):
                 s3.upload_from_url(url, key)
                 assert 'Received unexpected status code, aborting S3 upload' in caplog.text
                 assert 'status=500' in caplog.text

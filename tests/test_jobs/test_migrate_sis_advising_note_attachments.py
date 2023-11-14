@@ -28,7 +28,7 @@ from datetime import datetime
 import logging
 from unittest import mock
 
-from botocore.exceptions import ClientError, ConnectionError
+from botocore.exceptions import ClientError as BotoClientError, ConnectionError as BotoConnectionError
 from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
 import pytest
 from tests.util import capture_app_logs, mock_s3
@@ -47,7 +47,7 @@ def object_exists(m3, bucket, key):
     try:
         m3.Object(bucket, key).load()
         return True
-    except (ClientError, ConnectionError, ValueError):
+    except (BotoClientError, BotoConnectionError, ValueError):
         return False
 
 

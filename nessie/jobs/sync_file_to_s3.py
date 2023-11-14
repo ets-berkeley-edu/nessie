@@ -23,7 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from botocore.exceptions import ClientError, ConnectionError
+from botocore.exceptions import ClientError as BotoClientError, ConnectionError as BotoConnectionError
 from flask import current_app as app
 from nessie.externals import s3
 from nessie.jobs.background_job import BackgroundJob
@@ -58,7 +58,7 @@ class SyncFileToS3(BackgroundJob):
                     update_canvas_sync_status(canvas_sync_job_id, key, 'complete', destination_size=destination_size)
                     create_canvas_snapshot(key, size=destination_size)
                 return True
-            except (ClientError, ConnectionError, ValueError) as e:
+            except (BotoClientError, BotoConnectionError, ValueError) as e:
                 if canvas_sync_job_id:
                     update_canvas_sync_status(canvas_sync_job_id, key, 'error', details=str(e))
                 return False
