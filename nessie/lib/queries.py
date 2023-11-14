@@ -81,9 +81,7 @@ def get_active_student_ids():
       AND sid IN (
           SELECT DISTINCT student_id AS sid
           FROM {edl_external_schema()}.student_academic_plan_data
-          WHERE
-            academic_career_cd IN ('UGRD', 'GRAD', 'UCBX')
-            AND academic_program_status_cd='AC'
+          WHERE academic_program_status_cd='AC'
           UNION SELECT sid FROM {asc_schema()}.students
           UNION SELECT sid FROM {coe_schema()}.students
         )
