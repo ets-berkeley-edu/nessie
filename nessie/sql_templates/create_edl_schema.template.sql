@@ -174,7 +174,7 @@ AS (
     calnet_uid::varchar AS ldap_uid,
     givenname AS first_name,
     sn AS last_name,
-    COALESCE(officialemail, mail) AS email_address,
+    COALESCE(officialemail, mail, alternateid) AS email_address,
     stuid::varchar AS sid,
     affiliations,
     CASE ou
