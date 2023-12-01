@@ -279,6 +279,7 @@ AS (
     sed.semester_year_term_cd AS term_id,
     spd.calnet_uid AS ldap_uid,
     sed.student_id AS sis_id,
+    sed.academic_career_cd AS academic_career,
     sed.enrollment_action_cd AS enrollment_status,
     sed.enrollment_status_reason_cd as enrollment_status_reason,
     sed.incomplete_comments,

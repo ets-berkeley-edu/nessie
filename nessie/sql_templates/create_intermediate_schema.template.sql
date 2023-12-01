@@ -211,6 +211,7 @@ AS (
         en.term_id AS sis_term_id,
         en.section_id AS sis_section_id,
         en.ldap_uid,
+        en.academic_career,
         en.enrollment_status AS sis_enrollment_status,
         en.units,
         en.grading_basis,
