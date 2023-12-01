@@ -312,6 +312,7 @@ AS (
       academic_program_effective_dt AS effective_date
       FROM {redshift_schema_edl_external}.student_academic_plan_data
       WHERE intended_academic_plan_cd_1 IS NOT NULL
+      AND academic_career_cd IN ('UGRD', 'UCBX')
       GROUP BY student_id, intended_academic_plan_cd_1, academic_program_status_cd, academic_program_effective_dt
     UNION
     SELECT
@@ -321,6 +322,7 @@ AS (
       academic_program_effective_dt AS effective_date
       FROM {redshift_schema_edl_external}.student_academic_plan_data
       WHERE intended_academic_plan_cd_2 IS NOT NULL
+      AND academic_career_cd IN ('UGRD', 'UCBX')
       GROUP BY student_id, intended_academic_plan_cd_2, academic_program_status_cd, academic_program_effective_dt
 );
 
