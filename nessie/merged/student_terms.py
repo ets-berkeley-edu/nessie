@@ -128,6 +128,7 @@ def merge_enrollment(enrollments, term_id, term_name):
         term_section_ids[section_id] = True
 
         section_feed = {
+            'academicCareer': enrollment['academic_career'],
             'ccn': section_id,
             'component': enrollment['sis_instruction_format'],
             'courseRequirements': enrollment['course_requirements'] and json.loads(enrollment['course_requirements']),
@@ -179,6 +180,7 @@ def merge_enrollment(enrollments, term_id, term_name):
         # association unless we've already done it with a different section (this case may not arise in practice).
         if is_enrolled_primary_section(section_feed) or (
                 section_feed['primary'] and 'units' not in enrollments_by_class[class_name]):
+            enrollments_by_class[class_name]['academicCareer'] = section_feed['academicCareer']
             enrollments_by_class[class_name]['courseRequirements'] = section_feed['courseRequirements']
             enrollments_by_class[class_name]['grade'] = section_feed['grade']
             enrollments_by_class[class_name]['midtermGrade'] = section_feed['midtermGrade']
