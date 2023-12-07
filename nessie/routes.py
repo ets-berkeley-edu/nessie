@@ -40,6 +40,7 @@ def register_routes(app):
     import nessie.api.admin_controller
     import nessie.api.user_controller
     import nessie.api.job_controller
+    import nessie.api.magic_eight_ball_controller
     import nessie.api.schedule_controller
     import nessie.api.status_controller
 
