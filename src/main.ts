@@ -3,6 +3,10 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import _ from 'lodash'
 import App from '@/App.vue'
 import axios from 'axios'
+import highchartsDumbbell from 'highcharts/modules/dumbbell'
+import HC_more from 'highcharts/highcharts-more'
+import Highcharts from 'highcharts'
+import HighchartsVue from 'highcharts-vue'
 import lodash from 'lodash'
 import mitt from 'mitt'
 import router from '@/router'
@@ -15,9 +19,13 @@ import {BootstrapVue, BootstrapVueIcons} from 'bootstrap-vue'
 axios.defaults.withCredentials = true
 axios.interceptors.response.use(response => response, error => Promise.reject(error))
 
+HC_more(Highcharts)
+highchartsDumbbell(Highcharts)
+
 Vue.config.productionTip = false
 Vue.use(BootstrapVue)
 Vue.use(BootstrapVueIcons)
+Vue.use(HighchartsVue)
 Vue.use(require('vue-moment'))
 Vue.use(VueLodash, {lodash})
 

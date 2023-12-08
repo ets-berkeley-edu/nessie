@@ -9,10 +9,10 @@
       <b-col>
         <b-tabs v-if="$currentUser" v-model="tabIndex" align="center">
           <b-tab
-            v-for="(path, title, index) in {Jobs: '/home', Schedule: '/schedule', Configs: '/status'}"
+            v-for="(path, title, index) in {Jobs: '/home', Schedule: '/schedule', Configs: '/status', MagicEightBall: '/8ball'}"
             :key="title"
             :active="path === $route.path"
-            :title="title"
+            :title="title === 'MagicEightBall' ? '🎱' : title"
             @click="go(index, path)"
           >
             <b-card-text>

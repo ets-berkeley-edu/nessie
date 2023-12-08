@@ -1,4 +1,5 @@
 import Home from '@/views/Home.vue'
+import MagicEightBall from '@/views/MagicEightBall.vue'
 import Schedule from '@/views/Schedule.vue'
 import Status from '@/views/Status.vue'
 import store from '@/store'
@@ -13,6 +14,10 @@ const router = new VueRouter({
     {
       path: '/',
       redirect: '/home'
+    },
+    {
+      path: '/8ball',
+      component: MagicEightBall
     },
     {
       path: '/home',
