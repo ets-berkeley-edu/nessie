@@ -23,6 +23,7 @@ install:
   - pip install google-compute-engine # see https://github.com/tendenci/tendenci/issues/539
   - pip3 install -r requirements.txt
   - pip3 install tox
+  - echo -e '@neverendingsupport:registry=https://registry.nes.herodevs.com/npm/pkg/\n//registry.nes.herodevs.com/npm/pkg/:_authToken="'${NES_AUTH_TOKEN}'"' > .npmrc
   - npm install
 
 script:

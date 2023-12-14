@@ -7,6 +7,7 @@ phases:
       python: 3.8
     commands:
       - n 16  # Force Node update to v16
+      - echo -e '@neverendingsupport:registry=https://registry.nes.herodevs.com/npm/pkg/\n//registry.nes.herodevs.com/npm/pkg/:_authToken="'${NES_AUTH_TOKEN}'"' > .npmrc
       - npm -v
       - npm install
 

@@ -20,6 +20,7 @@ config/build-summary.json
 
 # Local dev
 venv
+.npmrc
 .tox/
 
 # Compiled/optimized files
