@@ -13,18 +13,19 @@
     "ajv": "8.11.0",
     "ajv-keywords": "5.1.0",
     "axios": "0.27.2",
-    "bootstrap-vue": "2.22.0",
+    "bootstrap-vue": "npm:@neverendingsupport/bootstrap-vue2@2.23.2",
+    "highcharts-custom-events": "3.0.10",
     "highcharts-vue": "1.4.3",
     "lodash": "4.17.21",
     "mitt": "2.1.0",
     "ora": "6.1.2",
     "tar-stream": "2.2.0",
-    "vue": "2.7.12",
+    "vue": "npm:@neverendingsupport/vue2@2.7.17",
     "vue-class-component": "7.2.6",
     "vue-lodash": "2.1.2",
     "vue-moment": "4.1.0",
     "vue-property-decorator": "9.1.2",
-    "vue-router": "3.6.5",
+    "vue-router": "npm:@neverendingsupport/vue-router@3.6.6",
     "vuejs-datepicker": "1.6.2",
     "vuex": "3.6.2"
   },
@@ -50,7 +51,7 @@
     "npm-force-resolutions": "^0.0.10",
     "typescript": "~4.4.4",
     "vue-eslint-parser": "^7.11.0",
-    "vue-template-compiler": "^2.7.12"
+    "vue-template-compiler": "npm:@neverendingsupport/vue2@2.7.17-template-compiler"
   },
   "babel": {
     "presets": [
@@ -69,6 +70,14 @@
     }
   },
   "license": "SEE LICENSE IN LICENSE",
+  "overrides": {
+    "bootstrap-vue": { ".": "npm:@neverendingsupport/bootstrap-vue2@2.23.2" },
+    "vue": { ".": "npm:@neverendingsupport/vue2@2.7.17" },
+    "@vue/compiler-sfc": { ".": "npm:@neverendingsupport/vue2@2.7.17-compiler-sfc" },
+    "vue-router": { ".": "npm:@neverendingsupport/vue-router@3.6.6" },
+    "vue-server-renderer": { ".": "npm:@neverendingsupport/vue2@2.7.17-server-renderer" },
+    "vue-template-compiler": { ".": "npm:@neverendingsupport/vue2@2.7.17-template-compiler" }
+  },
   "resolutions": {
     "ajv": "8.11.0",
     "ajv-keywords": "5.1.0",
