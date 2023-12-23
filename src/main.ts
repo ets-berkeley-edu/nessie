@@ -3,6 +3,7 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import _ from 'lodash'
 import App from '@/App.vue'
 import axios from 'axios'
+import CustomEvents from 'highcharts-custom-events'
 import highchartsDumbbell from 'highcharts/modules/dumbbell'
 import HC_more from 'highcharts/highcharts-more'
 import Highcharts from 'highcharts'
@@ -21,6 +22,7 @@ axios.interceptors.response.use(response => response, error => Promise.reject(er
 
 HC_more(Highcharts)
 highchartsDumbbell(Highcharts)
+CustomEvents(Highcharts)
 
 Vue.config.productionTip = false
 Vue.use(BootstrapVue)
