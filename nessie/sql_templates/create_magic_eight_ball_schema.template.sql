@@ -27,9 +27,12 @@ CREATE SCHEMA IF NOT EXISTS magic_eight_ball;
 
 CREATE TABLE IF NOT EXISTS magic_eight_ball.schedules
 (
+    id SERIAL PRIMARY KEY,
     name VARCHAR NOT NULL,
+    schedule_group VARCHAR NOT NULL DEFAULT 'Default',
     design VARCHAR,
     development VARCHAR,
     qa VARCHAR,
-    release VARCHAR
+    release VARCHAR,
+    release_id INTEGER
 );
