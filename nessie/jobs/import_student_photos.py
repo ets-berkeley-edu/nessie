@@ -30,7 +30,7 @@ from nessie.externals import s3
 from nessie.externals.cal1card_photo_api import get_cal1card_photo
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.metadata import update_photo_import_status
-from nessie.lib.queries import get_active_student_ids, get_sids_with_photos
+from nessie.lib.queries import get_active_student_ids, get_attributes_for_uids, get_sids_with_photos
 
 """Logic for student photo import job."""
 
@@ -39,20 +39,20 @@ class ImportStudentPhotos(BackgroundJob):
 
     rds_schema = app.config['RDS_SCHEMA_STUDENT']
 
-    def run(self):
-        students_without_photos = _get_students_without_photos()
+    def run(self, uids='new'):
+        students = _get_students(uids=uids)
 
-        app.logger.info(f'Starting student photo import job for {len(students_without_photos)} students...')
+        app.logger.info(f'Starting student photo import job for {len(students)} students...')
 
         successes = []
         failures = []
         photo_not_found = []
         index = 0
 
-        for csid in students_without_photos.keys():
+        for csid in students.keys():
             index += 1
-            app.logger.info(f'Fetching photo for SID {csid}, ({index} of {len(students_without_photos)})')
-            uid = students_without_photos.get(csid)
+            app.logger.info(f'Fetching photo for SID {csid}, ({index} of {len(students)})')
+            uid = students.get(csid)
             if not uid:
                 app.logger.error(f'No UID found for SID {csid}.')
                 failures.append(csid)
@@ -88,7 +88,14 @@ class ImportStudentPhotos(BackgroundJob):
             return status
 
 
-def _get_students_without_photos():
-    active_student_ids = get_active_student_ids()
-    previous_imports = {r['sid'] for r in get_sids_with_photos()}
-    return {r['sid']: r['ldap_uid'] for r in active_student_ids if r['sid'] not in previous_imports}
+def _get_students(uids='new'):
+    if uids in ('new', 'active'):
+        student_ids = get_active_student_ids()
+    else:
+        student_ids = get_attributes_for_uids(uids.split(','))
+
+    if uids == 'new':
+        previous_imports = {r['sid'] for r in get_sids_with_photos()}
+        return {r['sid']: r['ldap_uid'] for r in student_ids if r['sid'] not in previous_imports}
+    else:
+        return {r['sid']: r['ldap_uid'] for r in student_ids}
