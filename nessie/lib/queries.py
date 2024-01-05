@@ -95,6 +95,7 @@ def get_attributes_for_uids(uids):
       SELECT ldap_uid, MAX(sid) AS sid
       FROM {edl_schema()}.basic_attributes attrs
       WHERE ldap_uid = ANY(%s)
+      GROUP BY ldap_uid
     """
     return redshift.fetch(sql, params=(uids,))
 
