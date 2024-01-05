@@ -90,6 +90,15 @@ def get_active_student_ids():
     return redshift.fetch(sql)
 
 
+def get_attributes_for_uids(uids):
+    sql = f"""
+      SELECT ldap_uid, MAX(sid) AS sid
+      FROM {edl_schema()}.basic_attributes attrs
+      WHERE ldap_uid = ANY(%s)
+    """
+    return redshift.fetch(sql, params=(uids,))
+
+
 def get_advisee_advisor_mappings():
     sql = f"""SELECT DISTINCT
             advs.student_sid AS student_sid,

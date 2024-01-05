@@ -299,10 +299,12 @@ def transform_piazza_api_data(archive='latest'):
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/import_student_photos', methods=['POST'])
+@app.route('/api/job/import_student_photos/<uids>', methods=['POST'])
 @auth_required
-def import_student_photos():
-    job_started = ImportStudentPhotos().run_async()
+def import_student_photos(uids):
+    if uids not in ('new', 'active') and not re.match(r'^[\d,]+$', uids):
+        raise BadRequestError("Incorrect uids parameter; provide 'new,' 'active,' or a comma-separated list of UIDs.")
+    job_started = ImportStudentPhotos(uids=uids).run_async()
     return respond_with_status(job_started)
 
 
