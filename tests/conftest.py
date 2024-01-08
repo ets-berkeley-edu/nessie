@@ -67,69 +67,16 @@ def app(request):
 
 
 @pytest.fixture()
-def metadata_db(app):
-    """Use Postgres to locally mock the metadata schema."""
+def clear_metadata_db(app):
+    """Tear down and recreate the metadata db per test if needed."""
     from nessie.externals import rds
 
-    rds_schema = app.config['RDS_SCHEMA_METADATA']
-    rds.execute(f'DROP SCHEMA IF EXISTS {rds_schema} CASCADE')
-    rds.execute(f'CREATE SCHEMA IF NOT EXISTS {rds_schema}')
-    rds.execute(f"""CREATE TABLE IF NOT EXISTS {rds_schema}.background_job_status
-    (
-        job_id VARCHAR NOT NULL,
-        status VARCHAR NOT NULL,
-        instance_id VARCHAR,
-        details VARCHAR(4096),
-        created_at TIMESTAMP NOT NULL,
-        updated_at TIMESTAMP NOT NULL
-    )""")
-    rds.execute(f"""CREATE TABLE IF NOT EXISTS {rds_schema}.canvas_sync_job_status
-    (
-       job_id VARCHAR NOT NULL,
-       filename VARCHAR NOT NULL,
-       canvas_table VARCHAR NOT NULL,
-       source_url VARCHAR NOT NULL,
-       source_size BIGINT,
-       destination_url VARCHAR,
-       destination_size BIGINT,
-       status VARCHAR NOT NULL,
-       details VARCHAR,
-       instance_id VARCHAR,
-       created_at TIMESTAMP NOT NULL,
-       updated_at TIMESTAMP NOT NULL
-    )""")
-    rds.execute(f"""CREATE TABLE IF NOT EXISTS {rds_schema}.canvas_synced_snapshots
-    (
-        filename VARCHAR NOT NULL,
-        canvas_table VARCHAR NOT NULL,
-        url VARCHAR NOT NULL,
-        size BIGINT NOT NULL,
-        created_at TIMESTAMP NOT NULL,
-        deleted_at TIMESTAMP
-    )""")
-    rds.execute(f"""CREATE TABLE IF NOT EXISTS {rds_schema}.registration_import_status
-    (
-        sid VARCHAR NOT NULL PRIMARY KEY,
-        status VARCHAR NOT NULL,
-        updated_at TIMESTAMP NOT NULL
-    );""")
-    rds.execute(f"""CREATE TABLE IF NOT EXISTS {rds_schema}.merged_enrollment_term_job_queue
-    (
-       id SERIAL PRIMARY KEY,
-       master_job_id VARCHAR NOT NULL,
-       term_id VARCHAR NOT NULL,
-       status VARCHAR NOT NULL,
-       details VARCHAR,
-       instance_id VARCHAR,
-       created_at TIMESTAMP NOT NULL,
-       updated_at TIMESTAMP NOT NULL
-    )""")
-    rds.execute(f"""CREATE TABLE IF NOT EXISTS {rds_schema}.photo_import_status
-    (
-        sid VARCHAR NOT NULL PRIMARY KEY,
-        status VARCHAR NOT NULL,
-        updated_at TIMESTAMP NOT NULL
-    );""")
+    fixture_path = f"{app.config['BASE_DIR']}/fixtures"
+    with open(f'{fixture_path}/metadata.sql', 'r') as sql_file:
+        metadata_sql = sql_file.read()
+        print('HI SQL')
+        print(metadata_sql)
+        rds.execute(metadata_sql)
 
 
 @pytest.fixture()

@@ -35,7 +35,7 @@ from tests.util import assert_background_job_status, capture_app_logs, mock_s3
 class TestResyncCanvasSnapshots:
     """Resync Canvas snapshots job."""
 
-    def test_resync_canvas_snapshots(self, app, metadata_db, caplog):
+    def test_resync_canvas_snapshots(self, app, caplog, clear_metadata_db):
         """Dispatches a complete resync job against fixtures."""
         caplog.set_level(logging.INFO)
         snapshots = canvas_data.get_snapshots()['files']

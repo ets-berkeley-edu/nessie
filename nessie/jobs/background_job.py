@@ -33,7 +33,7 @@ from flask import current_app as app
 from nessie.externals import redshift
 from nessie.jobs.queue import get_job_queue
 from nessie.lib.berkeley import send_system_error_email
-from nessie.lib.metadata import create_background_job_status, update_background_job_status
+from nessie.lib.metadata import create_background_job_status, most_recent_background_job_status, update_background_job_status
 from nessie.models.util import advisory_lock
 
 """Parent class for background jobs."""
@@ -60,6 +60,7 @@ def verify_external_schema(schema, resolved_ddl, is_zero_count_acceptable=False)
 class BackgroundJob(object):
 
     status_logging_enabled = True
+    condemn_stalled_jobs_to_failure = True
 
     def __init__(self, **kwargs):
         self.job_args = kwargs
@@ -101,6 +102,8 @@ class BackgroundJob(object):
         lock_id = kwargs.pop('lock_id', None)
         with advisory_lock(lock_id):
             if self.status_logging_enabled:
+                if self.condemn_stalled_jobs_to_failure:
+                    check_for_stalled_job(type(self).__name__)
                 create_background_job_status(self.job_id)
             try:
                 error = None
@@ -150,3 +153,17 @@ class ChainedBackgroundJob(BackgroundJob):
 
 class BackgroundJobError(Exception):
     pass
+
+
+def check_for_stalled_job(job_name):
+    last_job = most_recent_background_job_status(job_name)
+    if last_job and last_job['status'] == 'started':
+        send_system_error_email(
+            message=f"""
+                job_id: {last_job.job_id}
+
+                {'Timed out.'}
+            """,
+            subject=f'Job timeout: {job_name}',
+        )
+        update_background_job_status(last_job.job_id, 'failed', details='Timed out.')

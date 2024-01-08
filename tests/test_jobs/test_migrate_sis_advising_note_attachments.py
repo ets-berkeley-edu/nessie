@@ -62,7 +62,7 @@ class TestMigrateSisAdvisingNoteAttachments:
     """Copies files from source path(s) to the destination, organized into folders by SID."""
 
     @mock.patch('nessie.lib.util.datetime', autospec=True)
-    def test_first_time_run_with_no_param(self, mock_datetime, app, caplog, metadata_db):
+    def test_first_time_run_with_no_param(self, mock_datetime, app, caplog):
         """When no parameter is provided and there is no prior successful run, copies all files."""
         (bucket, source_prefix, dest_prefix) = get_s3_refs(app)
         mock_datetime.utcnow.return_value = datetime(year=2019, month=8, day=29, hour=5, minute=21)
@@ -86,7 +86,7 @@ class TestMigrateSisAdvisingNoteAttachments:
                 assert object_exists(m3, bucket, f'{dest_prefix}/34567890/34567890_00014_2.xls')
 
     @mock.patch('nessie.lib.util.datetime', autospec=True)
-    def test_run_with_no_param(self, mock_datetime, app, caplog, metadata_db, prior_job_status):
+    def test_run_with_no_param(self, mock_datetime, app, caplog, prior_job_status):
         """When no parameter is provided, copies new files since the last succesful run."""
         (bucket, source_prefix, dest_prefix) = get_s3_refs(app)
         mock_datetime.utcnow.return_value = datetime(year=2019, month=8, day=29, hour=5, minute=21)
