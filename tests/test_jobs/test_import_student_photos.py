@@ -31,7 +31,7 @@ from tests.util import capture_app_logs, mock_s3
 
 class TestImportStudentPhotos:
 
-    def test_import_student_photos(self, app, metadata_db, student_tables, caplog):
+    def test_import_student_photos(self, app, student_tables, caplog):
         from nessie.jobs.import_student_photos import ImportStudentPhotos
         caplog.set_level(logging.DEBUG)
         with capture_app_logs(app):

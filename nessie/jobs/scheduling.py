@@ -25,6 +25,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
+from nessie.jobs.background_job import check_for_stalled_job
+
 
 """Background job scheduling."""
 
@@ -175,12 +177,15 @@ def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):
 
 
 def schedule_job(sched, job_id, job_class, force=False, **job_opts):
+    check_for_stalled_job(job_class.__name__)
     job_schedule = add_job(sched, start_background_job, job_class, job_id, force, **job_opts)
     if job_schedule:
         app.logger.info(f'Scheduled {job_class.__name__} job: {job_schedule}')
 
 
 def schedule_chained_job(sched, job_id, job_components, force=False):
+    for component in job_components:
+        check_for_stalled_job(component.__name__)
     job_schedule = add_job(sched, start_chained_job, job_components, job_id, force)
     if job_schedule:
         app.logger.info(f'Scheduled chained background job: {job_schedule}, ' + ', '.join([c.__name__ for c in job_components]))

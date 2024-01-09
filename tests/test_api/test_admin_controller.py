@@ -34,7 +34,7 @@ class TestAdminController:
         response = client.post('/api/admin/background_job_status')
         assert response.status_code == 401
 
-    def test_background_job_status(self, app, client, metadata_db):
+    def test_background_job_status(self, app, client):
         """Returns a well-formed response."""
         response = post_basic_auth(
             client,

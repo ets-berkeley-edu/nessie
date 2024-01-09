@@ -53,7 +53,7 @@ class TestSyncFileToS3:
             assert result is False
             assert f'Key {key} exists, skipping upload' in caplog.text
 
-    def test_canvas_sync_metadata(self, app, metadata_db):
+    def test_canvas_sync_metadata(self, app, clear_metadata_db):
         """When given a job id, updates metadata on file sync."""
         url = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
         key = 'canvas/sonnet_submission_dim/sonnet-xlv.txt'
