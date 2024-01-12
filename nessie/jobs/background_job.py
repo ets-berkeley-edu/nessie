@@ -160,7 +160,7 @@ def check_for_stalled_job(job_name):
     if last_job and last_job['status'] == 'started':
         send_system_error_email(
             message=f"""
-                job_id: {last_job.job_id}
+                job_id: {last_job['job_id']}
 
                 {'Timed out.'}
             """,
