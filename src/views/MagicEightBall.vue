@@ -132,18 +132,18 @@ export default {
       this.$_.each(this.schedules, s => {
         series.design.push({
           name: s.name,
-          low: new Date(s.design).getTime(),
-          high: new Date(s.development).getTime()
+          high: new Date(s.design).getTime(),
+          low: new Date(s.development).getTime()
         })
         series.development.push({
           name: s.name,
-          low: new Date(s.development).getTime(),
-          high: new Date(s.qa).getTime()
+          high: new Date(s.development).getTime(),
+          low: new Date(s.qa).getTime()
         })
         series.qa.push({
           name: s.name,
-          low: new Date(s.qa).getTime(),
-          high: new Date(s.release).getTime(),
+          high: new Date(s.qa).getTime(),
+          low: new Date(s.release).getTime(),
         })
         if (!scheduleMin || scheduleMin > s.design) {
           scheduleMin = s.design
@@ -166,7 +166,24 @@ export default {
         legend: {
           enabled: false
         },
-        tooltip: false,
+        tooltip: {
+          enabled: true,
+          followPointer: false,
+          pointFormatter: function() {
+            const seriesNames = this.series.name.split(' to ')
+            return (
+              `<span style="color:'${this.series.color}">●</span> ${seriesNames[0]}: <b>${new Date(this.high).toUTCString().slice(0, -13)}</b><br/>` +
+              `<span style="color:'${this.series.lowColor}">●</span> ${seriesNames[1]}: <b>${new Date(this.low).toUTCString().slice(0, -13)}</b>`)
+          },
+          positioner: function(labelWidth, labelHeight, point) {
+            var tooltipX = Math.max(point.plotX, 0) + 500
+            var tooltipY = point.plotY - 60
+            return {
+              x: tooltipX,
+              y: tooltipY
+            }
+          }
+        },
         xAxis: {
           type: 'category',
           labels: {
@@ -203,42 +220,44 @@ export default {
         },
         plotOptions: {
           dumbbell: {
+            findNearestPointBy: 'x',
+            getExtremesFromAll: true,
             grouping: false
           }
         },
         series: [
           {
-            name: 'Design to development',
+            name: 'Design to Development',
             data: series.design,
             connectorWidth: 15,
             color: colors.paleRed,
-            lowColor: colors.red,
+            lowColor: colors.green,
+            marker: {
+              fillColor: colors.red,
+              symbol: 'circle',
+              radius: 7
+            }
+          },
+          {
+            name: 'Development to QA',
+            data: series.development,
+            connectorWidth: 15,
+            color: colors.paleGreen,
+            lowColor: colors.blue,
             marker: {
               fillColor: colors.green,
               symbol: 'circle',
               radius: 7
-            }
+            },
           },
           {
-            name: 'Development to qa',
-            data: series.development,
-            connectorWidth: 15,
-            color: colors.paleGreen,
-            lowColor: colors.green,
-            marker: {
-              fillColor: colors.blue,
-              symbol: 'circle',
-              radius: 7
-            }
-          },
-          {
-            name: 'QA to release',
+            name: 'QA to Release',
             data: series.qa,
             connectorWidth: 15,
-            lowColor: colors.blue,
+            lowColor: colors.purple,
             color: colors.paleBlue,
             marker: {
-              fillColor: colors.purple,
+              fillColor: colors.blue,
               symbol: 'circle',
               radius: 7
             }
@@ -265,7 +284,6 @@ export default {
           if (schedule.id === updatedSchedule.id) {
             this.schedules.splice(index, 1, updatedSchedule)
             this.selectSchedule(index)
-            console.log(this.schedules)
           }
         })
         this.renderTimeline()
