@@ -166,4 +166,4 @@ def check_for_stalled_job(job_name):
             """,
             subject=f'Job timeout: {job_name}',
         )
-        update_background_job_status(last_job.job_id, 'failed', details='Timed out.')
+        update_background_job_status(last_job['job_id'], 'failed', details='Timed out.')
