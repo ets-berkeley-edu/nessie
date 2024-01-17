@@ -39,8 +39,8 @@ class ImportStudentPhotos(BackgroundJob):
 
     rds_schema = app.config['RDS_SCHEMA_STUDENT']
 
-    def run(self, uids='new'):
-        students = _get_students(uids=uids)
+    def run(self, uid='new'):
+        students = _get_students(uid=uid)
 
         app.logger.info(f'Starting student photo import job for {len(students)} students...')
 
@@ -88,13 +88,13 @@ class ImportStudentPhotos(BackgroundJob):
             return status
 
 
-def _get_students(uids='new'):
-    if uids in ('new', 'active'):
+def _get_students(uid='new'):
+    if uid in ('new', 'active'):
         student_ids = get_active_student_ids()
     else:
-        student_ids = get_attributes_for_uids(uids.split(','))
+        student_ids = get_attributes_for_uids([uid])
 
-    if uids == 'new':
+    if uid == 'new':
         previous_imports = {r['sid'] for r in get_sids_with_photos()}
         return {r['sid']: r['ldap_uid'] for r in student_ids if r['sid'] not in previous_imports}
     else:
