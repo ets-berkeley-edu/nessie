@@ -342,6 +342,9 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
         if r['phone']:
             feed['phones'] = [{'number': r['phone'], 'type': {'code': r['phone_type']}}]
 
+        if r['pronouns_cd']:
+            feed['pronouns'] = {'code': r['pronouns_cd'], 'description': r['pronouns_desc']}
+
     def _merge_holds(self, feed, hold_rows):
         if not hold_rows or not len(hold_rows):
             return
