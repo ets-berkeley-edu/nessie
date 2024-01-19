@@ -338,6 +338,8 @@ def stream_edl_profiles():
           spd.person_preferred_first_nm,
           spd.person_preferred_middle_nm,
           spd.person_preferred_last_nm,
+          btrim(spd.pronouns_cd) AS pronouns_cd,
+          spd.pronouns_desc,
           cppp.phone_type,
           cppp.phone
         FROM {edl_external_schema()}.student_personal_data spd
