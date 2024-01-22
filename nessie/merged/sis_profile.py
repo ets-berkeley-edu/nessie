@@ -53,6 +53,7 @@ def parse_merged_sis_profile(feed_elements):
         merge_sis_profile_emails,
         merge_sis_profile_names,
         merge_sis_profile_phones,
+        merge_sis_profile_pronouns,
         merge_holds,
         merge_term_gpa,
     ]:
@@ -316,6 +317,11 @@ def merge_sis_profile_plans(academic_status, sis_profile):
     sis_profile['plansMinor'] = sorted(plans_minor, key=itemgetter('description'))
     # TODO: Remove this line after BOAC-4985 lands in production
     sis_profile['subplans'] = sorted(list(subplans))
+
+
+def merge_sis_profile_pronouns(sis_profile_feed, sis_profile):
+    if sis_profile_feed.get('pronouns'):
+        sis_profile['pronouns'] = sis_profile_feed['pronouns']
 
 
 def merge_intended_majors(intended_majors_feed):
