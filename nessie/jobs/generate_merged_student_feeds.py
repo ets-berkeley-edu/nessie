@@ -151,6 +151,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             })
 
         names = self.get_names(feed_elements)
+        pronouns = feed_elements.get('pronouns', {})
 
         base_profile = {
             'sid': sid,
@@ -159,6 +160,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             'canvasUserId': feed_elements.get('canvas_user_id'),
             'canvasUserName': feed_elements.get('canvas_user_name'),
             **names,
+            **pronouns,
         }
         merged_profile = {
             **base_profile,
