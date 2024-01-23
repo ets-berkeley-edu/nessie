@@ -11,6 +11,7 @@
           <b-tab
             v-for="(path, title, index) in {Jobs: '/home', Schedule: '/schedule', Configs: '/status', MagicEightBall: '/8ball'}"
             :key="title"
+            lazy
             :active="path === $route.path"
             :title="title === 'MagicEightBall' ? '🎱' : title"
             @click="go(index, path)"
