@@ -86,6 +86,18 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.minors
 DISTKEY (sid)
 SORTKEY (sid, minor);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_programs (
+    sid VARCHAR NOT NULL,
+    academic_career_code VARCHAR,
+    academic_program_status_code VARCHAR,
+    academic_program_status VARCHAR,
+    academic_program_code VARCHAR,
+    academic_program_name VARCHAR,
+    effective_date DATE
+)
+DISTKEY (sid)
+SORTKEY (sid);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_canvas_site_memberships
 (
     sid VARCHAR NOT NULL,

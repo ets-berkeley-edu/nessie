@@ -84,6 +84,20 @@ CREATE INDEX IF NOT EXISTS academic_standing_term_id_idx ON {rds_schema_student}
 CREATE INDEX IF NOT EXISTS academic_standing_action_idx ON {rds_schema_student}.academic_standing (acad_standing_action);
 CREATE INDEX IF NOT EXISTS academic_standing_status_idx ON {rds_schema_student}.academic_standing (acad_standing_status);
 
+CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_academic_programs
+(
+    sid VARCHAR NOT NULL,
+    academic_career_code VARCHAR,
+    academic_program_status_code VARCHAR,
+    academic_program_status VARCHAR,
+    academic_program_code VARCHAR,
+    academic_program_name VARCHAR,
+    effective_date DATE
+);
+
+CREATE INDEX IF NOT EXISTS student_academic_programs_sid_idx ON {rds_schema_student}.student_academic_programs (sid);
+CREATE INDEX IF NOT EXISTS student_academic_programs_academic_program_status_idx ON {rds_schema_student}.student_academic_programs (academic_program_status);
+
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_profile_index
 (
     sid VARCHAR NOT NULL,
