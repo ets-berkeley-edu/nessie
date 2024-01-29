@@ -188,7 +188,7 @@ INSERT INTO {rds_schema_student}.student_academic_programs (
           FROM {redshift_schema_student}.student_academic_programs
       $REDSHIFT$)
   AS redshift_student_academic_programs (
-      sid VARCHAR NOT NULL,
+      sid VARCHAR,
       academic_career_code VARCHAR,
       academic_program_status_code VARCHAR,
       academic_program_status VARCHAR,
