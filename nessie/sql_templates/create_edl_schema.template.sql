@@ -326,6 +326,20 @@ AS (
       GROUP BY student_id, intended_academic_plan_cd_2, academic_program_status_cd, academic_program_effective_dt
 );
 
+CREATE TABLE {redshift_schema_edl}.student_academic_programs
+SORTKEY(sid)
+AS (
+    SELECT
+        student_id AS sid,
+        academic_career_cd AS academic_career_code,
+        academic_program_status_cd AS academic_program_status_code,
+        academic_program_status_desc AS academic_program_status,
+        academic_program_cd AS academic_program_code,
+        academic_program_nm AS academic_program_name,
+        academic_program_effective_dt AS effective_date
+        FROM {redshift_schema_edl_external}.student_academic_plan_data
+);
+
 CREATE TABLE {redshift_schema_edl}.student_citizenships
 SORTKEY(sid)
 AS (

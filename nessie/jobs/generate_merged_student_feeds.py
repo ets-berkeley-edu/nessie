@@ -74,6 +74,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         refresh_all_from_staging(profile_tables)
 
         self.update_redshift_academic_standing()
+        self.update_redshift_student_academic_programs()
         self.update_rds_profile_indexes()
 
         result = f'Generated merged profiles ({len(self.successes)} successes, {len(self.failures)} failures).'
@@ -283,6 +284,15 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             INSERT INTO {self.student_schema}.academic_standing
                 SELECT sid, term_id, acad_standing_action, acad_standing_status, action_date
                 FROM {app.config['REDSHIFT_SCHEMA_EDL']}.academic_standing;""",
+        )
+
+    def update_redshift_student_academic_programs(self):
+        redshift.execute(
+            f"""TRUNCATE {self.student_schema}.student_academic_programs;
+            INSERT INTO {self.student_schema}.student_academic_programs
+                SELECT sid, academic_career_code, academic_program_status_code,
+                    academic_program_status, academic_program_code, academic_program_name, effective_date
+                FROM {app.config['REDSHIFT_SCHEMA_EDL']}.student_academic_programs;""",
         )
 
     def update_rds_profile_indexes(self):

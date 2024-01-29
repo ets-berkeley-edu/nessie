@@ -60,6 +60,16 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.basic_attributes (
     person_type VARCHAR
 );
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_academic_programs (
+    sid VARCHAR NOT NULL,
+    academic_career_code VARCHAR,
+    academic_program_status_code VARCHAR,
+    academic_program_status VARCHAR,
+    academic_program_code VARCHAR,
+    academic_program_name VARCHAR,
+    effective_date DATE
+);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_citizenships (
     sid VARCHAR NOT NULL,
     citizenship_country VARCHAR,
@@ -135,6 +145,14 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.term_gpas
     gpa DECIMAL(5,3),
     units_taken_for_gpa DECIMAL(4,1)
 );
+
+INSERT INTO {redshift_schema_edl}.student_academic_programs
+(sid, academic_career_code, academic_program_status_code, academic_program_status, academic_program_code, academic_program_name, effective_date)
+VALUES
+('11667051', 'UGRD', 'AC', 'Active in Program', 'UCLS', 'Undergrad Letters & Science', '2016-01-12'),
+('1234567890', 'UCBX', 'DC', 'Discontinued', 'XCCRT', 'UCBX Concurrent Enrollment', '2018-08-15'),
+('2345678901', 'UGRD', 'AC', 'Active in Program', 'UCLS', 'Undergrad Letters & Science', '2016-01-12'),
+('5000000000', 'GRAD', 'CM', 'Completed Program', 'GSSDP', 'Graduate Self-Supporting Pgms', '2015-08-19');
 
 INSERT INTO {redshift_schema_edl}.basic_attributes
 (sid, ldap_uid, first_name, last_name, email_address, affiliations, person_type)

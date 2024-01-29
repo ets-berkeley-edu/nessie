@@ -9,6 +9,16 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.canvas_api_enrollments
     feed TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_programs (
+    sid VARCHAR NOT NULL,
+    academic_career_code VARCHAR,
+    academic_program_status_code VARCHAR,
+    academic_program_status VARCHAR,
+    academic_program_code VARCHAR,
+    academic_program_name VARCHAR,
+    effective_date DATE
+);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profile_index
 (
     sid VARCHAR NOT NULL,
@@ -66,6 +76,16 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.canvas_api_enrollme
     term_id VARCHAR(4) NOT NULL,
     last_activity_at TIMESTAMP,
     feed TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_academic_programs (
+    sid VARCHAR NOT NULL,
+    academic_career_code VARCHAR,
+    academic_program_status_code VARCHAR,
+    academic_program_status VARCHAR,
+    academic_program_code VARCHAR,
+    academic_program_name VARCHAR,
+    effective_date DATE
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_profile_index

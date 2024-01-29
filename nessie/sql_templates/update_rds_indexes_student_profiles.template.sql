@@ -178,6 +178,26 @@ INSERT INTO {rds_schema_student}.minors (
   )
 );
 
+TRUNCATE {rds_schema_student}.student_academic_programs;
+
+INSERT INTO {rds_schema_student}.student_academic_programs (
+  SELECT DISTINCT *
+      FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+          SELECT sid, academic_career_code, academic_program_status_code, academic_program_status,
+              academic_program_code, academic_program_name, effective_date
+          FROM {redshift_schema_student}.student_academic_programs
+      $REDSHIFT$)
+  AS redshift_student_academic_programs (
+      sid VARCHAR NOT NULL,
+      academic_career_code VARCHAR,
+      academic_program_status_code VARCHAR,
+      academic_program_status VARCHAR,
+      academic_program_code VARCHAR,
+      academic_program_name VARCHAR,
+      effective_date DATE
+  )
+);
+
 TRUNCATE {rds_schema_student}.student_degrees;
 
 INSERT INTO {rds_schema_student}.student_degrees
