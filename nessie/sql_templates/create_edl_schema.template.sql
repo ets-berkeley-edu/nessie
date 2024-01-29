@@ -337,7 +337,15 @@ AS (
         academic_program_cd AS academic_program_code,
         academic_program_nm AS academic_program_name,
         academic_program_effective_dt AS effective_date
-        FROM {redshift_schema_edl_external}.student_academic_plan_data
+    FROM {redshift_schema_edl_external}.student_academic_plan_data sapd1
+    WHERE academic_program_effective_dt = (
+        SELECT MAX(academic_program_effective_dt)
+        FROM {redshift_schema_edl_external}.student_academic_plan_data sapd2
+        WHERE sapd2.student_id = sapd1.student_id
+        AND sapd2.academic_career_cd = sapd1.academic_career_cd
+        AND sapd2.academic_program_cd = sapd1.academic_program_cd
+        AND sapd2.academic_program_nm = sapd1.academic_program_nm
+    )
 );
 
 CREATE TABLE {redshift_schema_edl}.student_citizenships
