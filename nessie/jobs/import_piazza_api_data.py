@@ -80,38 +80,41 @@ class ImportPiazzaApiData(BackgroundJob):
         return ', '.join(f"{a['name']}: {a['size']} bytes" for a in archives_to_process)
 
     def get_list_of_archives(self, headers):
+        list_of_archives = []
         email = app.config['PIAZZA_API_USERNAME']  # email for piazza account with school export permission
         password = app.config['PIAZZA_API_PASSWORD']
         # login to Piazza
         response = self.piazza_api('user.login', headers, {'email': email, 'pass': password})
         # we need this cookie!
-        piazza_session = response.cookies['piazza_session'].replace('"', '')
-        headers['Cookie'] = 'session_id=' + self.session_id + ';piazza_session=' + piazza_session
-        # ok, get the archives we need...
-        all_available_archives = self.piazza_api('school.list_available_archives', headers, {'sid': self.sid})
-        list_of_archives = json.loads(all_available_archives.text)['result']
-        app.logger.debug('All available archives:')
-        app.logger.debug(list_of_archives)
-        """
-        here's what list_of_archives looks like
-        //
-           size: total size of zip file in bytes
-           name: name of file
-           from: timestamp from what time archive starts
-           to: timestamp to what time archive ends
-           type: 'fill', 'monthly' or 'daily'
-        //
-        e.g.
-           [
-             {
-               size: 9807649,
-               name: 'full_2020-06-05',
-               from: 0,
-               to: 1591353234,
-               type: 'full'
-             }
-           ]
-        """
+        piazza_session = response.cookies.get('piazza_session')
+        if piazza_session:
+            piazza_session = piazza_session.replace('"', '')
+            headers['Cookie'] = 'session_id=' + self.session_id + ';piazza_session=' + piazza_session
+            # ok, get the archives we need...
+            all_available_archives = self.piazza_api('school.list_available_archives', headers, {'sid': self.sid})
+            list_of_archives = json.loads(all_available_archives.text)['result']
+            app.logger.debug('All available archives:')
+            app.logger.debug(list_of_archives)
+            """
+            here's what list_of_archives looks like
+            //
+               size: total size of zip file in bytes
+               name: name of file
+               from: timestamp from what time archive starts
+               to: timestamp to what time archive ends
+               type: 'fill', 'monthly' or 'daily'
+            //
+            e.g.
+               [
+                 {
+                   size: 9807649,
+                   name: 'full_2020-06-05',
+                   from: 0,
+                   to: 1591353234,
+                   type: 'full'
+                 }
+               ]
+            """
         return sorted(list_of_archives, reverse=True, key=lambda x: x['to'])
 
     def select_archives_by_type_and_date(self, list_of_archives, frequency, datestamp):
