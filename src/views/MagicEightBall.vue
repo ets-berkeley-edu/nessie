@@ -4,9 +4,6 @@
       <b-col>
         <h2>🎱 RTL DevOps Project Timeline</h2>
       </b-col>
-      <b-col cols="1">
-        <b-btn v-if="!creating && !editing" @click="startCreation">New</b-btn>
-      </b-col>
     </b-row>
     <b-row>
       <b-col>
@@ -46,6 +43,14 @@
         <b-btn v-if="editing" @click="deleteSchedule">Delete</b-btn>
         <b-btn v-if="editing" @click="cancelUpdateSchedule">Cancel</b-btn>
       </b-col>
+      <b-col cols="6">
+        <b-btn v-if="!creating && !editing" class="mb-2" @click="startCreation">
+          New
+        </b-btn>
+        <b-form-checkbox id="hide-old-projects" v-model="hideOldProjects" @change="refreshProjects">
+          Hide old projects
+        </b-form-checkbox>
+      </b-col>
     </b-row>
     <div v-if="chartOptions">
       <highcharts :key="chartTimestamp" :options="chartOptions"></highcharts>
@@ -75,6 +80,7 @@ export default {
     },
     creating: false,
     editing: false,
+    hideOldProjects: true,
     newSchedule: null,
     schedules: [],
     selectedSchedule: null,
@@ -82,7 +88,7 @@ export default {
   }),
   created() {
     get8BallSchedules().then(schedules => {
-      this.schedules = schedules
+      this.setSchedules(schedules)
       this.renderTimeline()
     })
   },
@@ -99,7 +105,7 @@ export default {
       create8BallSchedule(this.newSchedule).then(() => {
         get8BallSchedules().then(schedules => {
           this.newSchedule = {}
-          this.schedules = schedules
+          this.setSchedules(schedules)
           this.renderTimeline()
           this.creating = false
         })
@@ -108,7 +114,7 @@ export default {
     deleteSchedule() {
       delete8BallSchedule(this.selectedSchedule.id).then(() => {
         get8BallSchedules().then(schedules => {
-          this.schedules = schedules
+          this.setSchedules(schedules)
           this.selectedSchedule = null
           this.selectedScheduleIndex = null
           this.renderTimeline()
@@ -118,6 +124,12 @@ export default {
     },
     formatDate(datestamp) {
       return new Date(datestamp + 'T00:00-1200').toDateString()
+    },
+    refreshProjects() {
+      get8BallSchedules().then(schedules => {
+        this.setSchedules(schedules)
+        this.renderTimeline()
+      })
     },
     renderTimeline() {
       let series = {
@@ -270,6 +282,13 @@ export default {
     selectSchedule(index) {
       this.selectedScheduleIndex = index
       this.selectedSchedule = this.$_.clone(this.schedules[index])
+    },
+    setSchedules(schedules) {
+      if (this.hideOldProjects) {
+        this.schedules = schedules.filter(s => (new Date(s.release)).getTime() > Date.now())
+      } else {
+        this.schedules = schedules
+      }
     },
     startCreation() {
       this.creating = true
