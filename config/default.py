@@ -90,6 +90,8 @@ CANVAS_DATA_HOST = 'foo.instructure.com'
 CANVAS_HTTP_URL = 'https://wottsamatta.instructure.com'
 CANVAS_HTTP_TOKENS = ['yet another secret', 'in a list of secrets']
 
+CD2_SECRET_NAME = '<secret-string>'
+
 # If set to 'auto', the next three items will use defaults based on SIS term definitions.
 CURRENT_TERM = 'Fall 2017'
 FUTURE_TERM = 'Spring 2018'
