@@ -192,6 +192,7 @@ LOGGING_FORMAT = '[%(asctime)s] - %(levelname)s: %(message)s [in %(pathname)s:%(
 LOGGING_LOCATION = 'nessie.log'
 LOGGING_LEVEL = logging.DEBUG
 LOGGING_PROPAGATION_LEVEL = logging.INFO
+LOGGING_PROPAGATION_TARGETS = ['boto3', 'botocore', 'nose', 'canvasapi', 'rq.worker', 's3transfer', 'werkzeug']
 
 # These RDS schemas are copied from the Redshift schemas below and contain a subset of index tables.
 RDS_SCHEMA_ADVISING_APPOINTMENTS = 'boac_advising_appointments'
