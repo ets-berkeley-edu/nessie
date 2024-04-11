@@ -59,8 +59,8 @@ def initialize_logger(app):
             logger.addHandler(handler)
             logger.setLevel(level)
 
-    logging.getLogger('botocore').setLevel(log_propagation_level)
-    logging.getLogger('werkzeug').setLevel(log_propagation_level)
+    for name in app.config['LOGGING_PROPAGATION_TARGETS']:
+        logging.getLogger(name).setLevel(log_propagation_level)
 
     def address_string(self):
         forwarded_for = self.headers.get('X-Forwarded-For')
