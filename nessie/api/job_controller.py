@@ -62,6 +62,7 @@ from nessie.jobs.import_ycbm_api import ImportYcbmApi
 from nessie.jobs.index_advising_notes import IndexAdvisingNotes
 from nessie.jobs.index_enrollments import IndexEnrollments
 from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
+from nessie.jobs.query_canvas_data_2_snapshot import QueryCanvasData2Snapshot
 from nessie.jobs.refresh_boac_cache import RefreshBoacCache
 from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
 from nessie.jobs.refresh_sisedo_schema_full import RefreshSisedoSchemaFull
@@ -340,6 +341,13 @@ def refresh_canvas_data_catalog():
 @auth_required
 def refresh_sisedo_schema_full():
     job_started = RefreshSisedoSchemaFull().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/query_canvas_data_2_snapshots', methods=['POST'])
+@auth_required
+def query_canvas_data_2_snapshots():
+    job_started = QueryCanvasData2Snapshot().run_async()
     return respond_with_status(job_started)
 
 

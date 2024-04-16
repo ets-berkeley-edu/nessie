@@ -58,3 +58,37 @@ def get_cd2_tables_list(namespace):
     app.logger.info(f'Tables Available for {namespace}: {len(cd2_tables_list.json()["tables"])}')
 
     return cd2_tables_list.json()['tables']
+
+
+def query_table_data(access_token, secret, table):
+    headers = {'x-instauth': access_token}
+    body = {'format': 'tsv', 'mode': 'expanded'}
+    # Make request to initiate job for querying table data and get job request ID
+    response = requests.post(f"{secret['DAP_API_URL']}/dap/query/canvas/table/{table}/data", headers=headers, json=body)
+    response_data = response.json()
+    job_request_id = response_data.get('id')
+
+    if not job_request_id:
+        app.logger.error(f'Error: Invalid job request ID received for table {table}.Response: {response.text}.')
+        return None
+
+    return job_request_id
+
+
+def start_query_snapshot(tables):
+    secret = get_cd2_secret()
+    access_token = get_cd2_access_token()
+    table_query_jobs = []
+    for table in tables:
+        app.logger.info(f'Querying for table {table} \n')
+
+        job_request_id = query_table_data(access_token, secret, table)
+
+        table_query_jobs.append({
+            'table': table,
+            'job_id': job_request_id,
+            'job_status': 'running',
+        })
+
+    app.logger.info('Successfully began query snapshot jobs for all tables and retrieved job_id for tracking.')
+    return table_query_jobs
