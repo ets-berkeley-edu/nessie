@@ -104,6 +104,7 @@ WHERE sis_term_id NOT IN
 
 CREATE INDEX idx_edo_enrollments_term_id_section_id ON {rds_schema_sis_internal}.edo_enrollments(sis_term_id, sis_section_id);
 CREATE INDEX idx_edo_enrollments_ldap_uid ON {rds_schema_sis_internal}.edo_enrollments(ldap_uid);
+CREATE INDEX idx_edo_enrollments_grade ON {rds_schema_sis_internal}.edo_enrollments(grade);
 
 DROP TABLE IF EXISTS {rds_schema_sis_internal}.edo_sections CASCADE;
 
@@ -201,3 +202,4 @@ WHERE sis_term_id NOT IN
 (SELECT DISTINCT sis_term_id FROM {rds_schema_sis_internal}.edo_sections);
 
 CREATE INDEX idx_edo_sections_term_id_section_id ON {rds_schema_sis_internal}.edo_sections(sis_term_id, sis_section_id);
+CREATE INDEX idx_edo_sections_sis_course_name ON {rds_schema_sis_internal}.edo_sections(sis_course_name);
