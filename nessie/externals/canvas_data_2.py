@@ -92,3 +92,22 @@ def start_query_snapshot(tables):
 
     app.logger.info('Successfully began query snapshot jobs for all tables and retrieved job_id for tracking.')
     return table_query_jobs
+
+
+def get_job_status(secret, headers, job_request_id):
+    job_status_url = f'{secret["DAP_API_URL"]}/dap/job/{job_request_id}'
+    app.logger.debug(f'Job status url: {job_status_url}')
+
+    job_status_response = requests.get(job_status_url, headers=headers)
+    if job_status_response.json().get('status') == 'complete':
+        app.logger.debug(job_status_response.text)
+
+    return job_status_response
+
+
+def get_cd2_file_urls(secret, headers, file_objects):
+
+    app.logger.info(f'Retriving presigned file urls for the table objects {file_objects}')
+    file_urls = requests.post(f'{secret["DAP_API_URL"]}/dap/object/url', headers=headers, json=file_objects)
+
+    return file_urls

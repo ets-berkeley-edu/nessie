@@ -91,6 +91,7 @@ CANVAS_HTTP_URL = 'https://wottsamatta.instructure.com'
 CANVAS_HTTP_TOKENS = ['yet another secret', 'in a list of secrets']
 
 CD2_SECRET_NAME = '<secret-string>'
+CD2_INGEST_LAMBDA_NAME = '<lambda name>'
 
 # If set to 'auto', the next three items will use defaults based on SIS term definitions.
 CURRENT_TERM = 'Fall 2017'
@@ -161,6 +162,9 @@ LOCH_S3_REGION = 'us-west-2'
 LOCH_S3_CANVAS_DATA_PATH = 'canvas-data'
 LOCH_S3_CANVAS_DATA_PATH_DAILY = 'canvas/path/to/daily'
 LOCH_S3_CANVAS_DATA_PATH_HISTORICAL = 'canvas/path/to/historical'
+
+LOCH_S3_CANVAS_DATA_2_PATH = 'canvas-data-2'
+LOCH_S3_CANVAS_DATA_2_PATH_DAILY = 'canvas-data-2/path/to/daily'
 
 # The following paths are consistent across environments and do not need to be overridden locally.
 LOCH_S3_ADVISING_NOTE_ATTACHMENT_DEST_PATH = 'sis-data/sis-sftp/historical/advising-notes/attachment-files'
