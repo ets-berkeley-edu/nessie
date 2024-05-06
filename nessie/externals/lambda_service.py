@@ -59,7 +59,6 @@ def get_client():
 # Invokes a lambda function in Event mode
 def invoke_lambda_function(function_name, payload, mode):
     lambda_client = get_client()
-
     try:
         # Invoke the Lambda function with the specified payload
         response = lambda_client.invoke(
@@ -67,9 +66,9 @@ def invoke_lambda_function(function_name, payload, mode):
             InvocationType=mode,  # Use 'Event' for asynchronous invocation
             Payload=json.dumps(payload),
         )
-        app.logger.info(f"Successfully invoked lambda function with response: {response['StatusCode']}")
-        return True
+        app.logger.info(f'Successfully invoked lambda function with response for table {payload["table"]}: {response["StatusCode"]}')
+        return True  # Indicates successful invocation
 
     except (BotoClientError, BotoConnectionError) as e:
-        app.logger.error(f'Error invoking Lambda function: {e}')
+        app.logger.error(f'Error invoking Lambda function for table {payload["table"]}: {e}')
         return False  # Indicates failed invocation
