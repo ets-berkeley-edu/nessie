@@ -111,6 +111,7 @@ CREATE INDEX idx_basic_attributes_ldap_uid ON {rds_schema_sis_internal}.basic_at
 CREATE INDEX idx_basic_attributes_sid ON {rds_schema_sis_internal}.basic_attributes(sid);
 
 GRANT SELECT ON TABLE {rds_schema_sis_internal}.basic_attributes to {rds_dblink_role_damien};
+GRANT SELECT ON TABLE {rds_schema_sis_internal}.basic_attributes to {rds_dblink_role_diablo};
 
 DROP TABLE IF EXISTS {rds_schema_sis_internal}.sis_enrollments CASCADE;
 
