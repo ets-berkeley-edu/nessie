@@ -38,6 +38,7 @@ DROP INDEX IF EXISTS {rds_schema_student}.students_term_gpa_gpa_idx;
 DROP INDEX IF EXISTS {rds_schema_student}.students_term_gpa_units_idx;
 
 TRUNCATE {rds_schema_student}.student_enrollment_terms;
+TRUNCATE {rds_schema_student}.student_incompletes;
 TRUNCATE {rds_schema_student}.student_term_gpas;
 
 CREATE INDEX students_enrollment_terms_midpoint_deficient_grade
