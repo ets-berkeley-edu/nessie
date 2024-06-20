@@ -92,6 +92,7 @@ CANVAS_HTTP_TOKENS = ['yet another secret', 'in a list of secrets']
 
 CD2_SECRET_NAME = '<secret-string>'
 CD2_INGEST_LAMBDA_NAME = '<lambda name>'
+CD2_ZERO_COUNT_ACCEPTABLE = False
 
 # If set to 'auto', the next three items will use defaults based on SIS term definitions.
 CURRENT_TERM = 'Fall 2017'
@@ -256,6 +257,7 @@ REDSHIFT_SCHEMA_YCBM_INTERNAL = 'ycbm_data'
 REDSHIFT_SCHEMA_ADVISOR = 'External Advisor schema name'
 REDSHIFT_SCHEMA_ASC_ADVISING_NOTES = 'External ASC Advising Notes schema name'
 REDSHIFT_SCHEMA_CANVAS = 'External Canvas schema name'
+REDSHIFT_SCHEMA_CANVAS_DATA_2 = 'External Canavs Data 2 schema name'
 REDSHIFT_SCHEMA_COE_EXTERNAL = 'External COE schema name'
 REDSHIFT_SCHEMA_DATA_SCIENCE_ADVISING = 'External Data Science Advising schema name'
 REDSHIFT_SCHEMA_E_I_ADVISING_NOTES = 'External E&I Advising Notes schema name'

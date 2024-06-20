@@ -124,6 +124,10 @@ def get_s3_canvas_daily_path(cutoff=None):
     return app.config['LOCH_S3_CANVAS_DATA_PATH_DAILY'] + '/' + hashed_datestamp(cutoff)
 
 
+def get_s3_canvas_data_2_daily_path(cutoff=None):
+    return app.config['LOCH_S3_CANVAS_DATA_2_PATH_DAILY'] + '/' + localized_datestamp(cutoff)
+
+
 def get_s3_coe_daily_path(cutoff=None):
     # TODO: When COE is delivering data daily then unleash the following logic
     # return app.config['LOCH_S3_COE_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
@@ -224,6 +228,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_schema_asc_advising_notes_internal': app.config['REDSHIFT_SCHEMA_ASC_ADVISING_NOTES_INTERNAL'],
         'redshift_schema_boac': app.config['REDSHIFT_SCHEMA_BOAC'],
         'redshift_schema_canvas': app.config['REDSHIFT_SCHEMA_CANVAS'],
+        'redshift_schema_canvas_data_2': app.config['REDSHIFT_SCHEMA_CANVAS_DATA_2'],
         'redshift_schema_coe': app.config['REDSHIFT_SCHEMA_COE'],
         'redshift_schema_coe_external': app.config['REDSHIFT_SCHEMA_COE_EXTERNAL'],
         'redshift_schema_data_science_advising': app.config['REDSHIFT_SCHEMA_DATA_SCIENCE_ADVISING'],
@@ -252,6 +257,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'loch_s3_boac_analytics_incremental_path': s3_prefix + get_s3_boac_analytics_incremental_path(),
         'loch_s3_calnet_data_path': s3_prefix + get_s3_calnet_daily_path(),
         'loch_s3_canvas_data_path_today': s3_prefix + get_s3_canvas_daily_path(),
+        'loch_s3_canvas_data_2_path_today': s3_prefix + get_s3_canvas_data_2_daily_path(),
         'loch_s3_canvas_data_path_historical': s3_prefix + app.config['LOCH_S3_CANVAS_DATA_PATH_HISTORICAL'],
         'loch_s3_coe_data_path': s3_prefix + get_s3_coe_daily_path(),
         'loch_s3_dsa_data_path': s3_protected_prefix + app.config['LOCH_S3_DSA_DATA_PATH'],

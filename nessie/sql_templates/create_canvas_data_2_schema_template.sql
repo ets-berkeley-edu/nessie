@@ -58,7 +58,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."access_tokens" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/access_tokens/'
+LOCATION '{cd2_data_path}/access_tokens/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -90,7 +90,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."accounts" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/accounts/'
+LOCATION '{cd2_data_path}/accounts/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -109,7 +109,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."account_users" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/account_users/'
+LOCATION '{cd2_data_path}/account_users/'
 TABLE PROPERTIES('skip.header.line.count'='1');
 
 
@@ -171,7 +171,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."courses" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/courses/'
+LOCATION '{cd2_data_path}/courses/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -199,7 +199,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."course_sections" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/course_sections/'
+LOCATION '{cd2_data_path}/course_sections/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -233,7 +233,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."users" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/users/'
+LOCATION '{cd2_data_path}/users/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -301,7 +301,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."assignments" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/assignments/'
+LOCATION '{cd2_data_path}/assignments/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -326,7 +326,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."assignment_groups" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/assignment_groups/'
+LOCATION '{cd2_data_path}/assignment_groups/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -346,7 +346,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."assignment_override_stu
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/assignment_override_students/'
+LOCATION '{cd2_data_path}/assignment_override_students/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -377,7 +377,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."assignment_overrides" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/assignment_overrides/'
+LOCATION '{cd2_data_path}/assignment_overrides/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -417,7 +417,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."attachments" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/attachments/'
+LOCATION '{cd2_data_path}/attachments/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -449,7 +449,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."context_external_tools"
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/context_external_tools/'
+LOCATION '{cd2_data_path}/context_external_tools/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -466,7 +466,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."attachment_associations
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/attachment_associations/'
+LOCATION '{cd2_data_path}/attachment_associations/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -499,7 +499,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."pseudonyms"
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/pseudonyms/'
+LOCATION '{cd2_data_path}/pseudonyms/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -557,7 +557,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."submissions" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/submissions/'
+LOCATION '{cd2_data_path}/submissions/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -591,7 +591,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."submission_comments"
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/submission_comments/'
+LOCATION '{cd2_data_path}/submission_comments/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -610,7 +610,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."submission_versions"
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/submission_versions/'
+LOCATION '{cd2_data_path}/submission_versions/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -643,7 +643,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."enrollments" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/enrollments/'
+LOCATION '{cd2_data_path}/enrollments/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -668,7 +668,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."enrollment_terms"
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/enrollment_terms/'
+LOCATION '{cd2_data_path}/enrollment_terms/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -697,7 +697,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."discussion_entries"
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/discussion_entries/'
+LOCATION '{cd2_data_path}/discussion_entries/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -746,7 +746,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."discussion_topics" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/discussion_topics/'
+LOCATION '{cd2_data_path}/discussion_topics/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -765,7 +765,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."discussion_entry_partic
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/discussion_entry_participants/'
+LOCATION '{cd2_data_path}/discussion_entry_participants/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -784,7 +784,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."discussion_topic_partic
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/discussion_topic_participants/'
+LOCATION '{cd2_data_path}/discussion_topic_participants/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -814,7 +814,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."scores"
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/scores/'
+LOCATION '{cd2_data_path}/scores/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -835,7 +835,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."roles"
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/roles/'
+LOCATION '{cd2_data_path}/roles/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -855,7 +855,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."score_statistics" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/score_statistics/'
+LOCATION '{cd2_data_path}/score_statistics/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -888,7 +888,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."developer_keys" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/developer_keys/'
+LOCATION '{cd2_data_path}/developer_keys/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -906,7 +906,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."developer_key_account_b
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/developer_key_account_bindings/'
+LOCATION '{cd2_data_path}/developer_key_account_bindings/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -927,7 +927,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."enrollment_dates_overri
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/enrollment_dates_overrides/'
+LOCATION '{cd2_data_path}/enrollment_dates_overrides/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -947,7 +947,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."enrollment_states" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/enrollment_states/'
+LOCATION '{cd2_data_path}/enrollment_states/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -976,7 +976,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."folders" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/folders/'
+LOCATION '{cd2_data_path}/folders/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -994,7 +994,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."favorites" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/favorites/'
+LOCATION '{cd2_data_path}/favorites/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1016,7 +1016,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."grading_period_groups"
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/grading_period_groups/'
+LOCATION '{cd2_data_path}/grading_period_groups/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1039,7 +1039,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."grading_periods"
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/grading_periods/'
+LOCATION '{cd2_data_path}/grading_periods/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1063,7 +1063,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."grading_standards" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/grading_standards/'
+LOCATION '{cd2_data_path}/grading_standards/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1086,7 +1086,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."quiz_groups"
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/quiz_groups/'
+LOCATION '{cd2_data_path}/quiz_groups/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1110,7 +1110,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."quiz_questions"
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/quiz_questions/'
+LOCATION '{cd2_data_path}/quiz_questions/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1147,7 +1147,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."quiz_submissions" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/quiz_submissions/'
+LOCATION '{cd2_data_path}/quiz_submissions/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1199,7 +1199,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."quizzes" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/quizzes/'
+LOCATION '{cd2_data_path}/quizzes/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1222,7 +1222,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."role_overrides" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/role_overrides/'
+LOCATION '{cd2_data_path}/role_overrides/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1243,7 +1243,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."assessment_question_ban
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/assessment_question_banks/'
+LOCATION '{cd2_data_path}/assessment_question_banks/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1267,7 +1267,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."assessment_questions" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/assessment_questions/'
+LOCATION '{cd2_data_path}/assessment_questions/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1304,7 +1304,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."calendar_events" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/calendar_events/'
+LOCATION '{cd2_data_path}/calendar_events/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1324,7 +1324,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."canvadocs_annotation_co
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/canvadocs_annotation_contexts/'
+LOCATION '{cd2_data_path}/canvadocs_annotation_contexts/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1343,7 +1343,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."comment_bank_items" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/comment_bank_items/'
+LOCATION '{cd2_data_path}/comment_bank_items/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1367,7 +1367,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."communication_channels"
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/communication_channels/'
+LOCATION '{cd2_data_path}/communication_channels/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1396,7 +1396,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."content_migrations" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/content_migrations/'
+LOCATION '{cd2_data_path}/content_migrations/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1416,7 +1416,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."content_participation_c
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/content_participation_counts/'
+LOCATION '{cd2_data_path}/content_participation_counts/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1433,7 +1433,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."content_participations"
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/content_participations/'
+LOCATION '{cd2_data_path}/content_participations/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1454,7 +1454,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."content_shares" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/content_shares/'
+LOCATION '{cd2_data_path}/content_shares/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1489,7 +1489,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."content_tags" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/content_tags/'
+LOCATION '{cd2_data_path}/content_tags/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1516,7 +1516,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."context_module_progress
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/context_module_progressions/'
+LOCATION '{cd2_data_path}/context_module_progressions/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1545,7 +1545,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."context_modules"
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/context_modules/'
+LOCATION '{cd2_data_path}/context_modules/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1564,7 +1564,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."conversation_message_pa
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/conversation_message_participants/'
+LOCATION '{cd2_data_path}/conversation_message_participants/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1592,7 +1592,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."conversation_messages" 
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/conversation_messages/'
+LOCATION '{cd2_data_path}/conversation_messages/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1615,7 +1615,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."conversation_participan
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/conversation_participants/'
+LOCATION '{cd2_data_path}/conversation_participants/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1635,7 +1635,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."conversations" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/conversations/'
+LOCATION '{cd2_data_path}/conversations/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1654,7 +1654,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."course_account_associat
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/course_account_associations/'
+LOCATION '{cd2_data_path}/course_account_associations/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1670,7 +1670,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."custom_gradebook_column
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/custom_gradebook_column_data/'
+LOCATION '{cd2_data_path}/custom_gradebook_column_data/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1691,7 +1691,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."custom_gradebook_column
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/custom_gradebook_columns/'
+LOCATION '{cd2_data_path}/custom_gradebook_columns/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1722,7 +1722,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."wiki_pages" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/wiki_pages/'
+LOCATION '{cd2_data_path}/wiki_pages/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1740,7 +1740,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."wikis" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/wikis/'
+LOCATION '{cd2_data_path}/wikis/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1761,7 +1761,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."group_memberships" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/group_memberships/'
+LOCATION '{cd2_data_path}/group_memberships/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1797,7 +1797,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."groups" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/groups/'
+LOCATION '{cd2_data_path}/groups/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1822,7 +1822,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."group_categories" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/group_categories/'
+LOCATION '{cd2_data_path}/group_categories/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1845,7 +1845,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."late_policies" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/late_policies/'
+LOCATION '{cd2_data_path}/late_policies/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1871,7 +1871,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."learning_outcome_groups
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/learning_outcome_groups/'
+LOCATION '{cd2_data_path}/learning_outcome_groups/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1901,7 +1901,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."learning_outcome_questi
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/learning_outcome_question_results/'
+LOCATION '{cd2_data_path}/learning_outcome_question_results/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1943,7 +1943,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."learning_outcome_result
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/learning_outcome_results/'
+LOCATION '{cd2_data_path}/learning_outcome_results/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1971,7 +1971,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."learning_outcomes" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/learning_outcomes/'
+LOCATION '{cd2_data_path}/learning_outcomes/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -1996,7 +1996,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."lti_line_items" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/lti_line_items/'
+LOCATION '{cd2_data_path}/lti_line_items/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2018,7 +2018,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."lti_resource_links" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/lti_resource_links/'
+LOCATION '{cd2_data_path}/lti_resource_links/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2043,7 +2043,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."lti_results" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/lti_results/'
+LOCATION '{cd2_data_path}/lti_results/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2061,7 +2061,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."master_courses_child_co
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/master_courses_child_content_tags/'
+LOCATION '{cd2_data_path}/master_courses_child_content_tags/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2080,7 +2080,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."master_courses_child_su
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/master_courses_child_subscriptions/'
+LOCATION '{cd2_data_path}/master_courses_child_subscriptions/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2099,7 +2099,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."master_courses_master_c
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/master_courses_master_content_tags/'
+LOCATION '{cd2_data_path}/master_courses_master_content_tags/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2124,7 +2124,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."master_courses_master_m
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/master_courses_master_migrations/'
+LOCATION '{cd2_data_path}/master_courses_master_migrations/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2146,7 +2146,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."master_courses_master_t
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/master_courses_master_templates/'
+LOCATION '{cd2_data_path}/master_courses_master_templates/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2165,7 +2165,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."master_courses_migratio
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/master_courses_migration_results/'
+LOCATION '{cd2_data_path}/master_courses_migration_results/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2189,7 +2189,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."originality_reports" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/originality_reports/'
+LOCATION '{cd2_data_path}/originality_reports/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2207,7 +2207,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."outcome_proficiencies" 
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/outcome_proficiencies/'
+LOCATION '{cd2_data_path}/outcome_proficiencies/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2228,7 +2228,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."outcome_proficiency_rat
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/outcome_proficiency_ratings/'
+LOCATION '{cd2_data_path}/outcome_proficiency_ratings/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2246,7 +2246,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."post_policies" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/post_policies/'
+LOCATION '{cd2_data_path}/post_policies/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2272,7 +2272,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."rubric_assessments" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/rubric_assessments/'
+LOCATION '{cd2_data_path}/rubric_assessments/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2301,7 +2301,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."rubric_associations" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/rubric_associations/'
+LOCATION '{cd2_data_path}/rubric_associations/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2327,7 +2327,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."rubrics" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/rubrics/'
+LOCATION '{cd2_data_path}/rubrics/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2345,7 +2345,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."user_account_associatio
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/user_account_associations/'
+LOCATION '{cd2_data_path}/user_account_associations/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2366,7 +2366,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."user_notes" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/user_notes/'
+LOCATION '{cd2_data_path}/user_notes/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2384,7 +2384,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."web_conference_particip
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/web_conference_participants/'
+LOCATION '{cd2_data_path}/web_conference_participants/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
@@ -2416,7 +2416,7 @@ CREATE EXTERNAL TABLE "{redshift_schema_canvas_data_2}"."web_conferences" (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 STORED AS TEXTFILE
-LOCATION '{loch_s3_canvas_data_2_path_today}/web_conferences/'
+LOCATION '{cd2_data_path}/web_conferences/'
 TABLE PROPERTIES ('skip.header.line.count'='1');
 
 
