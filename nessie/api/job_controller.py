@@ -64,6 +64,7 @@ from nessie.jobs.index_enrollments import IndexEnrollments
 from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
 from nessie.jobs.query_canvas_data_2_snapshot import QueryCanvasData2Snapshot
 from nessie.jobs.refresh_boac_cache import RefreshBoacCache
+from nessie.jobs.refresh_canvas_data_2_schema import RefreshCanvasData2Schema
 from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
 from nessie.jobs.refresh_sisedo_schema_full import RefreshSisedoSchemaFull
 from nessie.jobs.refresh_sisedo_schema_incremental import RefreshSisedoSchemaIncremental
@@ -334,6 +335,13 @@ def verify_sis_advising_note_attachments(datestamp):
 @auth_required
 def refresh_canvas_data_catalog():
     job_started = RefreshCanvasDataCatalog().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/refresh_canvas_data_2_schema', methods=['POST'])
+@auth_required
+def refresh_canvas_data_2_schema():
+    job_started = RefreshCanvasData2Schema().run_async()
     return respond_with_status(job_started)
 
 
