@@ -131,7 +131,7 @@ class QueryCanvasData2Snapshot(BackgroundJob):
         # TODO: Remove sleep timer and use metadata tables to store states for component jobs to refer and get status asynchronously.
         # Adds a temporary 20 min sleep time for the query snapshot job for source data to be available.
         app.logger.info('Wait for query snapshots jobs to complete. Sleep for 20 min')
-        time.sleep(20 * 60)
+        time.sleep(30 * 60)
 
         # Checks job status for the query snapshot job triggered for each CD2 table. Collect all available file object details once jobs are complete
         app.logger.info('Get File objects from query snapshot for each table')
