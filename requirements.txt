@@ -7,7 +7,7 @@ boto3==1.20.24
 decorator==5.1.1
 ldap3==2.7
 numpy==1.24.3
-pandas==1.4.4
+pandas==1.5.3
 psycopg2-binary==2.9.6
 python-dateutil==2.8.2
 pytz==2023.3
