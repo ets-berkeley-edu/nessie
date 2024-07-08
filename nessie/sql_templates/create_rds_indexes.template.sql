@@ -21,6 +21,9 @@ CREATE INDEX IF NOT EXISTS students_asc_active_idx ON {rds_schema_asc}.students 
 CREATE INDEX IF NOT EXISTS students_asc_intensive_idx ON {rds_schema_asc}.students (intensive);
 CREATE INDEX IF NOT EXISTS students_asc_group_code_idx ON {rds_schema_asc}.students (group_code);
 
+GRANT USAGE ON SCHEMA {rds_schema_asc} TO {rds_app_ripley_user};
+GRANT SELECT ON TABLE {rds_schema_asc}.students TO {rds_app_ripley_user};
+
 CREATE TABLE IF NOT EXISTS {rds_schema_asc}.student_profiles
 (
     sid VARCHAR NOT NULL PRIMARY KEY,
