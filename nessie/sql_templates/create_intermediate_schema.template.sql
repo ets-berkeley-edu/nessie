@@ -222,12 +222,12 @@ AS (
                 /*
                  * Note doubled curly braces in the regexp, escaped for Python string formatting.
                  */
-                WHEN s.sis_source_id ~ '^SEC:20[0-9]{2}-[BCD]-[0-9]{5}' THEN
+                WHEN s.sis_source_id ~ '^SEC:20[0-9]{{2}}-[BCD]-[0-9]{{5}}' THEN
                     ('2' + substring(s.sis_source_id, 7, 2) + translate(substring(s.sis_source_id, 10, 1), 'BCD', '258'))::int
                 ELSE NULL END
                 AS sis_term_id,
             CASE
-                WHEN s.sis_source_id ~ '^SEC:20[0-9]{2}-[BCD]-[0-9]{5}' THEN
+                WHEN s.sis_source_id ~ '^SEC:20[0-9]{{2}}-[BCD]-[0-9]{{5}}' THEN
                     SUBSTRING(s.sis_source_id, 12, 5)::int
                 ELSE NULL END
                 AS sis_section_id
@@ -255,7 +255,7 @@ AS (
          ON c.enrollment_term_id = et.id
     LEFT JOIN extracted_section_ids ON s.id = extracted_section_ids.canvas_section_id
     FULL OUTER JOIN {redshift_schema_edl}.courses sc
-        ON extracted_section_ids.sis_term_id >= '2165'
+        ON extracted_section_ids.sis_term_id >= '{earliest_term_id}'
         AND extracted_section_ids.sis_term_id = sc.term_id::int
         AND extracted_section_ids.sis_section_id = sc.section_id::int
         AND c.workflow_state IN ('available', 'completed')
