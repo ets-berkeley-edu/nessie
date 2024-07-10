@@ -204,6 +204,70 @@ AS (
         sc.course_display_name, sc.course_title, sc.instruction_format, sc.section_num, sc.is_primary, sc.instruction_mode
 );
 
+/*
+ * Use SIS integration IDs for Canvas sections to generate a master mapping between Canvas Data 2 and SIS sections. A
+ * FULL OUTER JOIN is used to include all sections from Canvas and SIS data, whether integrated or not.
+ */
+CREATE TABLE {redshift_schema_intermediate}.course_sections_cd2
+INTERLEAVED SORTKEY (canvas_course_id, canvas_section_id, sis_term_id, sis_section_id)
+AS (
+    /*
+     * Translate SIS section IDs from Canvas data, when parseable and post-CS-transition, to section and term ids as
+     * represented in SIS data. Otherwise leave blank.
+     */
+    WITH extracted_section_ids AS (
+        SELECT
+            s.id AS canvas_section_id,
+            CASE
+                /*
+                 * Note doubled curly braces in the regexp, escaped for Python string formatting.
+                 */
+                WHEN s.sis_source_id ~ '^SEC:20[0-9]{2}-[BCD]-[0-9]{5}' THEN
+                    ('2' + substring(s.sis_source_id, 7, 2) + translate(substring(s.sis_source_id, 10, 1), 'BCD', '258'))::int
+                ELSE NULL END
+                AS sis_term_id,
+            CASE
+                WHEN s.sis_source_id ~ '^SEC:20[0-9]{2}-[BCD]-[0-9]{5}' THEN
+                    SUBSTRING(s.sis_source_id, 12, 5)::int
+                ELSE NULL END
+                AS sis_section_id
+        FROM {redshift_schema_canvas_data_2}.course_sections s
+    )
+    SELECT
+        c.id AS canvas_course_id,
+        s.id AS canvas_section_id,
+        c.name AS canvas_course_name,
+        c.course_code AS canvas_course_code,
+        s.name AS canvas_section_name,
+        et.name AS canvas_course_term,
+        sc.term_id AS sis_term_id,
+        sc.section_id AS sis_section_id,
+        sc.course_display_name AS sis_course_name,
+        sc.course_title AS sis_course_title,
+        sc.instruction_format AS sis_instruction_format,
+        sc.section_num AS sis_section_num,
+        sc.is_primary AS sis_primary,
+        sc.instruction_mode AS sis_instruction_mode
+    FROM {redshift_schema_canvas_data_2}.course_sections s
+    JOIN {redshift_schema_canvas_data_2}.courses c
+        ON s.course_id = c.id
+    JOIN {redshift_schema_canvas_data_2}.enrollment_terms et
+         ON c.enrollment_term_id = et.id
+    LEFT JOIN extracted_section_ids ON s.id = extracted_section_ids.canvas_section_id
+    FULL OUTER JOIN {redshift_schema_edl}.courses sc
+        ON extracted_section_ids.sis_term_id >= '2165'
+        AND extracted_section_ids.sis_term_id = sc.term_id::int
+        AND extracted_section_ids.sis_section_id = sc.section_id::int
+        AND c.workflow_state IN ('available', 'completed')
+        AND (s.workflow_state IS NULL OR s.workflow_state != 'deleted')
+    /* Clear out duplicates, since SIS data will contain multiple rows for multiple meetings or instructor assignments. */
+    GROUP BY
+        c.id, s.id, c.name, c.course_code, s.name, et.name,
+        sc.term_id, sc.section_id,
+        sc.course_display_name, sc.course_title, sc.instruction_format, sc.section_num, sc.is_primary, sc.instruction_mode
+);
+
+
 CREATE TABLE {redshift_schema_intermediate}.sis_enrollments
 INTERLEAVED SORTKEY (sis_term_id, sis_section_id, ldap_uid)
 AS (
@@ -280,6 +344,34 @@ AS (
   ) s WHERE s.rk = 1
 );
 
+CREATE TABLE {redshift_schema_intermediate}.users_cd2
+INTERLEAVED SORTKEY (canvas_id, uid, sis_user_id)
+AS (
+  SELECT s.global_id, s.canvas_id, s.name, s.sortable_name, s.sis_user_id, s.sis_login_id, s.uid FROM (
+    SELECT
+        (1072 * 10000000000000 + u.id) AS global_id,
+        u.id as canvas_id,
+        u.name,
+        u.sortable_name,
+        p.sis_user_id,
+        p.unique_id AS sis_login_id,
+        /* Extract a numeric-string UID from Canvas sis_login_id if possible, otherwise leave blank. */
+        CASE
+            WHEN REPLACE(p.unique_id, 'inactive-', '') !~ '[A-Za-z]'
+            THEN REPLACE(p.unique_id, 'inactive-', '')
+        ELSE NULL END
+            AS uid,
+        ROW_NUMBER() OVER(PARTITION BY uid ORDER BY p.unique_id ASC) AS rk
+    FROM
+        {redshift_schema_canvas_data_2}.users u
+    LEFT JOIN {redshift_schema_canvas_data_2}.pseudonyms p ON u.id = p.user_id
+    WHERE
+       p.workflow_state = 'active'
+    ORDER BY uid
+  ) s WHERE s.rk = 1
+);
+
+
 /*
  * Collect all active student Canvas course site enrollments and note SIS enrollment status, if any, in SIS sections integrated
  * with the course site.
@@ -339,3 +431,57 @@ AS (
         {redshift_schema_intermediate}.course_sections.canvas_course_term,
         term_id
 );
+
+CREATE TABLE {redshift_schema_intermediate}.active_student_enrollments_cd2
+INTERLEAVED SORTKEY (uid, canvas_course_id)
+AS (
+    SELECT
+        u_cd2.uid AS uid,
+        u_cd2.canvas_id AS canvas_user_id,
+        c.id AS canvas_course_id,
+        e.id AS canvas_enrollment_id,
+        e.last_activity_at AS last_activity_at,
+        /*
+         * MIN ordering happens to match our desired precedence when reconciling enrollment status among multiple
+         * sections: 'E', then 'W', then NULL.
+         */
+        MIN(se.sis_enrollment_status) AS sis_enrollment_status,
+        c.name AS canvas_course_name,
+        c.course_code AS canvas_course_code,
+        cs_cd2.canvas_course_term,
+        CASE LEFT(cs_cd2.canvas_course_term, 4)
+          WHEN 'Spri' THEN '2' || RIGHT(cs_cd2.canvas_course_term, 2) || '2'
+          WHEN 'Summ' THEN '2' || RIGHT(cs_cd2.canvas_course_term, 2) || '5'
+          WHEN 'Fall' THEN '2' || RIGHT(cs_cd2.canvas_course_term, 2) || '8'
+          ELSE NULL
+        END AS term_id,
+        LISTAGG(DISTINCT se.sis_section_id, ',')
+          WITHIN GROUP (ORDER BY se.sis_section_id) AS sis_section_ids
+    FROM
+        {redshift_schema_canvas_data_2}.enrollments e
+        JOIN {redshift_schema_intermediate}.users_cd2 u_cd2 
+            ON u_cd2.canvas_id = e.user_id
+        JOIN {redshift_schema_canvas_data_2}.courses c
+            ON c.id = e.course_id
+        LEFT JOIN {redshift_schema_intermediate}.course_sections_cd2 cs_cd2
+            ON c.id = cs_cd2.canvas_course_id
+        LEFT JOIN {redshift_schema_intermediate}.sis_enrollments se ON
+            cs_cd2.sis_section_id = se.sis_section_id AND
+            cs_cd2.sis_term_id = se.sis_term_id AND
+            se.ldap_uid = u_cd2.uid
+    WHERE
+        e.type = 'StudentEnrollment'
+        AND e.workflow_state in ('active', 'completed')
+        AND c.workflow_state in ('available', 'completed')
+    GROUP BY
+        u_cd2.uid,
+        u_cd2.canvas_id,
+        c.id,
+        e.id,
+        e.last_activity_at,
+        c.name,
+        c.course_code,
+        cs_cd2.canvas_course_term,
+        term_id
+);
+
