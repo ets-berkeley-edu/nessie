@@ -230,6 +230,204 @@ AS (
         AND {redshift_schema_canvas}.submission_dim.workflow_state != 'deleted'
 );
 
+/*
+ * Following code is where assignment_submissions_scores quesry is migrated using Canvas Data 2 equivalent tables 
+ and derived intermediate layer
+ */   
+CREATE TABLE {redshift_schema_boac}.assignment_submissions_scores_cd2
+SORTKEY (term_id, course_id, canvas_user_id, assignment_id)
+AS (
+    /*
+     * Following Canvas code, in cases where multiple assignment overrides associate a student with an assignment,
+     * we prefer the override with the latest due date.
+     */
+    WITH most_lenient_override AS (
+        SELECT
+            {redshift_schema_canvas_data_2}.assignment_overrides.assignment_id AS assignment_id,
+            {redshift_schema_canvas_data_2}.assignment_override_students.user_id AS user_id,
+            MAX({redshift_schema_canvas_data_2}.assignment_overrides.due_at) AS due_at
+        FROM {redshift_schema_canvas_data_2}.assignment_override_students
+            LEFT JOIN {redshift_schema_canvas_data_2}.assignment_overrides
+                ON {redshift_schema_canvas_data_2}.assignment_overrides.id = {redshift_schema_canvas_data_2}.assignment_override_students.assignment_override_id
+                AND {redshift_schema_canvas_data_2}.assignment_overrides.workflow_state = 'active'
+        GROUP BY
+            {redshift_schema_canvas_data_2}.assignment_overrides.assignment_id,
+            {redshift_schema_canvas_data_2}.assignment_override_students.user_id
+    ),
+    assignment_type AS (
+        SELECT
+            id,
+            CASE WHEN (
+                COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%none%' AND
+                COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%not_graded%' AND
+                COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%on_paper%' AND
+                COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%wiki_page%' AND
+                COALESCE(NULLIF(submission_types, ''), 'none') NOT LIKE '%external_tool%'
+              ) THEN 1
+            ELSE NULL END AS submittable
+        FROM {redshift_schema_canvas_data_2}.assignments
+    ),
+    /*
+     * We are interested in assignment submissions on a course_id level rather than a section level as determined by canvas_enrollment_id.
+     * We will use a distinct to weed out any duplicates we might encountered when we ignore canvas_enrollment_id column.
+     */
+    distinct_user_enrollments AS (
+        SELECT DISTINCT
+            u.uid AS uid,
+            u.canvas_id AS canvas_user_id,
+            u.global_id AS canvas_global_user_id,
+            {redshift_schema_canvas_data_2}.courses.id AS course_id,
+            (1072 * 10000000000000 + {redshift_schema_canvas_data_2}.courses.id) AS canvas_global_course_id,
+            e.canvas_course_term AS term_name,
+            e.term_id,
+            e.sis_enrollment_status AS sis_enrollment_status
+        FROM
+            {redshift_schema_intermediate}.active_student_enrollments_cd2 e
+            LEFT JOIN {redshift_schema_intermediate}.users_cd2 u
+                ON e.uid = u.uid
+            LEFT JOIN {redshift_schema_canvas_data_2}.courses
+                ON e.canvas_course_id = {redshift_schema_canvas_data_2}.courses.id
+    )
+    SELECT DISTINCT
+        distinct_user_enrollments.uid AS uid,
+        distinct_user_enrollments.canvas_user_id,
+        distinct_user_enrollments.course_id,
+        distinct_user_enrollments.term_name,
+        distinct_user_enrollments.term_id,
+        {redshift_schema_canvas_data_2}.assignments.id AS assignment_id,
+        CASE
+            /*
+             * An unsubmitted assignment is "missing" if it has a known due date in the past.
+             * TODO : Canvas's recently added late_policy_status feature can override this logic.
+             */
+            WHEN {redshift_schema_canvas_data_2}.submissions.submission_type IS NULL
+                AND {redshift_schema_canvas_data_2}.submissions.submitted_at IS NULL
+                AND {redshift_schema_canvas_data_2}.submissions.excused IS FALSE
+                AND (
+                    most_lenient_override.due_at < getdate()
+                    OR (most_lenient_override.due_at IS NULL
+                        AND {redshift_schema_canvas_data_2}.assignments.due_at IS NOT NULL
+                        AND {redshift_schema_canvas_data_2}.assignments.due_at < getdate())
+                )
+                AND assignment_type.submittable IS NOT NULL
+                AND (
+                    {redshift_schema_canvas_data_2}.submissions.score IS NULL
+                    OR (
+                        {redshift_schema_canvas_data_2}.submissions.score = 0.0
+                      AND (
+                          {redshift_schema_canvas_data_2}.assignments.points_possible > 0.0
+                          OR {redshift_schema_canvas_data_2}.submissions.grade is null
+                          OR {redshift_schema_canvas_data_2}.submissions.grade in ('incomplete', '0', 'I', 'NP', 'F')
+                        )
+                    )
+                 )
+            THEN
+                'missing'
+            /*
+             * Other ungraded unsubmitted submittable assignments, with due dates in the future or unknown, are simply "unsubmitted".
+             * (This seems to correspond to the usage of "floating" in the Canvas analytics API.)
+             * We check for a grade because the instructor may have allowed the student to handle the assignment
+             * outside expected digital-submission channels. If so, it would be misleading to flag it "unsubmitted".
+             * TODO : The count will include any "excused" submittable assignments, which may not be what we want.
+             */
+            WHEN {redshift_schema_canvas_data_2}.submissions.submission_type IS NULL
+                AND {redshift_schema_canvas_data_2}.submissions.submitted_at IS NULL
+                AND assignment_type.submittable IS NOT NULL
+                AND (
+                    {redshift_schema_canvas_data_2}.submissions.score IS NULL
+                    OR (
+                        {redshift_schema_canvas_data_2}.submissions.score = 0.0
+                      AND (
+                          {redshift_schema_canvas_data_2}.assignments.points_possible > 0.0
+                          OR {redshift_schema_canvas_data_2}.submissions.grade is null
+                          OR {redshift_schema_canvas_data_2}.submissions.grade in ('incomplete', '0', 'I', 'NP', 'F')
+                        )
+                    )
+                )
+            THEN
+                'unsubmitted'
+            /*
+             * Submitted assignments with a known submission date after a known due date are late.
+             * TODO : Canvas's recently added late_policy_status feature can override this logic.
+             */
+            WHEN {redshift_schema_canvas_data_2}.submissions.submitted_at IS NOT NULL
+                AND assignment_type.submittable IS NOT NULL
+                AND most_lenient_override.due_at < {redshift_schema_canvas_data_2}.submissions.submitted_at
+                OR (
+                    most_lenient_override.due_at IS NULL
+                    AND {redshift_schema_canvas_data_2}.assignments.due_at IS NOT NULL
+                    AND {redshift_schema_canvas_data_2}.assignments.due_at <
+                    {redshift_schema_canvas_data_2}.submissions.submitted_at +
+                    CASE {redshift_schema_canvas_data_2}.submissions.submission_type WHEN 'online_quiz' THEN interval '1 minute' ELSE interval '0 minutes' END
+                )
+            THEN
+                'late'
+            /*
+             * Submitted assignments with a known submission date before or equal to a known due date are on time.
+             */
+            WHEN {redshift_schema_canvas_data_2}.submissions.submitted_at IS NOT NULL
+                AND assignment_type.submittable IS NOT NULL
+                AND most_lenient_override.due_at >= {redshift_schema_canvas_data_2}.submissions.submitted_at
+                OR (
+                    most_lenient_override.due_at IS NULL
+                    AND {redshift_schema_canvas_data_2}.assignments.due_at IS NOT NULL
+                    AND {redshift_schema_canvas_data_2}.assignments.due_at >=
+                    {redshift_schema_canvas_data_2}.submissions.submitted_at +
+                    CASE {redshift_schema_canvas_data_2}.submissions.submission_type WHEN 'online_quiz' THEN interval '1 minute' ELSE interval '0 minutes' END
+                )
+            THEN
+                'on_time'
+            /*
+             * Remaining submittable assignments are simply "submitted."
+             */
+            WHEN
+                assignment_type.submittable IS NOT NULL
+            THEN
+                'submitted'
+            /*
+             * Non-digital (or unsubmittable) assignments are either graded or ungraded. They may have due_at dates,
+             * and may even have submitted_at dates, but lag times are difficult to interpret. However, zero scores
+             * generally indicate undone work.
+             */
+            WHEN {redshift_schema_canvas_data_2}.submissions.score = 0.0
+                AND (
+                    {redshift_schema_canvas_data_2}.assignments.points_possible > 0.0
+                    OR {redshift_schema_canvas_data_2}.submissions.grade is null
+                    OR {redshift_schema_canvas_data_2}.submissions.grade in ('incomplete', '0', 'I', 'NP', 'F')
+                )
+            THEN
+                'zero_graded'
+            WHEN {redshift_schema_canvas_data_2}.submissions.score IS NOT NULL
+            THEN
+                'graded'
+            ELSE
+                'ungraded'
+        END AS assignment_status,
+        CASE
+            WHEN most_lenient_override.due_at IS NULL THEN {redshift_schema_canvas_data_2}.assignments.due_at
+            ELSE most_lenient_override.due_at
+        END AS due_at,
+        {redshift_schema_canvas_data_2}.submissions.submitted_at AS submitted_at,
+        {redshift_schema_canvas_data_2}.submissions.score AS score,
+        {redshift_schema_canvas_data_2}.submissions.grade AS grade,
+        {redshift_schema_canvas_data_2}.assignments.points_possible AS points_possible,
+        distinct_user_enrollments.sis_enrollment_status AS sis_enrollment_status
+    FROM
+        {redshift_schema_canvas_data_2}.submissions
+        INNER JOIN {redshift_schema_canvas_data_2}.assignments
+            ON {redshift_schema_canvas_data_2}.submissions.assignment_id = {redshift_schema_canvas_data_2}.assignments.id
+        INNER JOIN assignment_type
+            ON {redshift_schema_canvas_data_2}.submissions.assignment_id = assignment_type.id
+        LEFT JOIN most_lenient_override
+            ON {redshift_schema_canvas_data_2}.submissions.user_id = most_lenient_override.user_id
+            AND {redshift_schema_canvas_data_2}.submissions.assignment_id = most_lenient_override.assignment_id
+        LEFT JOIN distinct_user_enrollments
+            ON {redshift_schema_canvas_data_2}.submissions.user_id = distinct_user_enrollments.canvas_user_id
+            AND {redshift_schema_canvas_data_2}.submissions.course_id = distinct_user_enrollments.course_id
+    WHERE {redshift_schema_canvas_data_2}.assignments.workflow_state = 'published'
+        AND {redshift_schema_canvas_data_2}.submissions.workflow_state != 'deleted'
+);
+ 
 
 CREATE TABLE {redshift_schema_boac}.course_enrollments
 SORTKEY (course_id)
