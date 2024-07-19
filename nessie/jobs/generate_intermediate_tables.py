@@ -38,7 +38,7 @@ class GenerateIntermediateTables(BackgroundJob):
         app.logger.info('Starting intermediate table generation job...')
 
         resolved_ddl_redshift = resolve_sql_template(
-            'create_intermediate_schema.template.sql',
+            'create_intermediate_schema_cd2.template.sql',
             current_term_id=current_term_id(),
             where_clause_exclude_withdrawn="AND en.enrollment_status_reason <> 'WDRW'",
         )
