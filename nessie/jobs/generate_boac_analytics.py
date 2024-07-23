@@ -47,7 +47,7 @@ class GenerateBoacAnalytics(BackgroundJob):
         all_canvas_terms = reverse_term_ids()
         boac_snapshot_daily_path = f'{self.s3_boa_path}/term/{all_canvas_terms[0]}/daily/{hashed_datestamp()}'
         resolved_ddl = resolve_sql_template(
-            'create_boac_schema.template.sql',
+            'create_boac_schema_cd2.template.sql',
             boac_snapshot_daily_path=boac_snapshot_daily_path,
             current_term_id=all_canvas_terms[0],
             last_term_id=all_canvas_terms[1],
