@@ -10,8 +10,6 @@
     "serve-vue": "vue-cli-service serve --open --host localhost"
   },
   "dependencies": {
-    "ajv": "8.11.0",
-    "ajv-keywords": "5.1.0",
     "axios": "0.27.2",
     "bootstrap-vue": "npm:@neverendingsupport/bootstrap-vue2@2.23.2",
     "highcharts-custom-events": "3.0.10",
@@ -71,16 +69,26 @@
   },
   "license": "SEE LICENSE IN LICENSE",
   "overrides": {
-    "bootstrap-vue": { ".": "npm:@neverendingsupport/bootstrap-vue2@2.23.2" },
-    "vue": { ".": "npm:@neverendingsupport/vue2@2.7.17" },
-    "@vue/compiler-sfc": { ".": "npm:@neverendingsupport/vue2@2.7.17-compiler-sfc" },
-    "vue-router": { ".": "npm:@neverendingsupport/vue-router@3.6.6" },
-    "vue-server-renderer": { ".": "npm:@neverendingsupport/vue2@2.7.17-server-renderer" },
-    "vue-template-compiler": { ".": "npm:@neverendingsupport/vue2@2.7.17-template-compiler" }
+    "bootstrap-vue": {
+      ".": "npm:@neverendingsupport/bootstrap-vue2@2.23.2"
+    },
+    "vue": {
+      ".": "npm:@neverendingsupport/vue2@2.7.17"
+    },
+    "@vue/compiler-sfc": {
+      ".": "npm:@neverendingsupport/vue2@2.7.17-compiler-sfc"
+    },
+    "vue-router": {
+      ".": "npm:@neverendingsupport/vue-router@3.6.6"
+    },
+    "vue-server-renderer": {
+      ".": "npm:@neverendingsupport/vue2@2.7.17-server-renderer"
+    },
+    "vue-template-compiler": {
+      ".": "npm:@neverendingsupport/vue2@2.7.17-template-compiler"
+    }
   },
   "resolutions": {
-    "ajv": "8.11.0",
-    "ajv-keywords": "5.1.0",
     "elliptic": "^6.5.4",
     "execa": "4.0.3",
     "lodash": "4.17.21",
