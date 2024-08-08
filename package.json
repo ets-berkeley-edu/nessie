@@ -10,15 +10,15 @@
     "serve-vue": "vue-cli-service serve --open --host localhost"
   },
   "dependencies": {
-    "ajv": "8.11.0",
+    "ajv": "8.17.1",
     "ajv-keywords": "5.1.0",
-    "axios": "0.27.2",
+    "axios": "0.28.1",
     "bootstrap-vue": "npm:@neverendingsupport/bootstrap-vue2@2.23.2",
     "highcharts-custom-events": "3.0.10",
     "highcharts-vue": "1.4.3",
     "lodash": "4.17.21",
     "mitt": "2.1.0",
-    "ora": "6.1.2",
+    "ora": "6.3.1",
     "tar-stream": "2.2.0",
     "vue": "npm:@neverendingsupport/vue2@2.7.17",
     "vue-class-component": "7.2.6",
