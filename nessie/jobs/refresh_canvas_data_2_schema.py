@@ -42,14 +42,14 @@ class RefreshCanvasData2Schema(BackgroundJob):
         return self.create_schema()
 
     def create_schema(self):
-        app.logger.info('Executing SQL...')
-        redshift.drop_external_schema(self.external_schema)
-
         s3_cd2_daily = get_s3_canvas_data_2_daily_path()
         if not s3.get_keys_with_prefix(s3_cd2_daily):
             s3_cd2_daily = _get_yesterdays_cd2_data()
         s3_path = '/'.join([f"s3://{app.config['LOCH_S3_BUCKET']}", s3_cd2_daily])
 
+        app.logger.info('Executing SQL...')
+        app.logger.info('Dropping External Schema now that we have found timely S3 Canvas Data')
+        redshift.drop_external_schema(self.external_schema)
         sql_filename = 'create_canvas_data_2_schema_template.sql'
         resolved_ddl = resolve_sql_template(sql_filename, cd2_data_path=s3_path)
         if not redshift.execute_ddl_script(resolved_ddl):
@@ -67,7 +67,7 @@ class RefreshCanvasData2Schema(BackgroundJob):
 def _get_yesterdays_cd2_data():
     s3_cd2_daily = get_s3_canvas_data_2_daily_path(datetime.now() - timedelta(days=1))
     if not s3.get_keys_with_prefix(s3_cd2_daily):
-        raise BackgroundJobError('No timely Canvas Data 2 S3 data found')
+        raise BackgroundJobError('No timely Canvas Data 2 S3 data found for today and previous day')
 
-    app.logger.info('Falling back to Canvas Data 2 S3  data for yesterday')
+    app.logger.info('Falling back to last stable Canvas Data 2 S3 data ')
     return s3_cd2_daily
