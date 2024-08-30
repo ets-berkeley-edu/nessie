@@ -3,10 +3,9 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      nodejs: 12
-      python: 3.8
+      nodejs: 20
+      python: 3.11
     commands:
-      - n 20  # Force Node update to v16
       - echo -e '@neverendingsupport:registry=https://registry.nes.herodevs.com/npm/pkg/\n//registry.nes.herodevs.com/npm/pkg/:_authToken="'${NES_AUTH_TOKEN}'"' > .npmrc
       - npm -v
       - npm install
