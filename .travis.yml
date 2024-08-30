@@ -1,10 +1,11 @@
 sudo: required
+dist: focal
 language: python
 python: "3.8"
 
 before_install:
   - cd ${TRAVIS_BUILD_DIR}
-  - nvm install 16
+  - nvm install 20
 
   # Set up test dbs
   - psql -c 'create database nessie_redshift_test;' -U postgres
