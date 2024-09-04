@@ -125,8 +125,6 @@ JOB_SCHEDULING_ENABLED = True
 
 # See http://apscheduler.readthedocs.io/en/latest/modules/triggers/cron.html for supported schedule formats.
 # Schedules should be provided as dictionaries in configs, e.g. {'hour': 12, 'minute': 30}
-JOB_SYNC_CANVAS_SNAPSHOTS = {}
-JOB_RESYNC_CANVAS_SNAPSHOTS = {}
 JOB_SYNC_CANVAS_DATA_2_SNAPSHOTS = {}
 JOB_REFRESH_SISEDO_FULL = {}
 JOB_REFRESH_SISEDO_INCREMENTAL = {}
