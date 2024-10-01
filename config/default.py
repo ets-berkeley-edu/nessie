@@ -65,9 +65,10 @@ AWS_SECRET_ACCESS_KEY = 'secret'
 AWS_REGION = 'aws region'
 AWS_S3_SESSION_DURATION = 3600
 
-ASC_ATHLETES_API_URL = 'https://secreturl.berkeley.edu/intensives.php?AcadYr=2017-18'
+ASC_ATHLETES_API_URL = 'https://secreturl.berkeley.edu/intensives.php'
 ASC_ATHLETES_API_KEY = 'secret'
-ASC_THIS_ACAD_YR = '2017-18'
+# We cut over on this day of the year, on or about August 1.
+ASC_ACAD_YR_CUTOVER = 214
 
 BOAC_REFRESHERS = [
     {
