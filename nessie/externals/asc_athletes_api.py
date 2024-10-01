@@ -23,6 +23,7 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from datetime import datetime
 
 from flask import current_app as app
 from nessie.lib import http
@@ -40,9 +41,17 @@ def get_asc_feed():
     return [r for r in asc_hash.values()]
 
 
+def get_asc_academic_year():
+    now = datetime.now()
+    if now.timetuple().tm_yday < app.config['ASC_ACAD_YR_CUTOVER']:
+        return f'{now.year - 1}-{now.year % 100}'
+    else:
+        return f'{now.year}-{now.year % 100 + 1}'
+
+
 @fixture('asc_athletes')
 def _get_asc_feed_response(mock=None):
-    url = app.config['ASC_ATHLETES_API_URL']
+    url = http.build_url(app.config['ASC_ATHLETES_API_URL'], {'AcadYr': get_asc_academic_year()})
     with mock(url):
         headers = {
             'Accept': 'application/json',

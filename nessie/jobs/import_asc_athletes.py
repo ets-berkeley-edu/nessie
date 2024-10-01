@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 from nessie.externals import redshift, s3
-from nessie.externals.asc_athletes_api import get_asc_feed
+from nessie.externals.asc_athletes_api import get_asc_academic_year, get_asc_feed
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import encoded_tsv_row, get_s3_asc_daily_path, resolve_sql_template_string
 
@@ -87,7 +87,7 @@ class ImportAscAthletes(BackgroundJob):
             raise BackgroundJobError(f'ASC import: SyncDate conflict in ASC API: {api_results[0]} vs. {api_results[-1]}')
         rows = []
         for r in api_results:
-            if r['AcadYr'] == app.config['ASC_THIS_ACAD_YR'] and r['SportCode']:
+            if r['AcadYr'] == get_asc_academic_year() and r['SportCode']:
                 asc_code = r['SportCodeCore']
                 if asc_code in SPORT_TRANSLATIONS:
                     group_code = r['SportCode']

@@ -37,7 +37,7 @@ class TestImportAscAthletes:
 
     def test_update_safety_check(self, app):
         with mock_s3(app):
-            this_acad_yr = app.config['ASC_THIS_ACAD_YR']
+            this_acad_yr = asc_athletes_api.get_asc_academic_year()
             assert len(this_acad_yr)
             skinny_import = {
                 '1166.3': {
