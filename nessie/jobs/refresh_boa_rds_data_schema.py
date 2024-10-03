@@ -43,7 +43,7 @@ class RefreshBoaRdsDataSchema(BackgroundJob):
 
     def create_schema(self):
         # s3_boa_rds_daily = get_s3_boa_rds_data_daily_path()
-        # UNCOMMENT previous line to re-instate get_s3_boa_rds_data_daily_path()
+        # TODO: UNCOMMENT previous line to re-instate get_s3_boa_rds_data_daily_path()
         # REMOVE next line that manually sets daily path using TEMP config BOA_RDS_TEST_DATE_PATH
         s3_boa_rds_daily = app.config['BOA_RDS_TEST_DATE_PATH']
         s3_path = '/'.join([f"s3://{app.config['LOCH_S3_BUCKET']}", s3_boa_rds_daily])
