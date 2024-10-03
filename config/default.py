@@ -70,6 +70,10 @@ ASC_ATHLETES_API_KEY = 'secret'
 # We cut over on this day of the year, on or about August 1.
 ASC_ACAD_YR_CUTOVER = 214
 
+# TODO: Remove next line once daily ingest is set up.
+BOA_RDS_TEST_DATE_PATH = 'Temporary test path'
+BOA_RDS_ZERO_COUNT_ACCEPTABLE = False
+
 BOAC_REFRESHERS = [
     {
         'API_KEY': 'Regents of the University of California',
@@ -161,6 +165,9 @@ LOCH_S3_ENCRYPTION = 'AES256'
 LOCH_S3_PROTECTED_BUCKET = 'protected_bucket_name'
 LOCH_S3_PUBLIC_BUCKET = 'public_bucket_name'
 LOCH_S3_REGION = 'us-west-2'
+
+LOCH_S3_BOA_RDS_DATA_PATH = 'boa-data'
+LOCH_S3_BOA_RDS_DATA_PATH_DAILY = 'boa/path/to/daily'
 
 LOCH_S3_CANVAS_DATA_PATH = 'canvas-data'
 LOCH_S3_CANVAS_DATA_PATH_DAILY = 'canvas/path/to/daily'
@@ -258,6 +265,7 @@ REDSHIFT_SCHEMA_YCBM_INTERNAL = 'ycbm_data'
 # The following external schemas vary between environments and do need to be overridden locally.
 REDSHIFT_SCHEMA_ADVISOR = 'External Advisor schema name'
 REDSHIFT_SCHEMA_ASC_ADVISING_NOTES = 'External ASC Advising Notes schema name'
+REDSHIFT_SCHEMA_BOA_RDS_DATA = 'External BOA RDS Data schema name'
 REDSHIFT_SCHEMA_CANVAS = 'External Canvas schema name'
 REDSHIFT_SCHEMA_CANVAS_DATA_2 = 'External Canavs Data 2 schema name'
 REDSHIFT_SCHEMA_COE_EXTERNAL = 'External COE schema name'
