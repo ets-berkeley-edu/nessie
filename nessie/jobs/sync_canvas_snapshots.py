@@ -40,7 +40,7 @@ class SyncCanvasSnapshots(BackgroundJob):
 
     @classmethod
     def generate_job_id(cls):
-        return 'sync_' + str(int(time.time()))
+        return 'SyncCanvasSnapshots_' + str(int(time.time()))
 
     def run(self, cleanup=True):
         job_id = self.generate_job_id()
