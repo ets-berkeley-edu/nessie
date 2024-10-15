@@ -37,7 +37,7 @@ class QueryCanvasData2Snapshot(BackgroundJob):
 
     @classmethod
     def generate_job_id(cls):
-        return 'query_cd2_snapshot_' + str(int(time.time()))
+        return 'QueryCD2Snapshots_' + str(int(time.time()))
 
     def get_cd2_table_objects(self, cd2_table_jobs):
 
