@@ -97,6 +97,7 @@ CANVAS_HTTP_TOKENS = ['yet another secret', 'in a list of secrets']
 
 CD2_SECRET_NAME = '<secret-string>'
 CD2_INGEST_LAMBDA_NAME = '<lambda name>'
+CD2_DYNAMODB_METADATA_TABLE = '<dynamoDB CD2 metadata table>'
 CD2_ZERO_COUNT_ACCEPTABLE = False
 
 # If set to 'auto', the next three items will use defaults based on SIS term definitions.

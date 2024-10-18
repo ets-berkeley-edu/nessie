@@ -74,6 +74,7 @@ from nessie.jobs.sync_canvas_requests_snapshots import SyncCanvasRequestsSnapsho
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
 from nessie.jobs.transform_piazza_api_data import TransformPiazzaApiData
+from nessie.jobs.trigger_cd2_query_jobs import TriggerCD2QueryJobs
 from nessie.jobs.verify_sis_advising_note_attachments import VerifySisAdvisingNoteAttachments
 from nessie.lib.http import tolerant_jsonify
 from nessie.lib.metadata import update_canvas_sync_status
@@ -409,6 +410,13 @@ def sync_file_to_s3():
     if canvas_sync_job_id:
         update_canvas_sync_status(canvas_sync_job_id, key, 'received')
     job_started = SyncFileToS3(url=url, key=key, canvas_sync_job_id=canvas_sync_job_id).run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/trigger_cd2_query_jobs', methods=['POST'])
+@auth_required
+def trigger_cd2_query_jobs():
+    job_started = TriggerCD2QueryJobs.run_async()
     return respond_with_status(job_started)
 
 
