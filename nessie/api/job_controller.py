@@ -70,6 +70,7 @@ from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
 from nessie.jobs.refresh_sisedo_schema_full import RefreshSisedoSchemaFull
 from nessie.jobs.refresh_sisedo_schema_incremental import RefreshSisedoSchemaIncremental
 from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
+from nessie.jobs.retrieve_canvas_data_2_snapshots import RetrieveCanvasData2Snapshots
 from nessie.jobs.sync_canvas_requests_snapshots import SyncCanvasRequestsSnapshots
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
@@ -358,6 +359,13 @@ def refresh_canvas_data_2_schema():
 @auth_required
 def refresh_sisedo_schema_full():
     job_started = RefreshSisedoSchemaFull().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/retrieve_canvas_data_2_snapshots', methods=['POST'])
+@auth_required
+def retrieve_canvas_data_2_snapshots():
+    job_started = RetrieveCanvasData2Snapshots().run_async()
     return respond_with_status(job_started)
 
 
