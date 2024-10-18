@@ -76,7 +76,7 @@ SELECT dsn.sid, dsn.id, dsn.body AS note_body, dsna.sid AS advisor_sid, dsna.uid
        dsna.last_name AS advisor_last_name, NULL AS note_category, NULL AS note_subcategory, FALSE AS is_private,
        NULL AS created_by, dsn.created_at, dsn.created_at AS updated_at
 FROM {rds_schema_data_science}.advising_notes dsn
-JOIN {rds_schema_advising_notes}.advising_note_authors dsna ON dsn.advisor_email = dsna.campus_email
+LEFT JOIN {rds_schema_advising_notes}.advising_note_authors dsna ON dsn.advisor_email = dsna.campus_email
 UNION
 SELECT ein.sid, ein.id, NULL AS note_body, NULL AS advisor_sid, ein.advisor_uid, ein.advisor_first_name, ein.advisor_last_name,
        NULL AS note_category, NULL AS note_subcategory, FALSE AS is_private, NULL AS created_by, ein.created_at, ein.updated_at
