@@ -29,13 +29,18 @@ from flask import current_app as app
 from nessie.externals import dynamodb
 
 
-def get_cd2_query_jobs_by_date_and_environment(date_str, environment=None):
+def get_cd2_query_jobs_by_date_and_environment(date_str=None, environment=None):
     try:
         # Initialize the DynamoDB resource
         dynamodb_resource = dynamodb.get_client()
 
         # Reference the DynamoDB table
         table = dynamodb_resource.Table(app.config['CD2_DYNAMODB_METADATA_TABLE'])
+
+        if date_str is None:
+            # Get today's date as a string as default
+            today_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+            date_str = today_str
 
         # Define the basic filter expression and attribute values
         filter_expression = 'begins_with(created_at, :date)'
