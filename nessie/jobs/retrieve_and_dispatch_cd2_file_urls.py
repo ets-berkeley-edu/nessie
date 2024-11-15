@@ -87,10 +87,10 @@ class RetrieveAndDispatchCD2FileUrls(BackgroundJob):
             snapshot_retrieved_status = last_cd2_query_job['workflow_status']['snapshot_retrieved_status']
             snapshot_resync_status = last_cd2_query_job['workflow_status']['snapshot_resync_status']
 
-            if snapshot_retrieved_status == 'success':
-                cd2_table_snapshot_objects = last_cd2_query_job['snapshot_objects']
-            elif snapshot_resync_status == 'success':
+            if snapshot_resync_status == 'success':
                 cd2_table_snapshot_objects = last_cd2_query_job['corrected_snapshot_objects']
+            elif snapshot_retrieved_status == 'success':
+                cd2_table_snapshot_objects = last_cd2_query_job['snapshot_objects']
             else:
                 raise BackgroundJobError('Retrieve and Resync of snapshot has failed for the day. Aborting ingest')
 

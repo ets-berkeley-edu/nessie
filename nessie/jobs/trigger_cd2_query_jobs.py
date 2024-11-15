@@ -61,6 +61,7 @@ class TriggerCD2QueryJobs(BackgroundJob):
                 'snapshot_objects': [],
                 'corrected_snapshot_objects': [],
                 'corrected_snapshot_env': '',
+                'corrected_snapshot_job_id': '',
                 'workflow_status': {
                     'table_query_trigger_status': 'success',
                     'snapshot_retrieved_status': '',
