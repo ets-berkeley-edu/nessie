@@ -99,6 +99,25 @@ def delete_objects_with_prefix(prefix, whitelist=[]):
         return False
 
 
+def delete_s3_location_with_prefix(prefix):
+    keys_to_delete = []
+    existing_keys = get_keys_with_prefix(prefix)
+    if existing_keys is None:
+        app.logger.error('Error listing keys, aborting job.')
+        return False
+    for key in existing_keys:
+        keys_to_delete.append(key)
+    app.logger.info(
+        f'Found {len(existing_keys)} key(s) matching prefix "{prefix}", {len(existing_keys) - len(keys_to_delete)} '
+        f'key(s). Will delete {len(keys_to_delete)} object(s)')
+    if not keys_to_delete:
+        return True
+    if delete_objects(keys_to_delete):
+        return True
+    else:
+        return False
+
+
 def get_sts_credentials():
     sts_client = boto3.client('sts')
     role_arn = app.config['AWS_APP_ROLE_ARN']
