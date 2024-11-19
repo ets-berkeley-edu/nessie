@@ -53,6 +53,9 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_TRANSFORM_PIAZZA_DATA': 6050,
     'JOB_IMPORT_EDL': 7000,
     'JOB_IMPORT_YCBM': 7500,
+    'JOB_TRIGGER_CD2_QUERY_SNAPSHOT': 1200,
+    'JOB_RETRIEVE_CD2_SNAPSHOT': 1300,
+    'JOB_SYNC_AND_REFRESH_CD2_SNAPSHOTS': 1400,
 }
 
 
@@ -97,8 +100,12 @@ def schedule_all_jobs(force=False):
     from nessie.jobs.refresh_sisedo_schema_full import RefreshSisedoSchemaFull
     from nessie.jobs.refresh_sisedo_schema_incremental import RefreshSisedoSchemaIncremental
     from nessie.jobs.resync_canvas_snapshots import ResyncCanvasSnapshots
+    from nessie.jobs.resync_corrected_cd2_snapshots import ResyncCorrectedCD2Snapshots
+    from nessie.jobs.retrieve_and_dispatch_cd2_file_urls import RetrieveAndDispatchCD2FileUrls
+    from nessie.jobs.retrieve_canvas_data_2_snapshots import RetrieveCanvasData2Snapshots
     from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
     from nessie.jobs.transform_piazza_api_data import TransformPiazzaApiData
+    from nessie.jobs.trigger_cd2_query_jobs import TriggerCD2QueryJobs
     from nessie.jobs.verify_sis_advising_note_attachments import VerifySisAdvisingNoteAttachments
 
     schedule_job(sched, 'JOB_SYNC_CANVAS_SNAPSHOTS', SyncCanvasSnapshots, force)
@@ -109,6 +116,18 @@ def schedule_all_jobs(force=False):
     schedule_job(sched, 'JOB_REFRESH_SISEDO_INCREMENTAL', RefreshSisedoSchemaIncremental, force)
     schedule_job(sched, 'JOB_IMPORT_STUDENT_POPULATION', ChainedImportStudentPopulation, force)
     schedule_job(sched, 'JOB_IMPORT_CANVAS_ENROLLMENTS', ImportCanvasEnrollmentsApi, force)
+    schedule_job(sched, 'JOB_TRIGGER_CD2_QUERY_SNAPSHOT', TriggerCD2QueryJobs, force)
+    schedule_job(sched, 'JOB_RETRIEVE_CD2_SNAPSHOT', RetrieveCanvasData2Snapshots, force)
+    schedule_chained_job(
+        sched,
+        'JOB_SYNC_AND_REFRESH_CD2_SNAPSHOTS',
+        [
+            ResyncCorrectedCD2Snapshots,
+            RetrieveAndDispatchCD2FileUrls,
+            RefreshCanvasData2Schema,
+        ],
+        force,
+    )
     schedule_chained_job(
         sched,
         'JOB_SYNC_CANVAS_DATA_2_SNAPSHOTS',
