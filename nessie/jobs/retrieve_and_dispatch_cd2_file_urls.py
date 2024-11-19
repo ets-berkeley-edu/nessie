@@ -27,7 +27,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import time
 
 from flask import current_app as app
-from nessie.externals import canvas_data_2, lambda_service
+from nessie.externals import canvas_data_2, lambda_service, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib import cd2_metadata
 
@@ -97,6 +97,16 @@ class RetrieveAndDispatchCD2FileUrls(BackgroundJob):
             # Get downloadable URLs for all tables and dispatch jobs to Lambdas for S3 syncs
             cd2_files_to_sync = self.retrieve_cd2_file_urls(cd2_table_snapshot_objects)
             app.logger.debug(f'CD2 file urls retrieved successfully {cd2_files_to_sync}')
+
+            # Clean up CD2 locaton before file url dispatch for download
+            if cleanup:
+                app.logger.info('Clean up any objects from S3 location before Downloading new snapshot')
+                datestamp = time.strftime('%Y-%m-%d', time.gmtime())
+                cd2_daily_prefix = f'{app.config["LOCH_S3_CANVAS_DATA_2_PATH_DAILY"]}/{datestamp}'
+                delete_result = s3.delete_s3_location_with_prefix(cd2_daily_prefix)
+                if not delete_result:
+                    app.logger.error('Cleanup of obsolete CD2 snapshots before download failed.')
+                    raise BackgroundJobError('Cleanup of obsolete CD2 snapshots before download failed.')
 
             # Dispatch files details with urls for processing to microservicce
             dispatched_files = self.dispatch_for_download(cd2_files_to_sync)
