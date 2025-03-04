@@ -79,9 +79,11 @@ from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
 from nessie.jobs.transform_piazza_api_data import TransformPiazzaApiData
 from nessie.jobs.trigger_cd2_query_jobs import TriggerCD2QueryJobs
+from nessie.jobs.update_academic_participation_data import UpdateAcademicParticipationData
 from nessie.jobs.verify_sis_advising_note_attachments import VerifySisAdvisingNoteAttachments
 from nessie.lib.http import tolerant_jsonify
 from nessie.lib.metadata import update_canvas_sync_status
+from nessie.lib.util import to_boolean
 
 
 @app.route('/api/job/create_advisor_schema', methods=['POST'])
@@ -463,6 +465,13 @@ def import_asc_athletes():
 @auth_required
 def refresh_boac_cache():
     job_started = RefreshBoacCache().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/update_academic_participation_data/<use_canvas>', methods=['POST'])
+@auth_required
+def update_academic_participation_data(use_canvas):
+    job_started = UpdateAcademicParticipationData(use_canvas=to_boolean(use_canvas)).run_async()
     return respond_with_status(job_started)
 
 
