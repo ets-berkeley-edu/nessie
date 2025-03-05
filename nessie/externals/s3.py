@@ -196,6 +196,21 @@ def get_object_text(key):
         return None
 
 
+def get_subfolders_with_prefix(prefix):
+    client = get_client()
+    bucket = app.config['LOCH_S3_BUCKET']
+    subfolders = []
+    paginator = client.get_paginator('list_objects')
+    try:
+        for page in paginator.paginate(Bucket=bucket, Prefix=prefix, Delimiter='/'):
+            if 'CommonPrefixes' in page:
+                subfolders += [o.get('Prefix') for o in page['CommonPrefixes']]
+    except (BotoClientError, BotoConnectionError, ValueError) as e:
+        app.logger.error(f'Error listing S3 subfolders with prefix: bucket={bucket}, prefix={prefix}, error={e}')
+        return None
+    return sorted(subfolders)
+
+
 def get_unzipped_text_reader(key):
     """Iterate over millions of rows with minimal memory consumption."""
     client = get_client()

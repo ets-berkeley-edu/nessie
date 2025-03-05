@@ -30,7 +30,8 @@ import re
 
 from dateutil.rrule import DAILY, rrule
 from flask import current_app as app
-from nessie.lib.berkeley import earliest_term_id
+from nessie.externals.s3 import get_subfolders_with_prefix
+from nessie.lib.berkeley import current_term_id, earliest_term_id
 import pytz
 
 """Generic utilities."""
@@ -140,6 +141,20 @@ def get_s3_coe_daily_path(cutoff=None):
 
 def get_s3_edl_daily_path(cutoff=None):
     return app.config['LOCH_S3_EDL_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
+
+
+def get_s3_explorance_term_path(cutoff=None):
+    return app.config['LOCH_S3_EXPLORANCE_DATA_PATH'] + '/' + current_term_id()
+
+
+def get_s3_explorance_term_export_daily_path(cutoff=None):
+    return get_s3_explorance_term_path(cutoff) + '/daily/' + localized_datestamp(cutoff)
+
+
+def get_s3_explorance_term_export_previous_path(cutoff=None):
+    exports = get_subfolders_with_prefix(get_s3_explorance_term_path(cutoff) + '/daily/')
+    if len(exports):
+        return exports[-1]
 
 
 def get_s3_oua_daily_path(cutoff=None):
