@@ -170,6 +170,69 @@ def get_all_student_profile_elements():
     return redshift.fetch(sql)
 
 
+def get_sis_enrollments(term_id, section_ids):
+    sql = """SELECT DISTINCT
+            ba.ldap_uid,
+            ba.sid AS sis_id,
+            ba.first_name,
+            ba.last_name,
+            ba.email_address,
+            e.sis_section_id
+        FROM sis_data.basic_attributes ba
+        JOIN sis_data.sis_enrollments e
+            ON e.ldap_uid = ba.ldap_uid
+            AND e.sis_enrollment_status = 'E'
+            AND e.sis_term_id = %s
+            AND e.sis_section_id = ANY(%s)
+        ORDER BY ba.ldap_uid"""
+    return rds.fetch(sql, params=(term_id, section_ids), stream=True)
+
+
+def get_sis_instructors(term_id, section_ids):
+    sql = """SELECT DISTINCT
+            ba.ldap_uid,
+            CASE
+                WHEN ba.affiliations LIKE '%%STUDENT-TYPE-REGISTERED%%' THEN ba.sid
+                WHEN ba.affiliations LIKE '%%STUDENT-TYPE-NOT-REGISTERED%%' THEN ba.sid
+                ELSE CONCAT('UID:', ba.ldap_uid) END
+            AS sis_id,
+            ba.first_name,
+            ba.last_name,
+            ba.email_address,
+            s.sis_section_id
+        FROM sis_data.basic_attributes ba
+        JOIN sis_data.sis_sections s
+            ON s.instructor_uid = ba.ldap_uid
+            AND s.sis_term_id = %s
+            AND s.sis_section_id = ANY(%s)
+        ORDER BY ba.ldap_uid"""
+    return rds.fetch(sql, params=(term_id, section_ids), stream=True)
+
+
+def get_sis_sections(term_id, section_ids):
+    sql = """SELECT DISTINCT
+            sis_section_id,
+            sis_course_name,
+            sis_instruction_format,
+            sis_section_num,
+            meeting_start_date,
+            meeting_end_date
+        FROM sis_data.sis_sections
+        WHERE
+            sis_term_id = %s
+            AND sis_section_id = ANY(%s)
+        ORDER BY sis_section_id"""
+    return rds.fetch(sql, params=(term_id, section_ids), stream=True)
+
+
+def get_sis_default_meeting_dates(term_id):
+    sql = """SELECT
+        mode() WITHIN GROUP (ORDER BY meeting_start_date) AS start_date,
+        mode() WITHIN GROUP (ORDER BY meeting_end_date) AS end_date
+        FROM sis_data.sis_sections WHERE sis_term_id = %s"""
+    return rds.fetch(sql, params=(term_id,))
+
+
 def get_sids_with_photos():
     sql = f"""SELECT sid
         FROM {metadata_schema()}.photo_import_status

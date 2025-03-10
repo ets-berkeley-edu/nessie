@@ -284,6 +284,18 @@ def sis_term_id_for_name(term_name=None):
             return match.group(2) + match.group(3) + season_codes[match.group(1)]
 
 
+def term_code_for_sis_id(sis_id=None):
+    if sis_id:
+        season, year = term_info_for_sis_term_id(sis_id)
+        season_codes = {
+            'Winter': 'A',
+            'Spring': 'B',
+            'Summer': 'C',
+            'Fall': 'D',
+        }
+        return f'{year}-{season_codes[season]}'
+
+
 def term_info_for_sis_term_id(sis_id=None):
     if sis_id:
         sis_id = str(sis_id)
