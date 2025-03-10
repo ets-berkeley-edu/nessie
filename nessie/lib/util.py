@@ -143,16 +143,18 @@ def get_s3_edl_daily_path(cutoff=None):
     return app.config['LOCH_S3_EDL_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
 
-def get_s3_explorance_term_path(cutoff=None):
-    return app.config['LOCH_S3_EXPLORANCE_DATA_PATH'] + '/' + current_term_id()
+def get_s3_explorance_term_path(term_id=None, cutoff=None):
+    if not term_id:
+        term_id = current_term_id()
+    return app.config['LOCH_S3_EXPLORANCE_DATA_PATH'] + '/' + term_id
 
 
-def get_s3_explorance_term_export_daily_path(cutoff=None):
-    return get_s3_explorance_term_path(cutoff) + '/daily/' + localized_datestamp(cutoff)
+def get_s3_explorance_term_export_daily_path(term_id=None, cutoff=None):
+    return get_s3_explorance_term_path(term_id, cutoff) + '/daily/' + localized_datestamp(cutoff)
 
 
-def get_s3_explorance_term_export_previous_path(cutoff=None):
-    exports = get_subfolders_with_prefix(get_s3_explorance_term_path(cutoff) + '/daily/')
+def get_s3_explorance_term_export_previous_path(term_id=None, cutoff=None):
+    exports = get_subfolders_with_prefix(get_s3_explorance_term_path(term_id, cutoff) + '/daily/')
     if len(exports):
         return exports[-1]
 

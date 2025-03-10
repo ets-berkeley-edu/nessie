@@ -211,8 +211,22 @@ def get_subfolders_with_prefix(prefix):
     return sorted(subfolders)
 
 
+def get_text_reader(key):
+    """Iterate over millions of rows (non-zipped source) with minimal memory consumption."""
+    client = get_client()
+    bucket = app.config['LOCH_S3_BUCKET']
+    try:
+        _object = client.get_object(Bucket=bucket, Key=key)
+        fileobj = _object['Body']
+        fileobj.set_socket_timeout(app.config['AWS_S3_SESSION_DURATION'])
+        return io.TextIOWrapper(fileobj)
+    except (BotoClientError, BotoConnectionError, ValueError) as e:
+        app.logger.error(f'Error retrieving S3 object text: bucket={bucket}, key={key}, error={e}')
+        return None
+
+
 def get_unzipped_text_reader(key):
-    """Iterate over millions of rows with minimal memory consumption."""
+    """Iterate over millions of rows (zipped source) with minimal memory consumption."""
     client = get_client()
     bucket = app.config['LOCH_S3_BUCKET']
     try:
@@ -226,9 +240,12 @@ def get_unzipped_text_reader(key):
         return None
 
 
-def get_tsv_stream(path, delimiter='\t'):
+def get_tsv_stream(path, delimiter='\t', zipped=True):
     for key in get_keys_with_prefix(path):
-        data = get_unzipped_text_reader(key)
+        if zipped:
+            data = get_unzipped_text_reader(key)
+        else:
+            data = get_text_reader(key)
         for row in csv.DictReader(data, delimiter='\t', escapechar='\\', quotechar='"'):
             yield row
 

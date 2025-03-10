@@ -27,11 +27,14 @@ from contextlib import contextmanager
 from datetime import datetime
 
 from flask import current_app as app
-from nessie.lib.db import get_psycopg_cursor
+from nessie.lib.db import get_psycopg_cursor, get_psycopg_cursor_streaming
 import psycopg2
 import psycopg2.extras
 
 """Client code to run queries against RDS."""
+
+# Batch size to use when streaming large result sets.
+CURSOR_ITERSIZE = 1000
 
 
 def execute(sql, params=None, log_query=True, rds_uri=None):
@@ -42,12 +45,17 @@ def execute(sql, params=None, log_query=True, rds_uri=None):
             return _execute(sql, cursor, params, 'write', log_query)
 
 
-def fetch(sql, params=None, log_query=True, rds_uri=None):
-    with _get_cursor(operation='read', rds_uri=rds_uri) as cursor:
-        if not cursor:
-            return None
-        else:
-            return _execute(sql, cursor, params, 'read', log_query)
+def fetch(sql, params=None, log_query=True, rds_uri=None, stream=False):
+    if stream:
+        cursor = _get_streaming_cursor()
+        _execute_streaming(sql, cursor, params)
+        return cursor
+    else:
+        with _get_cursor(operation='read', rds_uri=rds_uri) as cursor:
+            if not cursor:
+                return None
+            else:
+                return _execute(sql, cursor, params, 'read', log_query)
 
 
 class Transaction():
@@ -85,6 +93,17 @@ def _get_cursor(autocommit=True, operation='write', rds_uri=None):
         yield cursor
 
 
+def _get_streaming_cursor(rds_uri=None):
+    uri = rds_uri or app.config.get('SQLALCHEMY_DATABASE_URI')
+    try:
+        cursor = get_psycopg_cursor_streaming(uri=uri)
+        cursor.itersize = CURSOR_ITERSIZE
+        return cursor
+    except psycopg2.Error as e:
+        _handle_psycopg2_error(e)
+        return None
+
+
 def _execute(sql, cursor, params=None, operation='write', log_query=True):
     result = None
     try:
@@ -101,6 +120,24 @@ def _execute(sql, cursor, params=None, operation='write', log_query=True):
         return [dict(r) for r in rows]
     else:
         return result
+
+
+def _execute_streaming(sql, cursor, params):
+    cursor.execute(sql, params)
+    if not params:
+        params_to_log = ''
+    else:
+        params_to_log = str(params)
+        if len(params_to_log) > 1000:
+            params_to_log = params_to_log[0:1000] + '...'
+    app.logger.debug(f'Redshift query (cursor {cursor.name} streaming results:\n{sql}\n{params_to_log}')
+
+
+def _handle_psycopg2_error(e):
+    error_str = str(e)
+    if e.pgcode:
+        error_str += f'{e.pgcode}: {e.pgerror}\n'
+    app.logger.warning(error_str)
 
 
 def _insert_bulk(sql, cursor, rows):

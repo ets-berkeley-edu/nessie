@@ -48,6 +48,24 @@ def get_course_enrollments(course_id, mock=None):
     )
 
 
+@fixture('canvas_course_site_{course_id}')
+def get_course_site(course_id, mock=None):
+    path = f'/api/v1/courses/{course_id}'
+    return request(
+        path=path,
+        mock=mock,
+    )
+
+
+@fixture('canvas_section_{sis_section_id}')
+def get_section_by_sis_id(sis_section_id, mock=None):
+    path = f'/api/v1/sections/sis_section_id:{sis_section_id}'
+    return request(
+        path=path,
+        mock=mock,
+    )
+
+
 def build_url(path, query=None):
     working_url = app.config['CANVAS_HTTP_URL'] + path
     return http.build_url(working_url, query)
@@ -56,6 +74,14 @@ def build_url(path, query=None):
 def authorized_request(url):
     auth_headers = {'Authorization': 'Bearer {}'.format(_get_token())}
     return http.request(url, auth_headers)
+
+
+def request(path, mock, query=None):
+    url = build_url(path, query)
+    with mock(url):
+        response = authorized_request(url)
+        if response:
+            return response.json()
 
 
 def paged_request(path, mock, query=None):
