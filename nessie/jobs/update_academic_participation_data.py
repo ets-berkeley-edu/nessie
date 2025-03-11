@@ -26,12 +26,14 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import csv
 import tempfile
 
+from csv_diff import compare, load_csv
 from flask import current_app as app
 from nessie.externals import canvas_api, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import current_term_id, term_code_for_sis_id
 from nessie.lib.queries import get_sis_default_meeting_dates, get_sis_enrollments, get_sis_instructors, get_sis_sections
-from nessie.lib.util import get_s3_explorance_term_export_daily_path, get_s3_explorance_term_export_previous_path, get_s3_explorance_term_path
+from nessie.lib.util import get_s3_explorance_term_export_previous_path, get_s3_explorance_term_export_timestamped_path, get_s3_explorance_term_path
+
 
 """Logic for current-term enrollments index job."""
 
@@ -80,10 +82,10 @@ class UpdateAcademicParticipationData(BackgroundJob):
         course_ids = set()
 
         # Fetch last export, if any, and update department form and Canvas course ID as needed.
-        last_export = get_s3_explorance_term_export_previous_path()
-        if last_export:
-            app.logger.info(f'Fetching previous export ({last_export}/courses.csv)...')
-            for row in s3.get_tsv_stream(f'{last_export}/courses.csv', delimiter=','):
+        self.last_export = get_s3_explorance_term_export_previous_path()
+        if self.last_export:
+            app.logger.info(f'Fetching previous export ({self.last_export}courses.csv)...')
+            for row in s3.get_tsv_stream(f'{self.last_export}courses.csv', delimiter=',', zipped=False):
                 course_id = row['course_id']
                 # Update opt-out status for existing courses
                 if project_opt_outs.get('Data2_' + course_id) == 'No':
@@ -192,25 +194,48 @@ class UpdateAcademicParticipationData(BackgroundJob):
 
         app.logger.info('Uploading CSVs...')
 
-        _export_csv(courses, COURSE_HEADERS, 'courses.csv')
-        _export_csv(instructors, INSTRUCTOR_HEADERS, 'instructors.csv')
-        _export_csv(students, STUDENT_HEADERS, 'students.csv')
-        _export_csv(course_instructors, COURSE_INSTRUCTOR_HEADERS, 'course_instructor.csv')
-        _export_csv(course_students, COURSE_STUDENT_HEADERS, 'course_student.csv')
+        self.upload_path = get_s3_explorance_term_export_timestamped_path()
+        self.diff_results = {}
 
-        return f'Academic participation updated for term {term_id} (use_canvas={use_canvas}).'
+        self._export_csv(courses, COURSE_HEADERS, 'courses.csv')
+        self._export_csv(instructors, INSTRUCTOR_HEADERS, 'instructors.csv')
+        self._export_csv(students, STUDENT_HEADERS, 'students.csv')
+        self._export_csv(course_instructors, COURSE_INSTRUCTOR_HEADERS, 'course_instructor.csv')
+        self._export_csv(course_students, COURSE_STUDENT_HEADERS, 'course_student.csv')
 
+        return f'Academic participation updated for term {term_id} (use_canvas={use_canvas}). {self.diff_results}'
 
-def _export_csv(rows, headers, filename):
-    tmpfile = tempfile.NamedTemporaryFile()
+    def _export_csv(self, rows, headers, filename):
+        tmpfile = tempfile.NamedTemporaryFile()
 
-    with open(tmpfile.name, mode='wt', encoding='utf-8') as f:
-        csv_writer = csv.DictWriter(f, fieldnames=headers)
-        csv_writer.writeheader()
-        csv_writer.writerows(rows)
+        with open(tmpfile.name, mode='wt', encoding='utf-8') as f:
+            csv_writer = csv.DictWriter(f, fieldnames=headers)
+            csv_writer.writeheader()
+            csv_writer.writerows(rows)
 
-    with open(tmpfile.name, mode='rb') as f:
-        s3.upload_file(f, get_s3_explorance_term_export_daily_path() + '/' + filename)
+        with open(tmpfile.name, mode='rb') as f:
+            s3.upload_file(f, self.upload_path + '/' + filename)
+
+        if not self.last_export:
+            return
+
+        previous_file = s3.get_text_reader(self.last_export + filename)
+        if not previous_file:
+            return
+
+        diff_key = 'course_id' if filename == 'courses.csv' else 'ldap_uid'
+
+        with open(tmpfile.name, mode='r') as f:
+            csv_diff = compare(
+                load_csv(previous_file, key=diff_key),
+                load_csv(f, key=diff_key),
+            )
+
+        if len(csv_diff['added']) or len(csv_diff['removed']) or len(csv_diff['changed']):
+            self.diff_results[filename.replace('.csv', '')] = {}
+            for key in ('added', 'removed', 'changed'):
+                if len(csv_diff[key]):
+                    self.diff_results[filename.replace('.csv', '')][key] = len(csv_diff[key])
 
 
 COURSE_HEADERS = [

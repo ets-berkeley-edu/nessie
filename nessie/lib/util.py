@@ -74,6 +74,11 @@ def localized_datestamp(date_to_stamp=None):
     return localize_datetime(date_to_stamp).strftime('%Y-%m-%d')
 
 
+def localized_timestamp():
+    datetime_to_stamp = datetime.now()
+    return localize_datetime(datetime_to_stamp).strftime('%Y-%m-%d_%H%M%S')
+
+
 def hashed_datestamp(date_to_stamp=None):
     datestamp = localized_datestamp(date_to_stamp)
     return hashlib.md5(datestamp.encode('utf-8')).hexdigest() + '-' + datestamp
@@ -143,18 +148,18 @@ def get_s3_edl_daily_path(cutoff=None):
     return app.config['LOCH_S3_EDL_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
 
-def get_s3_explorance_term_path(term_id=None, cutoff=None):
+def get_s3_explorance_term_path(term_id=None):
     if not term_id:
         term_id = current_term_id()
     return app.config['LOCH_S3_EXPLORANCE_DATA_PATH'] + '/' + term_id
 
 
-def get_s3_explorance_term_export_daily_path(term_id=None, cutoff=None):
-    return get_s3_explorance_term_path(term_id, cutoff) + '/daily/' + localized_datestamp(cutoff)
+def get_s3_explorance_term_export_timestamped_path(term_id=None):
+    return get_s3_explorance_term_path(term_id) + '/daily/' + localized_timestamp()
 
 
-def get_s3_explorance_term_export_previous_path(term_id=None, cutoff=None):
-    exports = get_subfolders_with_prefix(get_s3_explorance_term_path(term_id, cutoff) + '/daily/')
+def get_s3_explorance_term_export_previous_path(term_id=None):
+    exports = get_subfolders_with_prefix(get_s3_explorance_term_path(term_id) + '/daily/')
     if len(exports):
         return exports[-1]
 
