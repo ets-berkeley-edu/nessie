@@ -23,12 +23,12 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from datetime import datetime, timedelta
+
 from flask import current_app as app
-from nessie.externals import redshift
+from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
-from nessie.lib.util import resolve_sql_template
-# UNCOMMENT next line and remove previous line to re-instate get_s3_bi_boa_rds_data_daily_path()
-# from nessie.lib.util import get_s3_boa_rds_data_daily_path, resolve_sql_template
+from nessie.lib.util import get_s3_bi_boa_rds_data_daily_path, resolve_sql_template
 
 """Logic for BOA RDS Data schema creation and refresh job."""
 
@@ -42,10 +42,9 @@ class RefreshBiBoaRdsDataSchema(BackgroundJob):
         return self.create_schema()
 
     def create_schema(self):
-        # s3_boa_rds_daily = get_s3_bi_boa_rds_data_daily_path()
-        # TODO: UNCOMMENT previous line to re-instate get_s3_bi_boa_rds_data_daily_path()
-        # REMOVE next line that manually sets daily path using TEMP config BI_LOCH_S3_BI_BOA_RDS_DATA_PATH_TEST
-        s3_boa_rds_daily = app.config['BI_LOCH_S3_BOA_RDS_DATA_PATH_TEST']
+        s3_boa_rds_daily = get_s3_bi_boa_rds_data_daily_path()
+        if not s3.get_keys_with_prefix(s3_boa_rds_daily):
+            s3_boa_rds_daily = _get_yesterdays_boa_rds_data()
         s3_path = '/'.join([f"s3://{app.config['LOCH_S3_BUCKET']}", s3_boa_rds_daily])
 
         app.logger.info('Executing SQL...')
@@ -63,3 +62,12 @@ class RefreshBiBoaRdsDataSchema(BackgroundJob):
         app.logger.info('Redshift schema created.')
 
         return True
+
+
+def _get_yesterdays_boa_rds_data():
+    s3_boa_rds_daily = get_s3_bi_boa_rds_data_daily_path(datetime.now() - timedelta(days=1))
+    if not s3.get_keys_with_prefix(s3_boa_rds_daily):
+        raise BackgroundJobError('No timely BOA RDS S3 data found for today and previous day')
+
+    app.logger.info('Falling back to last stable BOA RDS2 S3 data ')
+    return s3_boa_rds_daily
