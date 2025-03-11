@@ -219,7 +219,7 @@ def get_text_reader(key):
         _object = client.get_object(Bucket=bucket, Key=key)
         fileobj = _object['Body']
         fileobj.set_socket_timeout(app.config['AWS_S3_SESSION_DURATION'])
-        return io.TextIOWrapper(fileobj)
+        return io.TextIOWrapper(fileobj, encoding='utf-8')
     except (BotoClientError, BotoConnectionError, ValueError) as e:
         app.logger.error(f'Error retrieving S3 object text: bucket={bucket}, key={key}, error={e}')
         return None
@@ -246,7 +246,7 @@ def get_tsv_stream(path, delimiter='\t', zipped=True):
             data = get_unzipped_text_reader(key)
         else:
             data = get_text_reader(key)
-        for row in csv.DictReader(data, delimiter='\t', escapechar='\\', quotechar='"'):
+        for row in csv.DictReader(data, delimiter=delimiter, escapechar='\\', quotechar='"'):
             yield row
 
 
