@@ -38,7 +38,6 @@ BCOP_SMTP_USERNAME = None
 
 # BI Reports Configs
 # Loch S3
-BI_LOCH_S3_BOA_RDS_DATA_PATH = 'boa-data'
 BI_LOCH_S3_BOA_RDS_DATA_PATH_DAILY = 'boa-data/path/to/daily'
 # Tableau
 BI_RDS_BOA_ADVISING_ROLE = 'BI BOA Advising readonly role'
