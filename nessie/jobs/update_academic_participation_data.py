@@ -24,11 +24,12 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import csv
+import os
 import tempfile
 
 from csv_diff import compare, load_csv
 from flask import current_app as app
-from nessie.externals import canvas_api, s3
+from nessie.externals import blue_sftp, canvas_api, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import current_term_id, term_code_for_sis_id
 from nessie.lib.queries import get_sis_default_meeting_dates, get_sis_enrollments, get_sis_instructors, get_sis_sections
@@ -197,15 +198,16 @@ class UpdateAcademicParticipationData(BackgroundJob):
         self.upload_path = get_s3_explorance_term_export_timestamped_path()
         self.diff_results = {}
 
-        self._export_csv(courses, COURSE_HEADERS, 'courses.csv')
-        self._export_csv(instructors, INSTRUCTOR_HEADERS, 'instructors.csv')
-        self._export_csv(students, STUDENT_HEADERS, 'students.csv')
-        self._export_csv(course_instructors, COURSE_INSTRUCTOR_HEADERS, 'course_instructor.csv')
-        self._export_csv(course_students, COURSE_STUDENT_HEADERS, 'course_student.csv')
+        with blue_sftp.get_sftp_client() as sftp:
+            self._export_csv(sftp, courses, COURSE_HEADERS, 'courses.csv')
+            self._export_csv(sftp, instructors, INSTRUCTOR_HEADERS, 'instructors.csv')
+            self._export_csv(sftp, students, STUDENT_HEADERS, 'students.csv')
+            self._export_csv(sftp, course_instructors, COURSE_INSTRUCTOR_HEADERS, 'course_instructor.csv')
+            self._export_csv(sftp, course_students, COURSE_STUDENT_HEADERS, 'course_student.csv')
 
         return f'Academic participation updated for term {term_id} (use_canvas={use_canvas}). {self.diff_results}'
 
-    def _export_csv(self, rows, headers, filename):
+    def _export_csv(self, sftp, rows, headers, filename):
         tmpfile = tempfile.NamedTemporaryFile()
 
         with open(tmpfile.name, mode='wt', encoding='utf-8') as f:
@@ -213,7 +215,17 @@ class UpdateAcademicParticipationData(BackgroundJob):
             csv_writer.writeheader()
             csv_writer.writerows(rows)
 
+        filesize = os.stat(tmpfile.name).st_size
         with open(tmpfile.name, mode='rb') as f:
+            try:
+                if sftp:
+                    sftp.putfo(f, f'{filename}.csv', file_size=filesize)
+            except Exception as e:
+                app.logger.exception(e)
+                app.logger.error(f'SFTP upload failed ({filename}.csv, {filesize} bytes); aborting further uploads.')
+                raise BackgroundJobError(f'Could not upload {filename}.csv')
+
+            f.seek(0)
             s3.upload_file(f, self.upload_path + '/' + filename)
 
         if not self.last_export:

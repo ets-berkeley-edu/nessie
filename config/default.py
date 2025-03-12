@@ -52,6 +52,11 @@ BI_REDSHIFT_LA_REPORTS_DBLINK_GROUP = 'BI Reports dblink group'
 BI_REDSHIFT_SCHEMA_BOA_ADVISING = 'BI BOA Advising Redshift schemaname'
 BI_REDSHIFT_SCHEMA_BOA_RDS_DATA = 'BI BOA RDS Data Redshift External schemaname'
 
+BLUE_SFTP_HOST = 'hostname'
+BLUE_SFTP_PORT = 22
+BLUE_SFTP_USER = 'username'
+BLUE_SFTP_SKIP = False
+
 CAS_SERVER = 'https://auth-test.berkeley.edu/cas/'
 CAS_LOGOUT_URL = 'https://auth-test.berkeley.edu/cas/logout'
 
