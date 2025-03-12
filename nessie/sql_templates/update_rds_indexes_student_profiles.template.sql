@@ -253,15 +253,19 @@ INSERT INTO {rds_schema_student}.student_majors (
 TRUNCATE {rds_schema_student}.student_names;
 
 INSERT INTO {rds_schema_student}.student_names (
-  SELECT DISTINCT sid, unnest(string_to_array(
-      regexp_replace(upper(first_name), '[^\w ]', '', 'g'),
-      ' '
-  )) AS name FROM {rds_schema_student}.student_profile_index WHERE academic_career_status = 'active'
+    SELECT
+      DISTINCT sid,
+      unnest(string_to_array(regexp_replace(upper(first_name), '[^\w ]', '', 'g'), ' ')) AS name,
+      upper(email_address) AS email_address
+    FROM {rds_schema_student}.student_profile_index
+    WHERE academic_career_status = 'active'
   UNION
-  SELECT DISTINCT sid, unnest(string_to_array(
-      regexp_replace(upper(last_name), '[^\w ]', '', 'g'),
-      ' '
-  )) AS name FROM {rds_schema_student}.student_profile_index WHERE academic_career_status = 'active'
+    SELECT
+      DISTINCT sid,
+      unnest(string_to_array(regexp_replace(upper(last_name), '[^\w ]', '', 'g'), ' ')) AS name,
+      upper(email_address) AS email_address
+    FROM {rds_schema_student}.student_profile_index
+    WHERE academic_career_status = 'active'
 );
 
 COMMIT TRANSACTION;

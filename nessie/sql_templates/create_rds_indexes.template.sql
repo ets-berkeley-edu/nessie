@@ -148,9 +148,11 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_names
 (
     sid VARCHAR NOT NULL,
     name VARCHAR NOT NULL,
+    email_address VARCHAR,
     PRIMARY KEY (sid, name)
 );
 
+CREATE INDEX IF NOT EXISTS student_names_email_address_idx ON {rds_schema_student}.student_names (email_address);
 CREATE INDEX IF NOT EXISTS student_names_name_idx ON {rds_schema_student}.student_names (name);
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.student_enrollment_terms
