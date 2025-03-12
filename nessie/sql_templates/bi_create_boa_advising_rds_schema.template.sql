@@ -47,9 +47,10 @@ DROP TABLE IF EXISTS {bi_rds_schema_boa_advising}.authors CASCADE;
 
 CREATE TABLE IF NOT EXISTS {bi_rds_schema_boa_advising}.authors (
   author_uid VARCHAR(255) PRIMARY KEY,
+  author_name_sort VARCHAR(255),
+  author_name VARCHAR(255),
   last_name VARCHAR(255),
   first_name VARCHAR(255),
-  author_name VARCHAR(255),
   author_aliases VARCHAR(65535)
 );
 
@@ -58,21 +59,24 @@ INSERT INTO {bi_rds_schema_boa_advising}.authors (
   FROM dblink('{rds_dblink_to_redshift}', $REDSHIFT$
     SELECT
       author_uid,
+      last_name || COALESCE(', ' || first_name, ''),
+      author_name,
       last_name,
       first_name,
-      author_name,
       author_aliases
     FROM {bi_redshift_schema_boa_advising}.authors
   $REDSHIFT$)
   AS authors (
     author_uid VARCHAR(255),
+    author_name_sort VARCHAR(255),
+    author_name VARCHAR(255),
     last_name VARCHAR(255),
     first_name VARCHAR(255),
-    author_name VARCHAR(255),
     author_aliases VARCHAR(65535)
   )
 );
 
+CREATE INDEX idx_bi_authors_author_name_sort ON {bi_rds_schema_boa_advising}.authors (author_name_sort);
 CREATE INDEX idx_bi_authors_author_name ON {bi_rds_schema_boa_advising}.authors (author_name);
 CREATE INDEX idx_bi_authors_author_aliases ON {bi_rds_schema_boa_advising}.authors (author_aliases);
 
@@ -114,12 +118,13 @@ DROP TABLE IF EXISTS {bi_rds_schema_boa_advising}.students CASCADE;
 CREATE TABLE IF NOT EXISTS {bi_rds_schema_boa_advising}.students
 (
   sid VARCHAR(80) PRIMARY KEY,
+  student_name_sort VARCHAR(513),
+  student_name VARCHAR(513),
   last_name VARCHAR(255),
   first_name VARCHAR(255),
-  student_name VARCHAR(513),
-  is_manually_added BOOLEAN,
   cohort_list VARCHAR(65535),
-  group_list VARCHAR(65535)
+  group_list VARCHAR(65535),
+  is_manually_added BOOLEAN
 );
 
 INSERT INTO {bi_rds_schema_boa_advising}.students (
@@ -127,28 +132,30 @@ INSERT INTO {bi_rds_schema_boa_advising}.students (
   FROM dblink('{rds_dblink_to_redshift}', $REDSHIFT$
     SELECT
       sid,
+      last_name || COALESCE(', ' || first_name, ''),
+      student_name,
       last_name,
       first_name,
-      student_name,
-      is_manually_added,
       cohort_list,
-      group_list
+      group_list,
+      is_manually_added
     FROM {bi_redshift_schema_boa_advising}.students
     WHERE sid IS NOT NULL
   $REDSHIFT$)
   AS students (
     sid VARCHAR(80),
+    student_name_sort VARCHAR(513),
+    student_name VARCHAR(513),
     last_name VARCHAR(255),
     first_name VARCHAR(255),
-    student_name VARCHAR(513),
-    is_manually_added BOOLEAN,
     cohort_list VARCHAR(65535),
-    group_list VARCHAR(65535)
+    group_list VARCHAR(65535),
+    is_manually_added BOOLEAN
   )
 );
 
+CREATE INDEX idx_bi_students_student_name_sort ON {bi_rds_schema_boa_advising}.students (student_name_sort);
 CREATE INDEX idx_bi_students_student_name ON {bi_rds_schema_boa_advising}.students (student_name);
-CREATE INDEX idx_bi_students_student_last_first_names ON {bi_rds_schema_boa_advising}.students (last_name, first_name);
 
 
 ----------------------------------------------------------------------------------------------------
