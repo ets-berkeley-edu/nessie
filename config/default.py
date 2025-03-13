@@ -56,6 +56,7 @@ BLUE_SFTP_HOST = 'hostname'
 BLUE_SFTP_PORT = 22
 BLUE_SFTP_USER = 'username'
 BLUE_SFTP_SKIP = False
+BLUE_SFTP_SUFFIX = '-qa'
 
 CAS_SERVER = 'https://auth-test.berkeley.edu/cas/'
 CAS_LOGOUT_URL = 'https://auth-test.berkeley.edu/cas/logout'

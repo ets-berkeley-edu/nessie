@@ -219,7 +219,7 @@ class UpdateAcademicParticipationData(BackgroundJob):
         with open(tmpfile.name, mode='rb') as f:
             try:
                 if sftp:
-                    sftp.putfo(f, f'{filename}.csv', file_size=filesize)
+                    sftp.putfo(f, f"{filename}{app.config['BLUE_SFTP_SUFFIX'].csv}", file_size=filesize)
             except Exception as e:
                 app.logger.exception(e)
                 app.logger.error(f'SFTP upload failed ({filename}.csv, {filesize} bytes); aborting further uploads.')
