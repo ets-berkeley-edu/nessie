@@ -205,7 +205,7 @@ class UpdateAcademicParticipationData(BackgroundJob):
             self._export_csv(sftp, course_instructors, COURSE_INSTRUCTOR_HEADERS, 'course_instructor.csv')
             self._export_csv(sftp, course_students, COURSE_STUDENT_HEADERS, 'course_student.csv')
 
-        return f'Academic participation updated for term {term_id} (use_canvas={use_canvas}). {self.diff_results}'
+        return f'Academic participation updated for term {term_id} (use_canvas={use_canvas}). {self.diff_results or "No changes."}'
 
     def _export_csv(self, sftp, rows, headers, filename):
         tmpfile = tempfile.NamedTemporaryFile()
@@ -219,7 +219,7 @@ class UpdateAcademicParticipationData(BackgroundJob):
         with open(tmpfile.name, mode='rb') as f:
             try:
                 if sftp:
-                    sftp.putfo(f, f"{filename}{app.config['BLUE_SFTP_SUFFIX'].csv}", file_size=filesize)
+                    sftp.putfo(f, filename.replace('.csv', f"{app.config['BLUE_SFTP_SUFFIX']}.csv"), file_size=filesize)
             except Exception as e:
                 app.logger.exception(e)
                 app.logger.error(f'SFTP upload failed ({filename}.csv, {filesize} bytes); aborting further uploads.')
