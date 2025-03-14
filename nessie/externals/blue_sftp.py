@@ -36,7 +36,7 @@ def get_sftp_client():
     else:
         with paramiko.SSHClient() as ssh:
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            private_key = paramiko.RSAKey.from_private_key_file('config/nessie_rsa')
+            private_key = paramiko.Ed25519Key.from_private_key_file('config/nessie_rsa')
             ssh_config = {
                 # Stick to older algorithms that Explorance's server understands.
                 'disabled_algorithms': {'pubkeys': [
