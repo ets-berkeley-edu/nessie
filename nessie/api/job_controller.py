@@ -32,6 +32,7 @@ from flask import current_app as app, request
 from nessie.api.auth_helper import auth_required
 from nessie.api.errors import BadRequestError
 from nessie.jobs.background_job import ChainedBackgroundJob
+from nessie.jobs.bi_refresh_bcourses_service_cd2_schemas import RefreshBiBcoursesServiceCD2Schemas
 from nessie.jobs.bi_refresh_boa_advising_schemas import RefreshBiBoaAdvisingSchemas
 from nessie.jobs.bi_refresh_boa_rds_data_schema import RefreshBiBoaRdsDataSchema
 from nessie.jobs.chained_import_student_population import ChainedImportStudentPopulation
@@ -336,6 +337,13 @@ def migrate_sis_advising_note_attachments(datestamp):
 @auth_required
 def verify_sis_advising_note_attachments(datestamp):
     job_started = VerifySisAdvisingNoteAttachments(datestamp=datestamp).run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/bi_refresh_bcourses_service_cd2_schemas', methods=['POST'])
+@auth_required
+def refresh_bi_bcourses_service_cd2_schemas():
+    job_started = RefreshBiBcoursesServiceCD2Schemas().run_async()
     return respond_with_status(job_started)
 
 
