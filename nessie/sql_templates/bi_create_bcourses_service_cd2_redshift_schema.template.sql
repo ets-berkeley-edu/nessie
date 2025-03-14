@@ -164,7 +164,7 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.canvas_courses AS
 ----------------------------------------------------------------------------------------------------
 -- INTERNAL TABLE : "bcourses_assignments"
 -- check for 'quiz', 'discussion_topic', 'non quiz'
---   via {redshift_schema_canvas_data_2}.assignments.submission_types, which is formatted as json
+--   via cd2_ext_dev.assignments.submission_types, which is formatted as json
 --   ["discussion_topic"], "online_quiz"
 ----------------------------------------------------------------------------------------------------
 
@@ -215,6 +215,7 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.bcourses_assignments AS
 --   Fall: set start_at = 7/20 + term_year, end_at = 1/21 + (term_year + 1)
 --   Spring: set start_at = 12/15 + (term_year - 1), end_at = 6/16 + term_year
 --   Summer: set start_at = 4/26 + term_year, end_at = 9/16 + term_year
+-- updated regex for four digit year to not user curly braces
 ----------------------------------------------------------------------------------------------------
 
 CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms AS
@@ -250,7 +251,7 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms
   FROM {redshift_schema_canvas_data_2}.enrollment_terms et
   JOIN termyear ty ON et.id = ty.id
   WHERE et.workflow_state <> 'deleted'
-  AND ty.year ~ '[0-9]{4}';
+  AND ty.year ~ '[0-9][0-9][0-9][0-9]';
 
 
 ----------------------------------------------------------------------------------------------------
