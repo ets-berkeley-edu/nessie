@@ -57,6 +57,8 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_RETRIEVE_CD2_SNAPSHOT': 1300,
     'JOB_SYNC_AND_REFRESH_CD2_SNAPSHOTS': 1400,
     'JOB_UPDATE_ACADEMIC_PARTICIPATION': 8000,
+    'JOB_REFRESH_BI_BOA_ADVISING': 9100,
+    'JOB_REFRESH_BI_BCOURSES_SERVICE_CD2': 9200,
 }
 
 
@@ -77,6 +79,9 @@ def initialize_job_schedules(_app, force=False):
 
 
 def schedule_all_jobs(force=False):
+    from nessie.jobs.bi_refresh_boa_rds_data_schema import RefreshBiBoaRdsDataSchema
+    from nessie.jobs.bi_refresh_boa_advising_schemas import RefreshBiBoaAdvisingSchemas
+    from nessie.jobs.bi_refresh_bcourses_service_cd2_schemas import RefreshBiBcoursesServiceCD2Schemas
     from nessie.jobs.chained_import_student_population import ChainedImportStudentPopulation
     from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
     from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
@@ -196,6 +201,16 @@ def schedule_all_jobs(force=False):
         ],
         force,
     )
+    schedule_chained_job(
+        sched,
+        'JOB_REFRESH_BI_BOA_ADVISING',
+        [
+            RefreshBiBoaRdsDataSchema,
+            RefreshBiBoaAdvisingSchemas,
+        ],
+        force,
+    )
+    schedule_job(sched, 'JOB_REFRESH_BI_BCOURSES_SERVICE_CD2', RefreshBiBcoursesServiceCD2Schemas, force)
 
 
 def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):
