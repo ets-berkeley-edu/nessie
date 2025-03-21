@@ -37,18 +37,13 @@ BCOP_SMTP_SERVER = 'bcop.berkeley.edu'
 BCOP_SMTP_USERNAME = None
 
 # BI Reports Configs
-# Loch S3
+BI_BOA_RDS_ZERO_COUNT_ACCEPTABLE = False
 BI_LOCH_S3_BOA_RDS_DATA_PATH_DAILY = 'boa-data/path/to/daily'
-# Tableau
 BI_RDS_BOA_ADVISING_ROLE = 'BI BOA Advising readonly role'
-BI_RDS_CE3_USER = 'CE3 Tableau username'
 BI_RDS_TABLEAU_USER = 'Tableau username'
-# RDS
 BI_RDS_SCHEMA_BCOURSES_SERVICE_CD2 = 'BI bCourses Service CD2 RDS schemaname'
 BI_RDS_SCHEMA_BOA_ADVISING = 'BI BOA Advising RDS schemaname'
 BI_RDS_URI_LA_REPORTS = 'postgresql://reports:reports@localhost:5432/reports'
-# Redshift
-BI_BOA_RDS_ZERO_COUNT_ACCEPTABLE = False
 BI_REDSHIFT_LA_REPORTS_DBLINK_GROUP = 'BI Reports dblink group'
 BI_REDSHIFT_SCHEMA_BCOURSES_SERVICE_CD2 = 'BI bCourses Service CD2 Redshift schemaname'
 BI_REDSHIFT_SCHEMA_BOA_ADVISING = 'BI BOA Advising Redshift schemaname'

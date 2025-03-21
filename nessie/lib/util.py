@@ -221,7 +221,6 @@ def resolve_sql_template_string(template_string, **kwargs):
     s3_protected_prefix = 's3://' + app.config['LOCH_S3_PROTECTED_BUCKET'] + '/'
     template_data = {
         'bi_rds_boa_advising_role': app.config['BI_RDS_BOA_ADVISING_ROLE'],
-        'bi_rds_ce3_user': app.config['BI_RDS_CE3_USER'],
         'bi_rds_schema_bcourses_service_cd2': app.config['BI_RDS_SCHEMA_BCOURSES_SERVICE_CD2'],
         'bi_rds_schema_boa_advising': app.config['BI_RDS_SCHEMA_BOA_ADVISING'],
         'bi_rds_tableau_user': app.config['BI_RDS_TABLEAU_USER'],
