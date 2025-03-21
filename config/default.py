@@ -44,6 +44,7 @@ BI_RDS_TABLEAU_USER = 'Tableau username'
 BI_RDS_SCHEMA_BCOURSES_SERVICE_CD2 = 'BI bCourses Service CD2 RDS schemaname'
 BI_RDS_SCHEMA_BOA_ADVISING = 'BI BOA Advising RDS schemaname'
 BI_RDS_URI_LA_REPORTS = 'postgresql://reports:reports@localhost:5432/reports'
+BI_READONLY_GROUP = 'BI Reports readonly group'
 BI_REDSHIFT_LA_REPORTS_DBLINK_GROUP = 'BI Reports dblink group'
 BI_REDSHIFT_SCHEMA_BCOURSES_SERVICE_CD2 = 'BI bCourses Service CD2 Redshift schemaname'
 BI_REDSHIFT_SCHEMA_BOA_ADVISING = 'BI BOA Advising Redshift schemaname'
@@ -166,6 +167,7 @@ JOB_RESYNC_AND_REFRESH_CD2_SNAPSHOTS = {}
 JOB_UPDATE_ACADEMIC_PARTICIPATION = {}
 JOB_REFRESH_BI_BOA_ADVISING = {}
 JOB_REFRESH_BI_BCOURSES_SERVICE_CD2 = {}
+JOB_GRANT_BI_READONLY_ACCESS = {}
 
 LDAP_HOST = 'ldap-test.berkeley.edu'
 LDAP_BIND = 'mybind'

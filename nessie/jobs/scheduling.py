@@ -59,6 +59,7 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_UPDATE_ACADEMIC_PARTICIPATION': 8000,
     'JOB_REFRESH_BI_BOA_ADVISING': 9100,
     'JOB_REFRESH_BI_BCOURSES_SERVICE_CD2': 9200,
+    'JOB_GRANT_BI_READONLY_ACCESS': 9300,
 }
 
 
@@ -79,6 +80,7 @@ def initialize_job_schedules(_app, force=False):
 
 
 def schedule_all_jobs(force=False):
+    from nessie.jobs.bi_grant_readonly_access import GrantBiReadonlyAccess
     from nessie.jobs.bi_refresh_boa_rds_data_schema import RefreshBiBoaRdsDataSchema
     from nessie.jobs.bi_refresh_boa_advising_schemas import RefreshBiBoaAdvisingSchemas
     from nessie.jobs.bi_refresh_bcourses_service_cd2_schemas import RefreshBiBcoursesServiceCD2Schemas
@@ -211,6 +213,7 @@ def schedule_all_jobs(force=False):
         force,
     )
     schedule_job(sched, 'JOB_REFRESH_BI_BCOURSES_SERVICE_CD2', RefreshBiBcoursesServiceCD2Schemas, force)
+    schedule_job(sched, 'JOB_GRANT_BI_READONLY_ACCESS', GrantBiReadonlyAccess, force)
 
 
 def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):
