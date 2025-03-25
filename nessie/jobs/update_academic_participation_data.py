@@ -57,7 +57,8 @@ class UpdateAcademicParticipationData(BackgroundJob):
         sis_enrollments = get_sis_enrollments(term_id, section_ids)
         sis_instructors = get_sis_instructors(term_id, section_ids)
         sis_sections = get_sis_sections(term_id, section_ids)
-        sis_default_meeting_dates = get_sis_default_meeting_dates(term_id)[0]
+
+        sis_default_meeting_dates = {row['session_code']: row for row in get_sis_default_meeting_dates(term_id)}
 
         def _get_course_id(section_id):
             return '-'.join([term_prefix, str(section_id)])
@@ -108,6 +109,7 @@ class UpdateAcademicParticipationData(BackgroundJob):
         app.logger.info('Building courses export...')
         for sis_section in sis_sections:
             course_id = _get_course_id(sis_section['sis_section_id'])
+            default_dates = sis_default_meeting_dates.get(sis_section['session_code'])
             if course_id not in course_ids:
                 courses.append({
                     'course_id': course_id,
@@ -124,8 +126,8 @@ class UpdateAcademicParticipationData(BackgroundJob):
                     'dept_form': 'AP' if course_id in course_sites_by_section_id else 'AP_EMAIL',
                     'evaluation_type': 'OO' if project_opt_outs.get('Data2_' + course_id) == 'No' else '',
                     'modular_course': '',
-                    'start_date': (sis_section['meeting_start_date'] or sis_default_meeting_dates['start_date']) + ' 00:00:00',
-                    'end_date': (sis_section['meeting_end_date'] or sis_default_meeting_dates['end_date']) + ' 00:00:00',
+                    'start_date': (sis_section['meeting_start_date'] or default_dates['start_date']) + ' 00:00:00',
+                    'end_date': (sis_section['meeting_end_date'] or default_dates['end_date']) + ' 00:00:00',
                     'canvas_course_id': course_sites_by_section_id.get(course_id, ''),
                     'qb_mapping': '',
                 })
@@ -228,26 +230,27 @@ class UpdateAcademicParticipationData(BackgroundJob):
             f.seek(0)
             s3.upload_file(f, self.upload_path + '/' + filename)
 
-        if not self.last_export:
-            return
+        try:
+            if self.last_export:
+                diff_key = 'course_id' if filename == 'courses.csv' else 'ldap_uid'
+                previous_file = s3.get_text_reader(self.last_export + filename)
 
-        previous_file = s3.get_text_reader(self.last_export + filename)
-        if not previous_file:
-            return
+                with open(tmpfile.name, mode='r') as f:
+                    csv_diff = compare(
+                        load_csv(previous_file, key=diff_key),
+                        load_csv(f, key=diff_key),
+                    )
+            else:
+                csv_diff = {'added': rows, 'removed': [], 'changed': []}
 
-        diff_key = 'course_id' if filename == 'courses.csv' else 'ldap_uid'
-
-        with open(tmpfile.name, mode='r') as f:
-            csv_diff = compare(
-                load_csv(previous_file, key=diff_key),
-                load_csv(f, key=diff_key),
-            )
-
-        if len(csv_diff['added']) or len(csv_diff['removed']) or len(csv_diff['changed']):
-            self.diff_results[filename.replace('.csv', '')] = {}
-            for key in ('added', 'removed', 'changed'):
-                if len(csv_diff[key]):
-                    self.diff_results[filename.replace('.csv', '')][key] = len(csv_diff[key])
+            if len(csv_diff['added']) or len(csv_diff['removed']) or len(csv_diff['changed']):
+                self.diff_results[filename.replace('.csv', '')] = {}
+                for key in ('added', 'removed', 'changed'):
+                    if len(csv_diff[key]):
+                        self.diff_results[filename.replace('.csv', '')][key] = len(csv_diff[key])
+        except Exception as e:
+            app.logger.exception(e)
+            app.logger.error(f'Failed to generate diff ({filename}.csv), continuing.')
 
 
 COURSE_HEADERS = [
