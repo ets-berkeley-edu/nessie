@@ -210,26 +210,30 @@ def get_sis_instructors(term_id, section_ids):
 
 
 def get_sis_sections(term_id, section_ids):
-    sql = """SELECT DISTINCT
+    sql = """SELECT
             sis_section_id,
             sis_course_name,
             sis_instruction_format,
             sis_section_num,
-            meeting_start_date,
-            meeting_end_date
+            session_code,
+            MIN(meeting_start_date) AS meeting_start_date,
+            MAX(meeting_end_date) AS meeting_end_date
         FROM sis_data.sis_sections
         WHERE
             sis_term_id = %s
             AND sis_section_id = ANY(%s)
+        GROUP BY sis_section_id, sis_course_name, sis_instruction_format, sis_section_num, session_code
         ORDER BY sis_section_id"""
     return rds.fetch(sql, params=(term_id, section_ids), stream=True)
 
 
 def get_sis_default_meeting_dates(term_id):
     sql = """SELECT
+        session_code,
         mode() WITHIN GROUP (ORDER BY meeting_start_date) AS start_date,
         mode() WITHIN GROUP (ORDER BY meeting_end_date) AS end_date
-        FROM sis_data.sis_sections WHERE sis_term_id = %s"""
+        FROM sis_data.sis_sections WHERE sis_term_id = %s
+        GROUP by session_code"""
     return rds.fetch(sql, params=(term_id,))
 
 
