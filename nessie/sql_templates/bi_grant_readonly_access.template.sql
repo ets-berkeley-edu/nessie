@@ -36,8 +36,7 @@ GRANT USAGE
   ON SCHEMA 
     {redshift_schema_canvas},
     {redshift_schema_canvas_data_2},
-    {bi_redshift_schema_bcourses_service_cd2},
-    bcourses_service_reports
+    {bi_redshift_schema_bcourses_service_cd2}
   TO GROUP {bi_readonly_group};
 
 ----------------------------------------------------------------------------------------------------
@@ -48,8 +47,7 @@ GRANT SELECT ON ALL TABLES
   IN SCHEMA
     {redshift_schema_canvas},
     {redshift_schema_canvas_data_2},
-    {bi_redshift_schema_bcourses_service_cd2},
-    bcourses_service_reports
+    {bi_redshift_schema_bcourses_service_cd2}
   TO GROUP {bi_readonly_group};
 
 ----------------------------------------------------------------------------------------------------
