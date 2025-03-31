@@ -6,8 +6,6 @@ phases:
       nodejs: 20
       python: 3.11
     commands:
-      - echo -e '@neverendingsupport:registry=https://registry.nes.herodevs.com/npm/pkg/\n//registry.nes.herodevs.com/npm/pkg/:_authToken="'${NES_AUTH_TOKEN}'"' > .npmrc
-      - npm -v
       - npm install
 
   build:
