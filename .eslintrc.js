@@ -38,13 +38,7 @@ module.exports = {
     'vue/html-self-closing': 0,
     'vue/key-spacing': 2,
     'vue/match-component-file-name': 2,
-    'vue/max-attributes-per-line': ['error', {
-      singleline: 3,
-      multiline: {
-        max: 1,
-        allowFirstLine: false
-      }
-    }],
+    'vue/max-attributes-per-line': ['error', {singleline: {max: 3}, multiline: {max: 1}}],
     'vue/multiline-html-element-content-newline': 2,
     'vue/no-boolean-default': 2,
     'vue/no-mutating-props': 2,
@@ -59,18 +53,12 @@ module.exports = {
     'vue/space-infix-ops': 2,
     'vue/space-unary-ops': 2,
     'vue/this-in-template': 2,
-    'vue/valid-v-slot': [
-      'error',
-      {
-        allowModifiers: true
-      }
-    ],
+    'vue/valid-v-slot': ['error', {
+      'allowModifiers': true
+    }],
     'vue/v-bind-style': 2,
     'vue/v-on-function-call': 2,
     'vue/v-on-style': 2,
     'vue/v-slot-style': 2
-  },
-  parserOptions: {
-    parser: require.resolve('@typescript-eslint/parser')
   }
 }

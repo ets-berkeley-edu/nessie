@@ -1,91 +1,46 @@
 {
   "name": "nessie",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
+  "engines": {
+    "npm": ">=10.0.0 <11.0.0",
+    "node": ">=20.0.0 <21.0.0"
+  },
   "scripts": {
-    "build-vue": "vue-cli-service build --modern --dest 'dist/static'",
-    "lint-vue": "vue-cli-service lint --no-fix src",
-    "lint-vue-fix": "vue-cli-service lint src",
-    "preinstall": "npx npm-force-resolutions",
-    "serve-vue": "vue-cli-service serve --open --host localhost"
+    "build-vue": "vite build --outDir='dist/static'",
+    "lint-vue": "eslint . --ignore-path .eslintignore",
+    "lint-vue-fix": "eslint . --fix --ignore-path .eslintignore",
+    "preview": "vite preview",
+    "serve-vue": "vite --host --strictPort"
   },
   "dependencies": {
-    "ajv": "8.17.1",
-    "ajv-keywords": "5.1.0",
-    "axios": "0.28.1",
-    "bootstrap-vue": "npm:@neverendingsupport/bootstrap-vue2@2.23.2",
+    "axios": "1.8.4",
+    "core-js": "3.39.0",
     "highcharts-custom-events": "3.0.10",
     "highcharts-vue": "1.4.3",
     "lodash": "4.17.21",
-    "mitt": "2.1.0",
-    "ora": "6.3.1",
-    "tar-stream": "2.2.0",
-    "vue": "npm:@neverendingsupport/vue2@2.7.17",
-    "vue-class-component": "7.2.6",
-    "vue-lodash": "2.1.2",
-    "vue-moment": "4.1.0",
-    "vue-property-decorator": "9.1.2",
-    "vue-router": "npm:@neverendingsupport/vue-router@3.6.6",
-    "vuejs-datepicker": "1.6.2",
-    "vuex": "3.6.2"
+    "mitt": "3.0.1",
+    "pinia": "2.1.7",
+    "vue": "3.5.13",
+    "vue-router": "4.5.0",
+    "vuetify": "3.7.9"
   },
   "devDependencies": {
-    "@babel/core": "^7.15.0",
-    "@typescript-eslint/eslint-plugin": "^4.23.0",
-    "@typescript-eslint/eslint-plugin-tslint": "^4.23.0",
-    "@typescript-eslint/parser": "^4.23.0",
-    "@typescript-eslint/typescript-estree": "^4.23.0",
-    "@vue/cli": "^5.0.4",
-    "@vue/cli-plugin-babel": "^5.0.4",
-    "@vue/cli-plugin-eslint": "^5.0.4",
-    "@vue/cli-plugin-typescript": "^5.0.4",
-    "@vue/cli-service": "^5.0.4",
-    "@vue/eslint-config-typescript": "^7.0.0",
-    "eslint": "^7.32.0",
-    "eslint-plugin-import": "^2.22.1",
-    "eslint-plugin-no-loops": "^0.3.0",
-    "eslint-plugin-unicorn": "^38.0.0",
-    "eslint-plugin-vue": "^7.20.0",
-    "eslint-plugin-xss": "^0.1.11",
-    "eslint-utils": "^2.1.0",
-    "npm-force-resolutions": "^0.0.10",
-    "typescript": "~4.4.4",
-    "vue-eslint-parser": "^7.11.0",
-    "vue-template-compiler": "npm:@neverendingsupport/vue2@2.7.17-template-compiler"
+    "@types/lodash": "^4.14.201",
+    "@types/node": "^20.10.4",
+    "@typescript-eslint/eslint-plugin": "^8.24.0",
+    "@typescript-eslint/parser": "^8.24.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/eslint-config-typescript": "^12.0.0",
+    "eslint": "^8.55.0",
+    "eslint-plugin-vue": "^9.19.2",
+    "eslint-plugin-vue-scoped-css": "^2.5.1",
+    "sass": "^1.69.5",
+    "typescript": "5.2.2",
+    "vite": "^6.1.0",
+    "vite-plugin-compression": "^0.5.1",
+    "vite-plugin-vuetify": "^2.1.0",
+    "vue-eslint-parser": "^9.3.2"
   },
-  "babel": {
-    "presets": [
-      "@vue/app",
-      "@babel/preset-env"
-    ]
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not ie <= 8"
-  ],
-  "postcss": {
-    "plugins": {
-      "autoprefixer": {}
-    }
-  },
-  "license": "SEE LICENSE IN LICENSE",
-  "overrides": {
-    "bootstrap-vue": { ".": "npm:@neverendingsupport/bootstrap-vue2@2.23.2" },
-    "vue": { ".": "npm:@neverendingsupport/vue2@2.7.17" },
-    "@vue/compiler-sfc": { ".": "npm:@neverendingsupport/vue2@2.7.17-compiler-sfc" },
-    "vue-router": { ".": "npm:@neverendingsupport/vue-router@3.6.6" },
-    "vue-server-renderer": { ".": "npm:@neverendingsupport/vue2@2.7.17-server-renderer" },
-    "vue-template-compiler": { ".": "npm:@neverendingsupport/vue2@2.7.17-template-compiler" }
-  },
-  "resolutions": {
-    "ajv": "8.11.0",
-    "ajv-keywords": "5.1.0",
-    "elliptic": "^6.5.4",
-    "execa": "4.0.3",
-    "lodash": "4.17.21",
-    "merge": "^2.1.1",
-    "minimist": "1.2.6",
-    "selfsigned": "1.10.8"
-  }
+  "license": "SEE LICENSE IN LICENSE"
 }
