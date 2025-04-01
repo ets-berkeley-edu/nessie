@@ -1,9 +1,12 @@
 import mitt from 'mitt'
+import type {Handler} from 'mitt'
 import {defineStore} from 'pinia'
 import {get} from 'lodash'
 import {nextTick} from 'vue'
 import {putFocusNextTick} from '@/utils'
 import router from '@/router'
+
+import {getVersion} from '@/api/status'
 
 export const useContextStore = defineStore('context', {
   state: () => ({
@@ -14,7 +17,8 @@ export const useContextStore = defineStore('context', {
     screenReaderAlert: {
       message: '',
       politeness: 'polite'
-    }
+    },
+    version: undefined
   }),
   actions: {
     alertScreenReader(message: string, politeness?: string) {
@@ -25,6 +29,9 @@ export const useContextStore = defineStore('context', {
           politeness: politeness || 'polite'
         }
       })
+    },
+    broadcast(eventType, data?) {
+      this.eventHub.emit(eventType, data)
     },
     loadingComplete(focusTarget?: string) {
       this.isLoading = false
@@ -50,6 +57,14 @@ export const useContextStore = defineStore('context', {
     setCurrentUser(user: any) {
       this.currentUser = user
       this.eventHub.emit('current-user-update')
-    }
+    },
+    setEventHandler(type: string, handler: Handler) {
+      this.eventHub.on(type, handler)
+    },
+    setVersion() {
+      getVersion().then(version => {
+        this.version = version
+      })
+    },
   }
 })

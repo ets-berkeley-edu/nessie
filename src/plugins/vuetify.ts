@@ -4,13 +4,16 @@ import {createVuetify} from 'vuetify'
 import {VAppBar, VAppBarTitle} from 'vuetify/components/VAppBar'
 import {VApp} from 'vuetify/components/VApp'
 import {VBtn} from 'vuetify/components/VBtn'
+import {VCard, VCardText} from 'vuetify/components/VCard'
 import {VCarousel, VCarouselItem} from 'vuetify/components/VCarousel'
+import {VCol, VContainer, VRow} from 'vuetify/components/VGrid'
 import {VIcon} from 'vuetify/components/VIcon'
 import {VImg} from 'vuetify/components/VImg'
 import {VList, VListItem, VListItemAction, VListItemSubtitle, VListItemTitle} from 'vuetify/components/VList'
 import {VMain} from 'vuetify/components/VMain'
 import {VMenu} from 'vuetify/components/VMenu'
 import {VProgressCircular} from 'vuetify/components/VProgressCircular'
+import {VTab, VTabs} from 'vuetify/components/VTabs'
 import {VTextarea} from 'vuetify/components/VTextarea'
 import {VTextField} from 'vuetify/components/VTextField'
 
@@ -23,8 +26,12 @@ export default createVuetify({
     VAppBar,
     VAppBarTitle,
     VBtn,
+    VCard,
+    VCardText,
     VCarousel,
     VCarouselItem,
+    VCol,
+    VContainer,
     VIcon,
     VImg,
     VList,
@@ -35,6 +42,9 @@ export default createVuetify({
     VMain,
     VMenu,
     VProgressCircular,
+    VRow,
+    VTab,
+    VTabs,
     VTextarea,
     VTextField
   },

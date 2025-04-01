@@ -39,6 +39,7 @@ module.exports = {
     'vue/key-spacing': 2,
     'vue/match-component-file-name': 2,
     'vue/max-attributes-per-line': ['error', {singleline: {max: 3}, multiline: {max: 1}}],
+    'vue/multi-word-component-names': 0,
     'vue/multiline-html-element-content-newline': 2,
     'vue/no-boolean-default': 2,
     'vue/no-mutating-props': 2,

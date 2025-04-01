@@ -29,16 +29,19 @@ app.config.globalProperties.$isInIframe = !!window.parent.frames.length
 app.config.globalProperties.$ready = (focusTarget?: string) => useContextStore().loadingComplete(focusTarget)
 
 const apiBaseUrl = import.meta.env.VITE_APP_API_BASE_URL
+const contextStore = useContextStore()
 
 axios.get(`${apiBaseUrl}/api/user/profile`).then(data => {
-  useContextStore().setCurrentUser(data)
+  contextStore.setCurrentUser(data)
 
   axios.get(`${apiBaseUrl}/api/config`).then(data => {
-    useContextStore().setConfig({
+    contextStore.setConfig({
       ...data,
       apiBaseUrl,
       isVueAppDebugMode: trim(import.meta.env.VITE_APP_DEBUG).toLowerCase() === 'true'
     })
+    contextStore.setVersion()
+
     app.use(router).config.errorHandler = function (error, vm, info) {
       const message = get(error, 'message') || info
       const stacktrace = get(error, 'stack', null)
