@@ -1,20 +1,15 @@
 <template>
-  <div>
-    <h1>
-      Och aye! It's Nessie!
-    </h1>
-    <v-carousel cycle interval="10000">
-      <v-carousel-item
-        v-for="slide in slides"
-        :key="slide"
-        :src="slide"
-        transition="fade-transition"
-        reverse-transition="fade-transition"
-        alt="Image of Loch Ness, in Scotland"
-        cover
-      />
-    </v-carousel>
-  </div>
+  <v-carousel cycle interval="10000">
+    <v-carousel-item
+      v-for="slide in slides"
+      :key="slide"
+      :src="slide"
+      transition="fade-transition"
+      reverse-transition="fade-transition"
+      alt="Image of Loch Ness, in Scotland"
+      cover
+    />
+  </v-carousel>
 </template>
 
 <script setup>
