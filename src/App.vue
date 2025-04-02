@@ -4,11 +4,12 @@
     <v-row v-if="currentUser">
       <v-tabs v-model="tabIndex" align-tabs="center" class="w-100">
         <v-tab
-          v-for="(path, title, index) in {Jobs: '/', Schedule: '/schedule', Configs: '/configs', MagicEightBall: '/8ball'}"
-          :key="title"
-          @click="go(index, path)"
+          v-for="item in selectablePaths"
+          :key="item.title"
+          :value="item.path"
+          @click="go(item.path)"
         >
-          {{ title === 'MagicEightBall' ? '🎱' : title }}
+          {{ item.title }}
         </v-tab>
       </v-tabs>
       <v-card-text>
@@ -33,7 +34,7 @@
 </template>
 
 <script setup>
-import {ref} from 'vue'
+import {ref, watch} from 'vue'
 
 import Header from '@/components/Header.vue'
 import LargeSpinner from '@/components/widgets/LargeSpinner.vue'
@@ -47,10 +48,21 @@ const currentUser = contextStore.currentUser
 const isToggling = ref(false)
 const tabIndex = ref(undefined)
 
-const go = (index, path) => {
+const selectablePaths = [
+  {title: 'Jobs', path: '/'},
+  {title: 'Schedule', path: '/schedule'},
+  {title: 'configs', path: '/configs'},
+  {title: '🎱', path: '/8ball'}
+]
+
+const go = (path) => {
   isToggling.value = true
   router.push({path: path}).then(() => {
     isToggling.value = false
+    tabIndex.value = path
   })
 }
+
+watch(router.currentRoute, route => { tabIndex.value = route.path})
+
 </script>
