@@ -1,11 +1,15 @@
 import 'vuetify/styles'
 import {aliases, mdi} from 'vuetify/iconsets/mdi-svg'
 import {createVuetify} from 'vuetify'
+import {VAlert} from 'vuetify/components/VAlert'
 import {VAppBar, VAppBarTitle} from 'vuetify/components/VAppBar'
 import {VApp} from 'vuetify/components/VApp'
+import {VBadge} from 'vuetify/components/VBadge'
 import {VBtn} from 'vuetify/components/VBtn'
 import {VCard, VCardText} from 'vuetify/components/VCard'
 import {VCarousel, VCarouselItem} from 'vuetify/components/VCarousel'
+import {VDateInput} from 'vuetify/labs/VDateInput'
+import {VDialog} from 'vuetify/components/VDialog'
 import {VCol, VContainer, VRow} from 'vuetify/components/VGrid'
 import {VIcon} from 'vuetify/components/VIcon'
 import {VImg} from 'vuetify/components/VImg'
@@ -22,9 +26,11 @@ import colors from 'vuetify/lib/util/colors'
 
 export default createVuetify({
   components: {
+    VAlert,
     VApp,
     VAppBar,
     VAppBarTitle,
+    VBadge,
     VBtn,
     VCard,
     VCardText,
@@ -32,6 +38,8 @@ export default createVuetify({
     VCarouselItem,
     VCol,
     VContainer,
+    VDateInput,
+    VDialog,
     VIcon,
     VImg,
     VList,

@@ -20,6 +20,7 @@
     "highcharts-custom-events": "3.0.10",
     "highcharts-vue": "1.4.3",
     "lodash": "4.17.21",
+    "luxon": "3.6.1",
     "mitt": "3.0.1",
     "pinia": "2.1.7",
     "vue": "3.5.13",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@types/lodash": "^4.14.201",
+    "@types/luxon": "^3.6.0",
     "@types/node": "^20.10.4",
     "@typescript-eslint/eslint-plugin": "^8.24.0",
     "@typescript-eslint/parser": "^8.24.0",
