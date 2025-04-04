@@ -102,7 +102,7 @@
             </v-data-table>
           </div>
           <div v-if="!jobs.all.length" class="font-weight-bolder ml-2 my-5 text-secondary">
-            No jobs run on {{ toFormatFromJsDate(dateSelected, "dddd, MMMM Do, YYYY") }} (UTC).
+            No jobs run on {{ toFormatFromJsDate(dateSelected, 'MMMM D') }} (UTC).
           </div>
         </div>
       </div>

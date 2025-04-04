@@ -1,21 +1,39 @@
 <template>
-  <div class="loading-spinner-large">
-    <i class="fas fa-sync fa-spin fa-5x"></i>
-    <span role="alert" aria-live="polite" class="sr-only">Loading...</span>
-  </div>
+  <div class="loader" />
 </template>
 
-<style>
-.loading-spinner-large {
-  position: fixed;
-  top: 0;
-  right: 0;
+<style scoped>
+/* https://css-loaders.com/spinner */
+.loader {
+  animation: l24 1s infinite linear;
+  aspect-ratio: 1;
+  border: 8px solid #0000;
+  border-radius: 50%;
+  border-right-color: #546e7a;
   bottom: 0;
   left: 0;
-  height: 2em;
   margin: auto;
   overflow: show;
-  width: 2em;
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 72px;
   z-index: 999;
+}
+.loader:before,
+.loader:after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: inherit;
+  animation: inherit;
+  animation-duration: 2s;
+}
+.loader:after {
+  animation-duration: 4s;
+}
+@keyframes l24 {
+  100% {transform: rotate(1turn)}
 }
 </style>
