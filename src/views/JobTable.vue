@@ -12,6 +12,7 @@
           item-title="name"
           :item-props="true"
           placeholder="Select job..."
+          hide-details
           return-object
         >
           <template #item="{ props: itemProps }">
@@ -19,16 +20,16 @@
           </template>
         </v-select>
         <div v-if="get(selected, 'required.length')" class="pl-2 pt-2">
-          <div v-for="key in selected.required" :key="key" class="text-secondary">
+          <div v-for="key in selected.required" :key="key" class="d-flex align-center">
             <span class="pb-1 pr-1">{{ capitalize(key) }}:</span>
-            <input v-model="params[key]" />
+            <v-text-field v-model="params[key]" hide-details />
           </div>
         </div>
       </v-col>
       <v-col class="pr-2">
-        <v-btn :disabled="!selectedJob || starting" @click="run">Run</v-btn>
+        <v-btn :disabled="!isJobSpecified || starting" @click="run">Run</v-btn>
       </v-col>
-      <v-col class="text-right">
+      <v-col class="pr-0 text-right">
         Showing jobs run on
       </v-col>
       <v-col>
@@ -36,6 +37,8 @@
           v-model="dateSelected"
           placeholder="Select Date"
           :disabled="contextStore.isLoading"
+          hide-actions
+          hide-details
           @update:modelValue="refresh"
         ></v-date-input>
       </v-col>
@@ -64,24 +67,24 @@
               :items="jobs.all"
               items-per-page="-1"
               hide-default-footer
-              :mobile="smAndDown"
+              :mobile="xs"
             >
               <template #item.id="{ item }">
                 {{ item.id.split('_')[0] }}
               </template>
               <template #item.status="{ item }">
-                <div class="align-items-center d-flex justify-content-center">
-                  <div class="pr-1">
+                <div class="d-flex justify-center">
+                  <div>
                     {{ item.status }}
                   </div>
-                  <div>
-                    <v-icon
-                      v-if="(item.status === 'started') && !item.finished && getAgeInHours(item) > 5"
-                      :icon="mdiHelpBox"
-                      variant="danger"
-                      :title="`Job has been running for ${getAgeInHours(item)} hours. Is it stalled?`"
-                    />
-                  </div>
+                  <v-tooltip
+                    v-if="(item.status === 'started') && !item.finished && getAgeInHours(item) > 5"
+                    :text="`Job has been running for ${getAgeInHours(item)} hours. Is it stalled?`"
+                  >
+                    <template #activator="{ props }">
+                      <v-icon v-bind="props" :icon="mdiHelpBox" />
+                    </template>
+                  </v-tooltip>
                 </div>
               </template>
               <template #item.details="{ item }">
@@ -112,23 +115,27 @@
       variant="success"
       @close="closeAlert"
     >
-      <template #toast-title>
-        <div class="d-flex align-items-center">
+      <v-card>
+        <div class="d-flex align-center justify-center">
           <div class="px-3">
             <v-icon :icon="mdiCheck" font-scale="2"></v-icon>
           </div>
           <h3>{{ alert.title }}</h3>
         </div>
-      </template>
-      <div class="my-4 text-center">
-        <img :alt="get(alert, 'xkcd.alt')" :src="get(alert, 'xkcd.img')" />
-      </div>
+        <div class="my-4 text-center">
+          <img :alt="get(alert, 'xkcd.alt')" :src="get(alert, 'xkcd.img')" />
+        </div>
+        <v-divider />
+        <v-card-actions>
+          <v-btn text="Close" @click="closeAlert" />
+        </v-card-actions>
+      </v-card>
     </v-dialog>
   </div>
 </template>
 
 <script setup>
-import {capitalize, each, get, map, replace, split} from 'lodash'
+import {capitalize, each, find, get, map, replace, split} from 'lodash'
 import {DateTime} from 'luxon'
 import {mdiCheck, mdiHelpBox} from '@mdi/js'
 import {computed, onMounted, onUnmounted, ref} from 'vue'
@@ -146,7 +153,7 @@ const contextStore = useContextStore()
 const alert = ref(undefined)
 const dateSelected = ref(new Date())
 
-const {smAndDown} = useDisplay()
+const {xs} = useDisplay()
 
 const headers = [
   {key: 'id', title: 'Job'},
@@ -155,7 +162,7 @@ const headers = [
     title: 'Status',
     cellProps: (item) => {
       if (item.value === 'failed') {
-        return {class: 'bg-red-lighten-4'}
+        return {class: 'bg-red-lighten-4 text-center'}
       } else if (item.value === 'started') {
         return {class: 'bg-blue-lighten-4'}
       } else {
@@ -182,7 +189,7 @@ const selected = ref(null)
 const starting = ref(false)
 const toastTimer = ref(undefined)
 
-const selectedJob = computed(() => {
+const isJobSpecified = computed(() => {
   if (!selected.value) {
     return false
   }
@@ -268,7 +275,7 @@ const run = () => {
 const schedulePageRefresh = () => {
   const interval = 10000 // Milliseconds
   clearTimeout(pageRefresh.value)
-  pageRefresh.value = setTimeout(refresh.value, interval)
+  pageRefresh.value = setTimeout(refresh, interval)
 }
 </script>
 
@@ -285,9 +292,14 @@ pre {
   border: 1px solid #ccc;
   font-size: 12px;
   margin: 10px 0 10px 0;
-  max-width: 600px;
   overflow: auto;
   padding: 10px;
   width: auto;
+}
+.v-data-table__tr pre {
+  max-width: 600px;
+}
+.v-data-table__tr--mobile pre {
+  max-width: 400px;
 }
 </style>
