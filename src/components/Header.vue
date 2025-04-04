@@ -1,11 +1,11 @@
 <template>
   <v-row :class="{'mb-3': !currentUser}">
-    <v-col class="d-flex mx-4">
+    <v-col class="d-flex mx-4 pb-0">
       <div class="mt-2 pr-2">
         <a :href="{name: 'home'}"><img :class="{'shimmy': shimmy}" src="@/assets/logo.png"></a>
       </div>
-      <div class="ml-">
-        <h1 class="mb-0 pb-0 pl-4">
+      <div class="py-1">
+        <h1 class="my-0 py-0 pl-4">
           Nessie
           <span v-if="contextStore.version"> {{ contextStore.version.version }}</span>
         </h1>
