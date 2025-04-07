@@ -54,7 +54,6 @@ CREATE TABLE {rds_schema_oua}.student_admits (
   permanent_region VARCHAR,
   permanent_postal VARCHAR,
   permanent_country VARCHAR,
-  sex VARCHAR,
   gender_identity VARCHAR,
   xethnic VARCHAR,
   hispanic VARCHAR,
@@ -130,7 +129,6 @@ INSERT INTO {rds_schema_oua}.student_admits (
       permanent_region,
       permanent_postal,
       permanent_country,
-      sex,
       gender_identity,
       xethnic,
       hispanic,
@@ -142,17 +140,17 @@ INSERT INTO {rds_schema_oua}.student_admits (
       hs_unweighted_gpa,
       hs_weighted_gpa,
       transfer_gpa,
-      act_composite,
-      act_math,
-      act_english,
-      act_reading,
-      act_writing,
-      sat_total,
-      sat_r_evidence_based_rw_section,
-      sat_r_math_section,
-      sat_r_essay_reading,
-      sat_r_essay_analysis,
-      sat_r_essay_writing,
+      NULL AS act_composite,
+      NULL AS act_math,
+      NULL AS act_english,
+      NULL AS act_reading,
+      NULL AS act_writing,
+      NULL AS sat_total,
+      NULL AS sat_r_evidence_based_rw_section,
+      NULL AS sat_r_math_section,
+      NULL AS sat_r_essay_reading,
+      NULL AS sat_r_essay_analysis,
+      NULL AS sat_r_essay_writing,
       application_fee_waiver_flag,
       foster_care_flag,
       family_is_single_parent,
@@ -203,7 +201,6 @@ INSERT INTO {rds_schema_oua}.student_admits (
     permanent_region VARCHAR,
     permanent_postal VARCHAR,
     permanent_country VARCHAR,
-    sex VARCHAR,
     gender_identity VARCHAR,
     xethnic VARCHAR,
     hispanic VARCHAR,
@@ -257,7 +254,6 @@ CREATE INDEX idx_oua_student_admits_cs_empl_id ON {rds_schema_oua}.student_admit
 CREATE INDEX idx_oua_student_admits_slate_id ON {rds_schema_oua}.student_admits(applyuc_cpid);
 CREATE INDEX idx_oua_student_admits_names ON {rds_schema_oua}.student_admits(first_name, last_name);
 CREATE INDEX idx_oua_student_admits_hispanic ON {rds_schema_oua}.student_admits(hispanic);
-CREATE INDEX idx_oua_student_admits_sex ON {rds_schema_oua}.student_admits(sex);
 CREATE INDEX idx_oua_student_admits_xethnic ON {rds_schema_oua}.student_admits(xethnic);
 CREATE INDEX idx_oua_student_admits_urem ON {rds_schema_oua}.student_admits(urem);
 CREATE INDEX idx_oua_student_admits_current_sir ON {rds_schema_oua}.student_admits(current_sir);
