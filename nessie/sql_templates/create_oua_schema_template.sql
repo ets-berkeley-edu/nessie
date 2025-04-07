@@ -60,6 +60,7 @@ CREATE EXTERNAL TABLE {redshift_schema_oua}.admissions
     permanent_region VARCHAR,
     permanent_postal VARCHAR,
     permanent_country VARCHAR,
+    home_location_cd VARCHAR,
     gender_identity VARCHAR,
     xethnic VARCHAR,
     hispanic VARCHAR,
@@ -92,19 +93,7 @@ CREATE EXTERNAL TABLE {redshift_schema_oua}.admissions
     permanent_residence_country VARCHAR,
     non_immigrant_visa_current VARCHAR,
     non_immigrant_visa_planned VARCHAR,
-    uid VARCHAR,
-    sex VARCHAR,
-    act_composite INTEGER,
-    act_math INTEGER,
-    act_english INTEGER,
-    act_reading INTEGER,
-    act_writing INTEGER,
-    sat_total INTEGER,
-    sat_r_evidence_based_rw_section INTEGER,
-    sat_r_math_section INTEGER,
-    sat_r_essay_reading INTEGER,
-    sat_r_essay_analysis INTEGER,
-    sat_r_essay_writing INTEGER
+    uid VARCHAR
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
 WITH SERDEPROPERTIES (
