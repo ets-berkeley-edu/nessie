@@ -1,5 +1,5 @@
 <template>
-  <v-carousel cycle interval="10000">
+  <v-carousel cycle height="650" interval="10000">
     <v-carousel-item
       v-for="slide in slides"
       :key="slide"
@@ -15,9 +15,9 @@
 <script setup>
 import castleOnShore from '@/assets/loch-ness-castle-on-shore.jpg'
 import lochNessMonster from '@/assets/loch-ness-monster.jpg'
-import lochNessViewFromMountains from '@/assets/loch-ness-view-from-mountains.jpg'
+import gorbalsMainStHouse from '@/assets/gorbals-main-st-house.jpg'
 
-const slides = [castleOnShore, lochNessMonster, lochNessViewFromMountains]
+const slides = [castleOnShore, lochNessMonster, gorbalsMainStHouse]
 </script>
 
 <style>
