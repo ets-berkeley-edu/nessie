@@ -72,11 +72,11 @@ class SyncCanvasRequestsSnapshots(BackgroundJob):
             response = dispatch('sync_file_to_s3', data={'canvas_sync_job_id': job_id, 'url': snapshot['url'], 'key': key})
 
             if not response:
-                app.logger.error('Failed to dispatch S3 sync of snapshot ' + snapshot['filename'])
+                app.logger.error(f"Failed to dispatch S3 sync of snapshot {snapshot['filename']}")
                 metadata.update_canvas_sync_status(job_id, key, 'error', details=f'Failed to dispatch: {response}')
                 failure += 1
             else:
-                app.logger.info('Dispatched S3 sync of snapshot ' + snapshot['filename'])
+                app.logger.info(f"Dispatched S3 sync of snapshot {snapshot['filename']}")
                 success += 1
 
         if cleanup:

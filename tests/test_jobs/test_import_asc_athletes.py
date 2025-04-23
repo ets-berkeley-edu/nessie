@@ -54,9 +54,8 @@ class TestImportAscAthletes:
                 },
             }
             modified_response = MockResponse(200, {}, json.dumps(skinny_import))
-            with register_mock(asc_athletes_api._get_asc_feed_response, modified_response):
-                with pytest.raises(BackgroundJobError):
-                    ImportAscAthletes().run()
+            with register_mock(asc_athletes_api._get_asc_feed_response, modified_response), pytest.raises(BackgroundJobError):
+                ImportAscAthletes().run()
 
 
 class TestAscAthletesApiUpdates:
@@ -66,6 +65,5 @@ class TestAscAthletesApiUpdates:
         with open(app.config['BASE_DIR'] + '/fixtures/asc_athletes.json') as file:
             modified_response_body = file.read().replace('"2018-01-31"', bad_date, 1)
             modified_response = MockResponse(200, {}, modified_response_body)
-            with register_mock(asc_athletes_api._get_asc_feed_response, modified_response):
-                with pytest.raises(BackgroundJobError):
-                    ImportAscAthletes().run()
+            with register_mock(asc_athletes_api._get_asc_feed_response, modified_response), pytest.raises(BackgroundJobError):
+                ImportAscAthletes().run()

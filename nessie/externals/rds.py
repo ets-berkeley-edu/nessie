@@ -58,7 +58,7 @@ def fetch(sql, params=None, log_query=True, rds_uri=None, stream=False):
                 return _execute(sql, cursor, params, 'read', log_query)
 
 
-class Transaction():
+class Transaction:
     def __init__(self, cursor):
         self.cursor = cursor
         self.execute('BEGIN TRANSACTION')

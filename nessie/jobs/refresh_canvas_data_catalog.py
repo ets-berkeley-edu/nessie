@@ -116,7 +116,7 @@ class RefreshCanvasDataCatalog(BackgroundJob):
             table_columns = schema_df.loc[schema_df['table_name'] == table].reset_index()
             storage_descriptor_df = table_columns[['transformed_column_name', 'glue_type']]
 
-            create_ddl = 'CREATE EXTERNAL TABLE {}.{}\n(\n'.format(external_schema, table)
+            create_ddl = f'CREATE EXTERNAL TABLE {external_schema}.{table}\n(\n'
             storage_descriptors = ''
             for index in storage_descriptor_df.index:
                 storage_descriptors = '{}    {} {}'.format(
@@ -128,23 +128,18 @@ class RefreshCanvasDataCatalog(BackgroundJob):
                     storage_descriptors = storage_descriptors + ',\n'
 
             table_properties = '\n) \nROW FORMAT DELIMITED FIELDS \nTERMINATED BY \'\t\' \nSTORED AS TEXTFILE'
-            if (table != 'requests'):
-                table_location = '\nLOCATION \'{}/{}\''.format(s3_canvas_data_url, table)
+            if table != 'requests':
+                table_location = f'\nLOCATION \'{s3_canvas_data_url}/{table}\''
             else:
-                table_location = '\nLOCATION \'{}/{}\''.format(s3_requests_url, table)
+                table_location = f'\nLOCATION \'{s3_requests_url}/{table}\''
 
-            external_table_ddl = '{}\n{}{}{}{};\n\n'.format(
-                external_table_ddl,
-                create_ddl,
-                storage_descriptors,
-                table_properties,
-                table_location,
-            )
+            external_table_ddl = f'{external_table_ddl}\n{create_ddl}{storage_descriptors}{table_properties}{table_location};\n\n'
 
-        # For debugging process, export to external_table_ddl to file to get a well formed SQL template for canvas-data
+        # For debugging process, export to external_table_ddl to file to get a well-formed SQL template for canvas-data
         return external_table_ddl
 
-    # Gets an inventory of all the tables by tracking the S3 canvas-data daily location and run count verification to ensure migration was successful
+    # Gets an inventory of all the tables by tracking the S3 canvas-data daily location
+    # and runs count verification to ensure migration was successful.
     def verify_external_data_catalog(self):
         s3_client = s3.get_client()
         bucket = app.config['LOCH_S3_BUCKET']
@@ -158,7 +153,7 @@ class RefreshCanvasDataCatalog(BackgroundJob):
             directory_names.append(object_summary['Key'].split('/')[3])
 
         # Get unique table names from S3 object list
-        tables = sorted(list(set(directory_names)))
+        tables = sorted(list(set(directory_names)))  # noqa: C414
         # Ensure that all tables required by downstream jobs have data present in S3.
         required_tables = [
             'assignment_dim',

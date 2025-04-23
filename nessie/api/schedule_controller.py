@@ -66,7 +66,7 @@ def update_job_schedule(job_id):
     if not job:
         raise BadRequestError(f'No job found for job id: {job_id}')
     if request.method == 'DELETE':
-        app.logger.warn(f'About to delete schedule definition for job id: {job_id}')
+        app.logger.warning(f'About to delete schedule definition for job id: {job_id}')
         sched.remove_job(job_id)
         return tolerant_jsonify([job_to_dict(job) for job in sched.get_jobs()])
     else:

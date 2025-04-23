@@ -45,11 +45,11 @@ class MockRows:
     def __init__(self, csv_in):
         self.csv_in = csv_in
 
-    def __call__(self, *args):
+    def __call__(self):
         if self.csv_in is None:
             return None
         # Unless otherwise instructed, `pandas` will interpret numeric strings as numbers instead of strings.
-        df = pandas.read_csv(
+        df = pandas.read_csv(  # noqa: PD901
             self.csv_in, escapechar='\\',
             dtype={'advisee_sids': object, 'ldap_uid': object, 'sid': object, 'sis_section_num': object, 'uid': object},
         )
@@ -169,7 +169,7 @@ def register_mock(request_function, response):
     A MockRows object may be supplied, or, if dynamic behavior is required, a function that returns a MockRows.
     """
     if isinstance(response, MockRows):
-        response_function = lambda *args: response
+        response_function = lambda *args: response  # noqa: ARG005
     else:
         response_function = response
     _register_mock(request_function, response_function)

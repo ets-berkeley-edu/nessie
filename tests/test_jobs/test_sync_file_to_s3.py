@@ -37,7 +37,7 @@ from tests.util import capture_app_logs, mock_s3
 class TestSyncFileToS3:
 
     @pytest.mark.testext
-    def test_file_upload_and_skip(self, app, caplog, cleanup_s3):
+    def test_file_upload_and_skip(self, app, caplog, cleanup_s3):  # noqa: ARG002
         """Uploads files to real S3, skipping duplicates."""
         url = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
         key = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001/sonnet-xlv.html'
@@ -53,7 +53,7 @@ class TestSyncFileToS3:
             assert result is False
             assert f'Key {key} exists, skipping upload' in caplog.text
 
-    def test_canvas_sync_metadata(self, app, clear_metadata_db):
+    def test_canvas_sync_metadata(self, app, clear_metadata_db):  # noqa: ARG002
         """When given a job id, updates metadata on file sync."""
         url = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
         key = 'canvas/sonnet_submission_dim/sonnet-xlv.txt'

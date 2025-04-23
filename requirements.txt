@@ -29,4 +29,5 @@ faker==18.10.1
 pytest==7.3.1
 pytest-flask==1.2.0
 responses==0.23.1
+ruff==0.11.6
 tox==4.6.0

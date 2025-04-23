@@ -44,17 +44,16 @@ def get_s3_refs(app):
 def set_up_to_succeed(app, caplog):
     (bucket, source_prefix, dest_prefix) = get_s3_refs(app)
     caplog.set_level(logging.INFO)
-    with capture_app_logs(app):
-        with mock_s3(app, bucket=bucket) as m3:
-            m3.Object(bucket, f'{source_prefix}/2017/01/18/12345678_00012_1.pdf').put(Body=b'a note attachment')
-            m3.Object(bucket, f'{source_prefix}/2018/12/22/23456789_00003_1').put(Body=b'another note attachment')
-            m3.Object(bucket, f'{source_prefix}/2019/08/29/34567890_00014_2.._500,1M1L4H0N_ref_].16SVX').put(
-                Body=b'malformed original file name',
-            )
-            m3.Object(bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf').put(Body=b'a note attachment')
-            m3.Object(bucket, f'{dest_prefix}/23456789/23456789_00003_1').put(Body=b'another note attachment')
-            m3.Object(bucket, f'{dest_prefix}/34567890/34567890_00014_2.16SVX').put(Body=b'malformed original file name')
-            yield
+    with capture_app_logs(app), mock_s3(app, bucket=bucket) as m3:
+        m3.Object(bucket, f'{source_prefix}/2017/01/18/12345678_00012_1.pdf').put(Body=b'a note attachment')
+        m3.Object(bucket, f'{source_prefix}/2018/12/22/23456789_00003_1').put(Body=b'another note attachment')
+        m3.Object(bucket, f'{source_prefix}/2019/08/29/34567890_00014_2.._500,1M1L4H0N_ref_].16SVX').put(
+            Body=b'malformed original file name',
+        )
+        m3.Object(bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf').put(Body=b'a note attachment')
+        m3.Object(bucket, f'{dest_prefix}/23456789/23456789_00003_1').put(Body=b'another note attachment')
+        m3.Object(bucket, f'{dest_prefix}/34567890/34567890_00014_2.16SVX').put(Body=b'malformed original file name')
+        yield
     assert 'No attachments missing on S3 when compared against the view.' in caplog.text
 
 
@@ -62,15 +61,14 @@ def set_up_to_succeed(app, caplog):
 def set_up_to_fail(app, caplog):
     (bucket, source_prefix, dest_prefix) = get_s3_refs(app)
     caplog.set_level(logging.INFO)
-    with capture_app_logs(app):
-        with mock_s3(app, bucket=bucket) as m3:
-            m3.Object(bucket, f'{source_prefix}/2017/01/18/12345678_00012_1.pdf').put(Body=b'a note attachment')
-            m3.Object(bucket, f'{source_prefix}/2018/12/22/23456789_00003_1').put(Body=b'another note attachment')
-            m3.Object(bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf').put(Body=b'a note attachment')
-            m3.Object(bucket, f'{dest_prefix}/34567890/34567890_00014_2.16SVX').put(Body=b'yet another note attachment')
-            m3.Object(bucket, f'{dest_prefix}/45678901/45678901_00192_4.xls').put(Body=b'bamboozled by a completely unexpected note attachment')
-            with pytest.raises(BackgroundJobError) as e:
-                yield
+    with capture_app_logs(app), mock_s3(app, bucket=bucket) as m3:
+        m3.Object(bucket, f'{source_prefix}/2017/01/18/12345678_00012_1.pdf').put(Body=b'a note attachment')
+        m3.Object(bucket, f'{source_prefix}/2018/12/22/23456789_00003_1').put(Body=b'another note attachment')
+        m3.Object(bucket, f'{dest_prefix}/12345678/12345678_00012_1.pdf').put(Body=b'a note attachment')
+        m3.Object(bucket, f'{dest_prefix}/34567890/34567890_00014_2.16SVX').put(Body=b'yet another note attachment')
+        m3.Object(bucket, f'{dest_prefix}/45678901/45678901_00192_4.xls').put(Body=b'bamboozled by a completely unexpected note attachment')
+        with pytest.raises(BackgroundJobError) as e:
+            yield
     assert 'Attachments verification found missing attachments or sync failures:' in str(e.value)
     assert '\'attachment_sync_failure_count\': 1' in str(e.value)
     assert '\'missing_s3_attachments_count\': 1' in str(e.value)
@@ -81,7 +79,7 @@ def set_up_to_fail(app, caplog):
     assert 'Attachments missing on S3 when compared against SIS notes views: 1' in caplog.text
 
 
-@pytest.fixture()
+@pytest.fixture
 def prior_job_status(app):
     from nessie.externals import rds
     rds_schema = app.config['RDS_SCHEMA_METADATA']
@@ -93,7 +91,7 @@ def prior_job_status(app):
 class TestVerifySisAdvisingNoteAttachments:
     """Validates the work of MigrateSisAdvisingNoteAttachments and reports any failures."""
 
-    def test_run_with_no_param(self, app, caplog, sis_note_tables, student_tables):
+    def test_run_with_no_param(self, app, caplog, sis_note_tables, student_tables):  # noqa: ARG002
         """When no parameter is provided, validates all files."""
         with set_up_to_succeed(app, caplog):
             response = VerifySisAdvisingNoteAttachments().run()
@@ -106,7 +104,7 @@ class TestVerifySisAdvisingNoteAttachments:
         assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files.' in caplog.text
         assert 'Total number of failed attachment syncs from sis-data/sis-sftp/incremental/advising-notes/attachment-files is 1' in caplog.text
 
-    def test_run_with_all_param(self, app, caplog, sis_note_tables, student_tables):
+    def test_run_with_all_param(self, app, caplog, sis_note_tables, student_tables):  # noqa: ARG002
         """When 'all' is provided, validates all files."""
         with set_up_to_succeed(app, caplog):
             response = VerifySisAdvisingNoteAttachments().run(datestamp='all')
@@ -119,7 +117,7 @@ class TestVerifySisAdvisingNoteAttachments:
         assert 'Will validate files from sis-data/sis-sftp/incremental/advising-notes/attachment-files.' in caplog.text
         assert 'Total number of failed attachment syncs from sis-data/sis-sftp/incremental/advising-notes/attachment-files is 1' in caplog.text
 
-    def test_run_with_datestamp_param(self, sis_note_tables, student_tables, app, caplog):
+    def test_run_with_datestamp_param(self, sis_note_tables, student_tables, app, caplog):  # noqa: ARG002
         """When a datestamp is provided, validates files copied from the corresponding dated folder."""
         with set_up_to_succeed(app, caplog):
             response = VerifySisAdvisingNoteAttachments().run(datestamp='2018-12-22')
@@ -134,7 +132,7 @@ class TestVerifySisAdvisingNoteAttachments:
             'Total number of failed attachment syncs from sis-data/sis-sftp/incremental/advising-notes/attachment-files/2018/12/22 is 1'
         ) in caplog.text
 
-    def test_run_with_partial_datestamp_param(self, sis_note_tables, student_tables, app, caplog):
+    def test_run_with_partial_datestamp_param(self, sis_note_tables, student_tables, app, caplog):  # noqa: ARG002
         """When a partial datestamp is provided, validates files copied from the corresponding dated folder."""
         with set_up_to_succeed(app, caplog):
             response = VerifySisAdvisingNoteAttachments().run(datestamp='2018')

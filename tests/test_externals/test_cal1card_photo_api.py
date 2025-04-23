@@ -31,19 +31,19 @@ from nessie.lib.mockingbird import MockResponse, register_mock
 class TestCal1CardPhotoApi:
     """Cal1Card Photo API query."""
 
-    def test_get_photo(self, app):
+    def test_get_photo(self):
         """Returns fixture data."""
         oski_response = cal1card_photo_api.get_cal1card_photo(61889)
         assert isinstance(oski_response, bytes)
         assert len(oski_response) == 3559
 
-    def test_user_not_found(self, app, caplog):
+    def test_user_not_found(self, caplog):
         """Logs error and returns False when user not found."""
         response = cal1card_photo_api.get_cal1card_photo(9999999)
         assert '404 Client Error' in caplog.text
         assert response is False
 
-    def test_server_error(self, app, caplog):
+    def test_server_error(self, caplog):
         """Logs unexpected server errors and returns informative message."""
         api_error = MockResponse(500, {}, '{"message": "Internal server error."}')
         with register_mock(cal1card_photo_api._get_cal1card_photo, api_error):

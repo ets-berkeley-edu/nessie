@@ -60,7 +60,7 @@ class MockResponse:
         self.headers = headers
         self.body = body
 
-    def __call__(self, *args):
+    def __call__(self, *args):  # noqa: ARG002
         return self.status, self.headers, self.body
 
 
@@ -196,7 +196,7 @@ def response_from_fixture(pattern, suffix):
         return response_from_fixture('resource_{}_feed'.format(resource_id))
     """
     fixtures_path = _get_fixtures_path()
-    unpaged_path = '{}/{}.{}'.format(fixtures_path, pattern, suffix)
+    unpaged_path = f'{fixtures_path}/{pattern}.{suffix}'
     if suffix == 'jpg':
         read_mode = 'rb'
     else:
@@ -206,7 +206,7 @@ def response_from_fixture(pattern, suffix):
             fixture = file.read()
             return MockResponse(200, {}, fixture)
     else:
-        paged_path = '{}/{}_page_1.{}'.format(fixtures_path, pattern, suffix)
+        paged_path = f'{fixtures_path}/{pattern}_page_1.{suffix}'
         if os.path.isfile(paged_path):
             return response_from_paged_fixture(pattern, suffix)
         else:
@@ -231,7 +231,7 @@ def response_from_paged_fixture(pattern, suffix):
     """
     def handle_request(request, uri, headers, fixtures_path):
         page = int(request.querystring.get('page', ['1'])[0])
-        fixture_file = fixtures_path + '/{}_page_{}.{}'.format(pattern, page, suffix)
+        fixture_file = fixtures_path + f'/{pattern}_page_{page}.{suffix}'
         try:
             file = open(fixture_file)
         except FileNotFoundError:
@@ -240,7 +240,7 @@ def response_from_paged_fixture(pattern, suffix):
             fixture = file.read()
 
         headers = {}
-        next_fixture_file = fixtures_path + '/{}_page_{}.{}'.format(pattern, page + 1, suffix)
+        next_fixture_file = fixtures_path + f'/{pattern}_page_{page + 1}.{suffix}'
         if os.path.isfile(next_fixture_file):
             parsed_url = urllib.parse.urlparse(uri)
             parsed_query = urllib.parse.parse_qs(parsed_url.query)
@@ -253,7 +253,7 @@ def response_from_paged_fixture(pattern, suffix):
                 urllib.parse.urlencode(parsed_query, doseq=True),
                 '',
             ])
-            headers['Link'] = '<{}>; rel="next"'.format(next_url)
+            headers['Link'] = f'<{next_url}>; rel="next"'
         return 200, headers, fixture
     # The fixtures path is based on app config and for obscure scoping reasons needs to be passed in as a partial;
     # otherwise Flask will see it as an attempt to evaluate app config outside an application context.
@@ -267,7 +267,7 @@ def register_mock(request_function, response):
     A MockResponse object may be supplied, or, if dynamic behavior is required, a function that returns a MockResponse.
     """
     if isinstance(response, MockResponse):
-        response_function = lambda *args: response
+        response_function = lambda *args: response  # noqa: ARG005
     else:
         response_function = response
 
@@ -313,19 +313,15 @@ def _write_fixture(func, fixture_output_path, pattern, suffix):
     def write_fixture_wrapper(*args, **kw):
         kw['mock'] = _noop_mock
         response = func(*args, **kw)
-        json_path = '{}/{}.{}'.format(
-            fixture_output_path,
-            fill_pattern_from_args(pattern, func, *args, **kw),
-            suffix,
-        )
+        json_path = f'{fixture_output_path}/{fill_pattern_from_args(pattern, func, *args, **kw)}.{suffix}'
 
         if not response:
-            app.logger.warn('Error response, will not write fixture to ' + json_path)
+            app.logger.warning(f'Error response, will not write fixture to {json_path}')
             return response
 
         response_body = response.json() if hasattr(response, 'json') else response
         with open(json_path, 'w', encoding='utf-8') as outfile:
             json.dump(response_body, outfile, indent=2)
-            app.logger.debug('Wrote fixture to ' + json_path)
+            app.logger.debug(f'Wrote fixture to {json_path}')
         return response
     return write_fixture_wrapper

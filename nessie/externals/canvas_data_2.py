@@ -31,8 +31,7 @@ import requests
 
 
 def get_cd2_secret():
-    secret = secrets_manager.get_secret(app.config['CD2_SECRET_NAME'])
-    return secret
+    return secrets_manager.get_secret(app.config['CD2_SECRET_NAME'])
 
 
 def get_cd2_access_token():
@@ -42,11 +41,9 @@ def get_cd2_access_token():
     auth_url = f'{secret["DAP_API_URL"]}/ids/auth/login'
     body = {'grant_type': 'client_credentials'}
     # Request access token from the API
-    response = requests.post(auth_url, headers=header, data=body)
+    response = requests.post(auth_url, headers=header, data=body)  # noqa: S113
     response_data = response.json()
-    access_token = response_data.get('access_token')
-
-    return access_token
+    return response_data.get('access_token')
 
 
 def get_cd2_tables_list(namespace):
@@ -54,7 +51,7 @@ def get_cd2_tables_list(namespace):
     access_token = get_cd2_access_token()
     headers = {'x-instauth': access_token}
     # Get a list of available tables for the namespace. Namespace values can be 'canvas', 'catalog', 'canvas_logs'
-    cd2_tables_list = requests.get(f'{secret["DAP_API_URL"]}/dap/query/{namespace}/table', headers=headers)
+    cd2_tables_list = requests.get(f'{secret["DAP_API_URL"]}/dap/query/{namespace}/table', headers=headers)  # noqa: S113
     app.logger.info(f'Tables Available for {namespace}: {len(cd2_tables_list.json()["tables"])}')
 
     return cd2_tables_list.json()['tables']
@@ -64,7 +61,7 @@ def query_table_data(access_token, secret, table):
     headers = {'x-instauth': access_token}
     body = {'format': 'tsv', 'mode': 'expanded'}
     # Make request to initiate job for querying table data and get job request ID
-    response = requests.post(f"{secret['DAP_API_URL']}/dap/query/canvas/table/{table}/data", headers=headers, json=body)
+    response = requests.post(f"{secret['DAP_API_URL']}/dap/query/canvas/table/{table}/data", headers=headers, json=body)  # noqa: S113
     response_data = response.json()
     job_request_id = response_data.get('id')
 
@@ -98,7 +95,7 @@ def get_job_status(secret, headers, job_request_id):
     job_status_url = f'{secret["DAP_API_URL"]}/dap/job/{job_request_id}'
     app.logger.debug(f'Job status url: {job_status_url}')
 
-    job_status_response = requests.get(job_status_url, headers=headers)
+    job_status_response = requests.get(job_status_url, headers=headers)  # noqa: S113
     if job_status_response.json().get('status') == 'complete':
         app.logger.debug(job_status_response.text)
 
@@ -108,6 +105,4 @@ def get_job_status(secret, headers, job_request_id):
 def get_cd2_file_urls(secret, headers, file_objects):
 
     app.logger.info(f'Retriving presigned file urls for the table objects {file_objects}')
-    file_urls = requests.post(f'{secret["DAP_API_URL"]}/dap/object/url', headers=headers, json=file_objects)
-
-    return file_urls
+    return requests.post(f'{secret["DAP_API_URL"]}/dap/object/url', headers=headers, json=file_objects)  # noqa: S113

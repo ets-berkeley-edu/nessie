@@ -66,7 +66,7 @@ class RetrieveAndDispatchCD2FileUrls(BackgroundJob):
 
             app.logger.debug(f'File objects for table {table_object["table"]} : {files}')
             for file in files:
-                files_to_sync.append(file)
+                files_to_sync.append(file)  # noqa: PERF402
 
         return tables_missing_file_urls, files_to_sync
 

@@ -57,7 +57,7 @@ def verify_external_schema(schema, resolved_ddl, is_zero_count_acceptable=False)
             raise BackgroundJobError(f'Failed to verify {description}')
 
 
-class BackgroundJob(object):
+class BackgroundJob(object):  # noqa: UP004
 
     status_logging_enabled = True
     condemn_stalled_jobs_to_failure = True
@@ -109,13 +109,13 @@ class BackgroundJob(object):
                 error = None
                 result = self.run(**kwargs)
             except BackgroundJobError as e:
-                app.logger.error(e)
+                app.logger.exception(e)
                 result = None
-                error = f'{str(e)}\n\n<pre>{traceback.format_exc()}</pre>'
+                error = f'{e!s}\n\n<pre>{traceback.format_exc()}</pre>'
             except Exception as e:
                 app.logger.exception(e)
                 result = None
-                error = f'{str(e)}\n\n<pre>{traceback.format_exc()}</pre>'
+                error = f'{e!s}\n\n<pre>{traceback.format_exc()}</pre>'
             if self.status_logging_enabled:
                 if result:
                     status = 'succeeded'

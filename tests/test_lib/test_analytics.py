@@ -32,7 +32,7 @@ from nessie.lib.mockingdata import MockRows, register_mock
 import pytest
 
 
-# TODO fix integration with legacy GenerateMergedStudentFeeds structure
+# TODO: fix integration with legacy GenerateMergedStudentFeeds structure
 def generate_student_term_maps(advisees_by_sid):
     pass
 
@@ -90,7 +90,7 @@ class TestAnalyticsFromAssignmentsSubmitted:
         )
         return enrollment_term_map[self.user_sid]['enrollments'][0]['canvasSites'][0]['analytics']['assignmentsSubmitted']
 
-    def test_from_fixture(self, app):
+    def test_from_fixture(self):
         digested = self.digest_for_user(self.canvas_user_id)
         assert digested['student']['raw'] == 8
         assert digested['student']['percentile'] == 64
@@ -101,7 +101,7 @@ class TestAnalyticsFromAssignmentsSubmitted:
         assert round(digested['courseMean']['raw']) == 7
         assert digested['courseMean']['percentile'] == 50
 
-    def test_small_difference(self, app):
+    def test_small_difference(self):
         """Notices that small difference."""
         rows = [
             'reference_user_id,sid,canvas_course_id,canvas_user_id,submissions_turned_in',
@@ -127,7 +127,7 @@ class TestAnalyticsFromAssignmentsSubmitted:
             assert best['displayPercentile'] == '100th'
             assert best['student']['raw'] == 3
 
-    def test_when_no_data(self, app):
+    def test_when_no_data(self):
         mr = MockRows(io.StringIO('reference_user_id,sid,canvas_course_id,canvas_user_id,submissions_turned_in'))
         with register_mock(queries.get_advisee_submissions_sorted, mr):
             digested = self.digest_for_user(self.canvas_user_id)
@@ -146,7 +146,7 @@ class TestStudentAnalytics:
     sis_term_id = '2178'
 
     def digest_for_user(self, canvas_user_id):
-        # TODO fix integration with legacy GenerateMergedStudentFeeds structure
+        # TODO: fix integration with legacy GenerateMergedStudentFeeds structure
         course = {}
         enrollment_term_map = mock_enrollment_term_map(self.user_sid, self.canvas_course_id)
         advisees_by_canvas_id = mock_advisee_id_map(canvas_user_id, self.user_sid)

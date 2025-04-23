@@ -31,7 +31,7 @@ from tests.util import capture_app_logs
 class TestDispatcher:
     """highlands-to-lowlands dispatcher."""
 
-    def test_dispatch_fixture(self, app):
+    def test_dispatch_fixture(self):
         """Returns fixture data."""
         response = dispatcher.dispatch('create_canvas_schema')
         assert response['status'] == 'started'

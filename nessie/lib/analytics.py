@@ -49,7 +49,7 @@ def generate_analytics_feeds_for_course(output_file, term_id, canvas_site_row, s
     if not enrollments:
         return 0
 
-    df = pandas.DataFrame(enrollments, columns=['canvas_user_id', 'current_score', 'last_activity_at'])
+    df = pandas.DataFrame(enrollments, columns=['canvas_user_id', 'current_score', 'last_activity_at'])  # noqa: PD901
     metrics = ['current_score', 'last_activity_at']
     course_distributions = get_distributions_for_metric(df, metrics)
     course_analytics = {metric: analytics_for_course(course_distributions, metric) for metric in metrics}
@@ -59,7 +59,7 @@ def generate_analytics_feeds_for_course(output_file, term_id, canvas_site_row, s
 
     for enrollment in enrollments:
         user_id = int(enrollment['canvas_user_id'])
-        df_enrollment = df.loc[df['canvas_user_id'].values == user_id]
+        df_enrollment = df.loc[df['canvas_user_id'].values == user_id]  # noqa: PD011
 
         analytics_feed = _generate_analytics_feed(df_enrollment, course_analytics, course_distributions, len(enrollments))
 
@@ -117,10 +117,10 @@ def _generate_analytics_feed(student_row, course_analytics, course_distributions
 
 def _generate_submission_analytics(canvas_course_id, canvas_user_id, submission_rows):
     submissions = copy_for_pandas(submission_rows)
-    df = pandas.DataFrame(submissions, columns=['canvas_user_id', 'submissions_turned_in'])
-    student_row = df.loc[df['canvas_user_id'].values == int(canvas_user_id)]
+    df = pandas.DataFrame(submissions, columns=['canvas_user_id', 'submissions_turned_in'])  # noqa: PD901
+    student_row = df.loc[df['canvas_user_id'].values == int(canvas_user_id)]  # noqa: PD011
     if submissions and student_row.empty:
-        app.logger.warn(f'Canvas user id {canvas_user_id}, course id {canvas_course_id} not found in Data Loch assignments; will assume 0 score')
+        app.logger.warning(f'Canvas user id {canvas_user_id}, course id {canvas_course_id} not found in Data Loch assignments; will assume 0 score')
         df, student_row = append_missing_row(
             df,
             canvas_user_id,
@@ -140,9 +140,9 @@ def _generate_submission_analytics(canvas_course_id, canvas_user_id, submission_
 
 
 def append_missing_row(df, canvas_user_id, student_row):
-    df = df.append(student_row, ignore_index=True)
+    df = df.append(student_row, ignore_index=True)  # noqa: PD901
     # Fetch newly appended row, mostly for the sake of its properly set-up index.
-    student_row = df.loc[df['canvas_user_id'].values == int(canvas_user_id)]
+    student_row = df.loc[df['canvas_user_id'].values == int(canvas_user_id)]  # noqa: PD011
     return df, student_row
 
 
@@ -156,7 +156,7 @@ def get_distributions_for_metric(df, metrics):
         # However, some feeds (such as Canvas student summaries) return (mostly) zero values rather than empty lists,
         # and we've also seen some Canvas feeds which mix nulls and zeroes.
         # Setting non-numbers to zero works acceptably for most current analyzed feeds, apart from lastActivity (see below).
-        distributions[metric]['dfcol'].fillna(0, inplace=True)
+        distributions[metric]['dfcol'].fillna(0, inplace=True)  # noqa: PD002
         distributions[metric]['unique_scores'] = distributions[metric]['dfcol'].unique().tolist()
         # When calculating z-scores and means for lastActivity, zeroed-out "no activity" values must be dropped, since zeros
         # and Unix timestamps don't play well in the same distribution. We retain the original dataset for intuitive-percentile
@@ -233,7 +233,7 @@ def analytics_for_student(student_row, metric, course_analytics, distributions):
     # Note, however, that if all students have the same score, then all students are in the "100th percentile."
     display_percentile = ordinal(intuitive_percentile)
 
-    column_value = student_row[metric].values[0]
+    column_value = student_row[metric].values[0]  # noqa: PD011
     raw_value = round(column_value.item())
 
     column_zscore = zscore(dfcol_normalized, column_value)
@@ -271,7 +271,7 @@ def ordinal(nbr):
 
 def quantiles(series, count):
     """Return a given number of evenly spaced quantiles for a given series."""
-    return [round(series.quantile(n / count)) for n in range(0, count + 1)]
+    return [round(series.quantile(n / count)) for n in range(0, count + 1)]  # noqa: PIE808
 
 
 def rounded_up_percentile(dataframe, student_row):
@@ -283,9 +283,8 @@ def rounded_up_percentile(dataframe, student_row):
     particular course context. (If only 10% of the course's students did better than '5', then this student
     with a '5' is in the 90th percentile.)
     """
-    percentile = dataframe.rank(pct=True, method='max')[student_row.index].values[0]
-    percentile = int(percentile * 100)
-    return percentile
+    percentile = dataframe.rank(pct=True, method='max')[student_row.index].values[0]  # noqa: PD011
+    return int(percentile * 100)
 
 
 def zptile(z_score):

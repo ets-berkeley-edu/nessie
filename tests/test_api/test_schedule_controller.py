@@ -29,7 +29,7 @@ import pytest
 from tests.util import credentials, delete_basic_auth, post_basic_auth
 
 
-@pytest.fixture()
+@pytest.fixture
 def scheduler(app):
     """Re-initialize job scheduler from configs on teardown so that changes don't persist."""
     yield
@@ -39,7 +39,7 @@ def scheduler(app):
 
 class TestGetSchedule:
 
-    def test_get_schedule(self, app, client):
+    def test_get_schedule(self, client):
         """Returns job schedule based on default config values."""
         jobs = client.get('/api/schedule').json
         assert len(jobs) > 1
@@ -60,12 +60,12 @@ class TestGetSchedule:
 
 class TestUpdateSchedule:
 
-    def test_no_authentication(self, app, client):
+    def test_no_authentication(self, client):
         """Refuses a request with no authentication."""
         response = client.post('/api/schedule/job_sync_canvas_snapshots')
         assert response.status_code == 401
 
-    def test_bad_authentication(self, app, client):
+    def test_bad_authentication(self, client):
         """Refuse a request with bad authentication."""
         response = post_basic_auth(
             client,
@@ -140,7 +140,7 @@ class TestUpdateSchedule:
         )
         assert response.status_code == 400
 
-    def test_job_reschedule(self, app, client, scheduler):
+    def test_job_reschedule(self, app, client, scheduler):  # noqa: ARG002
         """Reschedules a job."""
         response = post_basic_auth(
             client,
@@ -152,7 +152,7 @@ class TestUpdateSchedule:
         assert response.json['trigger'] == "cron[hour='12', minute='30']"
         assert '12:30:00' in response.json['nextRun']
 
-    def test_job_pause_resume(self, app, client, scheduler):
+    def test_job_pause_resume(self, app, client, scheduler):  # noqa: ARG002
         """Pauses and resumes a job."""
         response = post_basic_auth(
             client,

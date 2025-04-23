@@ -39,13 +39,13 @@ def load_configs(app):
     # NESSIE_ENV defaults to 'development'.
     app_env = os.environ.get('NESSIE_ENV', 'development')
     load_module_config(app, app_env)
-    load_local_config(app, '{}-local.py'.format(app_env))
+    load_local_config(app, f'{app_env}-local.py')
     app.config['NESSIE_ENV'] = app_env
 
 
 def load_module_config(app, config_name):
     """Load an individual module-hosted configuration file if it exists."""
-    config_path = 'config.{}'.format(config_name)
+    config_path = f'config.{config_name}'
     if importlib.util.find_spec(config_path) is not None:
         app.config.from_object(config_path)
 

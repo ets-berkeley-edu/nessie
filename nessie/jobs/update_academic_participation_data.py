@@ -41,7 +41,7 @@ from nessie.lib.util import get_s3_explorance_term_export_previous_path, get_s3_
 
 class UpdateAcademicParticipationData(BackgroundJob):
 
-    def run(self, use_canvas=False):  # noqa C901
+    def run(self, use_canvas=False):  # noqa: C901, PLR0915
         term_id = current_term_id()
         term_prefix = term_code_for_sis_id(term_id)
 
@@ -223,8 +223,7 @@ class UpdateAcademicParticipationData(BackgroundJob):
                 if sftp:
                     sftp.putfo(f, filename.replace('.csv', f"{app.config['BLUE_SFTP_SUFFIX']}.csv"), file_size=filesize)
             except Exception as e:
-                app.logger.exception(e)
-                app.logger.error(f'SFTP upload failed ({filename}.csv, {filesize} bytes); aborting further uploads.')
+                app.logger.exception(f'SFTP upload failed ({filename}.csv, {filesize} bytes); aborting further uploads.', exc_info=e)
                 raise BackgroundJobError(f'Could not upload {filename}.csv')
 
             f.seek(0)
@@ -249,8 +248,7 @@ class UpdateAcademicParticipationData(BackgroundJob):
                     if len(csv_diff[key]):
                         self.diff_results[filename.replace('.csv', '')][key] = len(csv_diff[key])
         except Exception as e:
-            app.logger.exception(e)
-            app.logger.error(f'Failed to generate diff ({filename}.csv), continuing.')
+            app.logger.exception(f'Failed to generate diff ({filename}.csv), continuing.', exc_info=e)
 
 
 COURSE_HEADERS = [

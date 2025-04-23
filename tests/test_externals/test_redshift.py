@@ -30,7 +30,7 @@ import pytest
 from tests.util import capture_app_logs, override_config
 
 
-@pytest.fixture()
+@pytest.fixture
 def schema(app):
     schema = psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_BOAC'])
     redshift.execute('CREATE SCHEMA IF NOT EXISTS {schema}', schema=schema)
@@ -38,7 +38,7 @@ def schema(app):
     redshift.execute('DROP SCHEMA IF EXISTS {schema} CASCADE', schema=schema)
 
 
-@pytest.fixture()
+@pytest.fixture
 def ensure_drop_schema(app):
     yield
     schema = psycopg2.sql.Identifier(app.config['REDSHIFT_SCHEMA_BOAC'])
@@ -50,13 +50,12 @@ class TestRedshift:
 
     def test_connection_error_handling(self, app, caplog):
         """Handles and logs connection errors."""
-        with capture_app_logs(app):
-            with override_config(app, 'REDSHIFT_HOST', 'H.C. Earwicker'):
-                redshift.execute('SELECT 1')
-                assert 'could not translate host name "H.C. Earwicker" to address' in caplog.text
+        with capture_app_logs(app), override_config(app, 'REDSHIFT_HOST', 'H.C. Earwicker'):
+            redshift.execute('SELECT 1')
+            assert 'could not translate host name "H.C. Earwicker" to address' in caplog.text
 
     @pytest.mark.testext
-    def test_schema_creation_drop(self, app, caplog, ensure_drop_schema):
+    def test_schema_creation_drop(self, app, caplog, ensure_drop_schema):  # noqa: ARG002
         """Can create and drop schemata on a real Redshift instance."""
         schema_name = app.config['REDSHIFT_SCHEMA_BOAC']
         schema = psycopg2.sql.Identifier(schema_name)
@@ -72,9 +71,9 @@ class TestRedshift:
             assert result == 'DROP SCHEMA'
 
     @pytest.mark.testext
-    def test_execute_ddl_script(self, app, ensure_drop_schema):
+    def test_execute_ddl_script(self, app, ensure_drop_schema):  # noqa: ARG002
         """Executes filled SQL template files one statement at a time."""
-        # TODO Test CREATE EXTERNAL SCHEMA and CREATE EXTERNAL TABLE statements.
+        # TODO: Test CREATE EXTERNAL SCHEMA and CREATE EXTERNAL TABLE statements.
         resolved_ddl = resolve_sql_template('test_db.template.sql')
         redshift.execute_ddl_script(resolved_ddl)
 

@@ -45,6 +45,7 @@ def create_eight_ball_schedules():
     except Exception as e:
         raise BadRequestError(str(e))
     params = {}
+    results = {}
     if props:
         for p in ('name', 'design', 'development', 'qa', 'release'):
             if p not in props:
@@ -64,12 +65,13 @@ def create_eight_ball_schedules():
 @auth_required
 @app.route('/api/8ball/schedules/<schedule_id>', methods=['POST', 'DELETE'])
 def update_eight_ball_schedules(schedule_id):
+    results = {}
     schedule_id = int(schedule_id)
     schedule_count = rds.fetch('SELECT COUNT(*) FROM magic_eight_ball.schedules WHERE id = %(id)s', params={'id': schedule_id})
     if not schedule_count:
         raise BadRequestError(f'No schedule found for id: {schedule_id}')
     if request.method == 'DELETE':
-        app.logger.warn(f'About to delete schedule for id: {schedule_id}')
+        app.logger.warning(f'About to delete schedule for id: {schedule_id}')
         deletion_result = rds.execute('DELETE FROM magic_eight_ball.schedules WHERE id = %(id)s', params={'id': schedule_id})
         results = {'deleted': deletion_result}
     else:

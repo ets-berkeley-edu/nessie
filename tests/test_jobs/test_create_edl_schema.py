@@ -34,7 +34,7 @@ from tests.util import mock_s3
 class TestCreateEdlSchema:
 
     @pytest.mark.skip
-    def test_generate_demographics_feeds(self, app, student_tables):
+    def test_generate_demographics_feeds(self, app, student_tables):  # noqa: ARG002
         """Builds JSON feeds and uploads to S3."""
         from nessie.jobs.create_edl_schema import DemographicsFeedBuilder
         with mock_s3(app):

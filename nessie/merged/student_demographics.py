@@ -91,7 +91,7 @@ def merge_from_details(simpler_list, group, details):
     elif group in subsets_mapping:
         group_set = set()
         for (label, matching) in subsets_mapping[group]:
-            if not details.isdisjoint(matching):
+            if not details.isdisjoint(matching):  # noqa: SIM114
                 group_set.add(label)
             elif matching == {'default'} and not group_set:
                 group_set.add(label)

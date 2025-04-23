@@ -184,13 +184,13 @@ def copy_for_pandas(rows):
     # to numeric values.
     def _transform_row(row):
         copied = row.copy()
-        for key in {'current_score', 'last_activity_at', 'submissions_turned_in'}:
+        for key in ('current_score', 'last_activity_at', 'submissions_turned_in'):
             if key in copied:
                 try:
                     copied[key] = float(copied[key])
                 except (TypeError, ValueError):
                     copied[key] = None
-        for key in {'canvas_course_id', 'canvas_user_id'}:
+        for key in ('canvas_course_id', 'canvas_user_id'):
             if key in copied:
                 try:
                     copied[key] = int(copied[key])
@@ -200,7 +200,7 @@ def copy_for_pandas(rows):
     return [_transform_row(r) for r in rows]
 
 
-class Transaction():
+class Transaction:
     def __init__(self, cursor):
         self.cursor = cursor
         self.execute('BEGIN TRANSACTION')

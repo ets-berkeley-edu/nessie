@@ -28,13 +28,13 @@ from nessie.externals import asc_athletes_api
 
 class TestAscAthletesApi:
 
-    def test_fixture(self, app):
+    def test_fixture(self):
         raw_response = asc_athletes_api._get_asc_feed_response()
         assert raw_response.status_code == 200
         parsed_response = raw_response.json()
         assert parsed_response['1160.4']['SyncDate'] == '2018-01-31'
 
-    def test_get_asc_feed(self, app):
+    def test_get_asc_feed(self):
         rows = asc_athletes_api.get_asc_feed()
         assert len(rows) == 9
         assert rows[0]['SyncDate'] == '2018-01-31'

@@ -81,7 +81,7 @@ def localized_timestamp():
 
 def hashed_datestamp(date_to_stamp=None):
     datestamp = localized_datestamp(date_to_stamp)
-    return hashlib.md5(datestamp.encode('utf-8')).hexdigest() + '-' + datestamp
+    return hashlib.md5(datestamp.encode('utf-8')).hexdigest() + '-' + datestamp  # noqa: S324
 
 
 # As described in NS-993, the SIS note attachments we receive don't always follow
@@ -140,7 +140,7 @@ def get_s3_canvas_data_2_daily_path(cutoff=None):
 
 def get_s3_coe_daily_path(cutoff=None):
     # TODO: When COE is delivering data daily then unleash the following logic
-    # return app.config['LOCH_S3_COE_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
+    # return app.config['LOCH_S3_COE_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)  # noqa: ERA001
     return app.config['LOCH_S3_COE_DATA_PATH']
 
 

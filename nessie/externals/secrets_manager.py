@@ -62,7 +62,7 @@ def get_secret(secret_name):
         get_secret_value_response = client.get_secret_value(SecretId=secret_name)
         app.logger.info(f'Secret retrieved for {secret_name}')
     except (BotoClientError, BotoConnectionError) as e:
-        app.logger.error(f'Error retrieving secret: {e}')
+        app.logger.exception('Error retrieving secret', exc_info=e)
         return None
 
     secret = json.loads(get_secret_value_response['SecretString'])

@@ -50,33 +50,29 @@ class ImportPiazzaApiData(BackgroundJob):
             'Content-Type': 'application/json',
             'CSRF-Token': self.session_id,
         }
-        try:
-            list_of_archives = self.get_list_of_archives(self.headers)
-            archives_to_process = self.select_archives_by_type_and_date(list_of_archives, frequency, datestamp)
-            if not archives_to_process:
-                app.logger.debug(f'{frequency}/{datestamp}: no archives found for these criteria')
-                return f'{frequency}/{datestamp}: no archives found for these criteria'
-            for file_number, archive_file in enumerate(archives_to_process):
-                download_url = self.piazza_api('school.generate_url', self.headers, {'sid': self.sid, 'name': archive_file['name']})
-                download_url = download_url.text
-                download_url = json.loads(download_url)['result']
-                app.logger.debug('Download URL: ' + download_url)
-                piazza_file_name = archive_file['name']
-                # piazza_file_name is like 'daily_2020-08-14.zip' or 'full_2020-08-14.zip'
-                # in s3 it will end up in e.g. .../piazza-data/daily/2020/08/14/daily_2020-08-14.zip
-                parts = '/'.join(split('[\._\-]', piazza_file_name)[0:4])
-                s3_file = f'{s3_key}/{parts}/{piazza_file_name}.zip'
+        list_of_archives = self.get_list_of_archives(self.headers)
+        archives_to_process = self.select_archives_by_type_and_date(list_of_archives, frequency, datestamp)
+        if not archives_to_process:
+            app.logger.debug(f'{frequency}/{datestamp}: no archives found for these criteria')
+            return f'{frequency}/{datestamp}: no archives found for these criteria'
+        for file_number, archive_file in enumerate(archives_to_process):
+            download_url = self.piazza_api('school.generate_url', self.headers, {'sid': self.sid, 'name': archive_file['name']})
+            download_url = download_url.text
+            download_url = json.loads(download_url)['result']
+            app.logger.debug(f'Download URL: {download_url}')
+            piazza_file_name = archive_file['name']
+            # piazza_file_name is like 'daily_2020-08-14.zip' or 'full_2020-08-14.zip'
+            # in s3 it will end up in e.g. .../piazza-data/daily/2020/08/14/daily_2020-08-14.zip
+            parts = '/'.join(split('[\._\-]', piazza_file_name)[0:4])
+            s3_file = f'{s3_key}/{parts}/{piazza_file_name}.zip'
 
-                def update_streaming_status(headers):
-                    update_background_job_status(job_id, 'streaming', details=f"{s3_file}, size={headers.get('Content-Length')}")
+            def update_streaming_status(headers):
+                update_background_job_status(job_id, 'streaming', details=f"{s3_file}, size={headers.get('Content-Length')}")
 
-                response = s3.upload_from_url(download_url, s3_file, on_stream_opened=update_streaming_status)
-                if response and job_id:
-                    destination_size = response.get('ContentLength')
-                    update_background_job_status(job_id, 'stream complete', details=f'{s3_file}, stream complete, size={destination_size}')
-        except Exception as e:
-            # let the people upstairs know, they're in charge
-            raise e
+            response = s3.upload_from_url(download_url, s3_file, on_stream_opened=update_streaming_status)
+            if response and job_id:
+                destination_size = response.get('ContentLength')
+                update_background_job_status(job_id, 'stream complete', details=f'{s3_file}, stream complete, size={destination_size}')
         return ', '.join(f"{a['name']}: {a['size']} bytes" for a in archives_to_process)
 
     def get_list_of_archives(self, headers):
@@ -137,5 +133,4 @@ class ImportPiazzaApiData(BackgroundJob):
             'method': method,
             'params': params,
         }
-        response = requests.post(working_url, headers=headers, json=payload)
-        return response
+        return requests.post(working_url, headers=headers, json=payload)  # noqa: S113

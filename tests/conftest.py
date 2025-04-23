@@ -61,12 +61,12 @@ def app(request):
     # Pop the context after running tests.
     def teardown():
         ctx.pop()
-    request.addfinalizer(teardown)
+    request.addfinalizer(teardown)  # noqa: PT021
 
     return _app
 
 
-@pytest.fixture()
+@pytest.fixture
 def clear_metadata_db(app):
     """Tear down and recreate the metadata db per test if needed."""
     from nessie.externals import rds
@@ -74,12 +74,10 @@ def clear_metadata_db(app):
     fixture_path = f"{app.config['BASE_DIR']}/fixtures"
     with open(f'{fixture_path}/metadata.sql', 'r') as sql_file:
         metadata_sql = sql_file.read()
-        print('HI SQL')
-        print(metadata_sql)
         rds.execute(metadata_sql)
 
 
-@pytest.fixture()
+@pytest.fixture
 def student_tables(app):
     """Use Postgres to mock the Redshift student schemas on local test runs."""
     from nessie.externals import rds, redshift
@@ -114,7 +112,7 @@ def student_tables(app):
         redshift.execute(f'DROP SCHEMA IF EXISTS {schema} CASCADE')
 
 
-@pytest.fixture()
+@pytest.fixture
 def sis_note_tables(app):
     """Use Postgres to mock the Redshift SIS note schemas on local test runs."""
     from nessie.externals import redshift
@@ -140,7 +138,7 @@ def sis_note_tables(app):
     redshift.execute(f'DROP SCHEMA {internal_schema} CASCADE')
 
 
-@pytest.fixture()
+@pytest.fixture
 def cleanup_s3(app):
     yield
     from nessie.externals import s3

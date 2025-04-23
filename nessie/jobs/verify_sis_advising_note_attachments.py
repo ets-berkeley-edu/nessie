@@ -90,8 +90,7 @@ class VerifySisAdvisingNoteAttachments(BackgroundJob):
     def get_all_notes_attachments(self):
         results = redshift.fetch(f"""
             SELECT DISTINCT sis_file_name FROM {app.config['REDSHIFT_SCHEMA_EDL']}.advising_note_attachments""")
-        sis_notes_attachments = set([r['sis_file_name'] for r in results])
-        return sis_notes_attachments
+        return set([r['sis_file_name'] for r in results])
 
     def find_missing_notes_view_attachments(self, dest_prefix):
         # Checks for attachments in SIS view that are not on S3.

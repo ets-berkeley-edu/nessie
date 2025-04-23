@@ -106,7 +106,6 @@ class RetrieveCanvasData2Snapshots(BackgroundJob):
             app.logger.info(f'CD2 table objects retrieved successfully {cd2_table_objects}')
 
             # Build metadata updates
-            # last_cd2_query_job['snapshot_objects'] = cd2_table_objects
             snapshot_retrieved_status = 'success'
             query_job_failures = []
 

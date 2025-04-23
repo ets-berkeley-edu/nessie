@@ -72,7 +72,7 @@ def build_url(path, query=None):
 
 
 def authorized_request(url):
-    auth_headers = {'Authorization': 'Bearer {}'.format(_get_token())}
+    auth_headers = {'Authorization': f'Bearer {_get_token()}'}
     return http.request(url, auth_headers)
 
 

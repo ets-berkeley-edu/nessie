@@ -34,7 +34,7 @@ from tests.util import assert_background_job_status, capture_app_logs, mock_s3
 class TestSyncCanvasSnapshots:
     """Sync Canvas snapshots job."""
 
-    def test_sync_canvas_snapshots(self, app, caplog, clear_metadata_db):
+    def test_sync_canvas_snapshots(self, app, caplog, clear_metadata_db):  # noqa: ARG002
         """Dispatches a complete sync job against fixtures."""
         caplog.set_level(logging.INFO)
         with capture_app_logs(app):
@@ -66,7 +66,7 @@ class TestSyncCanvasSnapshots:
             assert sync_results[0]['updated_at']
 
     @pytest.mark.testext
-    def test_remove_obsolete_files(self, app, caplog, cleanup_s3):
+    def test_remove_obsolete_files(self, app, caplog, cleanup_s3):  # noqa: ARG002
         """Removes files from S3 following prefix and whitelist rules."""
         caplog.set_level(logging.INFO)
         with capture_app_logs(app):

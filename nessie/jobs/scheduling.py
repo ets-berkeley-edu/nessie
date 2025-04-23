@@ -248,7 +248,7 @@ def schedule_chained_job(sched, job_id, job_components, force=False):
         check_for_stalled_job(component.__name__)
     job_schedule = add_job(sched, start_chained_job, job_components, job_id, force)
     if job_schedule:
-        app.logger.info(f'Scheduled chained background job: {job_schedule}, ' + ', '.join([c.__name__ for c in job_components]))
+        app.logger.info(f"Scheduled chained background job: {job_schedule}, {', '.join([c.__name__ for c in job_components])}")
 
 
 def start_background_job(job_class, job_id, job_opts={}):
@@ -261,7 +261,7 @@ def start_background_job(job_class, job_id, job_opts={}):
 def start_chained_job(job_components, job_id, job_opts={}):
     from nessie.jobs.background_job import ChainedBackgroundJob
     job_opts['lock_id'] = PG_ADVISORY_LOCK_IDS[job_id]
-    app.logger.info('Starting chained background job: ' + ', '.join([c.__name__ for c in job_components]))
+    app.logger.info(f"Starting chained background job: {', '.join([c.__name__ for c in job_components])}")
     with app.app_context():
         initialized_components = [c() for c in job_components]
         ChainedBackgroundJob(steps=initialized_components).run_async(**job_opts)

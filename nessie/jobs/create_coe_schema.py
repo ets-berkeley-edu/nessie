@@ -50,9 +50,9 @@ class CreateCoeSchema(BackgroundJob):
         app.logger.info('Starting COE schema creation job...')
         redshift.drop_external_schema(external_schema)
         resolved_ddl = resolve_sql_template('create_coe_schema.template.sql')
-        # TODO This DDL drops and recreates the internal schema before the external schema is verified. We
-        # ought to set up proper staging in conjunction with verification. It's also possible that a persistent
-        # external schema isn't needed.
+        # TODO: This DDL drops and recreates the internal schema before the external schema is verified. We
+        # TODO:   ought to set up proper staging in conjunction with verification. It's also possible that a persistent
+        # TODO:   external schema isn't needed.
         if redshift.execute_ddl_script(resolved_ddl):
             app.logger.info('COE external schema created.')
             verify_external_schema(external_schema, resolved_ddl)

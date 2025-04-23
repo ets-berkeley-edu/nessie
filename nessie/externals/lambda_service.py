@@ -70,5 +70,5 @@ def invoke_lambda_function(function_name, payload, mode):
         return True  # Indicates successful invocation
 
     except (BotoClientError, BotoConnectionError) as e:
-        app.logger.error(f'Error invoking Lambda function for table {payload["table"]}: {e}')
+        app.logger.exception(f'Error invoking Lambda function for table {payload["table"]}.', exc_info=e)
         return False  # Indicates failed invocation

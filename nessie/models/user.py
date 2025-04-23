@@ -39,7 +39,7 @@ class User(UserMixin):
 
     def __init__(self, uid):
         self.id = uid
-        self.name = f'uid:{str(uid)}'
+        self.name = f'uid:{uid!s}'
 
     def __repr__(self):
         return self.id

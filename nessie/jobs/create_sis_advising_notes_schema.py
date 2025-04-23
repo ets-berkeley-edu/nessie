@@ -74,7 +74,7 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
             insertable_rows = []
             for entry in unique_advisor_attributes:
                 first_name, last_name = calnet.split_sortable_name(entry)
-                insertable_rows.append(tuple((entry.get('uid'), entry.get('csid'), first_name, last_name)))
+                insertable_rows.append(tuple((entry.get('uid'), entry.get('csid'), first_name, last_name)))  # noqa: C409
 
             result = transaction.insert_bulk(
                 f'INSERT INTO {sis_notes_schema}.advising_appointment_advisors (uid, sid, first_name, last_name) VALUES %s',

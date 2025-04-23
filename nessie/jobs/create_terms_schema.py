@@ -73,13 +73,10 @@ class CreateTermsSchema(BackgroundJob):
         if not result:
             return False
         columns = ['term_id', 'term_name', 'term_begins', 'term_ends']
-        result = transaction.insert_bulk(
+        return transaction.insert_bulk(
             f'INSERT INTO {self.rds_schema}.term_definitions ({", ".join(columns)}) VALUES %s',
             [tuple([r[c] for c in columns]) for r in rows],
         )
-        if not result:
-            return False
-        return True
 
     def refresh_current_term_index(self):
         today = datetime.now(pytz.utc).astimezone(pytz.timezone(app.config['TIMEZONE'])).date()
@@ -106,7 +103,7 @@ class CreateTermsSchema(BackgroundJob):
             with rds.transaction() as transaction:
                 transaction.execute(f'TRUNCATE {self.rds_schema}.current_term_index')
                 columns = ['current_term_name', 'future_term_name']
-                values = tuple([current_term['term_name'], term_name_for_sis_id(future_term_id)])
+                values = tuple([current_term['term_name'], term_name_for_sis_id(future_term_id)])  # noqa: C409
                 if transaction.execute(f'INSERT INTO {self.rds_schema}.current_term_index ({", ".join(columns)}) VALUES {values} '):
                     transaction.commit()
                 else:

@@ -95,7 +95,7 @@ class CreateEdlSchema(BackgroundJob):
             _upload_file_to_staging('student_degree_progress', feeds)
 
 
-class ConcurrentFeedBuilder(object):
+class ConcurrentFeedBuilder(object):  # noqa: UP004
 
     batch_size = app.config['EDL_SCHEMA_BATCH_SIZE']
     max_threads = app.config['EDL_SCHEMA_MAX_THREADS']
@@ -138,7 +138,7 @@ class ConcurrentFeedBuilder(object):
         index = 0
         while True:
             try:
-                feed = pickle.load(f)
+                feed = pickle.load(f)  # noqa: S301
                 yield [feed['sid'], feed['feed'], index]
                 index += 1
             except EOFError:
@@ -192,7 +192,7 @@ class DemographicsFeedBuilder(ConcurrentFeedBuilder):
                 write_to_tsv_file(target_file, [sid, json.dumps(feed)])
 
             if index is None:
-                app_arg.logger.warn(f'{current_thread().name} wrote no demographics feeds, returning empty tempfile')
+                app_arg.logger.warning(f'{current_thread().name} wrote no demographics feeds, returning empty tempfile')
             else:
                 app_arg.logger.debug(f'{current_thread().name} wrote {index + 1} demographics feeds, returning TSV tempfile')
             return target_file
@@ -225,7 +225,7 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
             profile_results = groupby(profile_stream, lambda r: r['sid'])
             supplemental_stream_results = {k: groupby(stream, lambda r: r['sid']) for k, stream in supplemental_streams.items()}
 
-            sid_tracker = {k: '' for k in supplemental_stream_results.keys()}
+            sid_tracker = {k: '' for k in supplemental_stream_results.keys()}  # noqa: C420
             rows_tracker = {}
 
             def _fetch_source_feeds():
@@ -295,7 +295,7 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 write_to_tsv_file(target_file, [sid, json.dumps(feed)])
 
             if index is None:
-                app_arg.logger.warn(f'{current_thread().name} wrote no profile feeds, returning empty tempfile')
+                app_arg.logger.warning(f'{current_thread().name} wrote no profile feeds, returning empty tempfile')
             else:
                 app_arg.logger.debug(f'{current_thread().name} wrote {index + 1} profile feeds, returning TSV tempfile')
             return target_file
@@ -623,7 +623,7 @@ class RegistrationsFeedBuilder(ConcurrentFeedBuilder):
                     write_to_tsv_file(target_file, [sid, json.dumps(feed)])
 
             if index is None:
-                app_arg.logger.warn(f'{current_thread().name} wrote no registration feeds, returning empty tempfile')
+                app_arg.logger.warning(f'{current_thread().name} wrote no registration feeds, returning empty tempfile')
             else:
                 app_arg.logger.debug(f'{current_thread().name} wrote {index + 1} registration feeds, returning TSV tempfile')
             return target_file
@@ -631,7 +631,7 @@ class RegistrationsFeedBuilder(ConcurrentFeedBuilder):
     def _generate_feed(self, row):
 
         def _feed_from_non_exam_level(level):
-            if level == '5':
+            if level == '5':  # noqa: SIM116
                 return {
                     'code': '5',
                     'description': 'Masters/Professional',

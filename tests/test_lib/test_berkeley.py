@@ -119,7 +119,7 @@ class TestBerkeley:
         assert legacy_term_ids < all_term_ids
         assert berkeley.earliest_legacy_term_id() in berkeley.legacy_term_ids()
 
-    def test_auto_terms(self, app, current_term_index):
+    def test_auto_terms(self, current_term_index):  # noqa: ARG002
         all_term_ids = set(berkeley.reverse_term_ids(include_future_terms=True, include_legacy_terms=True))
         canvas_integrated_term_ids = set(berkeley.reverse_term_ids())
         assert canvas_integrated_term_ids < all_term_ids

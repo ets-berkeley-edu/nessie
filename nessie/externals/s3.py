@@ -59,7 +59,7 @@ def copy(source_bucket, source_key, dest_bucket, dest_key):
             ServerSideEncryption=app.config['LOCH_S3_ENCRYPTION'],
         )
     except (BotoClientError, BotoConnectionError, ValueError) as e:
-        app.logger.error(f'Error on S3 object copy: ({source_bucket}/{source_key} to {dest_bucket}/{dest_key}, error={e}')
+        app.logger.exception(f'Error on S3 object copy: ({source_bucket}/{source_key} to {dest_bucket}/{dest_key}', exc_info=e)
         return False
 
 
@@ -73,11 +73,11 @@ def delete_objects(keys, bucket=None):
             client.delete_objects(Bucket=bucket, Delete={'Objects': objects_to_delete})
         return True
     except (BotoClientError, BotoConnectionError, ValueError) as e:
-        app.logger.error(f'Error on S3 object deletion: bucket={bucket}, keys={keys}, error={e}')
+        app.logger.exception(f'Error on S3 object deletion: bucket={bucket}, keys={keys}', exc_info=e)
         return False
 
 
-def delete_objects_with_prefix(prefix, whitelist=[]):
+def delete_objects_with_prefix(prefix, whitelist=()):
     keys_to_delete = []
     existing_keys = get_keys_with_prefix(prefix)
     if existing_keys is None:
@@ -106,16 +106,13 @@ def delete_s3_location_with_prefix(prefix):
         app.logger.error('Error listing keys, aborting job.')
         return False
     for key in existing_keys:
-        keys_to_delete.append(key)
+        keys_to_delete.append(key)  # noqa: PERF402
     app.logger.info(
         f'Found {len(existing_keys)} key(s) matching prefix "{prefix}", {len(existing_keys) - len(keys_to_delete)} '
         f'key(s). Will delete {len(keys_to_delete)} object(s)')
     if not keys_to_delete:
         return True
-    if delete_objects(keys_to_delete):
-        return True
-    else:
-        return False
+    return bool(delete_objects(keys_to_delete))
 
 
 def get_sts_credentials():
@@ -158,7 +155,7 @@ def get_keys_with_prefix(prefix, full_objects=False, bucket=None):
                 else:
                     objects += [o.get('Key') for o in page['Contents']]
     except (BotoClientError, BotoConnectionError, ValueError) as e:
-        app.logger.error(f'Error listing S3 keys with prefix: bucket={bucket}, prefix={prefix}, error={e}')
+        app.logger.exception(f'Error listing S3 keys with prefix: bucket={bucket}, prefix={prefix}', exc_info=e)
         return None
     return objects
 
@@ -177,7 +174,7 @@ def get_object_compressed_text_reader(key):
         _object = client.get_object(Bucket=bucket, Key=key)
         return ZipFile(io.BytesIO(_object['Body'].read()), mode='r')
     except (BotoClientError, BotoConnectionError, ValueError) as e:
-        app.logger.error(f'Error retrieving S3 object text: bucket={bucket}, key={key}, error={e}')
+        app.logger.exception(f'Error retrieving S3 object text: bucket={bucket}, key={key}', exc_info=e)
         return None
 
 
@@ -192,7 +189,7 @@ def get_object_text(key):
             return None
         return contents.read().decode('utf-8')
     except (BotoClientError, BotoConnectionError, ValueError) as e:
-        app.logger.error(f'Error retrieving S3 object text: bucket={bucket}, key={key}, error={e}')
+        app.logger.exception(f'Error retrieving S3 object text: bucket={bucket}, key={key}', exc_info=e)
         return None
 
 
@@ -206,7 +203,7 @@ def get_subfolders_with_prefix(prefix):
             if 'CommonPrefixes' in page:
                 subfolders += [o.get('Prefix') for o in page['CommonPrefixes']]
     except (BotoClientError, BotoConnectionError, ValueError) as e:
-        app.logger.error(f'Error listing S3 subfolders with prefix: bucket={bucket}, prefix={prefix}, error={e}')
+        app.logger.exception(f'Error listing S3 subfolders with prefix: bucket={bucket}, prefix={prefix}', exc_info=e)
         return None
     return sorted(subfolders)
 
@@ -221,7 +218,7 @@ def get_text_reader(key):
         fileobj.set_socket_timeout(app.config['AWS_S3_SESSION_DURATION'])
         return io.TextIOWrapper(fileobj, encoding='utf-8')
     except (BotoClientError, BotoConnectionError, ValueError) as e:
-        app.logger.error(f'Error retrieving S3 object text: bucket={bucket}, key={key}, error={e}')
+        app.logger.exception(f'Error retrieving S3 object text: bucket={bucket}, key={key}', exc_info=e)
         return None
 
 
@@ -236,7 +233,7 @@ def get_unzipped_text_reader(key):
         gzipped = GzipFile(None, 'rb', fileobj=fileobj)
         return io.TextIOWrapper(gzipped)
     except (BotoClientError, BotoConnectionError, ValueError) as e:
-        app.logger.error(f'Error retrieving S3 object text: bucket={bucket}, key={key}, error={e}')
+        app.logger.exception(f'Error retrieving S3 object text: bucket={bucket}, key={key}', exc_info=e)
         return None
 
 
@@ -259,10 +256,10 @@ def object_exists(key):
     except BotoClientError as e:
         # Log an error only if we get something other than the usual response for a nonexistent object.
         if e.response.get('ResponseMetadata', {}).get('HTTPStatusCode') != 404:
-            app.logger.error(f'Unexpected error response on S3 existence check: bucket={bucket}, key={key}, error={e}')
+            app.logger.exception(f'Unexpected error response on S3 existence check: bucket={bucket}, key={key}', exc_info=e)
         return False
     except (BotoConnectionError, ValueError) as e:
-        app.logger.error(f'Error on S3 existence check: bucket={bucket}, key={key}, error={e}')
+        app.logger.exception(f'Error on S3 existence check: bucket={bucket}, key={key}', exc_info=e)
         return False
 
 
@@ -273,7 +270,7 @@ def upload_data(data, s3_key, bucket=None):
         client = get_client()
         client.put_object(Bucket=bucket, Key=s3_key, Body=data, ServerSideEncryption=app.config['LOCH_S3_ENCRYPTION'])
     except (BotoClientError, BotoConnectionError, ValueError) as e:
-        app.logger.error(f'Error on S3 upload: bucket={bucket}, key={s3_key}, error={e}')
+        app.logger.exception(f'Error on S3 upload: bucket={bucket}, key={s3_key}', exc_info=e)
         return False
     app.logger.info(f'S3 upload complete: bucket={bucket}, key={s3_key}')
     return True
@@ -320,7 +317,7 @@ def upload_from_response(response, s3_key, on_stream_opened=None):
             for chunk in response.iter_content(chunk_size=1024):
                 s3_out.write(chunk)
     except (BotoClientError, BotoConnectionError, ValueError) as e:
-        app.logger.error(f'Error on S3 upload: bucket={bucket}, key={s3_key}, error={e}')
+        app.logger.exception(f'Error on S3 upload: bucket={bucket}, key={s3_key}', exc_info=e)
         raise e
     s3_response = get_client().head_object(Bucket=bucket, Key=s3_key)
     if s3_response:
@@ -330,7 +327,7 @@ def upload_from_response(response, s3_key, on_stream_opened=None):
 
 def upload_from_url(url, s3_key, on_stream_opened=None):
     app.logger.info(f'Will upload URL to S3: url={url}, key={s3_key}')
-    with requests.get(url, stream=True) as response:
+    with requests.get(url, stream=True) as response:  # noqa: S113
         return upload_from_response(response, s3_key, on_stream_opened)
 
 

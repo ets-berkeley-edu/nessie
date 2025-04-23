@@ -33,7 +33,7 @@ from nessie.lib import cd2_metadata
 
 class ResyncCorrectedCD2Snapshots(BackgroundJob):
 
-    def run(self, cleanup=True):
+    def run(self):
         # Find and Retrieve Active Canvas Data 2 Query Job from the Dynamo DB Metadata table
         last_cd2_query_job = cd2_metadata.get_recent_cd2_query_job_by_date_and_environment()
         app.logger.debug(f'{last_cd2_query_job}')
@@ -49,10 +49,10 @@ class ResyncCorrectedCD2Snapshots(BackgroundJob):
                 last_cd2_query_job['workflow_status']['snapshot_retrieved_status'] == 'failed'
                 or last_cd2_query_job['workflow_status']['retrieve_download_urls_status'] == 'failed'
             ):
-                app.logger.info(f'Snapshot objects retirval attempt failed on {last_cd2_query_job["environment"]}.')
+                app.logger.info(f'Snapshot objects retrieval attempt failed on {last_cd2_query_job["environment"]}.')
                 app.logger.info('Starting resync process and checking for success in other environments')
 
-                # Get all available snapshot jobs for the day across environemnts from the common metadata table
+                # Get all available snapshot jobs for the day across environments from the common metadata table
                 todays_cd2_query_jobs = cd2_metadata.get_cd2_query_jobs_by_date_and_environment()
 
                 app.logger.debug(f'Retrieved {len(todays_cd2_query_jobs)} jobs for the day')

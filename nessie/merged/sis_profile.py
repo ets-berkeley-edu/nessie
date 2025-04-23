@@ -60,8 +60,7 @@ def parse_merged_sis_profile(feed_elements):
         try:
             merge_method(sis_profile_feed, sis_profile)
         except AttributeError as e:
-            app.logger.error(f'Malformed data in sis_profile_feed: {sis_profile_feed}')
-            app.logger.error(e)
+            app.logger.exception(f'Malformed data in sis_profile_feed: {sis_profile_feed}', exc_info=e)
 
     merge_registration(sis_profile_feed, last_registration_feed, sis_profile)
     if sis_profile.get('academicCareer') == 'UGRD':
@@ -204,7 +203,7 @@ def merge_registration(sis_profile_feed, last_registration_feed, sis_profile):
         units_min = total_units.get('unitsMin')
         sis_profile['currentTerm']['unitsMin'] = to_float(units_min) if units_min is not None else None
 
-    # TODO Should we also check for ['academicStanding']['status'] == {'code': 'DIS', 'description': 'Dismissed'}?
+    # TODO: Should we also check for ['academicStanding']['status'] == {'code': 'DIS', 'description': 'Dismissed'}?
     withdrawal_cancel = registration.get('withdrawalCancel', {})
     if withdrawal_cancel:
         term_id = registration.get('term', {}).get('id')
@@ -316,7 +315,7 @@ def merge_sis_profile_plans(academic_status, sis_profile):
     sis_profile['plans'] = sorted(plans, key=itemgetter('description'))
     sis_profile['plansMinor'] = sorted(plans_minor, key=itemgetter('description'))
     # TODO: Remove this line after BOAC-4985 lands in production
-    sis_profile['subplans'] = sorted(list(subplans))
+    sis_profile['subplans'] = sorted(list(subplans))  # noqa: C414
 
 
 def merge_sis_profile_pronouns(sis_profile_feed, sis_profile):

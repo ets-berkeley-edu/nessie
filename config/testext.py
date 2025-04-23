@@ -33,7 +33,7 @@ REDSHIFT_APP_BOA_USER = 'boa_redshift_username'
 
 REDSHIFT_DATABASE = 'database'
 REDSHIFT_HOST = 'redshift cluster'
-REDSHIFT_PASSWORD = 'password'
+REDSHIFT_PASSWORD = 'password'  # noqa: S105
 REDSHIFT_PORT = 1234
 REDSHIFT_USER = 'username'
 
