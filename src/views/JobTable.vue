@@ -118,16 +118,25 @@
       <v-card>
         <div class="d-flex align-center justify-center">
           <div class="px-3">
-            <v-icon :icon="mdiCheck" font-scale="2"></v-icon>
+            <v-icon :icon="mdiCheck" font-scale="2" />
           </div>
           <h3>{{ alert.title }}</h3>
         </div>
         <div class="my-4 text-center">
-          <img :alt="get(alert, 'xkcd.alt')" :src="get(alert, 'xkcd.img')" />
+          <img
+            id="xkcd-comic"
+            :alt="get(alert, 'xkcd.alt')"
+            :src="get(alert, 'xkcd.img')"
+            :title="get(alert, 'xkcd.title')"
+          />
         </div>
         <v-divider />
         <v-card-actions>
-          <v-btn text="Close" @click="closeAlert" />
+          <v-btn
+            id="close-xkcd-dialog"
+            text="Close"
+            @click="closeAlert"
+          />
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -280,10 +289,6 @@ const schedulePageRefresh = () => {
 </script>
 
 <style>
-.jobs-datepicker {
-  text-align: center;
-  width: 110px;
-}
 .jobs-running-header {
   font-size: 16px;
 }
