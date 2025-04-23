@@ -61,7 +61,7 @@ INSERT INTO {rds_schema_student}.student_enrollment_terms (
   SELECT * FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
       SELECT sid, term_id, enrollment_term,
           CHARINDEX('"midtermGrade": "', enrollment_term) != 0 AS midpoint_deficient_grade,
-          json_extract_path_text(enrollment_term, 'enrolledUnits')::decimal(3,1) AS enrolled_units,
+          TRY_CAST(json_extract_path_text(enrollment_term, 'enrolledUnits') AS decimal(3,1)) AS enrolled_units,
           CASE NULLIF(json_extract_path_text(enrollment_term, 'termGpa', 'unitsTakenForGpa'), '')::decimal(4,1) > 0
               WHEN TRUE THEN NULLIF(json_extract_path_text(enrollment_term, 'termGpa', 'gpa'), '')::decimal(5,3)
               ELSE NULL END
