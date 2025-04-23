@@ -46,7 +46,7 @@ def get_cal1card_photo(uid):
 
 @fixture('cal1card_photo_{uid}.jpg')
 def _get_cal1card_photo(uid, mock=None):
-    url = http.build_url(app.config['CAL1CARD_PHOTO_API_URL'], {'uid': uid})
+    url = http.build_url(f"{app.config['CAL1CARD_PHOTO_API_URL']}/v1/thumbnail/{uid}", {'id-type': 'campus-uid'})
     with mock(url):
         return http.request(url, auth=cal1card_api_auth(), timeout=app.config['CAL1CARD_PHOTO_API_TIMEOUT'])
 
