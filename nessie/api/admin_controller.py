@@ -81,5 +81,6 @@ def xkcd():
         json = {
             'alt': '40% of OpenBSD installs lead to shark attacks.',
             'img': 'https://imgs.xkcd.com/comics/success.png',
+            'title': 'OpenBSD and shark attacks',
         }
     return tolerant_jsonify(json)
