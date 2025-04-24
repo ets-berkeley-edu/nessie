@@ -79,7 +79,7 @@ class ImportAscAthletes(BackgroundJob):
         app.logger.info('ASC import: Fetch team and student athlete data from ASC API')
         api_results = get_asc_feed()
         if 'error' in api_results:
-            raise BackgroundJobError('ASC import: Error from external API: {}'.format(api_results['error']))
+            raise BackgroundJobError(f"ASC import: Error from external API: {api_results['error']}")
         elif not api_results:
             raise BackgroundJobError('ASC import: API returned zero students')
         sync_date = api_results[0]['SyncDate']
@@ -129,7 +129,7 @@ class ImportAscAthletes(BackgroundJob):
             'this_sync_date': sync_date,
             'api_results_count': len(api_results),
         }
-        app.logger.info(f'ASC import: Successfully completed import job: {str(status)}')
+        app.logger.info(f'ASC import: Successfully completed import job: {status!s}')
         return status
 
 

@@ -72,30 +72,30 @@ class TestS3Testext:
             responses.add(responses.GET, url, status=500, body='{"message": "Internal server error."}')
             with pytest.raises(BotoConnectionError):
                 s3.upload_from_url(url, key)
-                assert 'Received unexpected status code, aborting S3 upload' in caplog.text
-                assert 'status=500' in caplog.text
-                assert 'body={"message": "Internal server error."}' in caplog.text
-                assert f'url={url}' in caplog.text
-                assert f'key={key}' in caplog.text
+            assert 'Received unexpected status code, aborting S3 upload' in caplog.text
+            assert 'status=500' in caplog.text
+            assert 'body={"message": "Internal server error."}' in caplog.text
+            assert f'url={url}' in caplog.text
+            assert f'key={key}' in caplog.text
 
-    def test_s3_nonexistent_object(self, app, caplog, bad_bucket):
+    def test_s3_nonexistent_object(self, app, caplog, bad_bucket):  # noqa: ARG002
         """Returns false on S3 checks for nonexistent objects."""
         with capture_app_logs(app):
             key = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001/sonnet-xlv.html'
             response = s3.object_exists(key)
             assert response is False
 
-    def test_s3_upload_error_handling(self, app, caplog, bad_bucket):
+    def test_s3_upload_error_handling(self, app, caplog, bad_bucket):  # noqa: ARG002
         """Handles and logs connection errors on S3 upload."""
         with capture_app_logs(app):
             url = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
             key = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001/sonnet-xlv.html'
-            with pytest.raises(ValueError):
+            with pytest.raises(ValueError):  # noqa: PT011
                 s3.upload_from_url(url, key)
-                assert 'Error on S3 upload' in caplog.text
-                assert 'the bucket \'not-a-bucket-nohow\' does not exist, or is forbidden for access' in caplog.text
+            assert 'Error on S3 upload' in caplog.text
+            assert 'the bucket \'not-a-bucket-nohow\' does not exist, or is forbidden for access' in caplog.text
 
-    def test_file_upload_and_delete(self, app, cleanup_s3):
+    def test_file_upload_and_delete(self, app, cleanup_s3):  # noqa: ARG002
         """Can upload and delete files in S3."""
         url1 = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
         key1 = app.config['LOCH_S3_PREFIX_TESTEXT'] + '/00001/sonnet-xlv.html'

@@ -80,19 +80,20 @@ class TransformPiazzaApiData(BackgroundJob):
                             total_objects += 1
                         # update job queue every 1000 files...
                         if total_objects % 1000 == 0:
-                            message = f'{subfile}, {total_objects} so far; ' \
-                                      + f'{new_objects} new files; ' \
-                                      + f'{objects_updated} existing files. {objects_in_error} files in error' \
-                                      + f'({len(objects)} objects in all)'
+                            message = f"""
+                                {subfile}, {total_objects} so far; {new_objects} new files; {objects_updated} existing files.
+                                {objects_in_error} files in error ({len(objects)} objects in all)
+                            """
                             update_background_job_status(job_id, 'transforming', details=message)
                     except Exception as e:
-                        app.logger.error(f'could not extract {subfile}')
-                        app.logger.error(e)
+                        app.logger.exception(f'could not extract {subfile}', exc_info=e)
                         objects_in_error += 1
                 else:
                     # not a json file, so we skip it
                     continue
-        message = f'Transformed {len(objects)} input files; created {new_objects} new objects; '\
-                  + f'updated {objects_updated} existing objects. {objects_in_error} objects in error'
+        message = f"""
+            Transformed {len(objects)} input files; created {new_objects} new objects;
+             updated {objects_updated} existing objects. {objects_in_error} objects in error
+        """
         app.logger.info(message)
         return message

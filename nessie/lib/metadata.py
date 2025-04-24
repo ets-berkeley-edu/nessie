@@ -66,10 +66,10 @@ def update_canvas_sync_status(job_id, key, status, **kwargs):
     sql = f"""UPDATE {_rds_schema()}.canvas_sync_job_status
              SET destination_url=%s, status=%s, updated_at=current_timestamp"""
     params = [destination_url, status]
-    for key in ['details', 'source_size', 'destination_size']:
-        if kwargs.get(key):
-            sql += f', {key}=%s'
-            params.append(kwargs[key])
+    for attribute_name in ['details', 'source_size', 'destination_size']:
+        if kwargs.get(attribute_name):
+            sql += f', {attribute_name}=%s'
+            params.append(kwargs[attribute_name])
     sql += ' WHERE job_id=%s AND filename=%s'
     params += [job_id, filename]
 
@@ -149,8 +149,8 @@ def update_registration_import_status(successes, failures):
         params=(successes + failures, ),
     )
     now = datetime.utcnow().isoformat()
-    success_records = [tuple([sid, 'success', now]) for sid in successes]
-    failure_records = [tuple([sid, 'failure', now]) for sid in failures]
+    success_records = [tuple([sid, 'success', now]) for sid in successes]  # noqa: C409
+    failure_records = [tuple([sid, 'failure', now]) for sid in failures]  # noqa: C409
     rows = success_records + failure_records
     with rds.transaction() as transaction:
         result = transaction.insert_bulk(
@@ -173,9 +173,9 @@ def update_photo_import_status(successes, failures, photo_not_found):
         params=(successes + failures + photo_not_found, ),
     )
     now = datetime.utcnow().isoformat()
-    success_records = [tuple([sid, 'success', now]) for sid in successes]
-    failure_records = [tuple([sid, 'failure', now]) for sid in failures]
-    photo_not_found_records = [tuple([sid, 'photo_not_found', now]) for sid in photo_not_found]
+    success_records = [tuple([sid, 'success', now]) for sid in successes]  # noqa: C409
+    failure_records = [tuple([sid, 'failure', now]) for sid in failures]  # noqa: C409
+    photo_not_found_records = [tuple([sid, 'photo_not_found', now]) for sid in photo_not_found]  # noqa: C409
     rows = success_records + failure_records + photo_not_found_records
     with rds.transaction() as transaction:
         result = transaction.insert_bulk(

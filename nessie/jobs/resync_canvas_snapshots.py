@@ -64,7 +64,7 @@ class ResyncCanvasSnapshots(BackgroundJob):
                 filename=failure['filename'],
                 canvas_table=failure['canvas_table'],
                 # The original signed source URL will remain valid if the resync job is run within an hour of the sync job.
-                # TODO Add logic to fetch a new signed URL from the Canvas Data API for older jobs.
+                # TODO: Add logic to fetch a new signed URL from the Canvas Data API for older jobs.
                 source_url=failure['source_url'],
             )
 
@@ -77,11 +77,11 @@ class ResyncCanvasSnapshots(BackgroundJob):
             response = dispatch('sync_file_to_s3', data={'canvas_sync_job_id': job_id, 'url': failure['source_url'], 'key': key})
 
             if not response:
-                app.logger.error('Failed to dispatch S3 resync of snapshot ' + failure['filename'])
+                app.logger.error(f"Failed to dispatch S3 resync of snapshot {failure['filename']}")
                 metadata.update_canvas_sync_status(job_id, key, 'error', details=f'Failed to dispatch: {response}')
                 failures += 1
             else:
-                app.logger.info('Dispatched S3 resync of snapshot ' + failure['filename'])
+                app.logger.info(f"Dispatched S3 resync of snapshot {failure['filename']}")
                 successes += 1
 
         return f'Canvas snapshot resync job dispatched to workers ({successes} successful dispatches, {failures} failures).'

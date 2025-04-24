@@ -107,7 +107,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         app.logger.info(f'Will generate feeds for {count} students.')
         with ExitStack() as stack:
             feed_files = {table: stack.enter_context(tempfile.TemporaryFile()) for table in tables}
-            feed_counts = {table: 0 for table in tables}
+            feed_counts = {table: 0 for table in tables}  # noqa: C420
             major_divisions = self.get_majors_divisions()
 
             for index, feed_elements in enumerate(all_student_feed_elements):
@@ -131,7 +131,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         sid = feed_elements['sid']
         uid = feed_elements['ldap_uid']
         if not uid:
-            return
+            return False
         sis_profile = parse_merged_sis_profile(feed_elements)
         demographics = feed_elements.get('demographics_feed') and json.loads(feed_elements.get('demographics_feed'))
         if demographics:

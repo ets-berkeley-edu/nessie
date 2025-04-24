@@ -81,10 +81,10 @@ class TriggerCD2QueryJobs(BackgroundJob):
             return True
 
         except Exception as e:
-            app.logger.error(f'Error inserting CD2 metadata into DynamoDB: {str(e)}')
+            app.logger.exception('Error inserting CD2 metadata into DynamoDB', exc_info=e)
             return False
 
-    def run(self, cleanup=True):
+    def run(self):
         nessie_job_id = self.generate_job_id()
         app.logger.info(f'Starting Query Canvas Data 2 snapshot job... (id={nessie_job_id})')
         namespace = 'canvas'
@@ -104,7 +104,7 @@ class TriggerCD2QueryJobs(BackgroundJob):
             app.logger.error(f'Query snapshot job trigger failed for some tables. Failed job triggers are : {failed_query_jobs}')
             raise BackgroundJobError(f'Query snapshot job trigger failed for some tables. Failed job triggers are : {failed_query_jobs}.')
         else:
-            app.logger.info(f'Started query snapshot jobs and retrived job IDs for {len(cd2_table_query_jobs)} Canvas data 2 tables')
+            app.logger.info(f'Started query snapshot jobs and retrieved job IDs for {len(cd2_table_query_jobs)} Canvas data 2 tables')
 
         status = self.insert_cd2_metadata(namespace, cd2_table_query_jobs, nessie_job_id)
 
@@ -113,4 +113,4 @@ class TriggerCD2QueryJobs(BackgroundJob):
             raise BackgroundJobError('Inserting CD2 job metadata failed. Aborting Ingest')
         else:
             app.logger.info('Triggered Query snapshot Jobs on Canvas Data DAP API successfully. Inserted job metadata on DynamoDB tables')
-            return ('Triggered Query snapshot Jobs on Canvas Data DAP API successfully. Inserted job metadata on DynamoDB tables for tracking')
+            return 'Triggered Query snapshot Jobs on Canvas Data DAP API successfully. Inserted job metadata on DynamoDB tables for tracking'

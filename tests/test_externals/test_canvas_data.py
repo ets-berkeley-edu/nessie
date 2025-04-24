@@ -31,7 +31,7 @@ from tests.util import capture_app_logs
 class TestCanvasData:
     """Canvas Data API client."""
 
-    def test_get_snapshots(self, app):
+    def test_get_snapshots(self):
         """Returns fixture data."""
         response = canvas_data.get_snapshots()
         assert response['incomplete'] is False

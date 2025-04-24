@@ -31,7 +31,7 @@ from tests.util import capture_app_logs
 class TestCanvasApi:
     """Canvas API client."""
 
-    def test_course_enrollments(self, app):
+    def test_course_enrollments(self):
         """Returns course enrollments."""
         feed = canvas_api.get_course_enrollments(7654321)
         assert feed
@@ -48,7 +48,7 @@ class TestCanvasApi:
             assert '404 Client Error' in caplog.text
             assert not response
 
-    def test_server_error(self, app, caplog):
+    def test_server_error(self, caplog):
         """Logs unexpected server errors."""
         canvas_error = MockResponse(500, {}, '{"message": "Internal server error."}')
         with register_mock(canvas_api.get_course_enrollments, canvas_error):

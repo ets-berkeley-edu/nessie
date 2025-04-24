@@ -79,7 +79,7 @@ def get_cd2_query_jobs_by_date_and_environment(date_str=None, environment=None):
         return cd2_query_jobs
 
     except Exception as e:
-        app.logger.error(f'Error retrieving CD2 query jobs: {str(e)}')
+        app.logger.exception('Error retrieving CD2 query jobs', exc_info=e)
         return []
 
 
@@ -103,15 +103,13 @@ def get_recent_cd2_query_job_by_date_and_environment(date_str=None, environment=
 
     try:
         # Get the latest job by created_at
-        last_cd2_query_job_metadata = max(
+        return max(
             todays_cd2_query_jobs,
             key=lambda x: datetime.fromisoformat(x['created_at']),
         )
 
-        return last_cd2_query_job_metadata
-
     except ValueError as ve:
-        app.logger.error(f'Error parsing created_at in CD2 query jobs: {str(ve)}')
+        app.logger.exception('Error parsing created_at in CD2 query jobs', exc_info=ve)
         return None
 
 
@@ -164,5 +162,5 @@ def update_cd2_metadata(primary_key_name, primary_key_value, sort_key_name=None,
         return response
 
     except Exception as e:
-        app.logger.error(f'Error updating metadata in DynamoDB: {str(e)}')
+        app.logger.exception('Error updating metadata in DynamoDB', exc_info=e)
         return None

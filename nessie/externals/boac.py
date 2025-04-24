@@ -36,7 +36,7 @@ import requests
 def export_notes_metadata(boa_credentials):
     url = f"{boa_credentials['API_BASE_URL']}/reports/boa_notes/metadata"
     header = _auth_header(boa_credentials['API_KEY'])
-    with requests.get(url, headers=header, stream=True) as response:
+    with requests.get(url, headers=header, stream=True) as response:  # noqa: S113
         yield response
 
 

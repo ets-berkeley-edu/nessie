@@ -107,9 +107,9 @@ def request(url, headers={}, method='get', auth=None, auth_params=None, data=Non
     except requests.exceptions.RequestException as e:
         wrapped_e = ResponseExceptionWrapper(e, response, auth_params)
         if not (hasattr(response, 'status_code') and response.status_code == 404 and not log_404s):
-            app.logger.error(wrapped_e)
+            app.logger.exception(wrapped_e)
             if hasattr(response, 'content'):
-                app.logger.error(response.content)
+                app.logger.exception(response.content)
         return wrapped_e
     else:
         return response

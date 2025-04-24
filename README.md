@@ -61,7 +61,9 @@ npm run serve-vue
 
 ## Run tests, lint the code
 
-We use [Tox](https://tox.readthedocs.io) for continuous integration. Under the hood, you'll find [PyTest](https://docs.pytest.org) and [Flake8](http://flake8.pycqa.org).
+We use [Tox](https://tox.readthedocs.io) for continuous integration.
+Under the hood, you'll find [PyTest](https://docs.pytest.org), [Ruff](https://github.com/astral-sh/ruff) and [ESLint](https://eslint.org/).
+
 ```
 # Run all tests and linters
 tox

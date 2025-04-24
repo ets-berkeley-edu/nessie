@@ -41,7 +41,7 @@ def initialize_job_queue(app):
         global job_queue
         job_queue = Queue()
         app.logger.info(f"Created job queue; starting {app.config['WORKER_THREADS']} worker threads.")
-        for i in range(0, app.config['WORKER_THREADS']):
+        for i in range(0, app.config['WORKER_THREADS']):  # noqa: PIE808
             worker_thread = Thread(target=listen_for_jobs, args=[app, job_queue], daemon=True)
             worker_thread.start()
 

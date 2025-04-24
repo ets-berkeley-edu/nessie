@@ -101,7 +101,7 @@ class QueryCanvasData2Snapshot(BackgroundJob):
 
             app.logger.debug(f'File objects for table {table_object["table"]} : {files}')
             for file in files:
-                files_to_sync.append(file)
+                files_to_sync.append(file)  # noqa: PERF402
         return files_to_sync
 
     def dispatch_for_download(self, cd2_file_urls):
@@ -115,7 +115,7 @@ class QueryCanvasData2Snapshot(BackgroundJob):
         app.logger.debug('Dispatch of all files to lambdas complete.')
         return cd2_file_urls
 
-    def run(self, cleanup=True):
+    def run(self):
         nessie_job_id = self.generate_job_id()
         app.logger.info(f'Starting Query Canvas Data 2 snapshot job... (id={nessie_job_id})')
         namespace = 'canvas'
@@ -141,7 +141,7 @@ class QueryCanvasData2Snapshot(BackgroundJob):
         cd2_files_to_sync = self.retrieve_cd2_file_urls(cd2_table_objects)
         app.logger.debug(f'CD2 file urls retrieved successfully {cd2_files_to_sync}')
 
-        # Dispatch files details with urls for processing to microservicce
+        # Dispatch files details with urls for processing to microservice
         dispatched_files = self.dispatch_for_download(cd2_files_to_sync)
 
         success = 0

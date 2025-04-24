@@ -65,7 +65,7 @@ def try_advisory_lock(connection, lock_id):
     if locked:
         app.logger.info(f'Granted advisory lock {lock_id} for PID {pid}')
     else:
-        app.logger.warn(f'Was not granted advisory lock {lock_id} for PID {pid}')
+        app.logger.warning(f'Was not granted advisory lock {lock_id} for PID {pid}')
     return locked
 
 

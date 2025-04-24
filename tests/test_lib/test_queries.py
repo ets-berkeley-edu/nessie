@@ -31,7 +31,7 @@ from nessie.lib.mockingdata import MockRows, register_mock
 
 class TestQueries:
 
-    def test_canvas_course_scores_fixture(self, app):
+    def test_canvas_course_scores_fixture(self):
         results = queries.stream_canvas_enrollments('2178')
         assert len(results) > 0
         assert {
@@ -40,7 +40,7 @@ class TestQueries:
             'sis_enrollment_status': 'E',
         } in results
 
-    def test_sis_sections_in_canvas_course(self, app):
+    def test_sis_sections_in_canvas_course(self):
         sections = queries.stream_canvas_sites('2178')
 
         burmese_sections = next(s['sis_section_ids'] for s in sections if s['canvas_course_id'] == 7654320)
@@ -56,7 +56,7 @@ class TestQueries:
         project_site_sections = next(s['sis_section_ids'] for s in sections if s['canvas_course_id'] == 9999991)
         assert project_site_sections is None
 
-    def test_sis_enrollments(self, app):
+    def test_sis_enrollments(self):
         enrollments = queries.stream_sis_enrollments()
         assert len(enrollments) == 10
 
@@ -97,7 +97,7 @@ class TestQueries:
         assert enrollments[8]['grading_basis'] == 'PNP'
         assert enrollments[8]['grade'] == 'P'
 
-    def test_student_canvas_courses(self, app):
+    def test_student_canvas_courses(self):
         courses = queries.stream_canvas_sites('2178')
         assert len(courses) == 5
         # Canvas sites should be sorted by term, then by Course ID number
@@ -118,7 +118,7 @@ class TestQueries:
         assert courses[4]['canvas_course_code'] == 'NUC ENG 124'
         assert courses[4]['canvas_course_term'] == 'Fall 2017'
 
-    def test_submissions_turned_in_relative_to_user_fixture(self, app):
+    def test_submissions_turned_in_relative_to_user_fixture(self):
         data = queries.stream_canvas_assignment_submissions('2178')
         assert len(data) > 0
         assert {
@@ -129,17 +129,17 @@ class TestQueries:
             'submissions_turned_in': 8,
         } in data
 
-    def test_override_fixture(self, app):
+    def test_override_fixture(self):
         mr = MockRows(io.StringIO('course_id,uid,canvas_user_id,current_score,last_activity_at,sis_enrollment_status\n1,2,3,4,5,F'))
         with register_mock(queries.stream_canvas_enrollments, mr):
             data = queries.stream_canvas_enrollments('2178')
         assert len(data) == 1
-        assert {
+        assert data[0] == {
             'course_id': 1, 'uid': '2', 'canvas_user_id': 3, 'current_score': 4, 'last_activity_at': 5,
             'sis_enrollment_status': 'F',
-        } == data[0]
+        }
 
-    def test_user_for_uid(self, app):
+    def test_user_for_uid(self):
         data = queries.get_all_student_profile_elements()
         oliver = next(r for r in data if r['ldap_uid'] == '2040')
         assert oliver['canvas_user_id'] == 10001

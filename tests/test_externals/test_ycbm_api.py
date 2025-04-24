@@ -32,7 +32,7 @@ from nessie.lib.mockingbird import MockResponse, register_mock
 class TestYcbmApi:
     """YouCanBookMe API client."""
 
-    def test_bookings(self, app):
+    def test_bookings(self):
         """Returns course enrollments."""
         feed = ycbm_api.get_bookings_for_date(datetime.strptime('2021-06-04', '%Y-%m-%d'))
         assert feed
@@ -42,7 +42,7 @@ class TestYcbmApi:
         assert feed[1]['title'] == 'L&S Advising Appt:  Shirley Feeney/Andrew Squiggman'
         assert feed[1]['teamMember']['name'] == 'Shirley Feeney'
 
-    def test_server_error(self, app, caplog):
+    def test_server_error(self, caplog):
         """Logs unexpected server errors."""
         ycbm_error = MockResponse(500, {}, '{"message": "Internal server error."}')
         with register_mock(ycbm_api.get_authorized_response, ycbm_error):

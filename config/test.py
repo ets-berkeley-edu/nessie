@@ -49,7 +49,7 @@ RDS_SCHEMA_TERMS = 'terms_test'
 
 REDSHIFT_DATABASE = 'nessie_redshift_test'
 REDSHIFT_HOST = 'localhost'
-REDSHIFT_PASSWORD = 'nessie'
+REDSHIFT_PASSWORD = 'nessie'  # noqa: S105
 REDSHIFT_PORT = 5432
 REDSHIFT_USER = 'nessie'
 

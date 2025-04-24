@@ -67,8 +67,7 @@ class Client:
         self.server = server
 
     def connect(self):
-        conn = ldap3.Connection(self.server, user=self.bind, password=self.password, auto_bind=ldap3.AUTO_BIND_TLS_BEFORE_BIND)
-        return conn
+        return ldap3.Connection(self.server, user=self.bind, password=self.password, auto_bind=ldap3.AUTO_BIND_TLS_BEFORE_BIND)
 
     def search_csids(self, csids):
         return self._search(csids, 'berkeleyeducsid', 'csid')
@@ -95,7 +94,7 @@ class Client:
                     for p in expired_users:
                         ids_not_found.remove(p[id_key_in_ldap_result])
                     if ids_not_found:
-                        self.app.logger.warn(f'Did not find: {ids_not_found}')
+                        self.app.logger.warning(f'Did not find: {ids_not_found}')
         return all_out
 
     @classmethod
@@ -120,6 +119,7 @@ class Client:
 
 
 class MockClient(Client):
+
     def __init__(self, app):
         self.app = app
         self.host = app.config['LDAP_HOST']

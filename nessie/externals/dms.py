@@ -54,7 +54,7 @@ def create_s3_target(identifier, path):
             app.logger.info(f'Failed to create DMS S3 target (identifier={identifier}, path={path}, response={response})')
             return None
     except (BotoClientError, BotoConnectionError) as e:
-        app.logger.error(f'Error creating DMS S3 target (path={path}, error={e})')
+        app.logger.exception(f'Error creating DMS S3 target (path={path})', exc_info=e)
         return None
 
 
@@ -110,7 +110,7 @@ def get_replication_tasks(identifier=None):
             app.logger.error('Failed to get DMS replication tasks')
             return None
     except (BotoClientError, BotoConnectionError) as e:
-        app.logger.error(f'Error retrieving DMS replication tasks (error={e})')
+        app.logger.exception('Error retrieving DMS replication tasks.', exc_info=e)
         return None
 
 
@@ -124,7 +124,7 @@ def list_endpoints():
             app.logger.error('Failed to get DMS endpoints')
             return None
     except (BotoClientError, BotoConnectionError) as e:
-        app.logger.error(f'Error retrieving DMS endpoints (error={e})')
+        app.logger.exception('Error retrieving DMS endpoints.', exc_info=e)
         return None
 
 
@@ -133,7 +133,7 @@ def start_replication_task(identifier):
     task = get_replication_task(identifier)
     if not task or 'ReplicationTaskArn' not in task:
         app.logger.error(f'Could not find replication task matching identifier {identifier}, aborting')
-        return
+        return None
     task_arn = task['ReplicationTaskArn']
     try:
         response = client.start_replication_task(
@@ -147,5 +147,5 @@ def start_replication_task(identifier):
             app.logger.error(f'Failed to start replication tasks (id={identifier}, arn={task_arn}, response={response})')
             return None
     except (BotoClientError, BotoConnectionError) as e:
-        app.logger.error(f'Error starting replication task (id={identifier}, arn={task_arn}, error={e})')
+        app.logger.exception(f'Error starting replication task (id={identifier}, arn={task_arn})', exc_info=e)
         return None
