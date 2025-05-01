@@ -229,7 +229,7 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms
   )
   SELECT
     et.id AS enrollment_term_id,
-    et.name AS term_name,
+    ty.year || ' ' || ty.term as term_name,
     ty.year,
     CASE WHEN ty.term IN ('Fall', 'Spring', 'Summer') THEN ty.term ELSE NULL END AS term,
     CASE
