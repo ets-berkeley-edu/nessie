@@ -117,7 +117,8 @@ SELECT DISTINCT
   n.author_dept_code as dept_code,
   u.dept_name
 FROM {bi_redshift_schema_boa_advising}.notes n
-LEFT JOIN {bi_redshift_schema_boa_rds_data}.university_depts u ON n.author_dept_code = u.dept_code;
+LEFT JOIN {bi_redshift_schema_boa_rds_data}.university_depts u ON n.author_dept_code = u.dept_code
+WHERE n.author_dept_code is not null;
 
 
 ----------------------------------------------------------------------------------------------------
