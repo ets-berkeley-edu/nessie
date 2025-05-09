@@ -48,9 +48,15 @@ DROP TABLE IF EXISTS {bi_rds_schema_bcourses_service_cd2}.bcourses_accounts CASC
 CREATE TABLE IF NOT EXISTS {bi_rds_schema_bcourses_service_cd2}.bcourses_accounts (
   account_id BIGINT PRIMARY KEY,
   name VARCHAR(255),
-  parent_account_id BIGINT,
-  parent_account VARCHAR(255),
   sis_source_id VARCHAR(255),
+  subject_cd VARCHAR(20),
+  subject_nm VARCHAR(255),
+  dept_cd VARCHAR(20),
+  dept_nm VARCHAR(255),
+  division_cd VARCHAR(20),
+  division_nm VARCHAR(255),
+  college_school_cd VARCHAR(20),
+  college_school_nm VARCHAR(255),
   workflow_state VARCHAR(255)
 );
 
@@ -60,18 +66,30 @@ INSERT INTO {bi_rds_schema_bcourses_service_cd2}.bcourses_accounts (
     SELECT
       account_id,
       name,
-      parent_account_id,
-      parent_account,
       sis_source_id,
+      subject_cd,
+      subject_nm,
+      dept_cd,
+      dept_nm,
+      division_cd,
+      division_nm,
+      college_school_cd,
+      college_school_nm,
       workflow_state
     FROM {bi_redshift_schema_bcourses_service_cd2}.bcourses_accounts
   $REDSHIFT$)
   AS bcourses_accounts (
     account_id BIGINT,
     name VARCHAR(255),
-    parent_account_id BIGINT,
-    parent_account VARCHAR(255),
     sis_source_id VARCHAR(255),
+    subject_cd VARCHAR(20),
+    subject_nm VARCHAR(255),
+    dept_cd VARCHAR(20),
+    dept_nm VARCHAR(255),
+    division_cd VARCHAR(20),
+    division_nm VARCHAR(255),
+    college_school_cd VARCHAR(20),
+    college_school_nm VARCHAR(255),
     workflow_state VARCHAR(255)
   )
 );
