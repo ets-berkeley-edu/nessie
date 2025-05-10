@@ -51,21 +51,24 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {bi_redshift_schema_bcourses_service_cd2}
 ----------------------------------------------------------------------------------------------------
 
 CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.bcourses_accounts AS
-  WITH p_account AS (
-    SELECT id AS p_id, name AS p_name
-    FROM {redshift_schema_canvas_data_2}.accounts
-    WHERE name = 'Official Courses'
-  )
   SELECT
     a.id AS account_id,
     a.name,
-    p.p_id AS parent_account_id,
-    p.p_name AS parent_account,
     a.sis_source_id,
+    s.course_subject_cd as subject_cd,
+    s.course_subject_nm as subject_nm,
+    s.course_academic_dept_cd as dept_cd,
+    s.course_academic_dept_nm as dept_nm,
+    s.course_academic_division_cd as division_cd,
+    s.course_academic_division_nm as division_nm,
+    s.course_reporting_college_school_cd as college_school_cd,
+    s.course_reporting_college_school_nm as college_school_nm,
     a.workflow_state
-FROM {redshift_schema_canvas_data_2}.accounts a
-JOIN p_account p ON a.parent_account_id = p.p_id
-WHERE a.workflow_state <> 'deleted';
+  FROM {redshift_schema_canvas_data_2}.accounts a
+  LEFT OUTER JOIN {redshift_schema_edl_external}.student_course_academic_hierarchy_data s
+    ON (regexp_replace(a.name, '[^A-Za-z]', '') = s.course_subject_cd)
+  WHERE a.parent_account_id = (SELECT id FROM {redshift_schema_canvas_data_2}.accounts WHERE name = 'Official Courses')
+  AND a.workflow_state <> 'deleted';
 
 
 ----------------------------------------------------------------------------------------------------
