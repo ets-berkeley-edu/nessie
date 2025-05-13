@@ -124,13 +124,29 @@ WHERE n.author_dept_code is not null;
 ----------------------------------------------------------------------------------------------------
 -- INTERNAL TABLE : "note_topics"
 -- Join table of note_id to topic.
+-- TO DO: remove topic field after workbook updated to use materialized views
 ----------------------------------------------------------------------------------------------------
  
 CREATE TABLE {bi_redshift_schema_boa_advising}.note_topics AS
 SELECT
-  note_id,
-  topic
-FROM {bi_redshift_schema_boa_rds_data}.note_topics;
+  nt.note_id,
+  t.id AS topic_id,
+  nt.topic
+FROM {bi_redshift_schema_boa_rds_data}.note_topics nt
+LEFT OUTER JOIN {bi_redshift_schema_boa_rds_data}.topics t ON (nt.topic = t.topic);
+
+
+----------------------------------------------------------------------------------------------------
+-- INTERNAL TABLE : "topics"
+----------------------------------------------------------------------------------------------------
+ 
+CREATE TABLE {bi_redshift_schema_boa_advising}.topics AS
+SELECT
+  id AS topic_id,
+  topic,
+  created_at,
+  deleted_at
+FROM {bi_redshift_schema_boa_rds_data}.topics;
 
 
 ----------------------------------------------------------------------------------------------------
@@ -158,6 +174,49 @@ SELECT
   cohorts.name AS cohort_name,
   sid
 FROM {bi_redshift_schema_boa_rds_data}.cohort_filters cohorts, cohorts.sids AS sid;
+
+
+----------------------------------------------------------------------------------------------------
+-- INTERNAL TABLE : "student_degrees"
+-- Join table of sid to degree_date, degree_awarded, plan_type, plan_group.
+-- Students can have multiple degrees (major/minor, double major, etc).
+-- May need to add index for degrees and plans to properly associate award date to degree/plan.
+-- May not need plan_type, plan_group.
+----------------------------------------------------------------------------------------------------
+
+-- Setting to get data for camel case attribute names, e.g. "dateAwarded", otherwise returns null.
+SET enable_case_sensitive_identifier TO TRUE;
+
+CREATE TABLE {bi_redshift_schema_boa_advising}.student_degrees AS
+WITH
+distinct_sids AS (
+  SELECT DISTINCT sid
+  FROM {bi_redshift_schema_boa_advising}.notes
+),
+
+degrees_super AS (
+  SELECT
+    sp.sid,  
+    JSON_PARSE(NULLIF(JSON_EXTRACT_PATH_TEXT(sp.profile, 'sisProfile', 'degrees', TRUE), '')) AS degrees_superdata
+  FROM distinct_sids s
+  JOIN student.student_profiles sp ON sp.sid = s.sid
+),
+
+degrees_data AS (
+  SELECT
+    ds.sid,
+    CAST(degrees_unnested."dateAwarded" AS VARCHAR) AS degree_date,
+    degrees_unnested.plans AS plans
+  FROM degrees_super ds, ds.degrees_superdata AS degrees_unnested
+)
+
+SELECT
+  d.sid,
+  d.degree_date,
+  CAST(plan.plan AS VARCHAR) AS degree_awarded,
+  CAST(plan.type AS VARCHAR) AS plan_type,
+  CAST(plan.group AS VARCHAR) AS plan_group
+FROM degrees_data d, d.plans AS plan;
 
 
 ----------------------------------------------------------------------------------------------------
@@ -194,6 +253,18 @@ groups AS (
   FROM distinct_sids
   LEFT JOIN {bi_redshift_schema_boa_advising}.student_groups groups ON distinct_sids.sid = groups.sid
   GROUP BY distinct_sids.sid
+),
+
+degrees AS (
+  SELECT
+    degrees.sid,
+    LISTAGG(DISTINCT degrees.degree_awarded 
+      || ' (' || degrees.plan_type 
+      || COALESCE(', ' || degrees.degree_date, '') 
+      || ')', ' | ')
+      WITHIN GROUP (ORDER BY degrees.degree_date) AS degree_list
+  FROM {bi_redshift_schema_boa_advising}.student_degrees degrees
+  GROUP BY degrees.sid
 )
 
 SELECT
@@ -203,50 +274,14 @@ SELECT
   student_profile_index.first_name || ' ' || student_profile_index.last_name AS student_name,
   CASE WHEN added.sid IS NOT NULL THEN TRUE ELSE FALSE END AS is_manually_added,
   cohorts.cohort_list,
-  groups.group_list
+  groups.group_list,
+  degrees.degree_list
 FROM distinct_sids
 LEFT JOIN student.student_profile_index student_profile_index ON distinct_sids.sid = student_profile_index.sid
 LEFT JOIN {bi_redshift_schema_boa_rds_data}.manually_added_advisees added ON distinct_sids.sid = added.sid
 LEFT JOIN cohorts ON distinct_sids.sid = cohorts.sid
-LEFT JOIN groups ON distinct_sids.sid = groups.sid;
-
-
-----------------------------------------------------------------------------------------------------
--- INTERNAL TABLE : "student_degrees"
--- Join table of sid to degree_date, degree_awarded, plan_type, plan_group.
--- Students can have multiple degrees (major/minor, double major, etc).
--- May need to add index for degrees and plans to properly associate award date to degree/plan.
--- May not need plan_type, plan_group.
-----------------------------------------------------------------------------------------------------
-
--- Setting to get data for camel case attribute names, e.g. "dateAwarded", otherwise returns null.
-SET enable_case_sensitive_identifier TO TRUE;
-
-CREATE TABLE {bi_redshift_schema_boa_advising}.student_degrees AS
-WITH
-degrees_super AS (
-  SELECT
-    sp.sid,  
-    JSON_PARSE(NULLIF(JSON_EXTRACT_PATH_TEXT(sp.profile, 'sisProfile', 'degrees', TRUE), '')) AS degrees_superdata
-  FROM {bi_redshift_schema_boa_advising}.students s
-  JOIN student.student_profiles sp ON sp.sid = s.sid
-),
-
-degrees_data AS (
-  SELECT
-    ds.sid,
-    CAST(degrees_unnested."dateAwarded" AS VARCHAR) AS degree_date,
-    degrees_unnested.plans AS plans
-  FROM degrees_super ds, ds.degrees_superdata AS degrees_unnested
-)
-
-SELECT
-  d.sid,
-  d.degree_date,
-  CAST(plan.plan AS VARCHAR) AS degree_awarded,
-  CAST(plan.type AS VARCHAR) AS plan_type,
-  CAST(plan.group AS VARCHAR) AS plan_group
-FROM degrees_data d, d.plans AS plan;
+LEFT JOIN groups ON distinct_sids.sid = groups.sid
+LEFT JOIN degrees ON distinct_sids.sid = degrees.sid;
 
 
 ----------------------------------------------------------------------------------------------------
