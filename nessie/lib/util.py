@@ -211,6 +211,10 @@ def get_s3_sis_sysadm_daily_path(cutoff=None):
     return app.config['LOCH_S3_SIS_DATA_PATH'] + '/sis-sysadm/daily/' + hashed_datestamp(cutoff)
 
 
+def get_s3_calendly_daily_path(cutoff=None):
+    return app.config['LOCH_S3_CALENDLY_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
+
+
 def get_s3_ycbm_daily_path(cutoff=None):
     return app.config['LOCH_S3_YCBM_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
