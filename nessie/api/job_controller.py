@@ -59,6 +59,7 @@ from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
 from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
 from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
+from nessie.jobs.import_calendly_api import ImportCalendlyApi
 from nessie.jobs.import_canvas_enrollments_api import ImportCanvasEnrollmentsApi
 from nessie.jobs.import_piazza_api_data import ImportPiazzaApiData
 from nessie.jobs.import_student_photos import ImportStudentPhotos
@@ -247,6 +248,13 @@ def generate_intermediate_tables():
 @auth_required
 def generate_merged_student_feeds():
     job_started = GenerateMergedStudentFeeds().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/import_calendly_api', methods=['POST'])
+@auth_required
+def import_calendly_api():
+    job_started = ImportCalendlyApi().run_async()
     return respond_with_status(job_started)
 
 
