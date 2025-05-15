@@ -104,6 +104,12 @@ CAL1CARD_PHOTO_API_PASSWORD = 'secretpassword'  # noqa: S105
 CAL1CARD_PHOTO_API_THROTTLE = 0.5
 CAL1CARD_PHOTO_API_TIMEOUT = 15
 
+CALENDLY_AUTH_TOKEN = 'some token'  # noqa: S105
+CALENDLY_BASE_API_URL = 'https://api.calendly.com'
+CALENDLY_FETCH_DAYS_AHEAD = 7
+CALENDLY_FETCH_DAYS_BEHIND = 3
+CALENDLY_ORGANIZATION_UUID = 'some organization UUID'
+
 CANVAS_DATA_API_KEY = 'some key'
 CANVAS_DATA_API_SECRET = 'some secret'  # noqa: S105
 CANVAS_DATA_HOST = 'foo.instructure.com'
@@ -276,6 +282,7 @@ REDSHIFT_SCHEMA_ADVISOR_INTERNAL = 'boac_advisor'
 REDSHIFT_SCHEMA_ASC = 'boac_advising_asc'
 REDSHIFT_SCHEMA_ASC_ADVISING_NOTES_INTERNAL = 'asc_advising_notes'
 REDSHIFT_SCHEMA_BOAC = 'boac_analytics'
+REDSHIFT_SCHEMA_CALENDLY_INTERNAL = 'calendly_data'
 REDSHIFT_SCHEMA_COE = 'boac_advising_coe'
 REDSHIFT_SCHEMA_DATA_SCIENCE_ADVISING_INTERNAL = 'data_science_advising'
 REDSHIFT_SCHEMA_E_I_ADVISING_NOTES_INTERNAL = 'e_i_advising_notes'
@@ -290,6 +297,7 @@ REDSHIFT_SCHEMA_YCBM_INTERNAL = 'ycbm_data'
 # The following external schemas vary between environments and do need to be overridden locally.
 REDSHIFT_SCHEMA_ADVISOR = 'External Advisor schema name'
 REDSHIFT_SCHEMA_ASC_ADVISING_NOTES = 'External ASC Advising Notes schema name'
+REDSHIFT_SCHEMA_CALENDLY = 'External Calendly schema name'
 REDSHIFT_SCHEMA_CANVAS = 'External Canvas schema name'
 REDSHIFT_SCHEMA_CANVAS_DATA_2 = 'External Canavs Data 2 schema name'
 REDSHIFT_SCHEMA_COE_EXTERNAL = 'External COE schema name'
