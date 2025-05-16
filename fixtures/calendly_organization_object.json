@@ -1,0 +1,11 @@
+{
+  "resource": {
+    "created_at": "2024-10-04T01:15:23.586691Z",
+    "id": 1234567890,
+    "kind": "multiple",
+    "name": "UC Berkeley",
+    "plan": "enterprise",
+    "stage": "paid",
+    "updated_at": "2024-12-04T19:08:13.119740Z",
+    "uri": "https://api.calendly.com/organizations/foo-bar-baz"}
+}

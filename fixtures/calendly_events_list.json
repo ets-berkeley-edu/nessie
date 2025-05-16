@@ -1,0 +1,53 @@
+{
+  "collection": [
+    {
+      "uri": "https://api.calendly.com/scheduled_events/GBGBDCAADAEDCRZ2",
+      "name": "15 Minute Meeting",
+      "meeting_notes_plain": "Tri-weekly Sprint Planning",
+      "meeting_notes_html": "<p>We cracked jokes and not much else.</p>",
+      "status": "active",
+      "start_time": "2024-08-24T14:15:22.123456Z",
+      "end_time": "2024-08-24T14:15:22.123456Z",
+      "event_type": "https://api.calendly.com/event_types/GBGBDCAADAEDCRZ2",
+      "location": {
+        "type": "physical",
+        "location": "2850 Telegraph",
+        "additional_info": "Please check in at the main lobby."
+      },
+      "invitees_counter": {
+        "total": 0,
+        "active": 0,
+        "limit": 0
+      },
+      "created_at": "2024-01-02T03:04:05.092125Z",
+      "updated_at": "2024-01-02T03:04:05.092125Z",
+      "event_memberships": [
+        {
+          "user": "https://api.calendly.com/users/GBGBDCAADAEDCRZ2",
+          "user_email": "foo@berkeley.edu",
+          "user_name": "John Smith",
+          "buffered_end_time": "2024-08-24T14:15:22.123456Z",
+          "buffered_start_time": "2024-08-24T14:15:22.123456Z"
+        }
+      ],
+      "event_guests": [
+        {
+          "email": "baz@berkeley.edu",
+          "created_at": "2022-04-21T17:10:48.484945Z",
+          "updated_at": "2022-04-21T17:11:01.758636Z"
+        }
+      ],
+      "calendar_event": {
+        "kind": "google",
+        "external_id": "8suu9k3hj00mni03ss12ba0ce0"
+      }
+    }
+  ],
+  "pagination": {
+    "count": 20,
+    "next_page": "https://api.calendly.com/scheduled_events?count=1&page_token=sNjq4TvMDfUHEl7zHRR0k0E1PCEJWvdi",
+    "previous_page": "https://api.calendly.com/scheduled_events?count=1&page_token=VJs2rfDYeY8ahZpq0QI1O114LJkNjd7H",
+    "next_page_token": "sNjq4TvMDfUHEl7zHRR0k0E1PCEJWvdi",
+    "previous_page_token": "VJs2rfDYeY8ahZpq0QI1O114LJkNjd7H"
+  }
+}
