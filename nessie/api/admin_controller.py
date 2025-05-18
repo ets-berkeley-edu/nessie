@@ -31,6 +31,7 @@ from flask import current_app as app, request
 from nessie.api.auth_helper import auth_required
 from nessie.lib import http, metadata
 from nessie.lib.http import tolerant_jsonify
+from nessie.lib.util import split_per_camel_case
 
 
 @app.route('/api/admin/runnable_jobs')
@@ -40,7 +41,7 @@ def console_available_jobs():
     for rule in app.url_map.iter_rules():
         if isinstance(rule.rule, str) and rule.rule.startswith('/api/job/'):
             job_api_endpoints.append({
-                'name': rule.endpoint.replace('_', ' ').capitalize(),
+                'name': _get_user_friendly_api_name(rule.endpoint),
                 'path': rule.rule,
                 'required': list(rule.arguments),
                 'methods': list(rule.methods),
@@ -60,8 +61,10 @@ def background_job_status():
     def to_api_json(row):
         created_at = row['created_at']
         updated_at = row['updated_at']
+        job_id = row['job_id']
         return {
-            'id': row['job_id'],
+            'id': job_id,
+            'name': _get_user_friendly_job_name(job_id),
             'status': row['status'],
             'instanceId': row['instance_id'],
             'details': row['details'],
@@ -84,3 +87,34 @@ def xkcd():
             'title': 'OpenBSD and shark attacks',
         }
     return tolerant_jsonify(json)
+
+
+def _get_user_friendly_api_name(api_path_suffix):
+    def _to_proper_case(w):
+        if w == 'berkeleyx':
+            result = 'BerkeleyX'
+        elif w == 'urls':
+            result = 'URLs'
+        elif w in ['api', 'asc', 'bi', 'boac', 'cd2', 'coe', 'edl', 'eop', 'oua', 'rds', 's3', 'sis', 'ycbm'] or len(w) == 1:
+            result = w.upper()
+        else:
+            result = w.capitalize()
+        return result
+
+    words = api_path_suffix.split('_')
+    name = ' '.join([_to_proper_case(w) for w in words])
+    replacements = {
+        'E And I': 'E&I',
+        'Resync': 'Re-sync',
+        'Sisedo': 'SIS EDO',
+        'Bcourses': 'bCourses',
+    }
+    for value, key in replacements.items():
+        name = name.replace(value, key)
+    return name
+
+
+def _get_user_friendly_job_name(job_id):
+    job_class_name = job_id.split('_')[0]
+    words = split_per_camel_case(job_class_name, separator=' ').split(' ')
+    return ' '.join([_get_user_friendly_api_name(word) for word in words])

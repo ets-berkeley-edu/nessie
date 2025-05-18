@@ -326,6 +326,11 @@ def resolve_sql_template(sql_filename, **kwargs):
     return resolve_sql_template_string(template_string, **kwargs)
 
 
+def split_per_camel_case(camel_cased_string, separator='_'):
+    pattern = re.compile(r'(?<!^)(?=[A-Z])')
+    return pattern.sub(separator, camel_cased_string).lower()
+
+
 def to_boolean(s):
     try:
         if isinstance(s, str):

@@ -3,53 +3,68 @@
     <div v-if="!runnableJobs.length">
       Sorry, no runnable jobs were found.
     </div>
-    <v-row v-if="runnableJobs.length" class="mb-4 py-3" align="center">
-      <v-col class="pr-2">
-        <v-select
-          id="select-job"
-          v-model="selected"
-          :items="runnableJobs"
-          item-title="name"
-          :item-props="true"
-          placeholder="Select job..."
-          hide-details
-          return-object
-        >
-          <template #item="{ props: itemProps }">
-            <v-list-item v-bind="itemProps" :disabled="!isAvailable(itemProps) || starting"></v-list-item>
-          </template>
-        </v-select>
-        <div v-if="get(selected, 'required.length')" class="pl-2 pt-2">
-          <div v-for="key in selected.required" :key="key" class="d-flex align-center">
-            <span class="pb-1 pr-1">{{ capitalize(key) }}:</span>
-            <v-text-field v-model="params[key]" hide-details />
+    <v-row v-if="runnableJobs.length" class="w-100">
+      <v-col cols="4">
+        <div class="align-center d-flex">
+          <v-select
+            id="select-job"
+            v-model="selected"
+            class="mr-3"
+            density="comfortable"
+            hide-details
+            :item-props="true"
+            :items="runnableJobs"
+            item-title="name"
+            placeholder="Select job..."
+            return-object
+            variant="outlined"
+          >
+            <template #item="{ props: itemProps }">
+              <v-list-item v-bind="itemProps" :disabled="!isAvailable(itemProps) || starting"></v-list-item>
+            </template>
+          </v-select>
+          <div v-if="get(selected, 'required.length')" class="mr-3 pt-2">
+            <div v-for="key in selected.required" :key="key" class="d-flex align-center">
+              <span class="pb-1 pr-1">{{ capitalize(key) }}:</span>
+              <v-text-field v-model="params[key]" hide-details />
+            </div>
+          </div>
+          <div>
+            <v-btn
+              color="success"
+              :disabled="!isJobSpecified || starting"
+              size="large"
+              text="Run"
+              @click="run"
+            />
           </div>
         </div>
       </v-col>
-      <v-col class="pr-2">
-        <v-btn :disabled="!isJobSpecified || starting" @click="run">Run</v-btn>
-      </v-col>
-      <v-col class="pr-0 text-right">
-        Showing jobs run on
-      </v-col>
-      <v-col>
-        <v-date-input
-          v-model="dateSelected"
-          placeholder="Select Date"
-          :disabled="contextStore.isLoading"
-          hide-actions
-          hide-details
-          @update:modelValue="refresh"
-        ></v-date-input>
-      </v-col>
-      <v-col class="flex-grow-1">
-        <v-badge inline color="red" :content="jobs.errored.length" />
-        <v-badge inline color="yellow" :content="jobs.started.length" />
-        <v-badge inline color="green" :content="jobs.all.length - (jobs.errored.length + jobs.started.length)" />
+      <v-col cols="3" />
+      <v-col cols="5">
+        <div class="align-center d-flex">
+          <div class="mr-2 text-h6 text-medium-emphasis text-right">
+            Showing jobs run on
+          </div>
+          <v-date-input
+            v-model="dateSelected"
+            class="mr-3"
+            density="comfortable"
+            :disabled="contextStore.isLoading"
+            placeholder="Select Date"
+            hide-actions
+            hide-details
+            variant="outlined"
+            @update:modelValue="refresh"
+          />
+          <v-badge inline color="red" :content="jobs.errored.length" />
+          <v-badge inline color="yellow" :content="jobs.started.length" />
+          <v-badge inline color="green" :content="jobs.all.length - (jobs.errored.length + jobs.started.length)" />
+        </div>
       </v-col>
     </v-row>
     <div>
-      <div class="results-container">
+      <div class="results-container mt-8">
         <LargeSpinner v-if="contextStore.isLoading" />
         <div v-if="!contextStore.isLoading">
           <div v-if="jobs.all.length" class="striped-table">
@@ -70,7 +85,7 @@
               :mobile="xs"
             >
               <template #item.id="{ item }">
-                {{ item.id.split('_')[0] }}
+                {{ item.name }}
               </template>
               <template #item.status="{ item }">
                 <div class="d-flex justify-center">
