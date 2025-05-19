@@ -24,8 +24,11 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
+
+from nessie.jobs.background_job import BackgroundJobError
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
+import pytz
 import requests
 
 
@@ -34,8 +37,8 @@ import requests
 RESULT_SET_LIMIT_PER_REQUEST = 100
 
 
-def get_events(min_start_time, max_start_time):
-    def _get_events(_organization_uri, _page_token=None):
+def get_scheduled_events(min_start_time, max_start_time):
+    def _get_scheduled_events(_organization_uri, _page_token=None):
         _feed = _get_calendly_events_list(
             max_start_time=max_start_time,
             min_start_time=min_start_time,
@@ -47,10 +50,10 @@ def get_events(min_start_time, max_start_time):
         return _events, _next_page_token
 
     organization = _get_organization_object()
-    organization_uri = organization['uri']
-    events, next_page_token = _get_events(organization_uri)
+    organization_uri = organization['resource']['uri']
+    events, next_page_token = _get_scheduled_events(organization_uri)
     while next_page_token is not None:
-        more_events, next_page_token = _get_events(
+        more_events, next_page_token = _get_scheduled_events(
             _organization_uri=organization_uri,
             _page_token=next_page_token,
         )
@@ -59,37 +62,45 @@ def get_events(min_start_time, max_start_time):
 
 
 @fixture('calendly_events_list')
-def _get_calendly_events_list(max_start_time, min_start_time, page_token, mock=None):
+def _get_calendly_events_list(max_start_time, min_start_time, organization_uri, page_token, mock=None):
     # Calendly API docs: https://developer.calendly.com/api-docs/2d5ed9bbd2952-list-events
-    url = http.build_url(
-        f"{app.config['CALENDLY_BASE_URL']}/scheduled_events",
-        {
-            'count': RESULT_SET_LIMIT_PER_REQUEST,
-            'max_start_time': max_start_time,
-            'min_start_time': min_start_time,
-            'organization': app.config['CALENDLY_ORGANIZATION_UUID'],
-            'page_token': page_token,
-            'sort': 'start_time',
-            'status': 'active',
-        },
-    )
-    return _make_request(url, mock).json()['resource']
+    query = {
+        'count': RESULT_SET_LIMIT_PER_REQUEST,
+        'max_start_time': _to_iso_format(max_start_time),
+        'min_start_time': _to_iso_format(min_start_time),
+        'organization': organization_uri,
+        'sort': 'start_time',
+        'status': 'active',
+    }
+    if page_token:
+        query['page_token'] = page_token
+    response = _make_calendly_api_request(mock=mock, path='/scheduled_events', query=query)
+    return response.json()
 
 
 @fixture('calendly_organization_object')
 def _get_organization_object(mock=None):
     # Calendly API docs: https://developer.calendly.com/api-docs/9738aea27ba80-get-organization
-    url = http.build_url(
-        f"{app.config['CALENDLY_BASE_URL']}/scheduled_events",
-        {'uuid': app.config['CALENDLY_ORGANIZATION_UUID']},
-    )
-    return _make_request(url, mock).json()
+    uuid = app.config['CALENDLY_ORGANIZATION_UUID']
+    return _make_calendly_api_request(mock=mock, path=f'/organizations/{uuid}').json()
 
 
-def _make_request(url, mock=None):
+def _make_calendly_api_request(path, mock=None, query=None):
+    auth_token = app.config['CALENDLY_AUTH_TOKEN']
+    base_url = app.config['CALENDLY_BASE_API_URL']
+    url = http.build_url(url=f'{base_url}{path}', query=query)
     with mock(url):
-        auth_token = app.config['CALENDLY_AUTH_TOKEN']
-        return requests.get(  # noqa: S113
-            headers={'Authorization': f'Basic {auth_token}'},
+        response = requests.get(  # noqa: S113
+            headers={
+                'Authorization': f'Bearer {auth_token}',
+                'Content-Type': 'application/json',
+            },
             url=url,
         )
+        if response.status_code != 200:
+            raise BackgroundJobError(f'Failed GET {url} (status_code: {response.status_code}) due to {response.text}')
+        return response
+
+
+def _to_iso_format(value):
+    return value.astimezone(pytz.utc).isoformat()
