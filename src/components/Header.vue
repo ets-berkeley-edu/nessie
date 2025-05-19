@@ -1,26 +1,31 @@
 <template>
   <v-row :class="{'mb-3': !currentUser}">
-    <v-col class="d-flex mx-4 pb-0">
-      <div class="mt-2 pr-2">
+    <v-col class="align-center d-flex mx-4 pb-0">
+      <div class="mt-2 pl-8">
         <a :href="{name: 'home'}"><img :class="{'shimmy': shimmy}" src="@/assets/logo.png"></a>
       </div>
       <div class="py-1">
-        <h1 class="my-0 py-0 pl-4">
+        <h1 class="font-weight-bold text-h4 my-0 py-0 pl-4">
           Nessie
-          <span v-if="contextStore.version"> {{ contextStore.version.version }}</span>
+          <span v-if="contextStore.version" class="text-medium-emphasis">v{{ contextStore.version.version }}</span>
         </h1>
         <div v-if="get(contextStore.version, 'build.gitCommit')" class="pl-4">
           <a :href="`https://github.com/ets-berkeley-edu/nessie/commit/${contextStore.version.build.gitCommit}`" target="_blank">
-            <v-icon :icon="mdiGithub" color="black"></v-icon>
+            <v-icon :icon="mdiGithub" color="black" />
             <span class="git-commit greeting pl-2">{{ contextStore.version.build.gitCommit }}</span>
           </a>
         </div>
       </div>
     </v-col>
-    <v-col v-if="currentUser" class="text-right mx-4">
-      <a href="" @click="casLogout">
+    <v-col v-if="currentUser" class="text-right mr-10 pt-6">
+      <a id="log-out" href="" @click="casLogout">
         <span class="sr-only">Log Out</span>
-        <v-icon :icon="mdiArrowRightBox" class="primary"></v-icon>
+        <v-icon
+          class="primary"
+          :icon="mdiArrowRightBox"
+          size="42"
+          title="Log Out"
+        />
       </a>
     </v-col>
     <v-col v-if="!currentUser" class="text-right mx-4">

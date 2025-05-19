@@ -2,16 +2,33 @@
   <v-container id="app" class="h-100 px-0" fluid>
     <Header />
     <v-row v-if="currentUser">
-      <v-tabs v-model="tabIndex" align-tabs="center" class="w-100">
-        <v-tab
-          v-for="item in selectablePaths"
-          :key="item.title"
-          :value="item.path"
-          @click="go(item.path)"
+      <div class="border-b-md border-color-success w-100">
+        <v-tabs
+          v-model="tabIndex"
+          align-tabs="center"
+          class="w-100"
+          align="center"
+          density="comfortable"
         >
-          {{ item.title }}
-        </v-tab>
-      </v-tabs>
+          <div
+            v-for="item in selectablePaths"
+            :key="item.title"
+            class="pr-2"
+          >
+            <v-tab
+              class="border-s-sm border-e-sm border-t-sm rounded-t-lg"
+              :class="{
+                'bg-white border-b-0 font-weight-bold text-success': item.path === tabIndex,
+                'bg-grey-lighten-4 border-b-md': item.path !== tabIndex
+              }"
+              :value="item.path"
+              @click="go(item.path)"
+            >
+              {{ item.title }}
+            </v-tab>
+          </div>
+        </v-tabs>
+      </div>
       <v-card-text>
         <LargeSpinner v-if="contextStore.isLoading || isToggling" />
         <div v-show="!contextStore.isLoading && !isToggling" class="mt-3 mx-4">
@@ -64,5 +81,10 @@ const go = (path) => {
 }
 
 watch(router.currentRoute, route => { tabIndex.value = route.path})
-
 </script>
+
+<style scoped>
+.border-color-success {
+  border-color: rgb(var(--v-theme-success)) !important;
+}
+</style>

@@ -45,9 +45,18 @@ class TestAdminController:
         assert response.json == []
 
     def test_runnable_jobs(self, app, client):
-        """Returns jobs runnable via Admin Console."""
-        response = get_basic_auth(client=client, path='/api/admin/runnable_jobs', credentials=credentials(app))
+        """Returns jobs runnable with user-friendly names."""
+        response = get_basic_auth(
+            client=client,
+            path='/api/admin/runnable_jobs',
+            credentials=credentials(app),
+        )
         assert response.status_code == 200
-        job = next((job for job in response.json if job.get('name') == 'Generate merged student feeds'), None)
-        assert job.get('path') == '/api/job/generate_merged_student_feeds'
+        job_names = [job['name'] for job in response.json]
+        # Verify readable names
+        for name in ['Create YCBM Schema', 'Generate Merged Student Feeds', 'Retrieve And Dispatch CD2 File URLs']:
+            assert name in job_names
+        # Verify HTTP method of sample API path
+        job = next((job for job in response.json if job.get('path') == '/api/job/generate_merged_student_feeds'), None)
+        assert job
         assert 'POST' in job.get('methods')
