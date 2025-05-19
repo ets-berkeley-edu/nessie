@@ -57,15 +57,15 @@ SELECT
   notes.id AS note_id,
   notes.created_at,
   CONVERT_TIMEZONE('PST8PDT', notes.created_at)::DATE AS created_at_date_pst,
-  TO_CHAR(CONVERT_TIMEZONE('PST8PDT', notes.created_at), 'HH12:MI:SS AM') AS created_at_time_pst,
+  TO_CHAR(CONVERT_TIMEZONE('PST8PDT', notes.created_at), 'HH12:MI AM') AS created_at_time_pst,
   notes.set_date,
-  notes.author_uid,
+  notes.author_uid::INTEGER,
   notes.author_name AS note_author_name,
   dept AS author_dept_code,
   notes.author_role,
   notes.contact_type,
   notes.is_private,
-  notes.sid,
+  notes.sid::BIGINT,
   notes.subject
 FROM {bi_redshift_schema_boa_rds_data}.notes notes, notes.author_dept_codes as dept;
 
@@ -81,7 +81,7 @@ FROM {bi_redshift_schema_boa_rds_data}.notes notes, notes.author_dept_codes as d
 
 CREATE TABLE {bi_redshift_schema_boa_advising}.authors AS
 SELECT DISTINCT
-  notes.author_uid,
+  notes.author_uid::INTEGER,
   advisors.last_name,
   advisors.first_name,
   COALESCE(
@@ -123,17 +123,17 @@ WHERE n.author_dept_code is not null;
 
 ----------------------------------------------------------------------------------------------------
 -- INTERNAL TABLE : "note_topics"
--- Join table of note_id to topic.
--- TO DO: remove topic field after workbook updated to use materialized views
+-- Join table of note_id to topic. Exclude deleted topics and duplicates. Orphaned topics will have null topic_id.
 ----------------------------------------------------------------------------------------------------
  
 CREATE TABLE {bi_redshift_schema_boa_advising}.note_topics AS
 SELECT
-  nt.note_id,
-  t.id AS topic_id,
-  nt.topic
-FROM {bi_redshift_schema_boa_rds_data}.note_topics nt
-LEFT OUTER JOIN {bi_redshift_schema_boa_rds_data}.topics t ON (nt.topic = t.topic);
+  id AS note_topic_id,
+  note_id,
+  topic,
+  author_uid::INTEGER,
+  deleted_at
+FROM {bi_redshift_schema_boa_rds_data}.note_topics;
 
 
 ----------------------------------------------------------------------------------------------------
@@ -158,7 +158,7 @@ CREATE TABLE {bi_redshift_schema_boa_advising}.student_groups AS
 SELECT
   sg.id as student_group_id,
   sg.name as student_group_name,
-  sgm.sid
+  sgm.sid::BIGINT
 FROM {bi_redshift_schema_boa_rds_data}.student_group_members sgm
 LEFT JOIN {bi_redshift_schema_boa_rds_data}.student_groups sg ON sgm.student_group_id = sg.id;
 
@@ -172,7 +172,7 @@ CREATE TABLE {bi_redshift_schema_boa_advising}.student_cohorts AS
 SELECT
   cohorts.id AS cohort_id,
   cohorts.name AS cohort_name,
-  sid
+  sid::BIGINT
 FROM {bi_redshift_schema_boa_rds_data}.cohort_filters cohorts, cohorts.sids AS sid;
 
 
@@ -211,7 +211,7 @@ degrees_data AS (
 )
 
 SELECT
-  d.sid,
+  d.sid::BIGINT,
   d.degree_date,
   CAST(plan.plan AS VARCHAR) AS degree_awarded,
   CAST(plan.type AS VARCHAR) AS plan_type,
@@ -238,33 +238,30 @@ distinct_sids AS (
 cohorts AS (
   SELECT
     distinct_sids.sid,
-    LISTAGG(DISTINCT cohorts.cohort_name || ' (' || cohorts.cohort_id || ')', ' | ')
-      WITHIN GROUP (ORDER BY cohorts.cohort_name, cohorts.cohort_id) AS cohort_list
+    LISTAGG(DISTINCT c.cohort_name, '|')
+      WITHIN GROUP (ORDER BY c.cohort_name) AS cohort_list
   FROM distinct_sids
-  LEFT JOIN {bi_redshift_schema_boa_advising}.student_cohorts cohorts ON distinct_sids.sid = cohorts.sid
+  LEFT JOIN {bi_redshift_schema_boa_advising}.student_cohorts c ON distinct_sids.sid = c.sid
   GROUP BY distinct_sids.sid
 ),
 
 groups AS (
   SELECT
     distinct_sids.sid,
-    LISTAGG(DISTINCT groups.student_group_name || ' (' || groups.student_group_id || ')', ' | ')
-      WITHIN GROUP (ORDER BY groups.student_group_name, groups.student_group_id) AS group_list
+    LISTAGG(DISTINCT g.student_group_name, '|')
+      WITHIN GROUP (ORDER BY g.student_group_name, g.student_group_id) AS group_list
   FROM distinct_sids
-  LEFT JOIN {bi_redshift_schema_boa_advising}.student_groups groups ON distinct_sids.sid = groups.sid
+  LEFT JOIN {bi_redshift_schema_boa_advising}.student_groups g ON distinct_sids.sid = g.sid
   GROUP BY distinct_sids.sid
 ),
 
 degrees AS (
   SELECT
-    degrees.sid,
-    LISTAGG(DISTINCT degrees.degree_awarded 
-      || ' (' || degrees.plan_type 
-      || COALESCE(', ' || degrees.degree_date, '') 
-      || ')', ' | ')
-      WITHIN GROUP (ORDER BY degrees.degree_date) AS degree_list
-  FROM {bi_redshift_schema_boa_advising}.student_degrees degrees
-  GROUP BY degrees.sid
+    d.sid,
+    LISTAGG(DISTINCT d.degree_awarded || COALESCE(' (' || d.degree_date || ')', ''), '|')
+      WITHIN GROUP (ORDER BY d.degree_date, d.plan_type) AS degree_list
+  FROM {bi_redshift_schema_boa_advising}.student_degrees d
+  GROUP BY d.sid
 )
 
 SELECT
