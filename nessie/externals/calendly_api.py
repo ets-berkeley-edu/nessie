@@ -38,31 +38,30 @@ RESULT_SET_LIMIT_PER_REQUEST = 100
 
 
 def get_scheduled_events(min_start_time, max_start_time):
-    def _get_scheduled_events(_organization_uri, _page_token=None):
-        _feed = _get_calendly_events_list(
-            max_start_time=max_start_time,
-            min_start_time=min_start_time,
-            organization_uri=_organization_uri,
-            page_token=_page_token,
-        )
-        _events = _feed['collection']
-        _next_page_token = _feed['pagination']['next_page_token']
-        return _events, _next_page_token
-
     organization = _get_organization_object()
     organization_uri = organization['resource']['uri']
-    events, next_page_token = _get_scheduled_events(organization_uri)
+    events, next_page_token = _get_scheduled_events(
+        min_start_time=min_start_time,
+        max_start_time=max_start_time,
+        organization_uri=organization_uri,
+    )
     while next_page_token is not None:
         more_events, next_page_token = _get_scheduled_events(
-            _organization_uri=organization_uri,
-            _page_token=next_page_token,
+            min_start_time=min_start_time,
+            max_start_time=max_start_time,
+            organization_uri=organization_uri,
+            page_token=next_page_token,
         )
         events.extend(more_events)
     return events
 
 
-@fixture('calendly_events_list')
-def _get_calendly_events_list(max_start_time, min_start_time, organization_uri, page_token, mock=None):
+def _get_scheduled_events(
+        min_start_time,
+        max_start_time,
+        organization_uri,
+        page_token=None,
+):
     # Calendly API docs: https://developer.calendly.com/api-docs/2d5ed9bbd2952-list-events
     query = {
         'count': RESULT_SET_LIMIT_PER_REQUEST,
@@ -74,25 +73,29 @@ def _get_calendly_events_list(max_start_time, min_start_time, organization_uri, 
     }
     if page_token:
         query['page_token'] = page_token
-    response = _make_calendly_api_request(mock=mock, path='/scheduled_events', query=query)
-    return response.json()
+    feed = _make_calendly_api_request(path='/scheduled_events', query=query).json()
+    return feed['collection'], feed['pagination']['next_page_token']
 
 
-@fixture('calendly_organization_object')
-def _get_organization_object(mock=None):
+def _get_organization_object():
     # Calendly API docs: https://developer.calendly.com/api-docs/9738aea27ba80-get-organization
     uuid = app.config['CALENDLY_ORGANIZATION_UUID']
-    return _make_calendly_api_request(mock=mock, path=f'/organizations/{uuid}').json()
+    return _make_calendly_api_request(path=f'/organizations/{uuid}').json()
 
 
-def _make_calendly_api_request(path, mock=None, query=None):
-    auth_token = app.config['CALENDLY_AUTH_TOKEN']
+def _make_calendly_api_request(path, query=None):
     base_url = app.config['CALENDLY_BASE_API_URL']
     url = http.build_url(url=f'{base_url}{path}', query=query)
+    app.logger.info(f'Calendly API request: {url}')
+    return _get_authorized_response(url)
+
+
+@fixture('calendly_scheduled_events')
+def _get_authorized_response(url, mock=None):
     with mock(url):
         response = requests.get(  # noqa: S113
             headers={
-                'Authorization': f'Bearer {auth_token}',
+                'Authorization': f"Bearer {app.config['CALENDLY_AUTH_TOKEN']}",
                 'Content-Type': 'application/json',
             },
             url=url,

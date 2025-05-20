@@ -6,8 +6,11 @@ export function startJob(jobId: number) {
 }
 
 export function getBackgroundJobStatus(date: Date) {
-  const isoString = date ? date.toISOString() : null
-  return axios.post(`${useContextStore().config.apiBaseUrl}/api/admin/background_job_status?date=${isoString}`)
+  let url = `${useContextStore().config.apiBaseUrl}/api/admin/background_job_status`
+  if (date) {
+    url = url.concat(`?date=${date.toISOString()}`)
+  }
+  return axios.post(url)
 }
 
 export function getRunnableJobs() {

@@ -51,9 +51,9 @@
             class="mr-3"
             density="comfortable"
             :disabled="contextStore.isLoading"
-            placeholder="Select Date"
             hide-actions
             hide-details
+            placeholder="Select Date (UTC)"
             variant="outlined"
             @update:modelValue="refresh"
           />
@@ -67,6 +67,13 @@
       <div class="results-container mt-8">
         <LargeSpinner v-if="contextStore.isLoading" />
         <div v-if="!contextStore.isLoading">
+          <div v-if="!jobs.all.length" class="text-center w-100">
+            <img
+              alt="A monument honoring the number zero, from the Schoolhouse Rock TV show."
+              class="my-10 my-hero-zero"
+              src="@/assets/my-hero-zero.png"
+            >
+          </div>
           <div v-if="jobs.all.length" class="striped-table">
             <v-alert v-if="jobs.started.length === 1" show>
               { jobs.started[0].id }} is running.
@@ -78,7 +85,27 @@
               </ul>
             </v-alert>
             <v-data-table
-              :headers="headers"
+              :headers="[
+                {key: 'id', title: 'Job', sortable: jobs.all.length > 1},
+                {
+                  key: 'status',
+                  cellProps: item => {
+                    if (item.value === 'failed') {
+                      return {class: 'bg-red-lighten-4 text-center'}
+                    } else if (item.value === 'started') {
+                      return {class: 'bg-blue-lighten-4'}
+                    } else {
+                      return {class: 'bg-green-lighten-4'}
+                    }
+                  },
+                  sortable: jobs.all.length > 1,
+                  title: 'Status'
+                },
+                {key: 'details', title: 'Summary', sortable: false},
+                {key: 'started', title: 'Start (UTC)', sortable: jobs.all.length > 1},
+                {key: 'finished', title: 'End (UTC)', sortable: jobs.all.length > 1},
+                {key: 'duration', title: 'Duration (hh:mm:ss)', sortable: jobs.all.length > 1}
+              ]"
               :items="jobs.all"
               items-per-page="-1"
               hide-default-footer
@@ -175,30 +202,9 @@ import {useContextStore} from '@/stores/context'
 const contextStore = useContextStore()
 
 const alert = ref(undefined)
-const dateSelected = ref(new Date())
+const dateSelected = ref()
 
 const {xs} = useDisplay()
-
-const headers = [
-  {key: 'id', title: 'Job'},
-  {
-    key: 'status',
-    title: 'Status',
-    cellProps: (item) => {
-      if (item.value === 'failed') {
-        return {class: 'bg-red-lighten-4 text-center'}
-      } else if (item.value === 'started') {
-        return {class: 'bg-blue-lighten-4'}
-      } else {
-        return {class: 'bg-green-lighten-4'}
-      }
-    }
-  },
-  {key: 'details', title: 'Summary', sortable: false},
-  {key: 'started', title: 'Start (UTC)'},
-  {key: 'finished', title: 'End (UTC)'},
-  {key: 'duration', title: 'Duration (hh:mm:ss)'}
-]
 
 const jobs = ref({
   all: [],
@@ -304,9 +310,6 @@ const schedulePageRefresh = () => {
 </script>
 
 <style>
-.jobs-running-header {
-  font-size: 16px;
-}
 pre {
   background-color: #f5c6cb;
   border: 1px solid #ccc;
@@ -315,6 +318,12 @@ pre {
   overflow: auto;
   padding: 10px;
   width: auto;
+}
+.jobs-running-header {
+  font-size: 16px;
+}
+.my-hero-zero {
+  height: 400px;
 }
 .v-data-table__tr pre {
   max-width: 600px;

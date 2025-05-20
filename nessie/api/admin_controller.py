@@ -54,7 +54,7 @@ def console_available_jobs():
 @auth_required
 def background_job_status():
     iso_date = request.args.get('date')
-    date = dateutil.parser.parse(iso_date) if iso_date else datetime.today()
+    date = dateutil.parser.parse(iso_date) if iso_date else datetime.utcnow().date()
     rows = metadata.background_job_status_by_date(created_date=date) or []
     rows.sort(key=lambda row: row.get('created_at'))
 
@@ -95,7 +95,7 @@ def _get_user_friendly_api_name(api_path_suffix):
             result = 'BerkeleyX'
         elif w == 'urls':
             result = 'URLs'
-        elif w in ['api', 'asc', 'bi', 'boac', 'cd2', 'coe', 'edl', 'eop', 'oua', 'rds', 's3', 'sis', 'ycbm'] or len(w) == 1:
+        elif w in ['api', 'asc', 'bi', 'boa', 'boac', 'cd2', 'coe', 'edl', 'eop', 'oua', 'rds', 's3', 'sis', 'ycbm'] or len(w) == 1:
             result = w.upper()
         else:
             result = w.capitalize()

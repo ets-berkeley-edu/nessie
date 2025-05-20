@@ -45,5 +45,6 @@
     "vite-plugin-vuetify": "^2.1.1",
     "vue-eslint-parser": "^9.3.2"
   },
-  "license": "SEE LICENSE IN LICENSE"
+  "license": "SEE LICENSE IN LICENSE",
+  "type": "module"
 }
