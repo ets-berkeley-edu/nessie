@@ -59,7 +59,8 @@ class TestS3:
             assert f'{prefix}/requests-ccc.gz' in response
 
 
-@pytest.mark.testext
+# TODO: @pytest.mark.testext
+@pytest.mark.skip(reason="Skipping tests that rely on NESSIE_ENV=testext")
 class TestS3Testext:
     """S3 client with live external connections."""
 

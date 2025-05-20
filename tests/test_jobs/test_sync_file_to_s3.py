@@ -36,7 +36,8 @@ from tests.util import capture_app_logs, mock_s3
 
 class TestSyncFileToS3:
 
-    @pytest.mark.testext
+    # TODO: @pytest.mark.testext
+    @pytest.mark.skip(reason="Skipping tests that rely on NESSIE_ENV=testext")
     def test_file_upload_and_skip(self, app, caplog, cleanup_s3):  # noqa: ARG002
         """Uploads files to real S3, skipping duplicates."""
         url = 'http://shakespeare.mit.edu/Poetry/sonnet.XLV.html'
