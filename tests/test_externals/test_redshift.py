@@ -54,7 +54,8 @@ class TestRedshift:
             redshift.execute('SELECT 1')
             assert 'could not translate host name "H.C. Earwicker" to address' in caplog.text
 
-    @pytest.mark.testext
+    # TODO: @pytest.mark.testext
+    @pytest.mark.skip(reason="Skipping tests that rely on NESSIE_ENV=testext")
     def test_schema_creation_drop(self, app, caplog, ensure_drop_schema):  # noqa: ARG002
         """Can create and drop schemata on a real Redshift instance."""
         schema_name = app.config['REDSHIFT_SCHEMA_BOAC']
@@ -70,7 +71,8 @@ class TestRedshift:
             result = redshift.execute('DROP SCHEMA {schema}', schema=schema)
             assert result == 'DROP SCHEMA'
 
-    @pytest.mark.testext
+    # TODO: @pytest.mark.testext
+    @pytest.mark.skip(reason="Skipping tests that rely on NESSIE_ENV=testext")
     def test_execute_ddl_script(self, app, ensure_drop_schema):  # noqa: ARG002
         """Executes filled SQL template files one statement at a time."""
         # TODO: Test CREATE EXTERNAL SCHEMA and CREATE EXTERNAL TABLE statements.

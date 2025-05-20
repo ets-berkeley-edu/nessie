@@ -65,7 +65,8 @@ class TestSyncCanvasSnapshots:
             assert sync_results[0]['created_at']
             assert sync_results[0]['updated_at']
 
-    @pytest.mark.testext
+    # TODO: @pytest.mark.testext
+    @pytest.mark.skip(reason="Skipping tests that rely on NESSIE_ENV=testext")
     def test_remove_obsolete_files(self, app, caplog, cleanup_s3):  # noqa: ARG002
         """Removes files from S3 following prefix and whitelist rules."""
         caplog.set_level(logging.INFO)
