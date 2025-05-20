@@ -44,13 +44,19 @@ class ImportCalendlyApi(BackgroundJob):
         calendly_max_event_start = calendly_min_event_start + timedelta(1)
         # Continue to fetch until we reach 'end_date'
         end_date = localized_date + timedelta(app.config['CALENDLY_FETCH_DAYS_AHEAD'])
+        total_event_count = 0
         while calendly_min_event_start <= end_date:
-            self._put_calendly_events_to_s3(calendly_min_event_start, calendly_max_event_start)
+            total_event_count += self._put_calendly_events_to_s3(
+                calendly_min_event_start,
+                calendly_max_event_start,
+            )
             # Increment
             calendly_min_event_start = calendly_max_event_start + timedelta(days=1)
             calendly_max_event_start = calendly_min_event_start + timedelta(days=2)
         app.logger.info(f"Finished Calendly events import from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
-        return True
+        return (
+            f'Calendly API imported {total_event_count} events where start_date={start_date} and end_date={end_date}'
+        )
 
     @staticmethod
     def _put_calendly_events_to_s3(calendly_min_event_start, calendly_max_event_start):
@@ -62,26 +68,26 @@ class ImportCalendlyApi(BackgroundJob):
             min_start_time=_datetime_combine(calendly_min_event_start, datetime.min),
             max_start_time=_datetime_combine(calendly_max_event_start, datetime.max),
         )
-        if not len(events):
+        if len(events):
+            imported_at = utc_now().strftime('%Y-%m-%dT%H:%M:%SZ')
+            serialized_data = ''
+            for e in events:
+                # Make JsonSerDe schema creation easier in Redshift: transform arrays to dicts,
+                # and output one JSON record per line in text file in S3.
+                serialized_data += json.dumps({'importedAt': imported_at, **e}) + '\n'
+            # Upload one copy to the daily path. We keep it there for a few days in S3 in case something goes wrong.
+            # We may need to recover an earlier run.
+            s3.upload_data(
+                data=serialized_data,
+                s3_key=f'{get_s3_calendly_daily_path()}/events/{calendly_min_event_start}/events.json',
+            )
+            # Upload one copy to the archive path which we expect to keep as our permanent record.
+            s3_path_prefix = app.config['LOCH_S3_CALENDLY_DATA_PATH']
+            s3.upload_data(
+                data=serialized_data,
+                s3_key=f'{s3_path_prefix}/archive/{hashed_datestamp(calendly_min_event_start)}/events/events.json',
+            )
+            app.logger.info(f'Uploaded data for {len(events)} Calendly events on {calendly_min_event_start}')
+        else:
             app.logger.info(f'No Calendly events between {calendly_min_event_start} and {calendly_max_event_start}')
-            return
-
-        imported_at = utc_now().strftime('%Y-%m-%dT%H:%M:%SZ')
-        serialized_data = ''
-        for e in events:
-            # Make JsonSerDe schema creation easier in Redshift: transform arrays to dicts,
-            # and output one JSON record per line in text file in S3.
-            serialized_data += json.dumps({'importedAt': imported_at, **e}) + '\n'
-        # Upload one copy to the daily path. We keep it there for a few days in S3 in case something goes wrong.
-        # We may need to recover an earlier run.
-        s3.upload_data(
-            data=serialized_data,
-            s3_key=f'{get_s3_calendly_daily_path()}/events/{calendly_min_event_start}/events.json',
-        )
-        # Upload one copy to the archive path which we expect to keep as our permanent record.
-        s3_path_prefix = app.config['LOCH_S3_CALENDLY_DATA_PATH']
-        s3.upload_data(
-            data=serialized_data,
-            s3_key=f'{s3_path_prefix}/archive/{hashed_datestamp(calendly_min_event_start)}/events/events.json',
-        )
-        app.logger.info(f'Uploaded data for {len(events)} Calendly events on {calendly_min_event_start}')
+        return len(events)
