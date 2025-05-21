@@ -1,3 +1,7 @@
+# Register a personalized '.gitignore.local' file with the command:
+#   git config --local core.excludesFile .gitignore.local
+.gitignore.local
+
 # IDE-related
 .idea
 .vscode
