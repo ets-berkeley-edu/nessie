@@ -26,7 +26,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 from nessie.jobs.background_job import check_for_stalled_job
-
+from nessie.jobs.create_calendly_schema import CreateCalendlySchema
+from nessie.jobs.import_calendly_api import ImportCalendlyApi
 
 """Background job scheduling."""
 
@@ -44,6 +45,7 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_REFRESH_SISEDO_INCREMENTAL': 1700,
     'JOB_IMPORT_ADVISORS': 1800,
     'JOB_IMPORT_ADMISSIONS': 1850,
+    'JOB_IMPORT_CALENDLY': 7500,
     'JOB_IMPORT_STUDENT_POPULATION': 2000,
     'JOB_IMPORT_CANVAS_ENROLLMENTS': 2900,
     'JOB_GENERATE_ALL_TABLES': 3000,
@@ -79,7 +81,7 @@ def initialize_job_schedules(_app, force=False):
         schedule_all_jobs(force)
 
 
-def schedule_all_jobs(force=False):
+def schedule_all_jobs(force=False):  # noqa: PLR0915
     from nessie.jobs.bi_grant_readonly_access import GrantBiReadonlyAccess
     from nessie.jobs.bi_refresh_boa_rds_data_schema import RefreshBiBoaRdsDataSchema
     from nessie.jobs.bi_refresh_boa_advising_schemas import RefreshBiBoaAdvisingSchemas
@@ -194,6 +196,15 @@ def schedule_all_jobs(force=False):
     schedule_job(sched, 'JOB_TRANSFORM_PIAZZA_DATA', TransformPiazzaApiData, force)
     schedule_job(sched, 'JOB_IMPORT_EDL', CreateEdlSchema, force)
     schedule_job(sched, 'JOB_UPDATE_ACADEMIC_PARTICIPATION', UpdateAcademicParticipationData, force)
+    schedule_chained_job(
+        sched,
+        'JOB_IMPORT_CALENDLY',
+        [
+            ImportCalendlyApi,
+            CreateCalendlySchema,
+        ],
+        force,
+    )
     schedule_chained_job(
         sched,
         'JOB_IMPORT_YCBM',

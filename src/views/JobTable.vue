@@ -86,25 +86,31 @@
             </v-alert>
             <v-data-table
               :headers="[
-                {key: 'id', title: 'Job', sortable: jobs.all.length > 1},
+                {
+                  key: 'id',
+                  cellProps: {class: 'vertical-top'},
+                  sortable: jobs.all.length > 1,
+                  title: 'Job',
+                  width: 360
+                },
                 {
                   key: 'status',
                   cellProps: item => {
                     if (item.value === 'failed') {
-                      return {class: 'bg-red-lighten-4 text-center'}
+                      return {class: 'bg-red-lighten-4 vertical-top'}
                     } else if (item.value === 'started') {
-                      return {class: 'bg-blue-lighten-4'}
+                      return {class: 'bg-blue-lighten-4 vertical-top'}
                     } else {
-                      return {class: 'bg-green-lighten-4'}
+                      return {class: 'bg-green-lighten-4 vertical-top'}
                     }
                   },
                   sortable: jobs.all.length > 1,
                   title: 'Status'
                 },
-                {key: 'details', title: 'Summary', sortable: false},
-                {key: 'started', title: 'Start (UTC)', sortable: jobs.all.length > 1},
-                {key: 'finished', title: 'End (UTC)', sortable: jobs.all.length > 1},
-                {key: 'duration', title: 'Duration (hh:mm:ss)', sortable: jobs.all.length > 1}
+                {key: 'details', cellProps: {class: 'vertical-top'}, sortable: false, title: 'Summary'},
+                {key: 'started', cellProps: {class: 'vertical-top'}, sortable: jobs.all.length > 1, title: 'Start (UTC)'},
+                {key: 'finished', cellProps: {class: 'vertical-top'}, sortable: jobs.all.length > 1, title: 'End (UTC)'},
+                {key: 'duration', cellProps: {class: 'vertical-top'}, sortable: jobs.all.length > 1, title: 'Duration (hh:mm:ss)'}
               ]"
               :items="jobs.all"
               items-per-page="-1"
@@ -112,12 +118,15 @@
               :mobile="xs"
             >
               <template #item.id="{ item }">
-                {{ item.name }}
+                <span class="text-subtitle-2 font-weight-bold text-medium-emphasis">{{ item.name }}</span>
               </template>
               <template #item.status="{ item }">
-                <div class="d-flex justify-center">
-                  <div>
-                    {{ item.status }}
+                <div class="align-center d-flex">
+                  <div v-if="item.status.includes('fail')" class="font-weight-bold text-medium-emphasis">
+                    {{ toUpper(item.status) }}
+                  </div>
+                  <div v-if="!item.status.includes('fail')">
+                    {{ capitalize(item.status) }}
                   </div>
                   <v-tooltip
                     v-if="(item.status === 'started') && !item.finished && getAgeInHours(item) > 5"
@@ -130,7 +139,7 @@
                 </div>
               </template>
               <template #item.details="{ item }">
-                <div v-html="item.details"></div>
+                <div v-html="item.details" />
               </template>
               <template #item.started="{ item }">
                 {{ toFormatFromISO(item.started, "HH:mm:ss") }}
@@ -186,7 +195,7 @@
 </template>
 
 <script setup>
-import {capitalize, each, find, get, map, replace, split} from 'lodash'
+import {capitalize, each, find, get, map, replace, split, toUpper} from 'lodash'
 import {DateTime} from 'luxon'
 import {mdiCheck, mdiHelpBox} from '@mdi/js'
 import {computed, onMounted, onUnmounted, ref} from 'vue'

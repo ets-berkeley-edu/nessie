@@ -95,7 +95,7 @@ def _get_user_friendly_api_name(api_path_suffix):
             result = 'BerkeleyX'
         elif w == 'urls':
             result = 'URLs'
-        elif w in ['api', 'asc', 'bi', 'boa', 'boac', 'cd2', 'coe', 'edl', 'eop', 'oua', 'rds', 's3', 'sis', 'ycbm'] or len(w) == 1:
+        elif w in ['api', 'asc', 'bi', 'boa', 'boac', 'cd2', 'coe', 'edl', 'eop', 'oua', 'rds', 's3', 'sis', 'ycbm']:
             result = w.upper()
         else:
             result = w.capitalize()
@@ -104,10 +104,11 @@ def _get_user_friendly_api_name(api_path_suffix):
     words = api_path_suffix.split('_')
     name = ' '.join([_to_proper_case(w) for w in words])
     replacements = {
+        'Bcourses': 'bCourses',
+        'C D2': 'CD2',
         'E And I': 'E&I',
         'Resync': 'Re-sync',
         'Sisedo': 'SIS EDO',
-        'Bcourses': 'bCourses',
     }
     for value, key in replacements.items():
         name = name.replace(value, key)
@@ -117,4 +118,4 @@ def _get_user_friendly_api_name(api_path_suffix):
 def _get_user_friendly_job_name(job_id):
     job_class_name = job_id.split('_')[0]
     words = split_per_camel_case(job_class_name, separator=' ').split(' ')
-    return ' '.join([_get_user_friendly_api_name(word) for word in words])
+    return _get_user_friendly_api_name('_'.join(words))

@@ -126,6 +126,10 @@ def get_s3_boac_analytics_incremental_path(cutoff=None):
     return app.config['LOCH_S3_BOAC_ANALYTICS_DATA_PATH'] + '/incremental/' + hashed_datestamp(cutoff)
 
 
+def get_s3_calendly_daily_path(cutoff=None):
+    return app.config['LOCH_S3_CALENDLY_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
+
+
 def get_s3_calnet_daily_path(cutoff=None):
     return app.config['LOCH_S3_CALNET_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
@@ -211,10 +215,6 @@ def get_s3_sis_sysadm_daily_path(cutoff=None):
     return app.config['LOCH_S3_SIS_DATA_PATH'] + '/sis-sysadm/daily/' + hashed_datestamp(cutoff)
 
 
-def get_s3_calendly_daily_path(cutoff=None):
-    return app.config['LOCH_S3_CALENDLY_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
-
-
 def get_s3_ycbm_daily_path(cutoff=None):
     return app.config['LOCH_S3_YCBM_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
@@ -266,6 +266,8 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_schema_asc_advising_notes': app.config['REDSHIFT_SCHEMA_ASC_ADVISING_NOTES'],
         'redshift_schema_asc_advising_notes_internal': app.config['REDSHIFT_SCHEMA_ASC_ADVISING_NOTES_INTERNAL'],
         'redshift_schema_boac': app.config['REDSHIFT_SCHEMA_BOAC'],
+        'redshift_schema_calendly': app.config['REDSHIFT_SCHEMA_CALENDLY'],
+        'redshift_schema_calendly_internal': app.config['REDSHIFT_SCHEMA_CALENDLY_INTERNAL'],
         'redshift_schema_canvas': app.config['REDSHIFT_SCHEMA_CANVAS'],
         'redshift_schema_canvas_data_2': app.config['REDSHIFT_SCHEMA_CANVAS_DATA_2'],
         'redshift_schema_coe': app.config['REDSHIFT_SCHEMA_COE'],
@@ -294,6 +296,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_iam_role': app.config['REDSHIFT_IAM_ROLE'],
         'loch_s3_asc_data_path': s3_prefix + get_s3_asc_daily_path(),
         'loch_s3_boac_analytics_incremental_path': s3_prefix + get_s3_boac_analytics_incremental_path(),
+        'loch_s3_calendly_data_path': s3_prefix + app.config['LOCH_S3_CALENDLY_DATA_PATH'],
         'loch_s3_calnet_data_path': s3_prefix + get_s3_calnet_daily_path(),
         'loch_s3_canvas_data_path_today': s3_prefix + get_s3_canvas_daily_path(),
         'loch_s3_canvas_data_2_path_today': s3_prefix + get_s3_canvas_data_2_daily_path(),
