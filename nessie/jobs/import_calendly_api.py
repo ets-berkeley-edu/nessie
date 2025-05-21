@@ -54,9 +54,7 @@ class ImportCalendlyApi(BackgroundJob):
             calendly_min_event_start = calendly_max_event_start + timedelta(days=1)
             calendly_max_event_start = calendly_min_event_start + timedelta(days=2)
         app.logger.info(f"Finished Calendly events import from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
-        return (
-            f'Calendly API imported {total_event_count} events where start_date={start_date} and end_date={end_date}'
-        )
+        return f'Calendly API imported {total_event_count} events where start_date={start_date} and end_date={end_date}'
 
     @staticmethod
     def _put_calendly_events_to_s3(calendly_min_event_start, calendly_max_event_start):

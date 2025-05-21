@@ -40,6 +40,7 @@ from nessie.jobs.chained_import_student_population import ChainedImportStudentPo
 from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
 from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
 from nessie.jobs.create_berkeleyx_schema import CreateBerkeleyxSchema
+from nessie.jobs.create_calendly_schema import CreateCalendlySchema
 from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.create_coe_schema import CreateCoeSchema
 from nessie.jobs.create_data_science_advising_schema import CreateDataScienceAdvisingSchema
@@ -198,6 +199,13 @@ def create_sis_advising_notes_schema():
 @auth_required
 def create_student_schema():
     job_started = CreateStudentSchema().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/create_calendly_schema', methods=['POST'])
+@auth_required
+def create_calendly_schema():
+    job_started = CreateCalendlySchema().run_async()
     return respond_with_status(job_started)
 
 
