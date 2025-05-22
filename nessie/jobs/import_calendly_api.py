@@ -66,8 +66,32 @@ class ImportCalendlyApi(BackgroundJob):
         )
         if len(events):
             imported_at = utc_now().strftime('%Y-%m-%dT%H:%M:%SZ')
+
+            def _extract_event_uuid(event_uri):
+                return event_uri.split('/')[-1]
+            events_by_uuid = {_extract_event_uuid(event['uri']): event for event in events}
+            for uuid, event in events_by_uuid.items():
+                event['invitees'] = []
+                for event_invitee in calendly_api.get_event_invitees(uuid):
+                    invitee = {
+                        **{k: event_invitee[k] for k in ['email', 'name'] if k in event_invitee},
+                        'questions_and_answers': [],
+                        'sid': None,
+                    }
+                    for question_and_answer in event_invitee.get('questions_and_answers', []):
+                        question = question_and_answer.get("question")
+                        answer = question_and_answer.get("answer")
+                        if question and answer:
+                            if 'Student Identification Number (SID)' in question:
+                                invitee['sid'] = answer
+                            else:
+                                invitee['questions_and_answers'].append({'question': question, 'answer': answer})
+                    event['invitees'].append(invitee)
             serialized_data = ''
             for e in events:
+                # Remove noisy Zoom info.
+                if e.get('location', {}).get('type', None) == 'zoom':
+                    del e['location']
                 # JsonSerDe schema creation in Redshift via JSON records in S3.
                 serialized_data += json.dumps({'imported_at': imported_at, **e}) + '\n'
             s3_directory = f"{min_event_start.strftime('%Y-%m-%d')}_to_{max_event_start.strftime('%Y-%m-%d')}"

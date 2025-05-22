@@ -37,6 +37,17 @@ import requests
 RESULT_SET_LIMIT_PER_REQUEST = 100
 
 
+def get_event_invitees(event_uuid):
+    events, next_page_token = _get_event_invitees(event_uuid)
+    while next_page_token is not None:
+        more_events, next_page_token = _get_event_invitees(
+            event_uuid=event_uuid,
+            page_token=next_page_token,
+        )
+        events.extend(more_events)
+    return events
+
+
 def get_scheduled_events(min_start_time, max_start_time):
     organization = _get_organization_object()
     organization_uri = organization['resource']['uri']
@@ -74,6 +85,19 @@ def _get_scheduled_events(
     if page_token:
         query['page_token'] = page_token
     feed = _make_calendly_api_request(path='/scheduled_events', query=query).json()
+    return feed['collection'], feed['pagination']['next_page_token']
+
+
+def _get_event_invitees(event_uuid, page_token=None):
+    # Calendly API docs: https://developer.calendly.com/api-docs/eb8ee72701f99-list-event-invitees
+    query = {
+        'count': RESULT_SET_LIMIT_PER_REQUEST,
+        'sort': 'created_at',
+        'status': 'active',
+    }
+    if page_token:
+        query['page_token'] = page_token
+    feed = _make_calendly_api_request(path=f'/scheduled_events/{event_uuid}/invitees', query=query).json()
     return feed['collection'], feed['pagination']['next_page_token']
 
 
