@@ -72,7 +72,7 @@ class ImportCalendlyApi(BackgroundJob):
             for e in events:
                 # Make JsonSerDe schema creation easier in Redshift: transform arrays to dicts,
                 # and output one JSON record per line in text file in S3.
-                serialized_data += json.dumps({'importedAt': imported_at, **e}) + '\n'
+                serialized_data += json.dumps({'imported_at': imported_at, **e}) + '\n'
             # Upload one copy to the daily path. We keep it there for a few days in S3 in case something goes wrong.
             # We may need to recover an earlier run.
             s3.upload_data(

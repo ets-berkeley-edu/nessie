@@ -118,7 +118,10 @@
               :mobile="xs"
             >
               <template #item.id="{ item }">
-                <span class="text-subtitle-2 font-weight-bold text-medium-emphasis">{{ item.name }}</span>
+                <span
+                  class="text-subtitle-2 font-weight-bold text-medium-emphasis"
+                  v-html="item.name"
+                />
               </template>
               <template #item.status="{ item }">
                 <div class="align-center d-flex">
@@ -196,13 +199,12 @@
 
 <script setup>
 import {capitalize, each, find, get, map, replace, split, toUpper} from 'lodash'
+import {computed, onMounted, onUnmounted, ref} from 'vue'
 import {DateTime} from 'luxon'
 import {mdiCheck, mdiHelpBox} from '@mdi/js'
-import {computed, onMounted, onUnmounted, ref} from 'vue'
 import {useDisplay} from 'vuetify'
 
 import LargeSpinner from '@/components/widgets/LargeSpinner'
-
 import {getBackgroundJobStatus, getRunnableJobs, runJob} from '@/api/job'
 import {getXkcd} from '@/api/status'
 import {toFormatFromISO, toFormatFromJsDate} from '@/utils'

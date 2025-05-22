@@ -106,7 +106,8 @@ def _get_user_friendly_api_name(api_path_suffix):
     replacements = {
         'Bcourses': 'bCourses',
         'C D2': 'CD2',
-        'E And I': 'E&I',
+        'E I': 'E&I',
+        'O U A': 'OUA',
         'Resync': 'Re-sync',
         'Sisedo': 'SIS EDO',
     }
