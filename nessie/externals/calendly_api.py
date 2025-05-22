@@ -65,8 +65,8 @@ def _get_scheduled_events(
     # Calendly API docs: https://developer.calendly.com/api-docs/2d5ed9bbd2952-list-events
     query = {
         'count': RESULT_SET_LIMIT_PER_REQUEST,
-        'max_start_time': _to_iso_format(max_start_time),
-        'min_start_time': _to_iso_format(min_start_time),
+        'max_start_time': _to_calendly_date_format(max_start_time),
+        'min_start_time': _to_calendly_date_format(min_start_time),
         'organization': organization_uri,
         'sort': 'start_time',
         'status': 'active',
@@ -105,5 +105,5 @@ def _get_authorized_response(url, mock=None):
         return response
 
 
-def _to_iso_format(value):
-    return value.astimezone(pytz.utc).isoformat()
+def _to_calendly_date_format(value):
+    return value.astimezone(pytz.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')

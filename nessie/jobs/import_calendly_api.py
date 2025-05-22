@@ -38,54 +38,47 @@ class ImportCalendlyApi(BackgroundJob):
     def run(self):
         # Today's date
         localized_date = localize_datetime(datetime.now()).date()
-        # In the API call, we request scheduled-events of an N day span, per config values.
-        start_date = localized_date - timedelta(app.config['CALENDLY_FETCH_DAYS_BEHIND'])
-        calendly_min_event_start = start_date
-        calendly_max_event_start = calendly_min_event_start + timedelta(1)
-        # Continue to fetch until we reach 'end_date'
-        end_date = localized_date + timedelta(app.config['CALENDLY_FETCH_DAYS_AHEAD'])
-        total_event_count = 0
-        while calendly_min_event_start <= end_date:
-            total_event_count += self._put_calendly_events_to_s3(
-                calendly_min_event_start,
-                calendly_max_event_start,
-            )
-            # Increment
-            calendly_min_event_start = calendly_max_event_start + timedelta(days=1)
-            calendly_max_event_start = calendly_min_event_start + timedelta(days=2)
-        app.logger.info(f"Finished Calendly events import from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
-        return f'Calendly API imported {total_event_count} events where start_date={start_date} and end_date={end_date}'
+
+        def _datetime_per_delta(timedelta_with_now, time):
+            date = localized_date + timedelta_with_now
+            return datetime.combine(date, time).replace(tzinfo=timezone.utc)
+        # Fetch scheduled-events of N day span, per configs.
+        min_event_start = _datetime_per_delta(-timedelta(app.config['CALENDLY_FETCH_DAYS_BEHIND']), datetime.min.time())
+        max_event_start = _datetime_per_delta(timedelta(app.config['CALENDLY_FETCH_DAYS_AHEAD']), datetime.max.time())
+        total_event_count = self._put_calendly_events_to_s3(
+            min_event_start=min_event_start,
+            max_event_start=max_event_start,
+        )
+        job_summary = f"""
+            Imported {total_event_count} Calendly events.
+            These events had start-time between {min_event_start} and {max_event_start}.
+        """
+        app.logger.info(job_summary)
+        return job_summary
 
     @staticmethod
-    def _put_calendly_events_to_s3(calendly_min_event_start, calendly_max_event_start):
-        def _datetime_combine(date, min_or_max):
-            return datetime.combine(date, min_or_max.time()).replace(tzinfo=timezone.utc)
-
-        app.logger.info(f'Fetching Calendly events between {calendly_min_event_start} and {calendly_max_event_start}')
+    def _put_calendly_events_to_s3(min_event_start, max_event_start):
+        app.logger.info(f'Fetching Calendly events between {min_event_start} and {max_event_start}')
+        # 'min_event_start' and 'max_event_start' refer to the start-time of Calendly events.
         events = calendly_api.get_scheduled_events(
-            min_start_time=_datetime_combine(calendly_min_event_start, datetime.min),
-            max_start_time=_datetime_combine(calendly_max_event_start, datetime.max),
+            min_start_time=min_event_start,
+            max_start_time=max_event_start,
         )
         if len(events):
             imported_at = utc_now().strftime('%Y-%m-%dT%H:%M:%SZ')
             serialized_data = ''
             for e in events:
-                # Make JsonSerDe schema creation easier in Redshift: transform arrays to dicts,
-                # and output one JSON record per line in text file in S3.
+                # JsonSerDe schema creation in Redshift via JSON records in S3.
                 serialized_data += json.dumps({'imported_at': imported_at, **e}) + '\n'
-            # Upload one copy to the daily path. We keep it there for a few days in S3 in case something goes wrong.
-            # We may need to recover an earlier run.
+            s3_directory = f"{min_event_start.strftime('%Y-%m-%d')}_to_{max_event_start.strftime('%Y-%m-%d')}"
             s3.upload_data(
                 data=serialized_data,
-                s3_key=f'{get_s3_calendly_daily_path()}/events/{calendly_min_event_start}/events.json',
+                s3_key=f'{get_s3_calendly_daily_path()}/events/{s3_directory}/events.json',
             )
-            # Upload one copy to the archive path which we expect to keep as our permanent record.
+            # Upload a copy, to keep as our permanent record, to the archive path.
             s3_path_prefix = app.config['LOCH_S3_CALENDLY_DATA_PATH']
             s3.upload_data(
                 data=serialized_data,
-                s3_key=f'{s3_path_prefix}/archive/{hashed_datestamp(calendly_min_event_start)}/events/events.json',
+                s3_key=f'{s3_path_prefix}/archive/{hashed_datestamp(min_event_start)}/events/events.json',
             )
-            app.logger.info(f'Uploaded data for {len(events)} Calendly events on {calendly_min_event_start}')
-        else:
-            app.logger.info(f'No Calendly events between {calendly_min_event_start} and {calendly_max_event_start}')
         return len(events)
