@@ -39,90 +39,17 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 
 -- events
 CREATE EXTERNAL TABLE {redshift_schema_calendly}.events(
-      id VARCHAR,
-      title VARCHAR,
-      startsAt VARCHAR,
-      endsAt VARCHAR,
-      cancelled BOOLEAN,
-      cancellationReason CHAR(max),
-      teamMember STRUCT<id: VARCHAR, name: VARCHAR, email: VARCHAR>,
-      answers STRUCT<sid: VARCHAR, email: VARCHAR, fname: VARCHAR, q5: CHAR(max), q6: CHAR(max)>,
-      importedAt VARCHAR
+    calendar_event STRUCT<id: VARCHAR, kind: VARCHAR>,
+    end_time VARCHAR,
+    meeting_notes_html VARCHAR,
+    meeting_notes_plain VARCHAR,
+    name VARCHAR,
+    start_time VARCHAR,
+    status VARCHAR,
+    updated_at VARCHAR,
+    uri VARCHAR,
+    imported_at VARCHAR
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
 WITH SERDEPROPERTIES ('ignore.malformed.json' = 'true')
 LOCATION '{loch_s3_calendly_data_path}/archive';
-
---------------------------------------------------------------------
--- Internal schema
---------------------------------------------------------------------
-
-DROP SCHEMA IF EXISTS {redshift_schema_calendly_internal} CASCADE;
-CREATE SCHEMA {redshift_schema_calendly_internal};
-GRANT USAGE ON SCHEMA {redshift_schema_calendly_internal} TO GROUP {redshift_app_boa_user}_group;
-ALTER default PRIVILEGES IN SCHEMA {redshift_schema_calendly_internal} GRANT SELECT ON TABLES TO GROUP {redshift_app_boa_user}_group;
-GRANT USAGE ON SCHEMA {redshift_schema_calendly_internal} TO GROUP {redshift_dblink_group};
-ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_calendly_internal} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
-
---------------------------------------------------------------------
--- Internal tables
---------------------------------------------------------------------
-
-CREATE OR REPLACE FUNCTION {redshift_schema_calendly_internal}.to_utc_iso_string(date_string VARCHAR)
-RETURNS VARCHAR
-STABLE
-AS $$
-  from datetime import datetime
-  import pytz
-
-  d = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S')
-  d = pytz.timezone('America/Los_Angeles').localize(d)
-  return d.astimezone(pytz.utc).isoformat()
-$$ language plpythonu;
-
-GRANT EXECUTE
-ON function {redshift_schema_calendly_internal}.to_utc_iso_string(VARCHAR)
-TO GROUP {redshift_app_boa_user}_group;
-
-CREATE TABLE {redshift_schema_calendly_internal}.events
-SORTKEY (id)
-AS (
-  SELECT
-    t.id,
-    NULL::VARCHAR(10) AS ldap_uid,
-    t.answers.sid AS calendly_sid,
-    t.answers.email AS calendly_student_email,
-    t.answers.fname AS calendly_student_name,
-    t.title,
-    TO_TIMESTAMP({redshift_schema_calendly_internal}.to_utc_iso_string(t.startsat), 'YYYY-MM-DD"T"HH.MI.SS%z') AS starts_at,
-    TO_TIMESTAMP({redshift_schema_calendly_internal}.to_utc_iso_string(t.endsat), 'YYYY-MM-DD"T"HH.MI.SS%z') AS ends_at,
-    t.cancelled,
-    t.cancellationreason AS cancellation_reason,
-    t.teammember.id AS advisor_id,
-    t.teammember.name AS advisor_name,
-    t.teammember.email AS advisor_email,
-    t.answers.q5 AS q5,
-    t.answers.q6 AS q6,
-    MAX(t.importedat) AS imported_at
-  FROM {redshift_schema_calendly}.events t
-  GROUP BY
-    t.id, t.title, t.startsat, t.endsat, t.cancelled, t.cancellationreason,
-    t.teammember.id, t.teammember.name, t.teammember.email,
-    t.answers.sid, t.answers.email, t.answers.fname, t.answers.q5, t.answers.q6
-);
-
-DROP FUNCTION {redshift_schema_calendly_internal}.to_utc_iso_string(VARCHAR);
-
-UPDATE {redshift_schema_calendly_internal}.events
-SET ldap_uid = ba.ldap_uid
-FROM {redshift_schema_edl}.basic_attributes ba
-  JOIN {redshift_schema_calendly_internal}.events b
-  ON ba.sid = b.calendly_sid;
-
--- Second pass: try to fill in remaining UIDs from CalNet matches on email address.
-UPDATE {redshift_schema_calendly_internal}.events
-SET ldap_uid = ba.ldap_uid
-FROM {redshift_schema_edl}.basic_attributes ba
-  JOIN {redshift_schema_calendly_internal}.events b
-  ON ba.email_address = b.calendly_student_email
-  AND b.ldap_uid IS NULL;
