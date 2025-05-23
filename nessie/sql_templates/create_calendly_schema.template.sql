@@ -39,16 +39,19 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 
 -- events
 CREATE EXTERNAL TABLE {redshift_schema_calendly}.events(
-    calendar_event STRUCT<id: VARCHAR, kind: VARCHAR>,
-    start_time VARCHAR,
     end_time VARCHAR,
+    hosts ARRAY<VARCHAR>,
+    invitees ARRAY<VARCHAR>,
     meeting_notes_html VARCHAR,
     meeting_notes_plain VARCHAR,
     name VARCHAR,
+    start_time VARCHAR,
     status VARCHAR,
-    updated_at VARCHAR,
     uri VARCHAR,
-    imported_at VARCHAR
+    uuid VARCHAR,
+    created_at VARCHAR,
+    imported_at VARCHAR,
+    updated_at VARCHAR
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
 WITH SERDEPROPERTIES ('ignore.malformed.json' = 'true')
@@ -101,7 +104,7 @@ AS (
     MAX(e.imported_at) AS imported_at
   FROM {redshift_schema_calendly}.events e
   GROUP BY
-    e.calendar_event.id, e.name, e.start_time, e.end_time, e.meeting_notes_html, e.meeting_notes_plain, e.status, e.uri
+    e.uuid, e.name, e.start_time, e.end_time, e.meeting_notes_html, e.meeting_notes_plain, e.status, e.uri
 );
 
 DROP FUNCTION {redshift_schema_calendly_internal}.to_utc_iso_string(VARCHAR);
