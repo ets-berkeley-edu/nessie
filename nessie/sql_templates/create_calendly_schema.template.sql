@@ -107,7 +107,7 @@ AS (
     e.host_uri,
     e.meeting_notes_html,
     e.meeting_notes_plain,
-    e.name,
+    e.name AS title,
     TO_TIMESTAMP({redshift_schema_calendly_internal}.to_utc_iso_string(e.start_time), 'YYYY-MM-DD"T"HH.MI.SS%z') AS start_time,
     e.status,
     e.student.email AS student_email,
@@ -116,8 +116,8 @@ AS (
     NULL::VARCHAR(10) AS student_uid,
     e.student.questions_and_answers AS questions_and_answers,
     e.uri,
-    e.created_at,
-    e.updated_at,
+    TO_TIMESTAMP({redshift_schema_calendly_internal}.to_utc_iso_string(e.created_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
+    TO_TIMESTAMP({redshift_schema_calendly_internal}.to_utc_iso_string(e.updated_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at,
     MAX(e.imported_at) AS imported_at
   FROM {redshift_schema_calendly}.events e
   GROUP BY
