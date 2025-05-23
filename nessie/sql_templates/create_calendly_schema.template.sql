@@ -40,13 +40,20 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 -- events
 CREATE EXTERNAL TABLE {redshift_schema_calendly}.events(
     end_time VARCHAR,
-    hosts ARRAY<VARCHAR>,
-    invitees ARRAY<VARCHAR>,
+    host_email VARCHAR,
+    host_name VARCHAR,
+    host_uri VARCHAR,
     meeting_notes_html VARCHAR,
     meeting_notes_plain VARCHAR,
     name VARCHAR,
     start_time VARCHAR,
     status VARCHAR,
+    student STRUCT<
+        email: VARCHAR,
+        name: VARCHAR,
+        questions_and_answers: VARCHAR,
+        sid: VARCHAR
+    >,
     uri VARCHAR,
     uuid VARCHAR,
     created_at VARCHAR,
@@ -79,7 +86,7 @@ AS $$
   from datetime import datetime
   import pytz
 
-  d = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S')
+  d = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
   d = pytz.timezone('America/Los_Angeles').localize(d)
   return d.astimezone(pytz.utc).isoformat()
 $$ language plpythonu;
@@ -92,33 +99,49 @@ CREATE TABLE {redshift_schema_calendly_internal}.events
 SORTKEY (id)
 AS (
   SELECT
-    e.id,
-    NULL::VARCHAR(10) AS ldap_uid,
-    e.name,
-    TO_TIMESTAMP({redshift_schema_calendly_internal}.to_utc_iso_string(e.start_time), 'YYYY-MM-DD"T"HH.MI.SS%z') AS start_time,
+    e.uuid AS id,
     TO_TIMESTAMP({redshift_schema_calendly_internal}.to_utc_iso_string(e.end_time), 'YYYY-MM-DD"T"HH.MI.SS%z') AS end_time,
+    e.host_email,
+    e.host_name,
+    NULL::VARCHAR(10) AS host_uid,
+    e.host_uri,
     e.meeting_notes_html,
     e.meeting_notes_plain,
+    e.name,
+    TO_TIMESTAMP({redshift_schema_calendly_internal}.to_utc_iso_string(e.start_time), 'YYYY-MM-DD"T"HH.MI.SS%z') AS start_time,
     e.status,
-    e.uri VARCHAR,
+    e.student.email AS student_email,
+    e.student.name AS student_name,
+    e.student.sid AS student_sid,
+    NULL::VARCHAR(10) AS student_uid,
+    e.student.questions_and_answers AS questions_and_answers,
+    e.uri,
+    e.created_at,
+    e.updated_at,
     MAX(e.imported_at) AS imported_at
   FROM {redshift_schema_calendly}.events e
   GROUP BY
-    e.uuid, e.name, e.start_time, e.end_time, e.meeting_notes_html, e.meeting_notes_plain, e.status, e.uri
+    e.uuid, e.end_time, e.host_email, e.host_name, e.host_uri, e.meeting_notes_html, e.meeting_notes_plain, e.name,
+    e.start_time, e.status, e.student.email, e.student.name, e.student.sid, e.student.questions_and_answers,
+    e.uri, e.created_at, e.updated_at
 );
 
 DROP FUNCTION {redshift_schema_calendly_internal}.to_utc_iso_string(VARCHAR);
 
+-- Host UID
 UPDATE {redshift_schema_calendly_internal}.events
-SET ldap_uid = ba.ldap_uid
-FROM {redshift_schema_edl}.basic_attributes ba
-  JOIN {redshift_schema_calendly_internal}.events b
-  ON ba.sid = b.calendly_sid;
+SET host_uid = b.ldap_uid
+FROM {redshift_schema_edl}.basic_attributes b
+  JOIN {redshift_schema_calendly_internal}.events e ON UPPER(b.email_address) = UPPER(e.host_email);
 
--- Second pass: try to fill in remaining UIDs from CalNet matches on email address.
+-- Student UID
 UPDATE {redshift_schema_calendly_internal}.events
-SET ldap_uid = ba.ldap_uid
-FROM {redshift_schema_edl}.basic_attributes ba
-  JOIN {redshift_schema_calendly_internal}.events b
-  ON ba.email_address = b.calendly_student_email
-  AND b.ldap_uid IS NULL;
+SET student_uid = b.ldap_uid
+FROM {redshift_schema_edl}.basic_attributes b
+  JOIN {redshift_schema_calendly_internal}.events e ON e.student_uid = b.sid;
+
+-- Student UID fallback
+UPDATE {redshift_schema_calendly_internal}.events
+SET student_uid = b.ldap_uid
+FROM {redshift_schema_edl}.basic_attributes b
+  JOIN {redshift_schema_calendly_internal}.events e ON UPPER(b.email_address) = UPPER(e.student_email) AND e.student_uid IS NULL;

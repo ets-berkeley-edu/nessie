@@ -66,59 +66,71 @@ class ImportCalendlyApi(BackgroundJob):
             max_start_time=max_event_start,
         )
         if len(events):
-            serialized_data = ''
-            imported_at = utc_now().strftime(CALENDLY_API_DATE_FORMAT)
-
-            def _extract_event_uuid(event_uri):
-                return event_uri.split('/')[-1]
-            events_by_uuid = {_extract_event_uuid(event['uri']): event for event in events}
-            for uuid, event in events_by_uuid.items():
-                event['uuid'] = uuid
-                event['invitees'] = []
-                # Extract host info
-                event['hosts'] = []
-                for event_membership in event.get('event_memberships', []):
-                    event['hosts'].append({
-                        'email': event_membership['user_email'],
-                        'name': event_membership['user_name'],
-                        'uri': event_membership['user'],
-                    })
-                # Extract student info
-                includes_invitee_with_sid = False
-                for event_invitee in calendly_api.get_event_invitees(uuid):
-                    invitee = {
-                        **{k: event_invitee[k] for k in ['email', 'name'] if k in event_invitee},
-                        'questions_and_answers': [],
-                        'sid': None,
-                    }
-                    for question_and_answer in event_invitee.get('questions_and_answers', []):
-                        question = question_and_answer.get("question")
-                        answer = question_and_answer.get("answer")
-                        if question and answer:
-                            if 'Student Identification Number (SID)' in question:
-                                invitee['sid'] = answer
-                                includes_invitee_with_sid = True
-                            else:
-                                invitee['questions_and_answers'].append({'question': question, 'answer': answer})
-                    event['invitees'].append(invitee)
-                if len(event['hosts']) and includes_invitee_with_sid:
-                    # Remove noisy Zoom info.
-                    if event.get('location', {}).get('type', None) == 'zoom':
-                        del event['location']
-                    # Remove other extraneous elements
-                    for key in ('calendar_event', 'event_type', 'invitees_counter', 'event_guests', 'event_memberships'):
-                        del event[key]
-                    # JsonSerDe schema creation in Redshift via JSON records in S3.
-                    serialized_data += json.dumps({'imported_at': imported_at, **event}) + '\n'
-            s3_directory = f"{min_event_start.strftime('%Y-%m-%d')}_to_{max_event_start.strftime('%Y-%m-%d')}"
-            s3.upload_data(
-                data=serialized_data,
-                s3_key=f'{get_s3_calendly_daily_path()}/events/{s3_directory}/events.json',
-            )
-            # Upload a copy, to keep as our permanent record, to the archive path.
-            s3_path_prefix = app.config['LOCH_S3_CALENDLY_DATA_PATH']
-            s3.upload_data(
-                data=serialized_data,
-                s3_key=f'{s3_path_prefix}/archive/{hashed_datestamp(min_event_start)}/events/events.json',
-            )
+            serialized_data = _serialize_calendly_events(events)
+            if serialized_data:
+                s3_directory = f"{min_event_start.strftime('%Y-%m-%d')}_to_{max_event_start.strftime('%Y-%m-%d')}"
+                s3.upload_data(
+                    data=serialized_data,
+                    s3_key=f'{get_s3_calendly_daily_path()}/events/{s3_directory}/events.json',
+                )
+                # Upload a copy, to keep as our permanent record, to the archive path.
+                s3_path_prefix = app.config['LOCH_S3_CALENDLY_DATA_PATH']
+                s3.upload_data(
+                    data=serialized_data,
+                    s3_key=f'{s3_path_prefix}/archive/{hashed_datestamp(min_event_start)}/events/events.json',
+                )
         return len(events)
+
+
+def _serialize_calendly_events(events):
+    serialized_data = ''
+    imported_at = utc_now().strftime(CALENDLY_API_DATE_FORMAT)
+
+    events_by_uuid = {_extract_event_uuid(event['uri']): event for event in events}
+    for uuid, event in events_by_uuid.items():
+        event['uuid'] = uuid
+        # First, initialize attributes of the meeting host.
+        for key in ('host_email', 'host_name', 'host_uri'):
+            event[key] = None
+        # Next, extract host info, if present.
+        if len(event.get('event_memberships', [])):
+            event_membership = event['event_memberships'][0]
+            event['host_email'] = event_membership['user_email']
+            event['host_name'] = event_membership['user_name']
+            event['host_uri'] = event_membership['user']
+        # Extract student info
+        includes_invitee_with_sid = False
+        for event_invitee in calendly_api.get_event_invitees(uuid):
+            student = {
+                **{k: event_invitee[k] for k in ['email', 'name'] if k in event_invitee},
+                'questions_and_answers': None,
+                'sid': None,
+            }
+            questions_and_answers = []
+            for question_and_answer in event_invitee.get('questions_and_answers', []):
+                question = question_and_answer.get("question")
+                answer = question_and_answer.get("answer")
+                if question and answer:
+                    if 'Student Identification Number (SID)' in question:
+                        student['sid'] = answer
+                        includes_invitee_with_sid = True
+                    else:
+                        questions_and_answers.append({'question': question, 'answer': answer})
+            student['questions_and_answers'] = json.dumps(questions_and_answers)
+            if includes_invitee_with_sid:
+                event['student'] = student
+                break
+        if event['host_email'] and includes_invitee_with_sid:
+            # Remove noisy Zoom info.
+            if event.get('location', {}).get('type', None) == 'zoom':
+                del event['location']
+            # Remove other extraneous elements
+            for key in ('calendar_event', 'event_type', 'invitees_counter', 'event_guests', 'event_memberships'):
+                del event[key]
+            # JsonSerDe schema creation in Redshift via JSON records in S3.
+            serialized_data += json.dumps({'imported_at': imported_at, **event}) + '\n'
+    return serialized_data
+
+
+def _extract_event_uuid(event_uri):
+    return event_uri.split('/')[-1]
