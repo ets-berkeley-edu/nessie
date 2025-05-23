@@ -34,6 +34,7 @@ import requests
 
 """Calendly API."""
 
+CALENDLY_API_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 RESULT_SET_LIMIT_PER_REQUEST = 100
 
 
@@ -130,4 +131,4 @@ def _get_authorized_response(url, mock=None):
 
 
 def _to_calendly_date_format(value):
-    return value.astimezone(pytz.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    return value.astimezone(pytz.utc).strftime(CALENDLY_API_DATE_FORMAT)
