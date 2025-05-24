@@ -179,6 +179,9 @@ DROP TABLE IF EXISTS {rds_schema_advising_appointments}.calendly_advising_appoin
 
 CREATE TABLE {rds_schema_advising_appointments}.calendly_advising_appointments (
   id VARCHAR NOT NULL,
+  canceled_at TIMESTAMP WITH TIME ZONE,
+  canceled_by VARCHAR,
+  cancellation_reason TEXT,
   end_time TIMESTAMP WITH TIME ZONE,
   host_name VARCHAR,
   host_uid VARCHAR,
@@ -199,6 +202,9 @@ INSERT INTO {rds_schema_advising_appointments}.calendly_advising_appointments (
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT
       e.id,
+      e.canceled_at,
+      e.canceled_by,
+      e.cancellation_reason,
       e.end_time,
       e.host_name,
       e.host_uid,
@@ -218,6 +224,9 @@ INSERT INTO {rds_schema_advising_appointments}.calendly_advising_appointments (
   $REDSHIFT$)
   AS redshift_appointments (
       id VARCHAR,
+      canceled_at TIMESTAMP WITH TIME ZONE,
+      canceled_by VARCHAR,
+      cancellation_reason TEXT,
       end_time TIMESTAMP WITH TIME ZONE,
       host_name VARCHAR,
       host_uid VARCHAR,

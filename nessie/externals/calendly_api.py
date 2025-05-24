@@ -81,7 +81,6 @@ def _get_scheduled_events(
         'min_start_time': _to_calendly_date_format(min_start_time),
         'organization': organization_uri,
         'sort': 'start_time',
-        'status': 'active',
     }
     if page_token:
         query['page_token'] = page_token

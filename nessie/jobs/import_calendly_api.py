@@ -127,6 +127,11 @@ def _serialize_calendly_events(events):
             # Remove other extraneous elements
             for key in ('calendar_event', 'event_type', 'invitees_counter', 'event_guests', 'event_memberships'):
                 del event[key]
+            # We want to capture canceled events and the related metadata.
+            cancellation = event.get('cancellation', {})
+            event['canceled_at'] = cancellation.get('created_at', None)
+            event['canceled_by'] = cancellation.get('canceled_by', None)
+            event['cancellation_reason'] = cancellation.get('reason', None)
             # JsonSerDe schema creation in Redshift via JSON records in S3.
             serialized_data += json.dumps({'imported_at': imported_at, **event}) + '\n'
     return serialized_data
