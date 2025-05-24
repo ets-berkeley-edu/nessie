@@ -2,7 +2,9 @@
   <v-row :class="{'mb-3': !currentUser}">
     <v-col class="align-center d-flex mx-4 pb-0">
       <div class="mt-2 pl-8">
-        <a :href="{name: 'home'}"><img :class="{'shimmy': shimmy}" src="@/assets/logo.png"></a>
+        <a href="/">
+          <img alt="Cartoon image of Nessie, the Loch Ness monster." :class="{'shimmy': shimmy}" src="@/assets/logo.png">
+        </a>
       </div>
       <div class="py-1">
         <h1 class="font-weight-bold text-h4 my-0 py-0 pl-4">
