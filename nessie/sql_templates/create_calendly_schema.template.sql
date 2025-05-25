@@ -39,6 +39,9 @@ CREATE EXTERNAL DATABASE IF NOT EXISTS;
 
 -- events
 CREATE EXTERNAL TABLE {redshift_schema_calendly}.events(
+    canceled_at VARCHAR,
+    canceled_by VARCHAR,
+    cancellation_reason VARCHAR,
     end_time VARCHAR,
     host_email VARCHAR,
     host_name VARCHAR,
@@ -86,9 +89,12 @@ AS $$
   from datetime import datetime
   import pytz
 
-  d = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
-  d = pytz.timezone('America/Los_Angeles').localize(d)
-  return d.astimezone(pytz.utc).isoformat()
+  utc_iso_string = None
+  if date_string:
+      d = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
+      d = pytz.timezone('America/Los_Angeles').localize(d)
+      utc_iso_string = d.astimezone(pytz.utc).isoformat()
+  return utc_iso_string
 $$ language plpythonu;
 
 GRANT EXECUTE
@@ -100,6 +106,9 @@ SORTKEY (id)
 AS (
   SELECT
     e.uuid AS id,
+    TO_TIMESTAMP({redshift_schema_calendly_internal}.to_utc_iso_string(e.canceled_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS canceled_at,
+    e.canceled_by,
+    e.cancellation_reason,
     TO_TIMESTAMP({redshift_schema_calendly_internal}.to_utc_iso_string(e.end_time), 'YYYY-MM-DD"T"HH.MI.SS%z') AS end_time,
     e.host_email,
     e.host_name,
@@ -121,9 +130,9 @@ AS (
     MAX(e.imported_at) AS imported_at
   FROM {redshift_schema_calendly}.events e
   GROUP BY
-    e.uuid, e.end_time, e.host_email, e.host_name, e.host_uri, e.meeting_notes_html, e.meeting_notes_plain, e.name,
-    e.start_time, e.status, e.student.email, e.student.name, e.student.sid, e.student.questions_and_answers,
-    e.uri, e.created_at, e.updated_at
+    e.uuid, e.canceled_at, e.canceled_by, e.cancellation_reason, e.end_time, e.host_email, e.host_name, e.host_uri,
+    e.meeting_notes_html, e.meeting_notes_plain, e.name, e.start_time, e.status, e.student.email, e.student.name,
+    e.student.sid, e.student.questions_and_answers, e.uri, e.created_at, e.updated_at
 );
 
 DROP FUNCTION {redshift_schema_calendly_internal}.to_utc_iso_string(VARCHAR);
