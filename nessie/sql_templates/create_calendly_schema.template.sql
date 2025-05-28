@@ -54,7 +54,7 @@ CREATE EXTERNAL TABLE {redshift_schema_calendly}.events(
     student STRUCT<
         email: VARCHAR,
         name: VARCHAR,
-        questions_and_answers: VARCHAR,
+        questions_and_answers: VARCHAR(MAX),
         sid: VARCHAR
     >,
     uri VARCHAR,
@@ -112,6 +112,7 @@ AS (
     TO_TIMESTAMP({redshift_schema_calendly_internal}.to_utc_iso_string(e.end_time), 'YYYY-MM-DD"T"HH.MI.SS%z') AS end_time,
     e.host_email,
     e.host_name,
+    NULL::VARCHAR(10) AS host_sid,
     NULL::VARCHAR(10) AS host_uid,
     e.host_uri,
     e.meeting_notes_html,
@@ -143,11 +144,17 @@ SET host_uid = b.ldap_uid
 FROM {redshift_schema_edl}.basic_attributes b
   JOIN {redshift_schema_calendly_internal}.events e ON UPPER(b.email_address) = UPPER(e.host_email);
 
+-- Host SID
+UPDATE {redshift_schema_calendly_internal}.events
+SET host_sid = b.sid
+FROM {redshift_schema_edl}.basic_attributes b
+  JOIN {redshift_schema_calendly_internal}.events e ON e.host_uid = b.ldap_uid;
+
 -- Student UID
 UPDATE {redshift_schema_calendly_internal}.events
 SET student_uid = b.ldap_uid
 FROM {redshift_schema_edl}.basic_attributes b
-  JOIN {redshift_schema_calendly_internal}.events e ON e.student_uid = b.sid;
+  JOIN {redshift_schema_calendly_internal}.events e ON e.student_sid = b.sid;
 
 -- Student UID fallback
 UPDATE {redshift_schema_calendly_internal}.events
