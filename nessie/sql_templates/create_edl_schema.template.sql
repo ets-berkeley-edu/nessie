@@ -182,7 +182,8 @@ AS (
       WHEN 'people' THEN 'S'
       WHEN 'advcon people' THEN 'A'
       WHEN 'guests' THEN 'G'
-      ELSE NULL END AS person_type
+      ELSE NULL END AS person_type,
+      namepronouns AS pronouns
   FROM {redshift_schema_edl_external_edw}.edw_caldap_person
 );
 
