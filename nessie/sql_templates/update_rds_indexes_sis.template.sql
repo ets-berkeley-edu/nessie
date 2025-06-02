@@ -87,13 +87,14 @@ CREATE TABLE IF NOT EXISTS {rds_schema_sis_internal}.basic_attributes (
     last_name VARCHAR,
     email_address VARCHAR,
     affiliations VARCHAR,
-    person_type VARCHAR
+    person_type VARCHAR,
+    pronouns VARCHAR
 );
 
 INSERT INTO {rds_schema_sis_internal}.basic_attributes (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT ldap_uid, sid, first_name, last_name, email_address, affiliations, person_type
+    SELECT ldap_uid, sid, first_name, last_name, email_address, affiliations, person_type, pronouns
     FROM {redshift_schema_edl}.basic_attributes
   $REDSHIFT$)
   AS redshift_basic_attributes (
@@ -103,7 +104,8 @@ INSERT INTO {rds_schema_sis_internal}.basic_attributes (
     last_name VARCHAR,
     email_address VARCHAR,
     affiliations VARCHAR,
-    person_type VARCHAR
+    person_type VARCHAR,
+    pronouns VARCHAR
   )
 );
 
