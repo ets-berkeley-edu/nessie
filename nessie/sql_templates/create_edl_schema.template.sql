@@ -448,7 +448,7 @@ DISTKEY (eform_id)
 SORTKEY (sid, to_degree_expected_term_id)
 AS (
   SELECT
-    'eform-' || ROW_NUMBER() OVER (ORDER BY g3form_origination_dt) AS id,
+    'cpp-eform-' || ROW_NUMBER() OVER (ORDER BY g3form_origination_dt) AS id,
     acad_plan_nm AS acad_plan_name,
     academic_career_cd AS career_code,
     academic_plan_cd AS plan_code,
