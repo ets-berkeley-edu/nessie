@@ -443,6 +443,49 @@ AS (
   FROM {redshift_schema_edl_external}.student_late_drop_eform_data
 );
 
+CREATE TABLE {redshift_schema_edl}.student_cpp_change_eforms
+DISTKEY (eform_id)
+SORTKEY (sid, to_degree_expected_term_id)
+AS (
+  SELECT
+    'eform-' || ROW_NUMBER() OVER (ORDER BY g3form_origination_dt) AS id,
+    acad_plan_nm AS acad_plan_name,
+    academic_career_cd AS career_code,
+    academic_plan_cd AS plan_code,
+    academic_plan_type_desc AS plan_type_description,
+    academic_program_cd AS program_code,
+    academic_program_nm AS program_name,
+    academic_subplan_cd AS subplan_code,
+    academic_subplan_nm AS subplan_name,
+    degree_expected_year_term_cd AS degree_expected_term_id,
+    eform_action_cd AS eform_action_code,
+    eform_action_desc AS eform_action_description,
+    g3form_id::int AS eform_id,
+    DATE_TRUNC('second', g3form_last_update_tmsp AT TIME ZONE 'America/Los_Angeles') AS updated_at,
+    DATE_TRUNC('second', g3form_origination_dt AT TIME ZONE 'America/Los_Angeles') AS created_at,
+    g3form_status_desc AS eform_status,
+    g3form_type_cd AS eform_type,
+    overlap_course_1,
+    overlap_course_2,
+    overlap_course_3,
+    overlap_course_4,
+    overlap_course_5,
+    person_display_nm AS student_name,
+    requirement_term_cd AS requirement_term_code,
+    student_id AS sid,
+    to_academic_plan_cd AS to_academic_plan_code,
+    to_academic_plan_nm AS to_academic_plan_name,
+    to_academic_plan_req_term,
+    to_academic_program_cd AS to_academic_program_code,
+    to_academic_program_nm AS to_academic_program_name,
+    to_academic_subplan_cd AS to_academic_subplan_code,
+    to_academic_subplan_nm AS to_academic_subplan_name,
+    to_academic_subplan_req_term,
+    to_degree_expected_year_term_cd AS to_degree_expected_term_id,
+    to_requriement_term_cd AS to_requriement_term_code
+  FROM {redshift_schema_edl_external}.student_cpp_change_eform_data
+);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_last_registrations
 (
     sid VARCHAR NOT NULL,
