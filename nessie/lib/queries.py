@@ -378,7 +378,7 @@ def stream_edl_plans():
         sapd.current_admit_term,
         sapd.degree_expected_year_term_cd,
         sapd.transfer_student,
-        sapd.matriculation_term_cd
+        sapd.current_admit_term
         FROM {edl_external_schema()}.student_academic_plan_data sapd
         LEFT OUTER JOIN {edl_schema()}.basic_attributes attrs
           ON sapd.student_id = attrs.sid
