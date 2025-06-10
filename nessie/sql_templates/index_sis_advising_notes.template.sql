@@ -275,7 +275,7 @@ CREATE TABLE {rds_schema_sis_advising_notes}.student_cpp_change_eforms
     plan_type_description VARCHAR,
     program_code VARCHAR,
     program_name VARCHAR,
-    requirement_term_code VARCHAR,
+    requirement_term_id VARCHAR(4),
     sid VARCHAR NOT NULL,
     student_name VARCHAR,
     subplan_code VARCHAR,
@@ -288,8 +288,8 @@ CREATE TABLE {rds_schema_sis_advising_notes}.student_cpp_change_eforms
     to_academic_subplan_code VARCHAR,
     to_academic_subplan_name VARCHAR,
     to_academic_subplan_req_term VARCHAR,
-    to_degree_expected_term_id VARCHAR,
-    to_requriement_term_code VARCHAR,
+    to_degree_expected_term_id VARCHAR(4),
+    to_requirement_term_id VARCHAR(4),
     updated_at TIMESTAMP WITH TIME ZONE,
     PRIMARY KEY (id)
 );
@@ -301,10 +301,10 @@ INSERT INTO {rds_schema_sis_advising_notes}.student_cpp_change_eforms (
         id, acad_plan_name, career_code, created_at, degree_expected_term_id, eform_action_code,
         eform_action_description, eform_id, eform_status, eform_type, overlap_course_1, overlap_course_2,
         overlap_course_3, overlap_course_4, overlap_course_5, plan_code, plan_type_description, program_code,
-        program_name, requirement_term_code, sid, student_name, subplan_code, subplan_name, to_academic_plan_code,
+        program_name, requirement_term_id, sid, student_name, subplan_code, subplan_name, to_academic_plan_code,
         to_academic_plan_name, to_academic_plan_req_term, to_academic_program_code, to_academic_program_name,
         to_academic_subplan_code, to_academic_subplan_name, to_academic_subplan_req_term, to_degree_expected_term_id,
-        to_requriement_term_code, updated_at
+        to_requirement_term_id, updated_at
     FROM {redshift_schema_edl}.student_cpp_change_eforms
     ORDER BY created_at
   $REDSHIFT$)
@@ -328,7 +328,7 @@ INSERT INTO {rds_schema_sis_advising_notes}.student_cpp_change_eforms (
     plan_type_description VARCHAR,
     program_code VARCHAR,
     program_name VARCHAR,
-    requirement_term_code VARCHAR,
+    requirement_term_id VARCHAR(4),
     sid VARCHAR,
     student_name VARCHAR,
     subplan_code VARCHAR,
@@ -341,8 +341,8 @@ INSERT INTO {rds_schema_sis_advising_notes}.student_cpp_change_eforms (
     to_academic_subplan_code VARCHAR,
     to_academic_subplan_name VARCHAR,
     to_academic_subplan_req_term VARCHAR,
-    to_degree_expected_term_id VARCHAR,
-    to_requriement_term_code VARCHAR,
+    to_degree_expected_term_id VARCHAR(4),
+    to_requirement_term_id VARCHAR(4),
     updated_at TIMESTAMP WITH TIME ZONE
   )
 );

@@ -471,7 +471,7 @@ AS (
     overlap_course_4,
     overlap_course_5,
     person_display_nm AS student_name,
-    requirement_term_cd AS requirement_term_code,
+    requirement_term_cd AS requirement_term_id,
     student_id AS sid,
     to_academic_plan_cd AS to_academic_plan_code,
     to_academic_plan_nm AS to_academic_plan_name,
@@ -482,7 +482,7 @@ AS (
     to_academic_subplan_nm AS to_academic_subplan_name,
     to_academic_subplan_req_term,
     to_degree_expected_year_term_cd AS to_degree_expected_term_id,
-    to_requriement_term_cd AS to_requriement_term_code
+    to_requriement_term_cd AS to_requirement_term_id
   FROM {redshift_schema_edl_external}.student_cpp_change_eform_data
 );
 
