@@ -434,7 +434,7 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
         academic_status = feed['academicStatus']
         effective_date = ''
         ldap_affiliations = None
-        matriculation_term_cd = None
+        current_admit_term = None
         plan_rows_by_name = {}
         statuses = set()
         transfer_student = False
@@ -450,8 +450,8 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
                 if not existing_plan_row or (status == 'Active' and self._simplified_career_status(existing_plan_row) != 'Active'):
                     plan_rows_by_name[row['academic_plan_nm']] = row
 
-                if not matriculation_term_cd:
-                    matriculation_term_cd = self._get_matriculation_term(row)
+                if not current_admit_term:
+                    current_admit_term = self._get_current_admit_term(row)
 
                 if row['academic_program_effective_dt'] and str(row['academic_program_effective_dt']) > effective_date:
                     effective_date = str(row['academic_program_effective_dt'])
@@ -460,13 +460,13 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
 
         academic_status['studentPlans'] = [self._construct_plan_feed(row) for row in plan_rows_by_name.values()]
 
-        matriculation = {}
-        if matriculation_term_cd:
-            season, year = term_info_for_sis_term_id(matriculation_term_cd)
-            matriculation['term'] = {'name': f'{year} {season}'}
+        admit_term = {}
+        if current_admit_term:
+            season, year = term_info_for_sis_term_id(current_admit_term)
+            admit_term['term'] = {'name': f'{year} {season}'}
         if transfer_student:
-            matriculation['type'] = {'code': 'TRN'}
-        academic_status['studentCareer']['matriculation'] = matriculation
+            admit_term['type'] = {'code': 'TRN'}
+        academic_status['studentCareer']['matriculation'] = admit_term
 
         if effective_date:
             academic_status['studentCareer']['toDate'] = effective_date[0:10]
@@ -480,15 +480,15 @@ class ProfileFeedBuilder(ConcurrentFeedBuilder):
             code = career_code_to_name(career_code)
             feed['affiliations'] = [{'status': {'description': status}, 'type': {'code': code}}]
 
-    def _get_matriculation_term(self, row):
+    def _get_current_admit_term(self, row):
         # Pick the first row we get through SQL ordering that does not correspond to a non-degree academic
         # program. If a summer term, treat as the next fall term.
-        matriculation_term_cd = None
-        if row['matriculation_term_cd'] and (row['academic_program_cd'] not in ['UNODG', 'GNODG', 'LNODG']):
-            matriculation_term_cd = str(row['matriculation_term_cd'])
-            if matriculation_term_cd[-1] == '5':
-                matriculation_term_cd = matriculation_term_cd[0:3] + '8'
-        return matriculation_term_cd
+        current_admit_term = None
+        if row['current_admit_term'] and (row['academic_program_cd'] not in ['UNODG', 'GNODG', 'LNODG']):
+            current_admit_term = str(row['current_admit_term'])
+            if current_admit_term[-1] == '5':
+                current_admit_term = current_admit_term[0:3] + '8'
+        return current_admit_term
 
     def _construct_plan_feed(self, row):
         plan_feed = {
