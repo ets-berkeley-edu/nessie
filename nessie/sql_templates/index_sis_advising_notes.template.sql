@@ -257,8 +257,14 @@ DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.student_cpp_change_eforms C
 CREATE TABLE {rds_schema_sis_advising_notes}.student_cpp_change_eforms
 (
     id VARCHAR,
-    acad_plan_name VARCHAR,
-    career_code VARCHAR,
+    academic_career_code VARCHAR,
+    academic_plan_code VARCHAR,
+    academic_plan_name VARCHAR,
+    academic_plan_type_description VARCHAR,
+    academic_program_code VARCHAR,
+    academic_program_name VARCHAR,
+    academic_subplan_code VARCHAR,
+    academic_subplan_name VARCHAR,
     created_at TIMESTAMP WITH TIME ZONE,
     degree_expected_term_id VARCHAR(4),
     eform_action_code VARCHAR,
@@ -271,23 +277,17 @@ CREATE TABLE {rds_schema_sis_advising_notes}.student_cpp_change_eforms
     overlap_course_3 VARCHAR,
     overlap_course_4 VARCHAR,
     overlap_course_5 VARCHAR,
-    plan_code VARCHAR,
-    plan_type_description VARCHAR,
-    program_code VARCHAR,
-    program_name VARCHAR,
     requirement_term_id VARCHAR(4),
     sid VARCHAR NOT NULL,
     student_name VARCHAR,
-    subplan_code VARCHAR,
-    subplan_name VARCHAR,
     to_academic_plan_code VARCHAR,
     to_academic_plan_name VARCHAR,
-    to_academic_plan_req_term VARCHAR,
+    to_academic_plan_requirement_term_id VARCHAR(4),
     to_academic_program_code VARCHAR,
     to_academic_program_name VARCHAR,
     to_academic_subplan_code VARCHAR,
     to_academic_subplan_name VARCHAR,
-    to_academic_subplan_req_term VARCHAR,
+    to_academic_subplan_requirement_term_id VARCHAR(4),
     to_degree_expected_term_id VARCHAR(4),
     to_requirement_term_id VARCHAR(4),
     updated_at TIMESTAMP WITH TIME ZONE,
@@ -298,20 +298,26 @@ INSERT INTO {rds_schema_sis_advising_notes}.student_cpp_change_eforms (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT
-        id, acad_plan_name, career_code, created_at, degree_expected_term_id, eform_action_code,
-        eform_action_description, eform_id, eform_status, eform_type, overlap_course_1, overlap_course_2,
-        overlap_course_3, overlap_course_4, overlap_course_5, plan_code, plan_type_description, program_code,
-        program_name, requirement_term_id, sid, student_name, subplan_code, subplan_name, to_academic_plan_code,
-        to_academic_plan_name, to_academic_plan_req_term, to_academic_program_code, to_academic_program_name,
-        to_academic_subplan_code, to_academic_subplan_name, to_academic_subplan_req_term, to_degree_expected_term_id,
-        to_requirement_term_id, updated_at
+        id, academic_career_code, academic_plan_code, academic_plan_name, academic_plan_type_description,
+        academic_program_code, academic_program_name, academic_subplan_code, academic_subplan_name, created_at,
+        degree_expected_term_id, eform_action_code, eform_action_description, eform_id, eform_status, eform_type,
+        overlap_course_1, overlap_course_2, overlap_course_3, overlap_course_4, overlap_course_5, requirement_term_id,
+        sid, student_name, to_academic_plan_code, to_academic_plan_name, to_academic_plan_requirement_term_id,
+        to_academic_program_code, to_academic_program_name, to_academic_subplan_code, to_academic_subplan_name,
+        to_academic_subplan_requirement_term_id, to_degree_expected_term_id, to_requirement_term_id, updated_at
     FROM {redshift_schema_edl}.student_cpp_change_eforms
     ORDER BY created_at
   $REDSHIFT$)
   AS redshift_student_cpp_change_eforms (
     id VARCHAR,
-    acad_plan_name VARCHAR,
-    career_code VARCHAR,
+    academic_career_code VARCHAR,
+    academic_plan_code VARCHAR,
+    academic_plan_name VARCHAR,
+    academic_plan_type_description VARCHAR,
+    academic_program_code VARCHAR,
+    academic_program_name VARCHAR,
+    academic_subplan_code VARCHAR,
+    academic_subplan_name VARCHAR,
     created_at TIMESTAMP WITH TIME ZONE,
     degree_expected_term_id VARCHAR(4),
     eform_action_code VARCHAR,
@@ -324,23 +330,17 @@ INSERT INTO {rds_schema_sis_advising_notes}.student_cpp_change_eforms (
     overlap_course_3 VARCHAR,
     overlap_course_4 VARCHAR,
     overlap_course_5 VARCHAR,
-    plan_code VARCHAR,
-    plan_type_description VARCHAR,
-    program_code VARCHAR,
-    program_name VARCHAR,
     requirement_term_id VARCHAR(4),
     sid VARCHAR,
     student_name VARCHAR,
-    subplan_code VARCHAR,
-    subplan_name VARCHAR,
     to_academic_plan_code VARCHAR,
     to_academic_plan_name VARCHAR,
-    to_academic_plan_req_term VARCHAR,
+    to_academic_plan_requirement_term_id VARCHAR(4),
     to_academic_program_code VARCHAR,
     to_academic_program_name VARCHAR,
     to_academic_subplan_code VARCHAR,
     to_academic_subplan_name VARCHAR,
-    to_academic_subplan_req_term VARCHAR,
+    to_academic_subplan_requirement_term_id VARCHAR(4),
     to_degree_expected_term_id VARCHAR(4),
     to_requirement_term_id VARCHAR(4),
     updated_at TIMESTAMP WITH TIME ZONE
@@ -357,7 +357,7 @@ CREATE INDEX idx_student_cpp_change_eforms_updated_at ON {rds_schema_sis_advisin
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.student_cpp_change_eforms_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.student_cpp_change_eforms_search_index AS (
-  SELECT id, to_tsvector('english', COALESCE(acad_plan_name || ' ' || subplan_name || ' ' || to_academic_plan_name || ' ' || to_academic_subplan_name || ' ' || eform_type || ' ' || eform_action_description, '')) AS fts_index
+  SELECT id, to_tsvector('english', COALESCE(academic_plan_name || ' ' || academic_subplan_name || ' ' || to_academic_plan_name || ' ' || to_academic_subplan_name || ' ' || eform_type || ' ' || eform_action_description, '')) AS fts_index
   FROM {rds_schema_sis_advising_notes}.student_cpp_change_eforms
 );
 
