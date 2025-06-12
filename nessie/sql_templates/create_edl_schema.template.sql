@@ -486,6 +486,34 @@ AS (
   FROM {redshift_schema_edl_external}.student_cpp_change_eform_data
 );
 
+CREATE TABLE {redshift_schema_edl}.student_course_load_eforms
+DISTKEY (eform_id)
+SORTKEY (sid, term_id)
+AS (
+  SELECT
+    'scl-eform-' || ROW_NUMBER() OVER (ORDER BY g3form_origination_dt) AS id,
+    academic_career_cd AS academic_career_code,
+    academic_standing_category_cd AS academic_standing_status,
+    academic_standing_category_desc AS academic_standing_description,
+    g3form_id::int AS eform_id,
+    DATE_TRUNC('second', g3form_last_update_tmsp AT TIME ZONE 'America/Los_Angeles') AS updated_at,
+    DATE_TRUNC('second', g3form_origination_dt AT TIME ZONE 'America/Los_Angeles') AS created_at,
+    g3form_last_user AS eform_last_user_uid,
+    g3form_last_user_name AS eform_last_user_name,
+    g3form_orig_user AS eform_orig_user_uid,
+    g3form_orig_user_name AS eform_orig_user_name,
+    g3form_status_desc AS eform_status,
+    g3form_type_cd AS eform_type,
+    request_type_cd AS request_type,
+    request_type_desc AS request_type_description,
+    requested_reduced_units,
+    semester_year_term_cd AS term_id,
+    student_id AS sid,
+    term_enrolled_units,
+    term_waitlist_units
+  FROM {redshift_schema_edl_external}.student_course_load_eform_data
+);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.student_last_registrations
 (
     sid VARCHAR NOT NULL,
