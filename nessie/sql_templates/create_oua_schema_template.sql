@@ -93,7 +93,9 @@ CREATE EXTERNAL TABLE {redshift_schema_oua}.admissions
     permanent_residence_country VARCHAR,
     non_immigrant_visa_current VARCHAR,
     non_immigrant_visa_planned VARCHAR,
-    uid VARCHAR
+    uid VARCHAR,
+    eop_flag VARCHAR,
+    eop_reason VARCHAR
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
 WITH SERDEPROPERTIES (
