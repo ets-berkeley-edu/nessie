@@ -87,6 +87,7 @@ CREATE TABLE {rds_schema_oua}.student_admits (
   non_immigrant_visa_current VARCHAR,
   non_immigrant_visa_planned VARCHAR,
   uid VARCHAR,
+  eop_flag VARCHAR,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
@@ -151,6 +152,7 @@ INSERT INTO {rds_schema_oua}.student_admits (
       non_immigrant_visa_current,
       non_immigrant_visa_planned,
       uid,
+      eop_flag,
       ((current_timestamp at time zone 'UTC') at time zone 'UTC') AS created_at,
       ((current_timestamp at time zone 'UTC') at time zone 'UTC') AS updated_at
     FROM {redshift_schema_oua}.admissions
@@ -212,6 +214,7 @@ INSERT INTO {rds_schema_oua}.student_admits (
     non_immigrant_visa_current VARCHAR,
     non_immigrant_visa_planned VARCHAR,
     uid VARCHAR,
+    eop_flag VARCHAR,
     created_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE
   )
@@ -237,6 +240,7 @@ CREATE INDEX idx_oua_student_admits_family_income ON {rds_schema_oua}.student_ad
 CREATE INDEX idx_oua_student_admits_lcff ON {rds_schema_oua}.student_admits(last_school_lcff_plus_flag);
 CREATE INDEX idx_oua_student_admits_residency_category ON {rds_schema_oua}.student_admits(residency_category);
 CREATE INDEX idx_oua_student_admits_military_status ON {rds_schema_oua}.student_admits(military_status);
+CREATE INDEX idx_oua_student_admits_eop_flag ON {rds_schema_oua}.student_admits(eop_flag);
 
 DROP TABLE IF EXISTS {rds_schema_oua}.student_admit_names CASCADE;
 
