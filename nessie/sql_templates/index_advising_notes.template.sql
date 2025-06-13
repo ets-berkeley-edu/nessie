@@ -115,6 +115,7 @@ CREATE MATERIALIZED VIEW {rds_schema_advising_notes}.advising_notes_search_index
   UNION SELECT id, fts_index FROM {rds_schema_sis_advising_notes}.advising_notes_search_index
   UNION SELECT id, fts_index FROM {rds_schema_sis_advising_notes}.student_late_drop_eforms_search_index
   UNION SELECT id, fts_index FROM {rds_schema_sis_advising_notes}.student_cpp_change_eforms_search_index
+  UNION SELECT id, fts_index FROM {rds_schema_sis_advising_notes}.student_course_load_eforms_search_index
 );
 
 CREATE INDEX idx_advising_notes_ft_search
