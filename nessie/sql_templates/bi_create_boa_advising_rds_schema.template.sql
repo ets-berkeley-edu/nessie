@@ -409,6 +409,7 @@ CREATE INDEX idx_bi_student_degrees_degree_awarded ON {bi_rds_schema_boa_advisin
 
 ----------------------------------------------------------------------------------------------------
 -- Create materialized views for BOA-CE3 Advising Dashboard
+-- Include author_dept_code = 'ZCEEE' as well as author_uid in list of additional users.
 ----------------------------------------------------------------------------------------------------
 
 ----------------------------------------------------------------------------------------------------
@@ -419,7 +420,7 @@ CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_notes_mv AS
   WITH note_topics AS (
     SELECT
       note_id,
-      STRING_AGG(topic, ', ') AS topics
+      STRING_AGG(DISTINCT topic, ', ' ORDER BY topic) AS topics
     FROM {bi_rds_schema_boa_advising}.note_topics
     GROUP BY note_id
   )
@@ -438,7 +439,7 @@ CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_notes_mv AS
   FROM {bi_rds_schema_boa_advising}.notes notes
   LEFT JOIN note_topics
     ON notes.note_id = note_topics.note_id
-  WHERE notes.author_dept_code = 'ZCEEE'
+  WHERE (notes.author_dept_code = 'ZCEEE' OR notes.author_uid in ({bi_rds_ce3_add_users}))
   AND notes.sid IS NOT NULL;
 
 CREATE INDEX idx_bi_ce3_notes_note_id ON {bi_rds_schema_boa_advising}.ce3_notes_mv (note_id);
@@ -459,7 +460,7 @@ CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_authors_mv AS
   WITH ce3_authors AS (
     SELECT DISTINCT author_uid
     FROM {bi_rds_schema_boa_advising}.notes
-    WHERE author_dept_code = 'ZCEEE'
+    WHERE (author_dept_code = 'ZCEEE' OR author_uid in ({bi_rds_ce3_add_users}))
   )
 
   SELECT
@@ -488,8 +489,8 @@ CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_topics_mv AS
   FROM {bi_rds_schema_boa_advising}.note_topics topics
   JOIN {bi_rds_schema_boa_advising}.notes notes
     ON topics.note_id = notes.note_id
-  WHERE notes.author_dept_code = 'ZCEEE'
-  AND topics.deleted_at is null;
+  WHERE (notes.author_dept_code = 'ZCEEE' OR notes.author_uid in ({bi_rds_ce3_add_users}))
+  AND topics.deleted_at IS NULL;
 
 CREATE INDEX idx_bi_ce3_topics_note_id ON {bi_rds_schema_boa_advising}.ce3_topics_mv (note_id);
 CREATE INDEX idx_bi_ce3_topics_topic ON {bi_rds_schema_boa_advising}.ce3_topics_mv (topic);
@@ -503,7 +504,7 @@ CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_students_mv AS
   WITH ce3_students AS (
     SELECT DISTINCT sid
     FROM {bi_rds_schema_boa_advising}.notes
-    WHERE author_dept_code = 'ZCEEE'
+    WHERE (author_dept_code = 'ZCEEE' OR author_uid in ({bi_rds_ce3_add_users}))
   )
   
   SELECT
@@ -529,7 +530,7 @@ CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_student_cohorts_mv AS
   WITH ce3_students AS (
     SELECT DISTINCT sid
     FROM {bi_rds_schema_boa_advising}.notes
-    WHERE author_dept_code = 'ZCEEE'
+    WHERE (author_dept_code = 'ZCEEE' OR author_uid in ({bi_rds_ce3_add_users}))
   )
 
   SELECT DISTINCT
@@ -551,7 +552,7 @@ CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_student_groups_mv AS
   WITH ce3_students AS (
     SELECT DISTINCT sid
     FROM {bi_rds_schema_boa_advising}.notes
-    WHERE author_dept_code = 'ZCEEE'
+    WHERE (author_dept_code = 'ZCEEE' OR author_uid in ({bi_rds_ce3_add_users}))
   )
 
   SELECT DISTINCT
@@ -572,8 +573,8 @@ CREATE INDEX idx_bi_ce3_student_groups_group_name ON {bi_rds_schema_boa_advising
 CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_student_degrees_mv AS
   WITH ce3_students AS (
     SELECT DISTINCT sid
-      FROM {bi_rds_schema_boa_advising}.notes
-      WHERE author_dept_code = 'ZCEEE'
+    FROM {bi_rds_schema_boa_advising}.notes
+    WHERE (author_dept_code = 'ZCEEE' OR author_uid in ({bi_rds_ce3_add_users}))
   )
 
   SELECT DISTINCT
