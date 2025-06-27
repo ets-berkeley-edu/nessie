@@ -82,34 +82,15 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_calendly_internal} GRANT SEL
 -- Internal tables
 --------------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION {redshift_schema_calendly_internal}.to_utc_iso_string(date_string VARCHAR)
-RETURNS VARCHAR
-STABLE
-AS $$
-  from datetime import datetime
-  import pytz
-
-  utc_iso_string = None
-  if date_string:
-      d = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
-      d = pytz.timezone('America/Los_Angeles').localize(d)
-      utc_iso_string = d.astimezone(pytz.utc).isoformat()
-  return utc_iso_string
-$$ language plpythonu;
-
-GRANT EXECUTE
-ON function {redshift_schema_calendly_internal}.to_utc_iso_string(VARCHAR)
-TO GROUP {redshift_app_boa_user}_group;
-
 CREATE TABLE {redshift_schema_calendly_internal}.events
 SORTKEY (id)
 AS (
   SELECT
     e.uuid AS id,
-    TO_TIMESTAMP({redshift_schema_calendly_internal}.to_utc_iso_string(e.canceled_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS canceled_at,
+    TO_TIMESTAMP(e.canceled_at, 'YYYY-MM-DD"T"HH.MI.SS.MSZ') AS canceled_at,
     e.canceled_by,
     e.cancellation_reason,
-    TO_TIMESTAMP({redshift_schema_calendly_internal}.to_utc_iso_string(e.end_time), 'YYYY-MM-DD"T"HH.MI.SS%z') AS end_time,
+    TO_TIMESTAMP(e.end_time, 'YYYY-MM-DD"T"HH.MI.SS.MSZ') AS end_time,
     e.host_email,
     e.host_name,
     NULL::VARCHAR(10) AS host_sid,
@@ -118,7 +99,7 @@ AS (
     e.meeting_notes_html,
     e.meeting_notes_plain,
     e.name AS title,
-    TO_TIMESTAMP({redshift_schema_calendly_internal}.to_utc_iso_string(e.start_time), 'YYYY-MM-DD"T"HH.MI.SS%z') AS start_time,
+    TO_TIMESTAMP(e.start_time, 'YYYY-MM-DD"T"HH.MI.SS.MSZ') AS start_time,
     e.status,
     e.student.email AS student_email,
     e.student.name AS student_name,
@@ -126,8 +107,8 @@ AS (
     NULL::VARCHAR(10) AS student_uid,
     e.student.questions_and_answers AS questions_and_answers,
     e.uri,
-    TO_TIMESTAMP({redshift_schema_calendly_internal}.to_utc_iso_string(e.created_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
-    TO_TIMESTAMP({redshift_schema_calendly_internal}.to_utc_iso_string(e.updated_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at,
+    TO_TIMESTAMP(e.created_at, 'YYYY-MM-DD"T"HH.MI.SS.MSZ') AS created_at,
+    TO_TIMESTAMP(e.updated_at, 'YYYY-MM-DD"T"HH.MI.SS.MSZ') AS updated_at,
     MAX(e.imported_at) AS imported_at
   FROM {redshift_schema_calendly}.events e
   GROUP BY
@@ -135,8 +116,6 @@ AS (
     e.meeting_notes_html, e.meeting_notes_plain, e.name, e.start_time, e.status, e.student.email, e.student.name,
     e.student.sid, e.student.questions_and_answers, e.uri, e.created_at, e.updated_at
 );
-
-DROP FUNCTION {redshift_schema_calendly_internal}.to_utc_iso_string(VARCHAR);
 
 -- Host UID
 UPDATE {redshift_schema_calendly_internal}.events
