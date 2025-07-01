@@ -65,8 +65,9 @@ class ImportCalendlyApi(BackgroundJob):
             min_start_time=min_event_start,
             max_start_time=max_event_start,
         )
+        number_of_events_with_sid = 0
         if len(events):
-            serialized_data = _serialize_calendly_events(events)
+            serialized_data, number_of_events_with_sid = _serialize_calendly_events(events)
             if serialized_data:
                 s3_directory = f"{min_event_start.strftime('%Y-%m-%d')}_to_{max_event_start.strftime('%Y-%m-%d')}"
                 s3.upload_data(
@@ -79,10 +80,11 @@ class ImportCalendlyApi(BackgroundJob):
                     data=serialized_data,
                     s3_key=f'{s3_path_prefix}/archive/{hashed_datestamp(min_event_start)}/events/events.json',
                 )
-        return len(events)
+        return number_of_events_with_sid
 
 
 def _serialize_calendly_events(events):
+    number_of_events_with_sid = 0
     serialized_data = ''
     imported_at = utc_now().strftime(CALENDLY_API_DATE_FORMAT)
 
@@ -134,7 +136,8 @@ def _serialize_calendly_events(events):
             event['cancellation_reason'] = cancellation.get('reason', None)
             # JsonSerDe schema creation in Redshift via JSON records in S3.
             serialized_data += json.dumps({'imported_at': imported_at, **event}) + '\n'
-    return serialized_data
+            number_of_events_with_sid += 1
+    return serialized_data, number_of_events_with_sid
 
 
 def _extract_event_uuid(event_uri):

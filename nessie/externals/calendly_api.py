@@ -93,7 +93,6 @@ def _get_event_invitees(event_uuid, page_token=None):
     query = {
         'count': RESULT_SET_LIMIT_PER_REQUEST,
         'sort': 'created_at',
-        'status': 'active',
     }
     if page_token:
         query['page_token'] = page_token
