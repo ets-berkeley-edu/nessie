@@ -104,8 +104,9 @@ def _serialize_calendly_events(events):
         includes_invitee_with_sid = False
         for event_invitee in calendly_api.get_event_invitees(uuid):
             student = {
-                **{k: event_invitee[k] for k in ['email', 'name'] if k in event_invitee},
+                **{k: event_invitee[k] for k in ['email', 'name', 'rescheduled', 'status'] if k in event_invitee},
                 'questions_and_answers': None,
+                'no_show': bool(event_invitee['no_show']),
                 'sid': None,
             }
             questions_and_answers = []

@@ -54,6 +54,8 @@ CREATE EXTERNAL TABLE {redshift_schema_calendly}.events(
     student STRUCT<
         email: VARCHAR,
         name: VARCHAR,
+        no_show: BOOLEAN,
+        rescheduled: BOOLEAN,
         questions_and_answers: VARCHAR(MAX),
         sid: VARCHAR
     >,
@@ -103,6 +105,8 @@ AS (
     e.status,
     e.student.email AS student_email,
     e.student.name AS student_name,
+    e.student.no_show AS is_student_no_show,
+    e.student.rescheduled AS is_rescheduled,
     e.student.sid AS student_sid,
     NULL::VARCHAR(10) AS student_uid,
     e.student.questions_and_answers AS questions_and_answers,
@@ -114,7 +118,8 @@ AS (
   GROUP BY
     e.uuid, e.canceled_at, e.canceled_by, e.cancellation_reason, e.end_time, e.host_email, e.host_name, e.host_uri,
     e.meeting_notes_html, e.meeting_notes_plain, e.name, e.start_time, e.status, e.student.email, e.student.name,
-    e.student.sid, e.student.questions_and_answers, e.uri, e.created_at, e.updated_at
+    e.student.no_show, e.student.rescheduled, e.student.sid, e.student.questions_and_answers, e.uri, e.created_at,
+    e.updated_at
 );
 
 -- Host UID
