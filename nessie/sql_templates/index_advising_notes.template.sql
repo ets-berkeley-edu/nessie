@@ -194,6 +194,7 @@ CREATE TABLE {rds_schema_advising_appointments}.calendly_advising_appointments (
   meeting_notes_plain TEXT,
   questions_and_answers TEXT,
   start_time TIMESTAMP WITH TIME ZONE,
+  student_email VARCHAR,
   student_sid VARCHAR,
   student_uid VARCHAR,
   title VARCHAR,
@@ -220,12 +221,14 @@ INSERT INTO {rds_schema_advising_appointments}.calendly_advising_appointments (
       e.meeting_notes_plain,
       e.questions_and_answers,
       e.start_time,
-      e.student_sid,
-      e.student_uid,
+      e.student_email,
+      s.sid AS student_sid,
+      s.ldap_uid AS student_uid,
       e.title,
       e.created_at,
       e.updated_at
     FROM {redshift_schema_calendly_internal}.events e
+    JOIN {redshift_schema_edl}.basic_attributes s ON s.email_address ILIKE e.student_email
     JOIN (SELECT e2.id, MAX(e2.imported_at) AS imported_at FROM {redshift_schema_calendly_internal}.events e2 GROUP BY e2.id) latest
       ON e.id = latest.id and e.imported_at = latest.imported_at
     ORDER BY start_time DESC
@@ -245,6 +248,7 @@ INSERT INTO {rds_schema_advising_appointments}.calendly_advising_appointments (
       meeting_notes_plain TEXT,
       questions_and_answers TEXT,
       start_time TIMESTAMP WITH TIME ZONE,
+      student_email VARCHAR,
       student_sid VARCHAR,
       student_uid VARCHAR,
       title VARCHAR,

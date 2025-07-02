@@ -107,8 +107,6 @@ AS (
     e.student.name AS student_name,
     e.student.no_show AS is_student_no_show,
     e.student.rescheduled AS is_rescheduled,
-    e.student.sid AS student_sid,
-    NULL::VARCHAR(10) AS student_uid,
     e.student.questions_and_answers AS questions_and_answers,
     e.uri,
     TO_TIMESTAMP(e.created_at, 'YYYY-MM-DD"T"HH.MI.SS.MSZ') AS created_at,
@@ -118,7 +116,7 @@ AS (
   GROUP BY
     e.uuid, e.canceled_at, e.canceled_by, e.cancellation_reason, e.end_time, e.host_email, e.host_name, e.host_uri,
     e.meeting_notes_html, e.meeting_notes_plain, e.name, e.start_time, e.status, e.student.email, e.student.name,
-    e.student.no_show, e.student.rescheduled, e.student.sid, e.student.questions_and_answers, e.uri, e.created_at,
+    e.student.no_show, e.student.rescheduled, e.student.questions_and_answers, e.uri, e.created_at,
     e.updated_at
 );
 
@@ -133,15 +131,3 @@ UPDATE {redshift_schema_calendly_internal}.events
 SET host_sid = b.sid
 FROM {redshift_schema_edl}.basic_attributes b
   JOIN {redshift_schema_calendly_internal}.events e ON e.host_uid = b.ldap_uid;
-
--- Student UID
-UPDATE {redshift_schema_calendly_internal}.events
-SET student_uid = b.ldap_uid
-FROM {redshift_schema_edl}.basic_attributes b
-  JOIN {redshift_schema_calendly_internal}.events e ON e.student_sid = b.sid;
-
--- Student UID fallback
-UPDATE {redshift_schema_calendly_internal}.events
-SET student_uid = b.ldap_uid
-FROM {redshift_schema_edl}.basic_attributes b
-  JOIN {redshift_schema_calendly_internal}.events e ON UPPER(b.email_address) = UPPER(e.student_email) AND e.student_uid IS NULL;
