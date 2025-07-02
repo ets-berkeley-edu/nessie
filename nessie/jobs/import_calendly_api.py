@@ -101,7 +101,7 @@ def _serialize_calendly_events(events):
             event['host_name'] = event_membership['user_name']
             event['host_uri'] = event_membership['user']
         # Extract student info
-        has_student_email_addresses = False
+        has_student_email_address = False
         for event_invitee in calendly_api.get_event_invitees(uuid):
             student = {
                 **{k: event_invitee[k] for k in ['email', 'name', 'status'] if k in event_invitee},
@@ -117,10 +117,13 @@ def _serialize_calendly_events(events):
                 if question and answer:
                     questions_and_answers.append({'question': question, 'answer': answer})
             student['questions_and_answers'] = json.dumps(questions_and_answers)
-            has_student_email_addresses = bool(has_student_email_addresses or student.get('email'))
+            if student.get('email'):
+                event['student'] = student
+                has_student_email_address = True
+                break
 
         # Events must have student email; we will use email address to look up student SID.
-        if event['host_email'] and has_student_email_addresses:
+        if event['host_email'] and has_student_email_address:
             # Remove noisy Zoom info.
             if event.get('location', {}).get('type', None) == 'zoom':
                 del event['location']
