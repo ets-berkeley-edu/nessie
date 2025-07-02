@@ -101,12 +101,13 @@ def _serialize_calendly_events(events):
             event['host_name'] = event_membership['user_name']
             event['host_uri'] = event_membership['user']
         # Extract student info
-        includes_invitee_with_sid = False
+        has_student_email_addresses = False
         for event_invitee in calendly_api.get_event_invitees(uuid):
             student = {
-                **{k: event_invitee[k] for k in ['email', 'name', 'rescheduled', 'status'] if k in event_invitee},
+                **{k: event_invitee[k] for k in ['email', 'name', 'status'] if k in event_invitee},
                 'questions_and_answers': None,
                 'no_show': bool(event_invitee['no_show']),
+                'rescheduled': bool(event_invitee['rescheduled']),
                 'sid': None,
             }
             questions_and_answers = []
@@ -114,16 +115,12 @@ def _serialize_calendly_events(events):
                 question = question_and_answer.get("question")
                 answer = question_and_answer.get("answer")
                 if question and answer:
-                    if 'Student Identification Number (SID)' in question:
-                        student['sid'] = answer
-                        includes_invitee_with_sid = True
-                    else:
-                        questions_and_answers.append({'question': question, 'answer': answer})
+                    questions_and_answers.append({'question': question, 'answer': answer})
             student['questions_and_answers'] = json.dumps(questions_and_answers)
-            if includes_invitee_with_sid:
-                event['student'] = student
-                break
-        if event['host_email'] and includes_invitee_with_sid:
+            has_student_email_addresses = bool(has_student_email_addresses or student.get('email'))
+
+        # Events must have student email; we will use email address to look up student SID.
+        if event['host_email'] and has_student_email_addresses:
             # Remove noisy Zoom info.
             if event.get('location', {}).get('type', None) == 'zoom':
                 del event['location']
