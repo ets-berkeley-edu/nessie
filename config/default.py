@@ -26,7 +26,6 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import logging
 import os
 
-
 # Base directory for the application (one level up from this config file).
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -35,21 +34,6 @@ BCOP_SMTP_PASSWORD = None
 BCOP_SMTP_PORT = 587
 BCOP_SMTP_SERVER = 'bcop.berkeley.edu'
 BCOP_SMTP_USERNAME = None
-
-# BI Reports Configs
-BI_BOA_RDS_ZERO_COUNT_ACCEPTABLE = False
-BI_LOCH_S3_BOA_RDS_DATA_PATH_DAILY = 'boa-data/path/to/daily'
-BI_RDS_BOA_ADVISING_ROLE = 'BI BOA Advising readonly role'
-BI_RDS_CE3_ADD_USERS = [0000000, 1111111, 2222222]
-BI_RDS_TABLEAU_USER = 'Tableau username'
-BI_RDS_SCHEMA_BCOURSES_SERVICE_CD2 = 'BI bCourses Service CD2 RDS schemaname'
-BI_RDS_SCHEMA_BOA_ADVISING = 'BI BOA Advising RDS schemaname'
-BI_RDS_URI_LA_REPORTS = 'postgresql://reports:reports@localhost:5432/reports'
-BI_READONLY_GROUP = 'BI Reports readonly group'
-BI_REDSHIFT_LA_REPORTS_DBLINK_GROUP = 'BI Reports dblink group'
-BI_REDSHIFT_SCHEMA_BCOURSES_SERVICE_CD2 = 'BI bCourses Service CD2 Redshift schemaname'
-BI_REDSHIFT_SCHEMA_BOA_ADVISING = 'BI BOA Advising Redshift schemaname'
-BI_REDSHIFT_SCHEMA_BOA_RDS_DATA = 'BI BOA RDS Data Redshift External schemaname'
 
 BLUE_SFTP_HOST = 'hostname'
 BLUE_SFTP_PORT = 22
@@ -91,6 +75,22 @@ ASC_ATHLETES_API_KEY = 'secret'
 # We cut over on this day of the year, on or about August 1.
 ASC_ACAD_YR_CUTOVER = 214
 
+# BI Reports Configs
+BI_RDS_BCOURSES_USAGE = 'BI bCourses Usage schemaname'
+BI_RDS_BOA_ADVISING_ROLE = 'bi_boa_advising_role'
+BI_RDS_CE3_ADD_USERS = [0000000, 1111111, 2222222]
+BI_RDS_SCHEMA_BCOURSES_SERVICE_CD2 = 'bi_bcourses_service_cd2'
+BI_RDS_SCHEMA_BOA_ADVISING = 'bi_boa_advising'
+BI_RDS_TABLEAU_USER = 'Tableau Username'
+BI_RDS_URI_LA_REPORTS = 'postgresql://reports:reports@localhost:5432/reports'
+BI_READONLY_GROUP = 'dla_readonly_group'
+BI_REDSHIFT_BCOURSES_USAGE = 'BI bCourses Usage schemaname'
+BI_REDSHIFT_LA_REPORTS_DBLINK_GROUP = 'la_reports_dblink_group'
+BI_REDSHIFT_SCHEMA_BCOURSES_SERVICE_CD2 = 'bi_bcourses_service_cd2'
+BI_REDSHIFT_SCHEMA_BOA_ADVISING = 'bi_boa_advising'
+
+BOA_APP_RDS_DATA_ZERO_COUNT_ACCEPTABLE = False
+
 BOAC_REFRESHERS = [
     {
         'API_KEY': 'Regents of the University of California',
@@ -110,11 +110,13 @@ CALENDLY_BASE_API_URL = 'https://api.calendly.com'
 CALENDLY_FETCH_DAYS_AHEAD = 30
 CALENDLY_FETCH_DAYS_BEHIND = 3
 CALENDLY_ORGANIZATION_UUID = 'some organization UUID'
+CALENDLY_RETRY_IF_API_ERROR = False
 
 CANVAS_DATA_API_KEY = 'some key'
 CANVAS_DATA_API_SECRET = 'some secret'  # noqa: S105
 CANVAS_DATA_HOST = 'foo.instructure.com'
 
+CANVAS_BERKELEY_ACCOUNT_ID = 1
 CANVAS_HTTP_URL = 'https://wottsamatta.instructure.com'
 CANVAS_HTTP_TOKENS = ['yet another secret', 'in a list of secrets']
 
@@ -172,9 +174,9 @@ JOB_RETRIEVE_CD2_SNAPSHOT = {}
 JOB_SYNC_AND_REFRESH_CD2_SNAPSHOTS = {}
 JOB_RESYNC_AND_REFRESH_CD2_SNAPSHOTS = {}
 JOB_UPDATE_ACADEMIC_PARTICIPATION = {}
-JOB_REFRESH_BI_BOA_ADVISING = {}
-JOB_REFRESH_BI_BCOURSES_SERVICE_CD2 = {}
-JOB_GRANT_BI_READONLY_ACCESS = {}
+JOB_BI_GRANT_READONLY_ACCESS = {}
+JOB_BI_REFRESH_BCOURSES_SERVICE_CD2 = {}
+JOB_BI_REFRESH_BOA_ADVISING = {}
 
 LDAP_HOST = 'ldap-test.berkeley.edu'
 LDAP_BIND = 'mybind'
@@ -198,6 +200,9 @@ LOCH_S3_ENCRYPTION = 'AES256'
 LOCH_S3_PROTECTED_BUCKET = 'protected_bucket_name'
 LOCH_S3_PUBLIC_BUCKET = 'public_bucket_name'
 LOCH_S3_REGION = 'us-west-2'
+
+LOCH_S3_BOA_APP_RDS_DATA_SEARCH_PATH = 'path/to/boa-app-rds/search/data'
+LOCH_S3_BOA_APP_RDS_DATA_BI_PATH = 'boa-data/boa-rds/prod'
 
 LOCH_S3_CANVAS_DATA_PATH = 'canvas-data'
 LOCH_S3_CANVAS_DATA_PATH_DAILY = 'canvas/path/to/daily'
@@ -245,6 +250,7 @@ RDS_SCHEMA_ADVISING_APPOINTMENTS = 'boac_advising_appointments'
 RDS_SCHEMA_ADVISING_NOTES = 'boac_advising_notes'
 RDS_SCHEMA_ADVISOR = 'boac_advisor'
 RDS_SCHEMA_ASC = 'boac_advising_asc'
+RDS_SCHEMA_BOA_APP_RDS_DATA = 'boa_app_rds_data'
 RDS_SCHEMA_BOAC = 'boac_analytics'
 RDS_SCHEMA_COE = 'boac_advising_coe'
 RDS_SCHEMA_DATA_SCIENCE = 'boac_advising_data_science'
@@ -298,6 +304,8 @@ REDSHIFT_SCHEMA_YCBM_INTERNAL = 'ycbm_data'
 # The following external schemas vary between environments and do need to be overridden locally.
 REDSHIFT_SCHEMA_ADVISOR = 'External Advisor schema name'
 REDSHIFT_SCHEMA_ASC_ADVISING_NOTES = 'External ASC Advising Notes schema name'
+REDSHIFT_SCHEMA_BOA_APP_RDS_DATA_SEARCH = 'External BOA App RDS Data Search schema name'
+REDSHIFT_SCHEMA_BOA_APP_RDS_DATA_BI = 'External BOA App RDS Data BI schema name'
 REDSHIFT_SCHEMA_CALENDLY = 'External Calendly schema name'
 REDSHIFT_SCHEMA_CANVAS = 'External Canvas schema name'
 REDSHIFT_SCHEMA_CANVAS_DATA_2 = 'External Canavs Data 2 schema name'
