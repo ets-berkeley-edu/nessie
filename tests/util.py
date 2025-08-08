@@ -24,12 +24,13 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import base64
-from contextlib import contextmanager
 import json
 import logging
+from contextlib import contextmanager
 
 import boto3
 import moto
+
 from nessie.externals import rds
 
 

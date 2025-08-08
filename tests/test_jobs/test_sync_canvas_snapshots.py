@@ -25,9 +25,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import logging
 
+import pytest
+
 from nessie.externals import rds, s3
 from nessie.jobs.sync_canvas_snapshots import SyncCanvasSnapshots
-import pytest
 from tests.util import assert_background_job_status, capture_app_logs, mock_s3
 
 

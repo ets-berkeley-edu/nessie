@@ -28,6 +28,7 @@ import os
 import ssl
 
 import ldap3
+
 from nessie.lib import mockingbird
 
 SCHEMA_DICT = {

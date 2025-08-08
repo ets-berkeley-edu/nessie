@@ -24,18 +24,20 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import csv
-from gzip import GzipFile
 import io
 import json
 import tempfile
+from gzip import GzipFile
 from zipfile import ZipFile
 
 import boto3
-from botocore.exceptions import ClientError as BotoClientError, ConnectionError as BotoConnectionError
-from flask import current_app as app
-from nessie.lib import metadata
 import requests
 import smart_open
+from botocore.exceptions import ClientError as BotoClientError
+from botocore.exceptions import ConnectionError as BotoConnectionError
+from flask import current_app as app
+
+from nessie.lib import metadata
 
 """Client code to run file operations against S3."""
 

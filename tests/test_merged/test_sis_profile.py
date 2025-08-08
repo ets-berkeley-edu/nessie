@@ -25,9 +25,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import json
 
+import pytest
+
 from nessie.lib.queries import edl_schema
 from nessie.merged.sis_profile import merge_sis_profile_academic_status, parse_merged_sis_profile
-import pytest
 from tests.util import capture_app_logs
 
 

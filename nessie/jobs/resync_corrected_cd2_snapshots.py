@@ -24,9 +24,9 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
+
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib import cd2_metadata
-
 
 """Logic to trigger query Canvas Data 2 snapshot job with Instructure."""
 

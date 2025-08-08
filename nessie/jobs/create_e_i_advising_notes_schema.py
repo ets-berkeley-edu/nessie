@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
+
 from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.util import resolve_sql_template

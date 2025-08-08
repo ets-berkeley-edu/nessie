@@ -24,7 +24,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import boto3
-from botocore.exceptions import ClientError as BotoClientError, ConnectionError as BotoConnectionError
+from botocore.exceptions import ClientError as BotoClientError
+from botocore.exceptions import ConnectionError as BotoConnectionError
 from flask import current_app as app
 
 """Client code to run AWS DMS operations."""

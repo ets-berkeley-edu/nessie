@@ -25,6 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import jsonify, make_response, request
 from flask_login import LoginManager
+
 from nessie.models.user import find_by_uid
 
 
@@ -38,14 +39,14 @@ def register_routes(app):
 
     # Register API routes.
     import nessie.api.admin_controller
-    import nessie.api.user_controller
+
+    # Register error handlers.
+    import nessie.api.error_handlers
     import nessie.api.job_controller
     import nessie.api.magic_eight_ball_controller
     import nessie.api.schedule_controller
     import nessie.api.status_controller
-
-    # Register error handlers.
-    import nessie.api.error_handlers
+    import nessie.api.user_controller
 
     @app.login_manager.unauthorized_handler
     def unauthorized_handler():

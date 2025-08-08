@@ -25,9 +25,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import json
 
+import pytest
+
 from nessie.externals import redshift
 from nessie.lib.queries import edl_schema
-import pytest
 from tests.util import mock_s3
 
 

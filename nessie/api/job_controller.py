@@ -28,7 +28,9 @@ import datetime
 import json
 import re
 
-from flask import current_app as app, request
+from flask import current_app as app
+from flask import request
+
 from nessie.api.auth_helper import auth_required
 from nessie.api.errors import BadRequestError
 from nessie.jobs.background_job import ChainedBackgroundJob

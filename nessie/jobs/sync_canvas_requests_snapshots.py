@@ -26,6 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import time
 
 from flask import current_app as app
+
 from nessie.externals import canvas_data, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib import metadata

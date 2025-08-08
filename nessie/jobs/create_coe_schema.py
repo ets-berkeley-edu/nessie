@@ -23,16 +23,16 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from itertools import groupby
 import json
 import operator
+from itertools import groupby
 
+import psycopg2
 from flask import current_app as app
+
 from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.util import encoded_tsv_row, get_s3_coe_daily_path, resolve_sql_template, resolve_sql_template_string
-import psycopg2
-
 
 """Logic for COE schema creation job."""
 

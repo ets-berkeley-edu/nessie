@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
+
 import nessie.api.errors
 from nessie.lib.http import tolerant_jsonify
 

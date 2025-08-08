@@ -25,8 +25,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from contextlib import contextmanager
 
-from flask import current_app as app
 import paramiko
+from flask import current_app as app
 
 
 @contextmanager

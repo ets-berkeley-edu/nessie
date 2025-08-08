@@ -27,10 +27,10 @@ import logging
 import re
 import urllib
 
-from flask import current_app as app
-from flask import Response
 import requests
 import simplejson as json
+from flask import Response
+from flask import current_app as app
 
 
 class ResponseExceptionWrapper:

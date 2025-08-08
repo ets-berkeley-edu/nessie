@@ -23,12 +23,13 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import psycopg2.sql
 from flask import current_app as app
+
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJobError
 from nessie.lib.queries import student_schema
 from nessie.lib.util import get_s3_sis_api_daily_path, resolve_sql_template_string
-import psycopg2.sql
 
 """Higher-level logic for staged student schema in Redshift."""
 

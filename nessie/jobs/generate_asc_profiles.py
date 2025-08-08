@@ -23,16 +23,17 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from functools import reduce
-from itertools import groupby
 import json
 import operator
+from functools import reduce
+from itertools import groupby
 
+import psycopg2
 from flask import current_app as app
+
 from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import encoded_tsv_row, get_s3_asc_daily_path, resolve_sql_template_string
-import psycopg2
 
 """Logic for ASC profile generation job."""
 

@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
+
 from nessie.externals import rds, redshift
 from nessie.lib.berkeley import term_name_for_sis_id
 from nessie.lib.mockingdata import fixture

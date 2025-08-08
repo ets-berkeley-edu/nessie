@@ -23,13 +23,14 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from contextlib import ExitStack
-from itertools import groupby
 import json
 import operator
 import tempfile
+from contextlib import ExitStack
+from itertools import groupby
 
 from flask import current_app as app
+
 from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib import berkeley, queries

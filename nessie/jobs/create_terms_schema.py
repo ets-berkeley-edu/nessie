@@ -25,12 +25,13 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from datetime import datetime, timedelta
 
+import pytz
 from flask import current_app as app
+
 from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import next_term_id, term_name_for_sis_id
 from nessie.lib.queries import edl_external_schema
-import pytz
 
 """Logic for SIS Terms schema creation job."""
 

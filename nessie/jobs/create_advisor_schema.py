@@ -26,6 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from datetime import datetime, timedelta
 
 from flask import current_app as app
+
 from nessie.externals import calnet, rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.util import encoded_tsv_row, get_s3_calnet_daily_path, get_s3_sis_sysadm_daily_path, resolve_sql_template, resolve_sql_template_string

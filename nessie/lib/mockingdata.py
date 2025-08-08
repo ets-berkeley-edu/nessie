@@ -23,15 +23,15 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from contextlib import contextmanager
-from functools import wraps
 import json
 import os
+from contextlib import contextmanager
+from functools import wraps
 
-from flask import current_app as app
-from nessie.lib.util import fill_pattern_from_args
 import pandas
+from flask import current_app as app
 
+from nessie.lib.util import fill_pattern_from_args
 
 """This module stubs SQL-querying functions by a CSV-derived array of dicts in test or demo mode.
 

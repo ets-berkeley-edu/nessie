@@ -27,6 +27,7 @@ import json
 import os
 
 from flask import current_app as app
+
 from nessie import __version__ as version
 from nessie import db
 from nessie.externals import redshift

@@ -25,6 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
+
 from nessie.jobs.background_job import check_for_stalled_job
 from nessie.jobs.create_calendly_schema import CreateCalendlySchema
 from nessie.jobs.import_calendly_api import ImportCalendlyApi
@@ -83,9 +84,9 @@ def initialize_job_schedules(_app, force=False):
 
 def schedule_all_jobs(force=False):  # noqa: PLR0915
     from nessie.jobs.bi_grant_readonly_access import GrantBiReadonlyAccess
-    from nessie.jobs.bi_refresh_boa_rds_data_schema import RefreshBiBoaRdsDataSchema
-    from nessie.jobs.bi_refresh_boa_advising_schemas import RefreshBiBoaAdvisingSchemas
     from nessie.jobs.bi_refresh_bcourses_service_cd2_schemas import RefreshBiBcoursesServiceCD2Schemas
+    from nessie.jobs.bi_refresh_boa_advising_schemas import RefreshBiBoaAdvisingSchemas
+    from nessie.jobs.bi_refresh_boa_rds_data_schema import RefreshBiBoaRdsDataSchema
     from nessie.jobs.chained_import_student_population import ChainedImportStudentPopulation
     from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
     from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
