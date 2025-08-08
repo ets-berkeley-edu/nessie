@@ -23,8 +23,9 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from nessie.merged.student_terms import merge_enrollment
 import pytest
+
+from nessie.merged.student_terms import merge_enrollment
 
 
 # TODO: fix integration with legacy GenerateMergedStudentFeeds structure

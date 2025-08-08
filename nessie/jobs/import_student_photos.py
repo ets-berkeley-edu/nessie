@@ -26,6 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from time import sleep
 
 from flask import current_app as app
+
 from nessie.externals import s3
 from nessie.externals.cal1card_photo_api import get_cal1card_photo
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError

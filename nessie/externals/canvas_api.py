@@ -27,9 +27,9 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import random
 
 from flask import current_app as app
+
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
-
 
 """Client code to connect to the Canvas API."""
 

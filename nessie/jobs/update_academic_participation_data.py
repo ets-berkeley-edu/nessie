@@ -29,12 +29,12 @@ import tempfile
 
 from csv_diff import compare, load_csv
 from flask import current_app as app
+
 from nessie.externals import blue_sftp, canvas_api, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import current_term_id, term_code_for_sis_id
 from nessie.lib.queries import get_sis_default_meeting_dates, get_sis_enrollments, get_sis_instructors, get_sis_sections
 from nessie.lib.util import get_s3_explorance_term_export_previous_path, get_s3_explorance_term_export_timestamped_path, get_s3_explorance_term_path
-
 
 """Logic for current-term enrollments index job."""
 

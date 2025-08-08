@@ -25,10 +25,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 
 from flask import current_app as app
+
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import get_s3_sis_attachment_path, normalize_sis_note_attachment_file_name
-
 
 """Logic for validating SIS advising note attachments."""
 

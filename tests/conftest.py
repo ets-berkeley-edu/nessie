@@ -25,8 +25,9 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import os
 
-import nessie.factory
 import pytest
+
+import nessie.factory
 
 # Test environment defaults to 'test' unless 'testext' is explicitly specified.
 
@@ -71,7 +72,7 @@ def clear_metadata_db(app):
 def student_tables(app):
     """Use Postgres to mock the Redshift student schemas on local test runs."""
     from nessie.externals import rds, redshift
-    from nessie.lib.util import resolve_sql_template_string, resolve_sql_template
+    from nessie.lib.util import resolve_sql_template, resolve_sql_template_string
 
     fixture_path = f"{app.config['BASE_DIR']}/fixtures"
     params = {}

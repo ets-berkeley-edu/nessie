@@ -23,12 +23,13 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 from datetime import datetime, timedelta
+
 import pytest
+import pytz
 
 from nessie.externals import calendly_api
 from nessie.jobs.background_job import BackgroundJobError
 from nessie.lib.mockingbird import MockResponse, register_mock
-import pytz
 
 
 class TestCalendlyApi:

@@ -23,16 +23,17 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from itertools import groupby
 import json
 import math
+from itertools import groupby
 
+import pandas
 from flask import current_app as app
+from numpy import nan
+from scipy.stats import percentileofscore
+
 from nessie.externals.redshift import copy_for_pandas
 from nessie.lib.util import write_to_tsv_file
-from numpy import nan
-import pandas
-from scipy.stats import percentileofscore
 
 
 def generate_analytics_feeds_for_course(output_file, term_id, canvas_site_row, site_enrollments_stream, site_submissions_stream):

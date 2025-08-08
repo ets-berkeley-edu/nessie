@@ -26,10 +26,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from urllib.parse import urlparse
 
 from flask import current_app as app
+
 from nessie.externals import boac, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import get_s3_boa_api_daily_path
-
 
 """Logic for BOAC metadata export and cache refresh kickoff."""
 

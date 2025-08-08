@@ -23,13 +23,13 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from datetime import datetime, timezone
 import time
+from datetime import datetime, timezone
 
 from flask import current_app as app
+
 from nessie.externals import canvas_data_2, dynamodb
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-
 
 """Logic to trigger query Canvas Data 2 snapshot job with Instructure."""
 

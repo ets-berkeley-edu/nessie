@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
+
 from nessie.externals import calnet, rds
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.queries import get_advisor_sids

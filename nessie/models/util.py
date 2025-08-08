@@ -26,6 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from contextlib import contextmanager
 
 from flask import current_app as app
+
 from nessie import db
 
 

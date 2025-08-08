@@ -23,14 +23,13 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import pytz
+import requests
 from flask import current_app as app
 
 from nessie.jobs.background_job import BackgroundJobError
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
-import pytz
-import requests
-
 
 """Calendly API."""
 

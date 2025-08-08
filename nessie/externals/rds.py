@@ -26,10 +26,11 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from contextlib import contextmanager
 from datetime import datetime
 
-from flask import current_app as app
-from nessie.lib.db import get_psycopg_cursor, get_psycopg_cursor_streaming
 import psycopg2
 import psycopg2.extras
+from flask import current_app as app
+
+from nessie.lib.db import get_psycopg_cursor, get_psycopg_cursor_streaming
 
 """Client code to run queries against RDS."""
 

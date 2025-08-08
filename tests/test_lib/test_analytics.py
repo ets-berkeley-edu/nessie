@@ -24,12 +24,13 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import io
-from itertools import groupby
 import operator
+from itertools import groupby
+
+import pytest
 
 from nessie.lib import analytics, queries
 from nessie.lib.mockingdata import MockRows, register_mock
-import pytest
 
 
 # TODO: fix integration with legacy GenerateMergedStudentFeeds structure

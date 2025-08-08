@@ -25,11 +25,11 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 
 from flask import current_app as app
+
 from nessie.externals import rds
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import current_term_id
 from nessie.lib.queries import get_enrolled_primary_sections
-
 
 """Logic for current-term enrollments index job."""
 

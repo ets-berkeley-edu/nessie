@@ -25,8 +25,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from functools import wraps
 
-from flask import current_app as app, request
+from flask import current_app as app
+from flask import request
 from flask_login import current_user
+
 from nessie.api.errors import UnauthorizedRequestError
 
 

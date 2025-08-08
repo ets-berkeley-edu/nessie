@@ -23,10 +23,11 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from datetime import datetime
 import os
+from datetime import datetime
 
 from flask import current_app as app
+
 from nessie.externals import rds, s3
 
 

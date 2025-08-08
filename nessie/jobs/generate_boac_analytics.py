@@ -23,10 +23,11 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from itertools import groupby
 import tempfile
+from itertools import groupby
 
 from flask import current_app as app
+
 from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib import queries

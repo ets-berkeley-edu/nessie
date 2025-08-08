@@ -23,16 +23,17 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from datetime import date, datetime, timedelta
 import hashlib
 import inspect
 import re
+from datetime import date, datetime, timedelta
 
+import pytz
 from dateutil.rrule import DAILY, rrule
 from flask import current_app as app
+
 from nessie.externals.s3 import get_subfolders_with_prefix
 from nessie.lib.berkeley import current_term_id, earliest_term_id
-import pytz
 
 """Generic utilities."""
 
