@@ -283,7 +283,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         redshift.execute(
             f"""TRUNCATE {self.student_schema}.academic_standing;
             INSERT INTO {self.student_schema}.academic_standing
-                SELECT sid, term_id, acad_standing_action, acad_standing_status, action_date
+                SELECT sid, term_id, acad_standing_action, acad_standing_description, acad_standing_status, action_date
                 FROM {app.config['REDSHIFT_SCHEMA_EDL']}.academic_standing;""",
         )
 
