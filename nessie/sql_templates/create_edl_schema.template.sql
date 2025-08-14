@@ -99,6 +99,7 @@ AS (
         s.student_id AS sid,
         s.semester_year_term_cd AS term_id,
         s.academic_standing_cd AS acad_standing_action,
+        s.academic_standing_desc AS acad_standing_description,
         -- BOAC-5320, NS-1691: certain DIQ (Disqualification) codings appear to be errors for SUB (Subject to Disqualification).
         (CASE WHEN (s.academic_standing_cd = ANY('{{SDD,SND,STD}}')) THEN 'SUB' ELSE s.academic_standing_category_cd END) AS acad_standing_status,
         s.action_dt AS action_date

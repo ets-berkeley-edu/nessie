@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_edl}.academic_standing (
     sid VARCHAR NOT NULL,
     term_id VARCHAR NOT NULL,
     acad_standing_action VARCHAR NOT NULL,
+    acad_standing_description VARCHAR NOT NULL,
     acad_standing_status VARCHAR NOT NULL,
     action_date DATE
 );
