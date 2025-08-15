@@ -106,13 +106,14 @@ TRUNCATE {rds_schema_student}.academic_standing;
 INSERT INTO {rds_schema_student}.academic_standing (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-      SELECT DISTINCT sid, term_id, acad_standing_action, acad_standing_status, LEFT(action_date, 10)
+      SELECT DISTINCT sid, term_id, acad_standing_action, acad_standing_description, acad_standing_status, LEFT(action_date, 10)
       FROM {redshift_schema_student}.academic_standing
     $REDSHIFT$)
   AS redshift_academic_standing (
       sid VARCHAR,
       term_id VARCHAR,
       acad_standing_action VARCHAR,
+      acad_standing_description VARCHAR,
       acad_standing_status VARCHAR,
       action_date VARCHAR
   )
