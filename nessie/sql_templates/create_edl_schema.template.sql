@@ -101,7 +101,14 @@ AS (
         s.academic_standing_cd AS acad_standing_action,
         s.academic_standing_desc AS acad_standing_description,
         -- BOAC-5320, NS-1691: certain DIQ (Disqualification) codings appear to be errors for SUB (Subject to Disqualification).
-        (CASE WHEN (s.academic_standing_cd = ANY('{{SDD,SND,STD}}')) THEN 'SUB' ELSE s.academic_standing_category_cd END) AS acad_standing_status,
+        -- BOAC-6312: Rows where category_cd = SUB and term < 'Spring 2025' are identified with a custom code.
+        --            Advisors want that custom code to get a distinct label when rendered in BOA.
+        CASE
+            WHEN s.academic_standing_cd = ANY('{{SDD,SND,STD}}') AND s.semester_year_term_cd < '2252' THEN 'SUB-OBSOLETE'
+            WHEN s.academic_standing_cd = ANY('{{SDD,SND,STD}}') AND s.semester_year_term_cd >= '2252' THEN 'SUB'
+            WHEN s.academic_standing_category_cd = 'SUB' AND s.semester_year_term_cd < '2252' THEN 'SUB-OBSOLETE'
+            ELSE s.academic_standing_category_cd
+        END AS acad_standing_status,
         s.action_dt AS action_date
     FROM {redshift_schema_edl_external}.student_academic_standing_data s
     JOIN (
