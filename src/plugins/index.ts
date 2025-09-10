@@ -1,7 +1,7 @@
-import axios from '@/plugins/axios'
 import type {App} from 'vue'
-import vuetify from './vuetify'
 import {createPinia} from 'pinia'
+import vuetify from './vuetify'
+import axios from '@/plugins/axios'
 
 export function registerPlugins (app: App) {
   app

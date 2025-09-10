@@ -21,7 +21,6 @@ import {VTab, VTabs} from 'vuetify/components/VTabs'
 import {VTextarea} from 'vuetify/components/VTextarea'
 import {VTextField} from 'vuetify/components/VTextField'
 
-// @ts-ignore
 import colors from 'vuetify/lib/util/colors'
 
 export default createVuetify({
