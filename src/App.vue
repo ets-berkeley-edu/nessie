@@ -41,7 +41,7 @@
     </v-row>
     <v-row v-if="!isToggling && !contextStore.isLoading" class="mx-4 pb-3">
       <v-col>
-        <img src="@/assets/uc-berkeley-logo.svg" />
+        <img alt="UC Berkeley logo" src="@/assets/uc-berkeley-logo.svg">
       </v-col>
       <v-col class="text-right">
         &copy; 2025 The Regents of the University of California

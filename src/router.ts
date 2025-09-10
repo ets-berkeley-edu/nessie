@@ -1,9 +1,10 @@
+import type {RouteRecordRaw} from 'vue-router'
+import {createRouter, createWebHistory} from 'vue-router'
+
 const Configs = () => import('./views/Configs.vue')
 const JobTable = () => import('./views/JobTable.vue')
 const MagicEightBall = () => import('./views/MagicEightBall.vue')
 const Schedule = () => import('./views/Schedule.vue')
-
-import {createRouter, createWebHistory, RouteRecordRaw} from 'vue-router'
 
 const routes:RouteRecordRaw[] = [
   {

@@ -42,19 +42,19 @@ export const useContextStore = defineStore('context', {
       }
       putFocusNextTick(focusTarget || 'page-title')
     },
-    loadingStart(route?: Object) {
+    loadingStart(route?: object) {
       this.isLoading = true
       if (!get(route, 'meta.announcer.skip')) {
         this.screenReaderAlert.message = `${String(get(route, 'name', ''))} page is loading.`
       }
     },
-    setApplicationState(status: number, message?: any, stacktrace?: any) {
+    setApplicationState(status: number, message?: string, stacktrace?: string) {
       this.applicationState = {message, stacktrace, status}
     },
-    setConfig(config: any) {
+    setConfig(config: object) {
       this.config = config
     },
-    setCurrentUser(user: any) {
+    setCurrentUser(user: object) {
       this.currentUser = user
       this.eventHub.emit('current-user-update')
     },

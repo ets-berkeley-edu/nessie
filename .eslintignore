@@ -1,7 +1,0 @@
-/build/
-/config/
-/dist/
-/node_modules/
-/src-vue2/
-/venv/
-!*.js

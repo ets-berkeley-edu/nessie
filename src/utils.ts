@@ -3,11 +3,11 @@ import {DateTime} from 'luxon'
 import {nextTick} from 'vue'
 import {useContextStore} from '@/stores/context'
 
-export function initializeAxios(app: any, axios: any) {
+export function initializeAxios(app: object, axios: object) {
   axios.defaults.withCredentials = true
   axios.interceptors.response.use(
-    (response: any) => response.headers['content-type'] === 'application/json' ? response.data : response,
-    (error: any) => {
+    (response: object) => response.headers['content-type'] === 'application/json' ? response.data : response,
+    (error: object) => {
       const errorStatus = get(error, 'response.status')
       if (includes([401, 403], errorStatus)) {
         const isAuthenticated = useContextStore().currentUser.isAuthenticated
@@ -25,12 +25,14 @@ export function putFocusNextTick(id: string, cssSelector?: string) {
   const callable = () => {
     let el = document.getElementById(id)
     el = el && cssSelector ? el.querySelector(cssSelector) : el
-    el && el.focus()
+    if (el) {
+      el.focus()
+    }
     return !!el
   }
   nextTick(() => {
     let counter = 0
-    const job:any = setInterval(() => (callable() || ++counter > 3) && clearInterval(job), 500)
+    const job: object = setInterval(() => (callable() || ++counter > 3) && clearInterval(job), 500)
   }).then(noop)
 }
 

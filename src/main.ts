@@ -1,18 +1,17 @@
-
-import App from './App.vue'
-import axios from 'axios'
+import {get, trim} from 'lodash'
+import {createApp} from 'vue'
+import HighchartsVue from 'highcharts-vue'
 import CustomEvents from 'highcharts-custom-events'
 import highchartsDumbbell from 'highcharts/modules/dumbbell'
 import HC_more from 'highcharts/highcharts-more'
 import Highcharts from 'highcharts'
-import HighchartsVue from 'highcharts-vue'
-import router from '@/router'
-
-import {createApp} from 'vue'
-import {get, trim} from 'lodash'
+import axios from 'axios'
+import App from './App.vue'
+import router from './router'
 import {initializeAxios} from './utils'
 import {registerPlugins} from '@/plugins'
 import {useContextStore} from '@/stores/context'
+
 
 const app = createApp(App)
 app.use(HighchartsVue)
@@ -45,6 +44,7 @@ axios.get(`${apiBaseUrl}/api/user/profile`).then(data => {
     app.use(router).config.errorHandler = function (error, vm, info) {
       const message = get(error, 'message') || info
       const stacktrace = get(error, 'stack', null)
+      // eslint-disable-next-line no-console
       console.log(`\n${message}\n${stacktrace}\n`)
       useContextStore().setApplicationState(500, message, stacktrace)
     }
