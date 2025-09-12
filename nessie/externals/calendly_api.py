@@ -23,6 +23,8 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import time
+
 import pytz
 import requests
 from flask import current_app as app
@@ -114,16 +116,28 @@ def _make_calendly_api_request(path, query=None):
 
 @fixture('calendly_scheduled_events')
 def _get_authorized_response(url, mock=None):
+    response_status_code = None
+    api_attempts = 0
     with mock(url):
-        response = requests.get(  # noqa: S113
-            headers={
-                'Authorization': f"Bearer {app.config['CALENDLY_AUTH_TOKEN']}",
-                'Content-Type': 'application/json',
-            },
-            url=url,
-        )
-        if response.status_code != 200:
-            raise BackgroundJobError(f'Failed GET {url} (status_code: {response.status_code}) due to {response.text}')
+        calendly_retry_settings = app.config['CALENDLY_RETRY_SETTINGS']
+        retry_count = calendly_retry_settings['retry_count']
+        while api_attempts < retry_count:
+            api_attempts += 1
+            response = requests.get(  # noqa: S113
+                headers={
+                    'Authorization': f"Bearer {app.config['CALENDLY_AUTH_TOKEN']}",
+                    'Content-Type': 'application/json',
+                },
+                url=url,
+            )
+            response_status_code = response.status_code
+            if response_status_code != 200:
+                time.sleep(calendly_retry_settings['sleep_seconds_between_retries'])
+                app.logger.warning(f'Retrying Calendly API request: {url}')
+
+        if response_status_code != 200:
+            app.logger.warning(f'Calendly API call failed: {url} (retries = {retry_count})')
+            raise BackgroundJobError(f'Failed GET {url} (status_code: {response_status_code}) due to {response.text}')
         return response
 
 
