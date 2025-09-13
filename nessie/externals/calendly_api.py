@@ -116,13 +116,12 @@ def _make_calendly_api_request(path, query=None):
 
 @fixture('calendly_scheduled_events')
 def _get_authorized_response(url, mock=None):
-    response_status_code = None
-    api_attempts = 0
     with mock(url):
-        calendly_retry_settings = app.config['CALENDLY_RETRY_SETTINGS']
-        retry_count = calendly_retry_settings['retry_count']
-        while api_attempts < retry_count:
-            api_attempts += 1
+        # If 'RETRY' is enabled then we pause and retry one time.
+        retry_if_api_error = app.config['CALENDLY_RETRY_IF_API_ERROR']
+        api_attempts = 2 if retry_if_api_error else 1
+        response_status_code = None
+        for attempt in range(api_attempts):
             response = requests.get(  # noqa: S113
                 headers={
                     'Authorization': f"Bearer {app.config['CALENDLY_AUTH_TOKEN']}",
@@ -131,13 +130,19 @@ def _get_authorized_response(url, mock=None):
                 url=url,
             )
             response_status_code = response.status_code
-            if response_status_code != 200:
-                time.sleep(calendly_retry_settings['sleep_seconds_between_retries'])
+            retry_the_api_call = response_status_code != 200 and retry_if_api_error and attempt < api_attempts - 1
+            if retry_the_api_call:
+                time.sleep(2)
                 app.logger.warning(f'Retrying Calendly API request: {url}')
 
         if response_status_code != 200:
-            app.logger.warning(f'Calendly API call failed: {url} (retries = {retry_count})')
-            raise BackgroundJobError(f'Failed GET {url} (status_code: {response_status_code}) due to {response.text}')
+            app.logger.warning(f'Calendly API call failed: {url}')
+            raise BackgroundJobError(f"""
+                Calendly API call failed {'(twice with retry)' if retry_if_api_error else ''}
+                URL: {url}
+                HTTP status code: {response_status_code}
+                {response.text}
+            """)
         return response
 
 
