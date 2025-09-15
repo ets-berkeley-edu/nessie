@@ -109,10 +109,7 @@ CALENDLY_BASE_API_URL = 'https://api.calendly.com'
 CALENDLY_FETCH_DAYS_AHEAD = 30
 CALENDLY_FETCH_DAYS_BEHIND = 3
 CALENDLY_ORGANIZATION_UUID = 'some organization UUID'
-CALENDLY_RETRY_SETTINGS = {
-    'retry_count': 2,
-    'sleep_seconds_between_retries': 2,
-}
+CALENDLY_RETRY_IF_API_ERROR = False
 
 CANVAS_DATA_API_KEY = 'some key'
 CANVAS_DATA_API_SECRET = 'some secret'  # noqa: S105
