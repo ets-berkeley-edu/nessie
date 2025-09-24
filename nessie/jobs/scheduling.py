@@ -203,6 +203,7 @@ def schedule_all_jobs(force=False):  # noqa: PLR0915
         [
             ImportCalendlyApi,
             CreateCalendlySchema,
+            IndexAdvisingNotes,
         ],
         force,
     )
