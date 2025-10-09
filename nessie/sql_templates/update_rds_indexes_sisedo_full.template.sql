@@ -43,6 +43,11 @@ INSERT INTO {rds_schema_sis_internal}.edo_basic_attributes (
         COALESCE(NULLIF(alternateid, ''), email_address) AS email_address,
         affiliations, person_type
     FROM {redshift_schema_sisedo_internal}.basic_attributes
+    UNION
+    SELECT ldap_uid, sid, first_name, last_name, 
+        COALESCE(NULLIF(alternateid, ''), email_address) AS email_address,
+        affiliations, person_type
+    FROM {redshift_schema_sisedo_internal}_manual_additions.basic_attributes
   $REDSHIFT$)
   AS redshift_edo_basic_attributes (
     ldap_uid VARCHAR,
@@ -78,6 +83,10 @@ INSERT INTO {rds_schema_sis_internal}.edo_enrollments (
     SELECT sis_term_id, sis_section_id, ldap_uid, sis_enrollment_status, units, grading_basis,
       grade, grade_midterm
     FROM {redshift_schema_sisedo_internal}.enrollments
+    UNION
+    SELECT sis_term_id, sis_section_id, ldap_uid, sis_enrollment_status, units, grading_basis,
+      grade, grade_midterm
+    FROM {redshift_schema_sisedo_internal}_manual_additions.enrollments
   $REDSHIFT$)
   AS redshift_edo_enrollments (
     sis_term_id VARCHAR,
@@ -145,6 +154,13 @@ INSERT INTO {rds_schema_sis_internal}.edo_sections (
       meeting_days, meeting_start_time, meeting_end_time, meeting_start_date, meeting_end_date,
       enrollment_count, enroll_limit, waitlist_limit
     FROM {redshift_schema_sisedo_internal}.courses
+    UNION
+    SELECT sis_term_id, sis_section_id, is_primary, dept_name, sis_course_name, sis_course_title, sis_instruction_format,
+      sis_section_num, cs_course_id, session_code, instruction_mode, primary_associated_section_id,
+      instructor_uid, instructor_name, instructor_role_code, meeting_location,
+      meeting_days, meeting_start_time, meeting_end_time, meeting_start_date, meeting_end_date,
+      enrollment_count, enroll_limit, waitlist_limit
+    FROM {redshift_schema_sisedo_internal}_manual_additions.courses
   $REDSHIFT$)
   AS redshift_edo_sections (
     sis_term_id VARCHAR,

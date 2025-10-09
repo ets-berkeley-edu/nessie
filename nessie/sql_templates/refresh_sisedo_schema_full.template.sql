@@ -248,3 +248,66 @@ AS (
     grade_midterm
   FROM {redshift_schema_sisedo}.enrollments
 );
+
+--------------------------------------------------------------------
+-- Persistent Internal Tables (intended for manual inserts in test environments)
+--------------------------------------------------------------------
+
+CREATE SCHEMA IF NOT EXISTS {redshift_schema_sisedo_internal}_manual_additions;
+GRANT USAGE ON SCHEMA {redshift_schema_sisedo_internal}_manual_additions TO GROUP {redshift_dblink_group};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_sisedo_internal}_manual_additions GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_sisedo_internal}_manual_additions.basic_attributes
+(
+   ldap_uid VARCHAR,
+   sid VARCHAR,
+   first_name VARCHAR,
+   last_name VARCHAR,
+   email_address VARCHAR,
+   affiliations VARCHAR,
+   person_type VARCHAR,
+   alternateid VARCHAR
+)
+SORTKEY (ldap_uid);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_sisedo_internal}_manual_additions.courses
+(
+    sis_term_id VARCHAR,
+    sis_section_id VARCHAR,
+    is_primary VARCHAR,
+    dept_name VARCHAR,
+    sis_course_name VARCHAR,
+    sis_course_title VARCHAR,
+    sis_instruction_format VARCHAR,
+    sis_section_num VARCHAR,
+    cs_course_id VARCHAR,
+    session_code VARCHAR,
+    primary_associated_section_id VARCHAR,
+    instruction_mode VARCHAR,
+    instructor_uid VARCHAR,
+    instructor_name VARCHAR,
+    instructor_role_code VARCHAR,
+    meeting_location VARCHAR,
+    meeting_days VARCHAR,
+    meeting_start_time VARCHAR,
+    meeting_end_time VARCHAR,
+    meeting_start_date VARCHAR,
+    meeting_end_date VARCHAR,
+    enrollment_count INTEGER,
+    enroll_limit INTEGER,
+    waitlist_limit INTEGER
+)
+SORTKEY (sis_term_id, sis_section_id);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_sisedo_internal}_manual_additions.enrollments
+(
+    sis_term_id VARCHAR,
+    sis_section_id VARCHAR,
+    ldap_uid VARCHAR,
+    sis_enrollment_status VARCHAR,
+    units VARCHAR,
+    grading_basis VARCHAR,
+    grade VARCHAR,
+    grade_midterm VARCHAR
+)
+SORTKEY (sis_term_id, sis_section_id);
