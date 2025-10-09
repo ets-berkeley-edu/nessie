@@ -453,6 +453,57 @@ CREATE INDEX idx_bi_ce3_notes_subject ON {bi_rds_schema_boa_advising}.ce3_notes_
 
 
 ----------------------------------------------------------------------------------------------------
+-- CREATE TABLE: ce3_author_contacts
+-- counts by author_id of 1) distinct student count, 2) note count (total), 3) contact type count
+----------------------------------------------------------------------------------------------------
+DO $$
+  DECLARE 
+    trow RECORD;
+    sqlstr TEXT;
+
+  BEGIN
+    DROP TABLE IF EXISTS {bi_rds_schema_boa_advising}.ce3_author_contacts CASCADE;
+
+    CREATE TABLE IF NOT EXISTS {bi_rds_schema_boa_advising}.ce3_author_contacts AS
+      SELECT
+        author_uid,
+        COUNT(DISTINCT sid) AS student_count,
+        COUNT(*) AS note_count
+      FROM {bi_rds_schema_boa_advising}.ce3_notes_mv
+      GROUP BY author_uid;
+
+    CREATE TEMP TABLE types_temp AS
+      SELECT
+        author_uid, 
+        coalesce(contact_type, 'Unknown') AS contact_type,
+        COUNT(contact_type) AS contact_count
+      FROM {bi_rds_schema_boa_advising}.ce3_notes_mv
+      GROUP BY 1, 2;
+  
+    FOR trow IN SELECT DISTINCT COALESCE(contact_type, 'Unknown') AS contact_type
+                FROM {bi_rds_schema_boa_advising}.ce3_notes_mv
+      LOOP
+        sqlstr := 'ALTER TABLE {bi_rds_schema_boa_advising}.ce3_author_contacts ';
+        sqlstr := sqlstr || 'ADD COLUMN ' || quote_ident(trow.contact_type) || ' INTEGER';
+  
+        EXECUTE sqlstr;
+      
+        sqlstr := 'UPDATE {bi_rds_schema_boa_advising}.ce3_author_contacts ac ';
+        sqlstr := sqlstr || 'SET ' || quote_ident(trow.contact_type) || ' = t.contact_count ';
+        sqlstr := sqlstr || 'FROM types_temp t ';
+        sqlstr := sqlstr || 'WHERE ac.author_uid = t.author_uid ';
+        sqlstr := sqlstr || 'AND COALESCE(t.contact_type, ''Unknown'') = ' || quote_literal(trow.contact_type);
+
+        EXECUTE sqlstr;
+
+      END LOOP;
+
+    CREATE INDEX idx_bi_ce3_author_contacts_author_uid ON {bi_rds_schema_boa_advising}.ce3_author_contacts (author_uid);
+  END
+$$;
+
+
+----------------------------------------------------------------------------------------------------
 -- CREATE MATERIALIZED VIEW: ce3_authors_mv
 ----------------------------------------------------------------------------------------------------
 
