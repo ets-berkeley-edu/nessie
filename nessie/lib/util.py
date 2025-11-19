@@ -119,8 +119,8 @@ def get_s3_boa_api_daily_path(cutoff=None):
     return app.config['LOCH_S3_BOA_DATA_API_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
 
-def get_s3_bi_boa_rds_data_daily_path(cutoff=None):
-    return app.config['BI_LOCH_S3_BOA_RDS_DATA_PATH_DAILY'] + '/' + localized_datestamp(cutoff) + '/public'
+def get_s3_boa_app_rds_data_daily_path(cutoff=None):
+    return app.config['LOCH_S3_BOA_APP_RDS_DATA_PATH'] + '/' + localized_datestamp(cutoff) + '/public'
 
 
 def get_s3_boac_analytics_incremental_path(cutoff=None):
@@ -232,7 +232,6 @@ def resolve_sql_template_string(template_string, **kwargs):
         'bi_readonly_group': app.config['BI_READONLY_GROUP'],
         'bi_redshift_la_reports_dblink_group': app.config['BI_REDSHIFT_LA_REPORTS_DBLINK_GROUP'],
         'bi_redshift_schema_bcourses_service_cd2': app.config['BI_REDSHIFT_SCHEMA_BCOURSES_SERVICE_CD2'],
-        'bi_redshift_schema_boa_rds_data': app.config['BI_REDSHIFT_SCHEMA_BOA_RDS_DATA'],
         'bi_redshift_schema_boa_advising': app.config['BI_REDSHIFT_SCHEMA_BOA_ADVISING'],
         'earliest_academic_history_term_id': app.config['EARLIEST_ACADEMIC_HISTORY_TERM_ID'],
         'earliest_term_id': earliest_term_id(),
@@ -247,6 +246,8 @@ def resolve_sql_template_string(template_string, **kwargs):
         'rds_schema_advising_notes': app.config['RDS_SCHEMA_ADVISING_NOTES'],
         'rds_schema_advisor': app.config['RDS_SCHEMA_ADVISOR'],
         'rds_schema_asc': app.config['RDS_SCHEMA_ASC'],
+        'rds_schema_boa_app_rds_data': app.config['RDS_SCHEMA_BOA_APP_RDS_DATA'],
+        'rds_schema_bard': app.config['RDS_SCHEMA_BARD'],
         'rds_schema_boac': app.config['RDS_SCHEMA_BOAC'],
         'rds_schema_coe': app.config['RDS_SCHEMA_COE'],
         'rds_schema_data_science': app.config['RDS_SCHEMA_DATA_SCIENCE'],
@@ -266,6 +267,8 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_schema_asc': app.config['REDSHIFT_SCHEMA_ASC'],
         'redshift_schema_asc_advising_notes': app.config['REDSHIFT_SCHEMA_ASC_ADVISING_NOTES'],
         'redshift_schema_asc_advising_notes_internal': app.config['REDSHIFT_SCHEMA_ASC_ADVISING_NOTES_INTERNAL'],
+        'redshift_schema_boa_app_rds_data': app.config['REDSHIFT_SCHEMA_BOA_APP_RDS_DATA'],
+        'redshift_schema_boa_app_rds_data_advising_notes_internal': app.config['REDSHIFT_SCHEMA_BOA_APP_RDS_DATA_ADVISING_NOTES_INTERNAL'],
         'redshift_schema_boac': app.config['REDSHIFT_SCHEMA_BOAC'],
         'redshift_schema_calendly': app.config['REDSHIFT_SCHEMA_CALENDLY'],
         'redshift_schema_calendly_internal': app.config['REDSHIFT_SCHEMA_CALENDLY_INTERNAL'],

@@ -122,7 +122,6 @@ CREATE TABLE IF NOT EXISTS {bi_rds_schema_boa_advising}.students
   student_name VARCHAR(513),
   last_name VARCHAR(255),
   first_name VARCHAR(255),
-  is_manually_added BOOLEAN,
   cohort_list VARCHAR(65535),
   group_list VARCHAR(65535),
   degree_list VARCHAR(65535)
@@ -137,7 +136,6 @@ INSERT INTO {bi_rds_schema_boa_advising}.students (
       student_name,
       last_name,
       first_name,
-      is_manually_added,
       cohort_list,
       group_list,
       degree_list
@@ -150,7 +148,6 @@ INSERT INTO {bi_rds_schema_boa_advising}.students (
     student_name VARCHAR(513),
     last_name VARCHAR(255),
     first_name VARCHAR(255),
-    is_manually_added BOOLEAN,
     cohort_list VARCHAR(65535),
     group_list VARCHAR(65535),
     degree_list VARCHAR(65535)

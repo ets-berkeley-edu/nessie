@@ -26,35 +26,32 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 
 from nessie.externals import rds, redshift
-from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.util import resolve_sql_template
 
-"""Logic for BI Reports BOA Advising Notes Redshift Internal and RDS schemas refresh job."""
+"""Logic for BOA App RDS Data Advising Notes schema creation job."""
 
 
-class BiRefreshBoaAdvisingSchemas(BackgroundJob):
+class CreateBoaAppRdsDataAdvisingNotesSchema(BackgroundJob):
 
     def run(self):
-        app.logger.info('Starting BI Reports BOA Advising Notes Redshift Internal and RDS schemas refresh job...')
+        app.logger.info('Starting BOA App RDS Data Advising Notes schema creation job...')
         app.logger.info('Executing SQL...')
 
-        rs_template = 'bi_create_boa_advising_redshift_schema.template.sql'
+        rs_template = 'create_boa_app_rds_data_advising_notes_schema.template.sql'
         resolved_ddl_redshift = resolve_sql_template(rs_template)
 
         if redshift.execute_ddl_script(resolved_ddl_redshift):
-            app.logger.info('BI Reports BOA Advising Notes Redshift Internal schema refreshed.')
+            app.logger.info('Redshift Internal schema created. Creating RDS schema and indexes.')
 
-            bi_rds_uri_la_reports = app.config['BI_RDS_URI_LA_REPORTS']
-            users_arr = app.config['BI_RDS_CE3_ADD_USERS']
-            users_str = ', '.join([str(u) for u in users_arr])
-            rds_template = 'bi_create_boa_advising_rds_schema.template.sql'
-            resolved_ddl_rds = resolve_sql_template(rds_template, bi_rds_ce3_add_users=users_str)
+            rds_template = 'index_boa_app_rds_data_advising_notes.template.sql'
+            resolved_ddl_rds = resolve_sql_template(rds_template)
 
-            if rds.execute(resolved_ddl_rds, rds_uri=bi_rds_uri_la_reports):
-                app.logger.info('BI Reports BOA Advising Notes RDS schema refreshed.')
+            if rds.execute(resolved_ddl_rds):
+                app.logger.info('Created BOA App RDS Data Advising Notes RDS schema and indexes.')
             else:
-                raise BackgroundJobError('Failed to refresh BI Reports BOA Advising Notes RDS schema.')
+                raise BackgroundJobError('BOA App RDS Data Advising Notes Redshift RDS schema creation job failed to create indexes.')
         else:
-            raise BackgroundJobError('Failed to refresh BI Reports BOA Advising Notes Redshift Internal schema.')
+            raise BackgroundJobError('BOA App RDS Data Advising Notes Redshift Internal schema creation job failed.')
 
-        return 'BI Reports BOA Advising Notes Redshift Internal and RDS schemas refresh job completed.'
+        return 'BOA App RDS Data Advising Notes schema creation job completed.'

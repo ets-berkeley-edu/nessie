@@ -95,11 +95,15 @@ class IndexAdvisingNotes(BackgroundJob):
 
     def _advisor_attributes_by_uid(self):
         asc_schema = app.config['RDS_SCHEMA_ASC']
+        boa_app_rds_data_schema = app.config['RDS_SCHEMA_BOA_APP_RDS_DATA']
         e_i_schema = app.config['RDS_SCHEMA_E_I']
         eop_schema = app.config['RDS_SCHEMA_EOP']
 
         advisor_uids_from_asc_notes = set(
             [r['advisor_uid'] for r in rds.fetch(f'SELECT DISTINCT advisor_uid FROM {asc_schema}.advising_notes')],
+        )
+        advisor_uids_from_boa_app_rds_data_notes = set(
+            [r['advisor_uid'] for r in rds.fetch(f'SELECT DISTINCT advisor_uid FROM {boa_app_rds_data_schema}.advising_notes')],
         )
         advisor_uids_from_e_i_notes = set(
             [r['advisor_uid'] for r in rds.fetch(f'SELECT DISTINCT advisor_uid FROM {e_i_schema}.advising_notes')],
@@ -107,7 +111,7 @@ class IndexAdvisingNotes(BackgroundJob):
         advisor_uids_from_eop_notes = set(
             [r['advisor_uid'] for r in rds.fetch(f'SELECT DISTINCT advisor_uid FROM {eop_schema}.advising_notes')],
         )
-        advisor_uids = list(advisor_uids_from_asc_notes | advisor_uids_from_e_i_notes | advisor_uids_from_eop_notes)
+        advisor_uids = list(advisor_uids_from_asc_notes | advisor_uids_from_boa_app_rds_data_notes | advisor_uids_from_e_i_notes | advisor_uids_from_eop_notes)
         return calnet.client(app).search_uids(advisor_uids)
 
     def _advisor_attributes_by_email(self):

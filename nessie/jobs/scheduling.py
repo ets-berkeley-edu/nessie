@@ -61,7 +61,7 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_RETRIEVE_CD2_SNAPSHOT': 1300,
     'JOB_SYNC_AND_REFRESH_CD2_SNAPSHOTS': 1400,
     'JOB_UPDATE_ACADEMIC_PARTICIPATION': 8000,
-    'JOB_REFRESH_BI_BOA_ADVISING': 9100,
+    'JOB_REFRESH_BOA_APP_RDS_DATA': 9100,
     'JOB_REFRESH_BI_BCOURSES_SERVICE_CD2': 9200,
     'JOB_GRANT_BI_READONLY_ACCESS': 9300,
 }
@@ -85,12 +85,12 @@ def initialize_job_schedules(_app, force=False):
 
 def schedule_all_jobs(force=False):  # noqa: PLR0915
     from nessie.jobs.bi_grant_readonly_access import GrantBiReadonlyAccess
-    from nessie.jobs.bi_refresh_bcourses_service_cd2_schemas import RefreshBiBcoursesServiceCD2Schemas
-    from nessie.jobs.bi_refresh_boa_advising_schemas import RefreshBiBoaAdvisingSchemas
-    from nessie.jobs.bi_refresh_boa_rds_data_schema import RefreshBiBoaRdsDataSchema
+    from nessie.jobs.bi_refresh_bcourses_service_cd2_schemas import BiRefreshBcoursesServiceCd2Schemas
+    from nessie.jobs.bi_refresh_boa_advising_schemas import BiRefreshBoaAdvisingSchemas
     from nessie.jobs.chained_import_student_population import ChainedImportStudentPopulation
     from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
     from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
+    from nessie.jobs.create_boa_app_rds_data_advising_notes_schema import CreateBoaAppRdsDataAdvisingNotesSchema
     from nessie.jobs.create_e_i_advising_notes_schema import CreateEIAdvisingNotesSchema
     from nessie.jobs.create_edl_schema import CreateEdlSchema
     from nessie.jobs.create_oua_schema import CreateOUASchema
@@ -107,6 +107,7 @@ def schedule_all_jobs(force=False):  # noqa: PLR0915
     from nessie.jobs.index_enrollments import IndexEnrollments
     from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
     from nessie.jobs.query_canvas_data_2_snapshot import QueryCanvasData2Snapshot
+    from nessie.jobs.refresh_boa_app_rds_data_schema import RefreshBoaAppRdsDataSchema
     from nessie.jobs.refresh_boac_cache import RefreshBoacCache
     from nessie.jobs.refresh_canvas_data_2_schema import RefreshCanvasData2Schema
     from nessie.jobs.refresh_sisedo_schema_full import RefreshSisedoSchemaFull
@@ -219,15 +220,16 @@ def schedule_all_jobs(force=False):  # noqa: PLR0915
     )
     schedule_chained_job(
         sched,
-        'JOB_REFRESH_BI_BOA_ADVISING',
+        'JOB_REFRESH_BOA_APP_RDS_DATA',
         [
-            RefreshBiBoaRdsDataSchema,
-            RefreshBiBoaAdvisingSchemas,
+            RefreshBoaAppRdsDataSchema,
+            CreateBoaAppRdsDataAdvisingNotesSchema,
+            BiRefreshBoaAdvisingSchemas,
         ],
         force,
     )
-    schedule_job(sched, 'JOB_REFRESH_BI_BCOURSES_SERVICE_CD2', RefreshBiBcoursesServiceCD2Schemas, force)
-    schedule_job(sched, 'JOB_GRANT_BI_READONLY_ACCESS', GrantBiReadonlyAccess, force)
+    schedule_job(sched, 'JOB_BI_REFRESH_BCOURSES_SERVICE_CD2_SCHEMAS', BiRefreshBcoursesServiceCd2Schemas, force)
+    schedule_job(sched, 'JOB_BI_GRANT_READONLY_ACCESS', BiGrantReadonlyAccess, force)
 
 
 def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):

@@ -122,6 +122,80 @@ CREATE INDEX idx_advising_notes_ft_search
 ON {rds_schema_advising_notes}.advising_notes_search_index
 USING gin(fts_index);
 
+----------------------------------------------------------------------------------------------------
+-- Create advising_notes daily tables and indexes
+-- Union table {rds_schema_advising_notes}.advising_notes
+--   with {rds_schema_boa_app_rds_data}.advising_notes records
+--   as a separate table to be used for adding incremental data.
+----------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+-- Create table advising_notes_daily and indexes.
+----------------------------------------------------------------------------------------------------
+
+CREATE TABLE {rds_schema_advising_notes}.advising_notes_daily AS (
+SELECT
+  sid,
+  id,
+  note_body,
+  advisor_sid,
+  advisor_uid,
+  advisor_first_name,
+  advisor_last_name,
+  note_category,
+  note_subcategory,
+  is_private,
+  created_by,
+  created_at,
+  updated_at
+FROM {rds_schema_advising_notes}.advising_notes
+UNION
+SELECT
+  sid,
+  id,
+  COALESCE(subject || ' ', '') || COALESCE(note_body, '') AS note_body,
+  NULL AS advisor_sid,
+  advisor_uid,
+  advisor_first_name,
+  advisor_last_name,
+  NULL AS note_category,
+  NULL AS note_subcategory,
+  is_private,
+  advisor_uid AS created_by,
+  created_at,
+  updated_at
+FROM {rds_schema_boa_app_rds_data}.advising_notes
+);
+
+CREATE INDEX idx_advising_notes_daily_id ON {rds_schema_advising_notes}.advising_notes_daily (id);
+CREATE INDEX idx_advising_notes_daily_sid ON {rds_schema_advising_notes}.advising_notes_daily (sid);
+CREATE INDEX idx_advising_notes_daily_advisor_sid ON {rds_schema_advising_notes}.advising_notes_daily (advisor_sid);
+CREATE INDEX idx_advising_notes_daily_advisor_uid ON {rds_schema_advising_notes}.advising_notes_daily (advisor_uid);
+CREATE INDEX idx_advising_notes_daily_created_at ON {rds_schema_advising_notes}.advising_notes_daily (created_at);
+CREATE INDEX idx_advising_notes_daily_created_by ON {rds_schema_advising_notes}.advising_notes_daily (created_by);
+CREATE INDEX idx_advising_notes_daily_updated_at ON {rds_schema_advising_notes}.advising_notes_daily (updated_at);
+
+----------------------------------------------------------------------------------------------------
+-- Create table advising_notes_search_index_daily and GIN index.
+----------------------------------------------------------------------------------------------------
+
+CREATE TABLE {rds_schema_advising_notes}.advising_notes_search_index_daily AS (
+SELECT id, fts_index
+FROM {rds_schema_advising_notes}.advising_notes_search_index
+UNION
+SELECT id, fts_index
+FROM {rds_schema_boa_app_rds_data}.advising_notes_search_index
+);
+
+CREATE INDEX idx_advising_notes_daily_ft_search
+  ON {rds_schema_advising_notes}.advising_notes_search_index_daily
+  USING GIN (fts_index);
+
+----------------------------------------------------------------------------------------------------
+-- END of advising_notes daily tables and indexes
+----------------------------------------------------------------------------------------------------
+
+
 DROP TABLE IF EXISTS {rds_schema_advising_appointments}.ycbm_advising_appointments CASCADE;
 
 CREATE TABLE {rds_schema_advising_appointments}.ycbm_advising_appointments (
@@ -156,7 +230,7 @@ INSERT INTO {rds_schema_advising_appointments}.ycbm_advising_appointments (
       b.q6 AS details
     FROM {redshift_schema_ycbm_internal}.bookings b
     JOIN (SELECT b2.id, MAX(b2.imported_at) AS imported_at FROM ycbm_data.bookings b2 GROUP BY b2.id) latest
-      ON b.id = latest.id and b.imported_at = latest.imported_at
+      ON b.id = latest.id AND b.imported_at = latest.imported_at
     ORDER BY starts_at DESC
   $REDSHIFT$)
   AS redshift_appointments (
@@ -174,8 +248,11 @@ INSERT INTO {rds_schema_advising_appointments}.ycbm_advising_appointments (
   )
 );
 
-CREATE INDEX idx_ycbm_advising_appointments_student_sid ON {rds_schema_advising_appointments}.ycbm_advising_appointments(student_sid);
-CREATE INDEX idx_ycbm_advising_appointments_starts_at ON {rds_schema_advising_appointments}.ycbm_advising_appointments(starts_at);
+CREATE INDEX idx_ycbm_advising_appointments_student_sid
+  ON {rds_schema_advising_appointments}.ycbm_advising_appointments (student_sid);
+
+CREATE INDEX idx_ycbm_advising_appointments_starts_at
+  ON {rds_schema_advising_appointments}.ycbm_advising_appointments (starts_at);
 
 DROP TABLE IF EXISTS {rds_schema_advising_appointments}.calendly_advising_appointments CASCADE;
 
@@ -205,7 +282,7 @@ CREATE TABLE {rds_schema_advising_appointments}.calendly_advising_appointments (
 
 INSERT INTO {rds_schema_advising_appointments}.calendly_advising_appointments (
   SELECT *
-  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+  FROM dblink('{rds_dblink_to_redshift}', $REDSHIFT$
     SELECT
       e.id,
       e.canceled_at,
@@ -230,34 +307,37 @@ INSERT INTO {rds_schema_advising_appointments}.calendly_advising_appointments (
     FROM {redshift_schema_calendly_internal}.events e
     JOIN {redshift_schema_edl}.basic_attributes s ON LOWER(s.email_address) = LOWER(e.student_email)
     JOIN (SELECT e2.id, MAX(e2.imported_at) AS imported_at FROM {redshift_schema_calendly_internal}.events e2 GROUP BY e2.id) latest
-      ON e.id = latest.id and e.imported_at = latest.imported_at
+      ON e.id = latest.id AND e.imported_at = latest.imported_at
     ORDER BY start_time DESC
   $REDSHIFT$)
   AS redshift_appointments (
-      id VARCHAR,
-      canceled_at TIMESTAMP WITH TIME ZONE,
-      canceled_by VARCHAR,
-      cancellation_reason TEXT,
-      end_time TIMESTAMP WITH TIME ZONE,
-      host_name VARCHAR,
-      host_sid VARCHAR,
-      host_uid VARCHAR,
-      is_rescheduled BOOLEAN,
-      is_student_no_show BOOLEAN,
-      meeting_notes_html TEXT,
-      meeting_notes_plain TEXT,
-      questions_and_answers TEXT,
-      start_time TIMESTAMP WITH TIME ZONE,
-      student_email VARCHAR,
-      student_sid VARCHAR,
-      student_uid VARCHAR,
-      title VARCHAR,
-      created_at TIMESTAMP WITH TIME ZONE,
-      updated_at TIMESTAMP WITH TIME ZONE
+    id VARCHAR,
+    canceled_at TIMESTAMP WITH TIME ZONE,
+    canceled_by VARCHAR,
+    cancellation_reason TEXT,
+    end_time TIMESTAMP WITH TIME ZONE,
+    host_name VARCHAR,
+    host_sid VARCHAR,
+    host_uid VARCHAR,
+    is_rescheduled BOOLEAN,
+    is_student_no_show BOOLEAN,
+    meeting_notes_html TEXT,
+    meeting_notes_plain TEXT,
+    questions_and_answers TEXT,
+    start_time TIMESTAMP WITH TIME ZONE,
+    student_email VARCHAR,
+    student_sid VARCHAR,
+    student_uid VARCHAR,
+    title VARCHAR,
+    created_at TIMESTAMP WITH TIME ZONE,
+    updated_at TIMESTAMP WITH TIME ZONE
   )
 );
 
-CREATE INDEX idx_calendly_advising_appointments_student_sid ON {rds_schema_advising_appointments}.calendly_advising_appointments(student_sid);
-CREATE INDEX idx_calendly_advising_appointments_starts_at ON {rds_schema_advising_appointments}.ycbm_advising_appointments(starts_at);
+CREATE INDEX idx_calendly_advising_appointments_student_sid
+  ON {rds_schema_advising_appointments}.calendly_advising_appointments (student_sid);
+
+CREATE INDEX idx_calendly_advising_appointments_starts_at
+  ON {rds_schema_advising_appointments}.ycbm_advising_appointments (starts_at);
 
 COMMIT TRANSACTION;
