@@ -223,8 +223,8 @@ def schedule_all_jobs(force=False):  # noqa: PLR0915
         'JOB_REFRESH_BOA_APP_RDS_DATA',
         [
             RefreshBoaAppRdsDataSchema,
-            BiRefreshBoaAdvisingSchemas,
             CurateBoaNotesSearch,
+            BiRefreshBoaAdvisingSchemas,
         ],
         force,
     )
