@@ -31,7 +31,7 @@ from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib.util import get_s3_boa_app_rds_data_daily_path, resolve_sql_template
 
-"""Logic for BOA App Data schema creation and refresh job."""
+"""Logic for BOA App RDS Data Redshift External Schema Creation and Refresh Job."""
 
 
 class RefreshBoaAppRdsDataSchema(BackgroundJob):
@@ -39,7 +39,7 @@ class RefreshBoaAppRdsDataSchema(BackgroundJob):
     external_schema = app.config['REDSHIFT_SCHEMA_BOA_APP_RDS_DATA']
 
     def run(self):
-        app.logger.info('Starting full BOA App RDS Data refresh...')
+        app.logger.info('Starting full BOA App RDS Data External Schema refresh...')
         return self.create_schema()
 
     def create_schema(self):
@@ -58,7 +58,7 @@ class RefreshBoaAppRdsDataSchema(BackgroundJob):
         verify_external_schema(
             self.external_schema,
             resolved_ddl,
-            is_zero_count_acceptable=app.config['BOA_APP_RDS_DATA_ZERO_COUNT_ACCEPTABLE'],
+            is_zero_count_acceptable=app.config['BARD_ZERO_COUNT_ACCEPTABLE'],
         )
         app.logger.info('BOA App RDS Data Redshift External schema created and populated.')
 

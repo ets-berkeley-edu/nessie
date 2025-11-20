@@ -127,7 +127,7 @@ CREATE INDEX idx_advising_notes_advisor_uid
   ON {rds_schema_bard}.advising_notes (advisor_uid);
 
 CREATE INDEX idx_advising_notes_updated_at
- ON {rds_schema_bard}.advising_notes (updated_at);
+  ON {rds_schema_bard}.advising_notes (updated_at);
 
 
 -----------------------------------------------------------------------------------------------------

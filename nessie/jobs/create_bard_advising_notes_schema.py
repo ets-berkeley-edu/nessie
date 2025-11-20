@@ -29,7 +29,7 @@ from nessie.externals import rds
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import resolve_sql_template
 
-"""Logic for BOA App RDS Data Advising Notes schema and index creation job."""
+"""Logic for BOA App RDS Data Advising Notes Schema and Index Creation Job."""
 
 
 class CreateBardAdvisingNotesSchema(BackgroundJob):
@@ -37,13 +37,14 @@ class CreateBardAdvisingNotesSchema(BackgroundJob):
     def run(self):
         app.logger.info('Starting BOA App RDS Data Advising Notes schema and index creation job...')
         app.logger.info('Executing SQL...')
+        self.create_schema()
 
+        return 'BOA App RDS Data Advising Notes RDS schema and index creation job completed.'
+
+    def create_schema(self):
         rds_template = 'create_bard_advising_notes_schema.template.sql'
         resolved_ddl_rds = resolve_sql_template(rds_template)
-
         if rds.execute(resolved_ddl_rds):
             app.logger.info('Created BOA App RDS Data Advising Notes RDS schema and indexes.')
         else:
             raise BackgroundJobError('BOA App RDS Data Advising Notes RDS schema and index creation job failed.')
-
-        return 'BOA App RDS Data Advising Notes RDS schema and index creation job completed.'

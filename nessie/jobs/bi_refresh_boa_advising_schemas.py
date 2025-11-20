@@ -29,7 +29,7 @@ from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import resolve_sql_template
 
-"""Logic for BI Reports BOA Advising Notes Redshift Internal and RDS schemas refresh job."""
+"""Logic for BI Reports BOA Advising Notes Redshift Internal and RDS Schemas Refresh Job."""
 
 
 class BiRefreshBoaAdvisingSchemas(BackgroundJob):

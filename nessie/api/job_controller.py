@@ -42,7 +42,6 @@ from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
 from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
 from nessie.jobs.create_bard_advising_notes_schema import CreateBardAdvisingNotesSchema
 from nessie.jobs.create_berkeleyx_schema import CreateBerkeleyxSchema
-from nessie.jobs.create_boa_app_rds_data_advising_notes_schema import CreateBoaAppRdsDataAdvisingNotesSchema
 from nessie.jobs.create_calendly_schema import CreateCalendlySchema
 from nessie.jobs.create_canvas_schema import CreateCanvasSchema
 from nessie.jobs.create_coe_schema import CreateCoeSchema
@@ -110,7 +109,7 @@ def bi_refresh_bcourses_service_cd2_schemas():
 
 @app.route('/api/job/bi_refresh_boa_advising_schemas', methods=['POST'])
 @auth_required
-def refresh_bi_boa_advising_schemas():
+def bi_refresh_boa_advising_schemas():
     job_started = BiRefreshBoaAdvisingSchemas().run_async()
     return respond_with_status(job_started)
 
@@ -132,7 +131,7 @@ def create_asc_advising_notes_schema():
 @app.route('/api/job/create_bard_advising_notes_schema', methods=['POST'])
 @auth_required
 def create_bard_advising_notes_schema():
-    job_started = CreateBardsAdvisingNotesSchema().run_async()
+    job_started = CreateBardAdvisingNotesSchema().run_async()
     return respond_with_status(job_started)
 
 
@@ -140,13 +139,6 @@ def create_bard_advising_notes_schema():
 @auth_required
 def create_berkeleyx_schema():
     job_started = CreateBerkeleyxSchema().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/create_boa_app_rds_data_advising_notes_schema', methods=['POST'])
-@auth_required
-def create_boa_app_rds_data_advising_notes_schema():
-    job_started = CreateBoaAppRdsDataAdvisingNotesSchema().run_async()
     return respond_with_status(job_started)
 
 

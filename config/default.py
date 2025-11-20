@@ -87,7 +87,7 @@ ASC_ATHLETES_API_KEY = 'secret'
 # We cut over on this day of the year, on or about August 1.
 ASC_ACAD_YR_CUTOVER = 214
 
-BOA_APP_RDS_DATA_ZERO_COUNT_ACCEPTABLE = False
+BARD_ZERO_COUNT_ACCEPTABLE = False
 
 BOAC_REFRESHERS = [
     {
@@ -246,7 +246,6 @@ RDS_SCHEMA_ADVISING_NOTES = 'boac_advising_notes'
 RDS_SCHEMA_ADVISOR = 'boac_advisor'
 RDS_SCHEMA_ASC = 'boac_advising_asc'
 RDS_SCHEMA_BARD = 'boac_advising_bard'
-RDS_SCHEMA_BOA_APP_RDS_DATA = 'boac_advising_boa_app_rds_data'
 RDS_SCHEMA_BOAC = 'boac_analytics'
 RDS_SCHEMA_COE = 'boac_advising_coe'
 RDS_SCHEMA_DATA_SCIENCE = 'boac_advising_data_science'
@@ -284,7 +283,6 @@ REDSHIFT_DBLINK_GROUP = 'nessie_dblink_group'
 REDSHIFT_SCHEMA_ADVISOR_INTERNAL = 'boac_advisor'
 REDSHIFT_SCHEMA_ASC = 'boac_advising_asc'
 REDSHIFT_SCHEMA_ASC_ADVISING_NOTES_INTERNAL = 'asc_advising_notes'
-REDSHIFT_SCHEMA_BOA_APP_RDS_DATA_ADVISING_NOTES_INTERNAL = 'boa_app_rds_data_advising_notes'
 REDSHIFT_SCHEMA_BOAC = 'boac_analytics'
 REDSHIFT_SCHEMA_CALENDLY_INTERNAL = 'calendly_data'
 REDSHIFT_SCHEMA_COE = 'boac_advising_coe'
