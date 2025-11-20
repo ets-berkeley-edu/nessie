@@ -115,6 +115,7 @@ CANVAS_DATA_API_KEY = 'some key'
 CANVAS_DATA_API_SECRET = 'some secret'  # noqa: S105
 CANVAS_DATA_HOST = 'foo.instructure.com'
 
+CANVAS_BERKELEY_ACCOUNT_ID = 1
 CANVAS_HTTP_URL = 'https://wottsamatta.instructure.com'
 CANVAS_HTTP_TOKENS = ['yet another secret', 'in a list of secrets']
 
