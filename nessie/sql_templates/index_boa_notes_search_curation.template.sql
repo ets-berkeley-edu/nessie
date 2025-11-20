@@ -24,14 +24,15 @@
  */
 
 ----------------------------------------------------------------------------------------------------
--- Create tables and indexes for Fulltext Search for Advising Notes from the following sources:
---   ASC, BOA, Data Science, E & I, EOP, History, and SIS
+-- Create curated tables and indexes for Fulltext Search for Advising Notes.
+--   Union BOA records to existing ASC, Data Science, E & I, EOP, History, and SIS records.
 ----------------------------------------------------------------------------------------------------
 
 BEGIN TRANSACTION;
 
 ----------------------------------------------------------------------------------------------------
--- Add BOA App RDS Data author names to boac_advising_notes.advising_note_author_names and re-create index
+-- Add BOA App RDS Data author names to boac_advising_notes.advising_note_author_names.
+-- Re-create index.
 ----------------------------------------------------------------------------------------------------
 
 DROP INDEX IF EXISTS {rds_schema_advising_notes}.advising_note_author_names_name_idx;
@@ -51,19 +52,18 @@ CREATE INDEX IF NOT EXISTS advising_note_author_names_name_idx
 
 
 ----------------------------------------------------------------------------------------------------
--- Create advising_notes daily tables and indexes
--- Union table {rds_schema_advising_notes}.advising_notes
---   with {rds_schema_bard}.advising_notes records
---   as a separate table to be used for adding incremental data.
+-- Create curated advising notes tables and indexes
+-- Union {rds_schema_advising_notes} and {rds_schema_bard}
+--   as separate tables for adding incremental data.
 ----------------------------------------------------------------------------------------------------
 
 ----------------------------------------------------------------------------------------------------
--- Create table advising_notes_daily and indexes.
+-- Create table advising_notes_curated and indexes.
 ----------------------------------------------------------------------------------------------------
 
-DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_notes_daily CASCADE;
+DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_notes_curated CASCADE;
 
-CREATE TABLE {rds_schema_advising_notes}.advising_notes_daily AS (
+CREATE TABLE {rds_schema_advising_notes}.advising_notes_curated AS (
 SELECT
   sid,
   id,
@@ -97,21 +97,21 @@ SELECT
 FROM {rds_schema_bard}.advising_notes
 );
 
-CREATE INDEX idx_advising_notes_daily_id ON {rds_schema_advising_notes}.advising_notes_daily (id);
-CREATE INDEX idx_advising_notes_daily_sid ON {rds_schema_advising_notes}.advising_notes_daily (sid);
-CREATE INDEX idx_advising_notes_daily_advisor_sid ON {rds_schema_advising_notes}.advising_notes_daily (advisor_sid);
-CREATE INDEX idx_advising_notes_daily_advisor_uid ON {rds_schema_advising_notes}.advising_notes_daily (advisor_uid);
-CREATE INDEX idx_advising_notes_daily_created_at ON {rds_schema_advising_notes}.advising_notes_daily (created_at);
-CREATE INDEX idx_advising_notes_daily_created_by ON {rds_schema_advising_notes}.advising_notes_daily (created_by);
-CREATE INDEX idx_advising_notes_daily_updated_at ON {rds_schema_advising_notes}.advising_notes_daily (updated_at);
+CREATE INDEX idx_advising_notes_curated_id ON {rds_schema_advising_notes}.advising_notes_curated (id);
+CREATE INDEX idx_advising_notes_curated_sid ON {rds_schema_advising_notes}.advising_notes_curated (sid);
+CREATE INDEX idx_advising_notes_curated_advisor_sid ON {rds_schema_advising_notes}.advising_notes_curated (advisor_sid);
+CREATE INDEX idx_advising_notes_curated_advisor_uid ON {rds_schema_advising_notes}.advising_notes_curated (advisor_uid);
+CREATE INDEX idx_advising_notes_curated_created_at ON {rds_schema_advising_notes}.advising_notes_curated (created_at);
+CREATE INDEX idx_advising_notes_curated_created_by ON {rds_schema_advising_notes}.advising_notes_curated (created_by);
+CREATE INDEX idx_advising_notes_curated_updated_at ON {rds_schema_advising_notes}.advising_notes_curated (updated_at);
 
 ----------------------------------------------------------------------------------------------------
--- Create table advising_notes_search_index_daily and GIN index.
+-- Create table advising_notes_search_index_curated and GIN index.
 ----------------------------------------------------------------------------------------------------
 
-DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_notes_search_index_daily CASCADE;
+DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_notes_search_index_curated CASCADE;
 
-CREATE TABLE {rds_schema_advising_notes}.advising_notes_search_index_daily AS (
+CREATE TABLE {rds_schema_advising_notes}.advising_notes_search_index_curated AS (
   SELECT id, fts_index
   FROM {rds_schema_advising_notes}.advising_notes_search_index
   UNION
@@ -119,12 +119,8 @@ CREATE TABLE {rds_schema_advising_notes}.advising_notes_search_index_daily AS (
   FROM {rds_schema_bard}.advising_notes_search_index
 );
 
-CREATE INDEX idx_advising_notes_daily_ft_search
-  ON {rds_schema_advising_notes}.advising_notes_search_index_daily
+CREATE INDEX idx_advising_notes_ft_search_curated
+  ON {rds_schema_advising_notes}.advising_notes_search_index_curated
   USING GIN (fts_index);
 
 COMMIT TRANSACTION;
-
-----------------------------------------------------------------------------------------------------
--- END of advising_notes daily tables and indexes
-----------------------------------------------------------------------------------------------------

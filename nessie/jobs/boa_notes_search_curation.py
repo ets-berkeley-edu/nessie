@@ -27,22 +27,32 @@ from flask import current_app as app
 
 from nessie.externals import calnet, rds
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.jobs.index_advising_notes import import_note_authors, index_advising_notes
-from nessie.lib.queries import get_advisor_sids
+from nessie.jobs.create_bard_advising_notes_schema import CreateBardAdvisingNotesSchema
 from nessie.lib.util import resolve_sql_template
 
-"""Logic for BOA App RDS Data Advising Notes author names index job."""
+"""Logic for BOA Advising Notes Search Curation Job."""
 
 
-class IndexDailyAdvisingNotes(BackgroundJob):
+class CurateBoaNotesSearch(BackgroundJob):
 
     def run(self):
         app.logger.info('Starting Daily Advising Notes author names index job...')
         app.logger.info('Executing SQL...')
+        self.create_schema()
         self.import_note_authors()
         self.index_advising_notes()
 
-        return 'Daily Advising Notes author names index job completed.'
+        return 'BOA Advising Notes Search Curation job completed.'
+
+
+    def create_schema(self):
+        rds_template = 'create_bard_advising_notes_schema.template.sql'
+        resolved_ddl_rds = resolve_sql_template(rds_template)
+        if rds.execute(resolved_ddl_rds):
+            app.logger.info('Created BOA App RDS Data Advising Notes RDS schema and indexes.')
+        else:
+            raise BackgroundJobError('BOA App RDS Data Advising Notes RDS schema and index creation job failed.')
+
 
     def import_note_authors(self):
         notes_schema = app.config['RDS_SCHEMA_ADVISING_NOTES']
@@ -71,7 +81,7 @@ class IndexDailyAdvisingNotes(BackgroundJob):
                 raise BackgroundJobError('Failed to import advising note author attributes.')
 
     def index_advising_notes(self):
-        resolved_ddl = resolve_sql_template('index_daily_advising_notes.template.sql')
+        resolved_ddl = resolve_sql_template('index_boa_notes_search_curation.template.sql')
         if rds.execute(resolved_ddl):
             app.logger.info('Indexed advising notes.')
         else:
