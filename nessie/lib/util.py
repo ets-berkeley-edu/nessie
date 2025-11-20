@@ -246,7 +246,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'rds_schema_advising_notes': app.config['RDS_SCHEMA_ADVISING_NOTES'],
         'rds_schema_advisor': app.config['RDS_SCHEMA_ADVISOR'],
         'rds_schema_asc': app.config['RDS_SCHEMA_ASC'],
-        'rds_schema_boa_app_rds_data': app.config['RDS_SCHEMA_BOA_APP_RDS_DATA'],
+        'rds_schema_bard': app.config['RDS_SCHEMA_BARD'],
         'rds_schema_boac': app.config['RDS_SCHEMA_BOAC'],
         'rds_schema_coe': app.config['RDS_SCHEMA_COE'],
         'rds_schema_data_science': app.config['RDS_SCHEMA_DATA_SCIENCE'],

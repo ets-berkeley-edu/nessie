@@ -27,7 +27,6 @@ from flask import current_app as app
 
 from nessie.externals import calnet, rds
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.jobs.create_bard_advising_notes_schema import CreateBardAdvisingNotesSchema
 from nessie.lib.util import resolve_sql_template
 
 """Logic for BOA Advising Notes Search Curation Job."""
@@ -70,7 +69,11 @@ class CurateBoaNotesSearch(BackgroundJob):
                 insertable_rows.append(tuple((entry.get('uid'), entry.get('csid'), first_name, last_name, entry.get('campus_email'))))  # noqa: C409
 
             result = transaction.insert_bulk(
-                f'INSERT INTO {notes_schema}.advising_note_authors (uid, sid, first_name, last_name, campus_email) VALUES %s',
+                f"""
+                    INSERT INTO {notes_schema}.advising_note_authors (uid, sid, first_name, last_name, campus_email)
+                    VALUES %s
+                    ON CONFLICT DO NOTHING
+                """,
                 insertable_rows,
             )
             if result:

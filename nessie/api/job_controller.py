@@ -40,7 +40,6 @@ from nessie.jobs.bi_refresh_boa_advising_schemas import BiRefreshBoaAdvisingSche
 from nessie.jobs.chained_import_student_population import ChainedImportStudentPopulation
 from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
 from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
-from nessie.jobs.create_bard_advising_notes_schema import CreateBardAdvisingNotesSchema
 from nessie.jobs.create_berkeleyx_schema import CreateBerkeleyxSchema
 from nessie.jobs.create_calendly_schema import CreateCalendlySchema
 from nessie.jobs.create_canvas_schema import CreateCanvasSchema
@@ -57,6 +56,7 @@ from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesS
 from nessie.jobs.create_student_schema import CreateStudentSchema
 from nessie.jobs.create_terms_schema import CreateTermsSchema
 from nessie.jobs.create_ycbm_schema import CreateYcbmSchema
+from nessie.jobs.curate_boa_notes_search import CurateBoaNotesSearch
 from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
 from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
@@ -114,6 +114,13 @@ def bi_refresh_boa_advising_schemas():
     return respond_with_status(job_started)
 
 
+@app.route('/api/job/curate_boa_notes_search', methods=['POST'])
+@auth_required
+def curate_boa_notes_search():
+    job_started = CurateBoaNotesSearch().run_async()
+    return respond_with_status(job_started)
+
+
 @app.route('/api/job/create_advisor_schema', methods=['POST'])
 @auth_required
 def create_advisor_schema():
@@ -125,13 +132,6 @@ def create_advisor_schema():
 @auth_required
 def create_asc_advising_notes_schema():
     job_started = CreateAscAdvisingNotesSchema().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/create_bard_advising_notes_schema', methods=['POST'])
-@auth_required
-def create_bard_advising_notes_schema():
-    job_started = CreateBardAdvisingNotesSchema().run_async()
     return respond_with_status(job_started)
 
 

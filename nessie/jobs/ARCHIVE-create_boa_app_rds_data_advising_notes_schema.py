@@ -26,7 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 
 from nessie.externals import rds, redshift
-from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
+from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import resolve_sql_template
 
 """Logic for BOA App RDS Data Advising Notes schema creation job."""

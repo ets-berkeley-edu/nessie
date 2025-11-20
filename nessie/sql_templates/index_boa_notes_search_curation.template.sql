@@ -32,24 +32,16 @@ BEGIN TRANSACTION;
 
 ----------------------------------------------------------------------------------------------------
 -- Add BOA App RDS Data author names to boac_advising_notes.advising_note_author_names.
--- Re-create index.
 ----------------------------------------------------------------------------------------------------
-
-DROP INDEX IF EXISTS {rds_schema_advising_notes}.advising_note_author_names_name_idx;
 
 INSERT INTO {rds_schema_advising_notes}.advising_note_author_names (uid, name) (
   SELECT DISTINCT uid, unnest(string_to_array(regexp_replace(upper(first_name), '[^\w ]', '', 'g'), ' ')) AS name
-  FROM {rds_schema_advising_notes}.advising_note_authors naf
-  WHERE NOT EXISTS (SELECT 1 FROM {rds_schema_advising_notes}.advising_note_author_names nan WHERE naf.uid = nan.uid)
+  FROM {rds_schema_advising_notes}.advising_note_authors
   UNION
   SELECT DISTINCT uid, unnest(string_to_array(regexp_replace(upper(last_name), '[^\w ]', '', 'g'), ' ')) AS name
-  FROM {rds_schema_advising_notes}.advising_note_authors nal
-  WHERE NOT EXISTS (SELECT 1 FROM {rds_schema_advising_notes}.advising_note_author_names nan WHERE nal.uid = nan.uid)
-);
-
-CREATE INDEX IF NOT EXISTS advising_note_author_names_name_idx
-  ON {rds_schema_advising_notes}.advising_note_author_names (name);
-
+  FROM {rds_schema_advising_notes}.advising_note_authors
+)
+ON CONFLICT DO NOTHING;
 
 ----------------------------------------------------------------------------------------------------
 -- Create curated advising notes tables and indexes

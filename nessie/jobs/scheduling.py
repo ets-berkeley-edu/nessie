@@ -84,19 +84,19 @@ def initialize_job_schedules(_app, force=False):
 
 
 def schedule_all_jobs(force=False):  # noqa: PLR0915
-    from nessie.jobs.bi_grant_readonly_access import GrantBiReadonlyAccess
+    from nessie.jobs.bi_grant_readonly_access import BiGrantReadonlyAccess
     from nessie.jobs.bi_refresh_bcourses_service_cd2_schemas import BiRefreshBcoursesServiceCd2Schemas
     from nessie.jobs.bi_refresh_boa_advising_schemas import BiRefreshBoaAdvisingSchemas
     from nessie.jobs.chained_import_student_population import ChainedImportStudentPopulation
     from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
     from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
-    from nessie.jobs.create_boa_app_rds_data_advising_notes_schema import CreateBoaAppRdsDataAdvisingNotesSchema
     from nessie.jobs.create_e_i_advising_notes_schema import CreateEIAdvisingNotesSchema
     from nessie.jobs.create_edl_schema import CreateEdlSchema
     from nessie.jobs.create_oua_schema import CreateOUASchema
     from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
     from nessie.jobs.create_terms_schema import CreateTermsSchema
     from nessie.jobs.create_ycbm_schema import CreateYcbmSchema
+    from nessie.jobs.curate_boa_notes_search import CurateBoaNotesSearch
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
     from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
     from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
@@ -224,7 +224,7 @@ def schedule_all_jobs(force=False):  # noqa: PLR0915
         [
             RefreshBoaAppRdsDataSchema,
             BiRefreshBoaAdvisingSchemas,
-            CreateBardAdvisingNotesSchema,
+            CurateBoaNotesSearch,
         ],
         force,
     )
