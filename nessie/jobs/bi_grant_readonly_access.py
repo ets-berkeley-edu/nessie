@@ -32,7 +32,7 @@ from nessie.lib.util import resolve_sql_template
 """Logic for BI Reports Grant Readonly Access job."""
 
 
-class GrantBiReadonlyAccess(BackgroundJob):
+class BiGrantReadonlyAccess(BackgroundJob):
 
     def run(self):
         app.logger.info('Starting BI Reports Grant Readonly Access job...')
