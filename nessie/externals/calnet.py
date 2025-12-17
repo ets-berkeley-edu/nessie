@@ -68,7 +68,13 @@ class Client:
         self.server = server
 
     def connect(self):
-        return ldap3.Connection(self.server, user=self.bind, password=self.password, auto_bind=ldap3.AUTO_BIND_TLS_BEFORE_BIND)
+        return ldap3.Connection(
+            self.server,
+            user=self.bind,
+            password=self.password,
+            client_strategy=ldap3.SAFE_SYNC,
+            auto_bind=ldap3.AUTO_BIND_TLS_BEFORE_BIND,
+        )
 
     def search_csids(self, csids):
         return self._search(csids, 'berkeleyeducsid', 'csid')
