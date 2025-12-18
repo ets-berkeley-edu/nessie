@@ -29,46 +29,46 @@ from flask import current_app as app
 
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
-from nessie.lib.util import get_s3_bi_boa_rds_data_daily_path, resolve_sql_template
+from nessie.lib.util import get_s3_boa_app_rds_data_daily_path, resolve_sql_template
 
-"""Logic for BOA RDS Data schema creation and refresh job."""
+"""Logic for BOA App RDS Data Redshift external schema creation and refresh Job."""
 
 
-class RefreshBiBoaRdsDataSchema(BackgroundJob):
+class RefreshBoaAppRdsDataSchema(BackgroundJob):
 
-    external_schema = app.config['BI_REDSHIFT_SCHEMA_BOA_RDS_DATA']
+    external_schema = app.config['REDSHIFT_SCHEMA_BOA_APP_RDS_DATA']
 
     def run(self):
-        app.logger.info('Starting full BOA RDS Data refresh...')
+        app.logger.info('Starting full BOA App RDS Data Redshift external schema refresh...')
         return self.create_schema()
 
     def create_schema(self):
-        s3_boa_rds_daily = get_s3_bi_boa_rds_data_daily_path()
-        if not s3.get_keys_with_prefix(s3_boa_rds_daily):
-            s3_boa_rds_daily = _get_yesterdays_boa_rds_data()
-        s3_path = '/'.join([f"s3://{app.config['LOCH_S3_BUCKET']}", s3_boa_rds_daily])
+        s3_boa_app_rds_data_daily = get_s3_boa_app_rds_data_daily_path()
+        if not s3.get_keys_with_prefix(s3_boa_app_rds_data_daily):
+            s3_boa_app_rds_data_daily = _get_yesterdays_boa_app_rds_data()
+        s3_path = '/'.join([f"s3://{app.config['LOCH_S3_BUCKET']}", s3_boa_app_rds_data_daily])
 
         app.logger.info('Executing SQL...')
-        app.logger.info('Dropping External Schema now that we have found timely S3 BOA RDS Data')
+        app.logger.info('Dropping Redshift external schema now that we have found timely S3 BOA App RDS Data')
         redshift.drop_external_schema(self.external_schema)
-        sql_filename = 'bi_create_boa_rds_data_schema.template.sql'
-        resolved_ddl = resolve_sql_template(sql_filename, bi_loch_s3_boa_rds_data_path=s3_path)
+        sql_filename = 'create_boa_app_rds_data_schema.template.sql'
+        resolved_ddl = resolve_sql_template(sql_filename, loch_s3_boa_app_rds_data_path_daily=s3_path)
         if not redshift.execute_ddl_script(resolved_ddl):
             raise BackgroundJobError(f'Redshift execute_ddl_script failed on {sql_filename}')
         verify_external_schema(
             self.external_schema,
             resolved_ddl,
-            is_zero_count_acceptable=app.config['BI_BOA_RDS_ZERO_COUNT_ACCEPTABLE'],
+            is_zero_count_acceptable=app.config['BOA_APP_RDS_DATA_ZERO_COUNT_ACCEPTABLE'],
         )
-        app.logger.info('Redshift schema created.')
+        app.logger.info('BOA App RDS Data Redshift external schema created and populated.')
 
         return True
 
 
-def _get_yesterdays_boa_rds_data():
-    s3_boa_rds_daily = get_s3_bi_boa_rds_data_daily_path(datetime.now() - timedelta(days=1))
-    if not s3.get_keys_with_prefix(s3_boa_rds_daily):
-        raise BackgroundJobError('No timely BOA RDS S3 data found for today and previous day')
+def _get_yesterdays_boa_app_rds_data():
+    s3_boa_app_rds_data_daily = get_s3_boa_app_rds_data_daily_path(datetime.now() - timedelta(days=1))
+    if not s3.get_keys_with_prefix(s3_boa_app_rds_data_daily):
+        raise BackgroundJobError('No timely BOA App RDS data found in S3 for today or previous day')
 
-    app.logger.info('Falling back to last stable BOA RDS2 S3 data ')
-    return s3_boa_rds_daily
+    app.logger.info('Falling back to last stable BOA App RDS data in S3')
+    return s3_boa_app_rds_data_daily

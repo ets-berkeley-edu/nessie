@@ -29,20 +29,20 @@ from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import resolve_sql_template
 
-"""Logic for BI Reports BOA Advising Notes Redshift and RDS schema refresh job."""
+"""Logic for BI Reports BOA Advising Notes Redshift internal and RDS Schemas Refresh Job."""
 
 
-class RefreshBiBoaAdvisingSchemas(BackgroundJob):
+class BiRefreshBoaAdvisingSchemas(BackgroundJob):
 
     def run(self):
-        app.logger.info('Starting BI Reports BOA Advising Notes Redshift and RDS schemas refresh job...')
+        app.logger.info('Starting BI Reports BOA Advising Notes Redshift internal and RDS schemas refresh job...')
         app.logger.info('Executing SQL...')
 
         rs_template = 'bi_create_boa_advising_redshift_schema.template.sql'
         resolved_ddl_redshift = resolve_sql_template(rs_template)
 
         if redshift.execute_ddl_script(resolved_ddl_redshift):
-            app.logger.info('BOA Advising Notes Redshift schema refreshed.')
+            app.logger.info('BI Reports BOA Advising Notes Redshift internal schema refreshed.')
 
             bi_rds_uri_la_reports = app.config['BI_RDS_URI_LA_REPORTS']
             users_arr = app.config['BI_RDS_CE3_ADD_USERS']
@@ -51,10 +51,10 @@ class RefreshBiBoaAdvisingSchemas(BackgroundJob):
             resolved_ddl_rds = resolve_sql_template(rds_template, bi_rds_ce3_add_users=users_str)
 
             if rds.execute(resolved_ddl_rds, rds_uri=bi_rds_uri_la_reports):
-                app.logger.info('BOA Advising Notes RDS schema refreshed.')
+                app.logger.info('BI Reports BOA Advising Notes RDS schema refreshed.')
             else:
-                raise BackgroundJobError('Failed to refresh BOA Advising Notes RDS schema.')
+                raise BackgroundJobError('Failed to refresh BI Reports BOA Advising Notes RDS schema.')
         else:
-            raise BackgroundJobError('Failed to refresh BOA Advising Notes Redshift schema.')
+            raise BackgroundJobError('Failed to refresh BI Reports BOA Advising Notes Redshift internal schema.')
 
-        return 'BI Reports BOA Advising Notes Redshift and RDS schemas refresh job completed.'
+        return 'BI Reports BOA Advising Notes Redshift internal and RDS schemas refresh job completed.'
