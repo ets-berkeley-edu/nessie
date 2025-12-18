@@ -169,10 +169,15 @@ def split_sortable_name(entry):
 
 def _attributes_to_dict(entry):
     out = dict.fromkeys(SCHEMA_DICT.values(), None)
-    # ldap3's entry.entry_attributes_as_dict would work for us, except that it wraps a single value as a list.
     for attr in SCHEMA_DICT:
         if attr in entry.get('attributes', {}):
-            out[SCHEMA_DICT[attr]] = entry['attributes'][attr]
+            attr_value = entry['attributes'][attr]
+            if type(attr_value) is list and attr != 'berkeleyEduAffiliations':
+                if len(attr_value):
+                    attr_value = attr_value[0]
+                else:
+                    attr_value = None
+            out[SCHEMA_DICT[attr]] = attr_value
     return out
 
 
