@@ -107,8 +107,8 @@ class Client:
     @classmethod
     def _ldap_search(cls, conn, ids, ldap_id_type, search_expired=False):
         search_filter = cls._ldap_search_filter(ids, ldap_id_type, search_expired)
-        conn.search('dc=berkeley,dc=edu', search_filter, attributes=ldap3.ALL_ATTRIBUTES)
-        return [_attributes_to_dict(entry) for entry in conn.entries]
+        status, result, response, _ = conn.search('dc=berkeley,dc=edu', search_filter, attributes=ldap3.ALL_ATTRIBUTES)
+        return [_attributes_to_dict(entry) for entry in response]
 
     @classmethod
     def _ldap_search_filter(cls, ids, ldap_id_type, search_expired=False):
@@ -171,8 +171,8 @@ def _attributes_to_dict(entry):
     out = dict.fromkeys(SCHEMA_DICT.values(), None)
     # ldap3's entry.entry_attributes_as_dict would work for us, except that it wraps a single value as a list.
     for attr in SCHEMA_DICT:
-        if attr in entry.entry_attributes:
-            out[SCHEMA_DICT[attr]] = entry[attr].value
+        if attr in entry.get('attributes', {}):
+            out[SCHEMA_DICT[attr]] = entry['attributes'][attr]
     return out
 
 
