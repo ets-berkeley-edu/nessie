@@ -56,6 +56,7 @@ from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesS
 from nessie.jobs.create_student_schema import CreateStudentSchema
 from nessie.jobs.create_terms_schema import CreateTermsSchema
 from nessie.jobs.create_ycbm_schema import CreateYcbmSchema
+from nessie.jobs.curate_boa_notes_search import CurateBoaNotesSearch
 from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
 from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
@@ -236,6 +237,13 @@ def create_calendly_schema():
 @auth_required
 def create_ycbm_schema():
     job_started = CreateYcbmSchema().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/curate_boa_notes_search', methods=['POST'])
+@auth_required
+def curate_boa_notes_search():
+    job_started = CurateBoaNotesSearch().run_async()
     return respond_with_status(job_started)
 
 
