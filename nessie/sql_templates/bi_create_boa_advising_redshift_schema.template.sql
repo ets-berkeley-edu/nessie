@@ -25,11 +25,11 @@
 
 
 ----------------------------------------------------------------------------------------------------
--- BEGIN script for creating and populating REDSHIFT schema/tables for Advising Notes Dashboard
+-- BEGIN: Create and Populate Redshift Internal Schema for BI Reports BOA Advising
 ----------------------------------------------------------------------------------------------------
 
 ----------------------------------------------------------------------------------------------------
--- CREATE INTERNAL SCHEMA: "{bi_redshift_schema_boa_advising}"
+-- CREATE REDSHIFT INTERNAL SCHEMA: {bi_redshift_schema_boa_advising}
 ----------------------------------------------------------------------------------------------------
 
 DROP SCHEMA IF EXISTS {bi_redshift_schema_boa_advising} CASCADE;
@@ -43,11 +43,11 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {bi_redshift_schema_boa_advising}
 
 
 ----------------------------------------------------------------------------------------------------
--- CREATE TABLES in INTERNAL Schema for BI Reports: BOA Advising Notes 
+-- CREATE TABLES in INTERNAL Schema for BI Reports BOA Advising
 ----------------------------------------------------------------------------------------------------
 
 ----------------------------------------------------------------------------------------------------
--- INTERNAL TABLE : "notes"
+-- INTERNAL TABLE : notes
 -- Exclude BOA notes.body as it contains sensitive information, and any unnecessary/unused data.
 -- Unpack author_dept_code array. Data only contains single depts per note_id.
 ----------------------------------------------------------------------------------------------------
@@ -67,49 +67,57 @@ SELECT
   notes.is_private,
   notes.sid::BIGINT,
   notes.subject
-FROM {bi_redshift_schema_boa_rds_data}.notes notes, notes.author_dept_codes as dept;
+FROM {redshift_schema_boa_app_rds_data}.notes notes, notes.author_dept_codes as dept;
 
 
 ----------------------------------------------------------------------------------------------------
--- INTERNAL TABLE : "authors"
+-- INTERNAL TABLE : authors
 -- Authors used in notes: author_uid, author_name, author_aliases.
--- 409 distinct author_uids in {bi_redshift_schema_boa_rds_data}.notes, but only 276 in boac_advisor.advisor_attributes.
+-- 409 distinct author_uids in {redshift_schema_boa_app_rds_data}.notes, but only 276 in {redshift_schema_advisor_internal}.advisor_attributes.
 -- If advisor's first or last name is null then get name from most recently updated note.
 -- Include list of author aliases composed of variations used in BOA notes.author_name.
+-- Include advisors.
 -- DO NOT use semicolon as list separator. resolve_sql_template in util.py is not happy with it.
 ----------------------------------------------------------------------------------------------------
 
 CREATE TABLE {bi_redshift_schema_boa_advising}.authors AS
-SELECT DISTINCT
-  notes.author_uid::INTEGER,
+WITH note_auths AS (
+  SELECT DISTINCT
+    author_uid::INTEGER AS author_uid,
+    LISTAGG(DISTINCT author_name, ' | ') WITHIN GROUP (ORDER BY updated_at DESC) AS author_aliases
+  FROM {redshift_schema_boa_app_rds_data}.notes
+  GROUP BY author_uid
+)
+
+SELECT
+  note_auths.author_uid,
   advisors.last_name,
   advisors.first_name,
   COALESCE(
     advisors.first_name || ' ' || advisors.last_name,
-    REGEXP_REPLACE(
-      LISTAGG(DISTINCT notes.author_name, '|') WITHIN GROUP (ORDER BY notes.updated_at DESC),
-      '[|]+.*$', '')) AS author_name,
-  LISTAGG(DISTINCT notes.author_name, ' | ') WITHIN GROUP (ORDER BY notes.updated_at DESC) AS author_aliases
-FROM {bi_redshift_schema_boa_rds_data}.notes notes
-LEFT JOIN boac_advisor.advisor_attributes advisors
-  ON notes.author_uid = advisors.ldap_uid
-GROUP BY notes.author_uid, advisors.last_name, advisors.first_name;
+    REGEXP_REPLACE(note_auths.author_aliases, ' [|]+.*$', '')) AS author_name,
+  note_auths.author_aliases
+FROM note_auths
+LEFT JOIN {redshift_schema_advisor_internal}.advisor_attributes advisors
+  ON note_auths.author_uid = advisors.ldap_uid;
 
--- For author_uids not in boac_advisor.advisor_attributes, extract first_name and last_name from BOA notes.author_name.
+--
+-- For author_uids not in {redshift_schema_advisor_internal}.advisor_attributes,
+-- extract most recent first_name and last_name from BOA notes.author_name.
 -- Does not work correctly for last names containing spaces, e.g. unhyphenated compound surnames.
 --
+
 UPDATE {bi_redshift_schema_boa_advising}.authors
 SET
-  first_name = REGEXP_REPLACE(REGEXP_REPLACE(author_name, ',.*$', ''), '^(.+) ([^ ]+)$', '$1'),
-  last_name = REGEXP_REPLACE(REGEXP_REPLACE(author_name, ',.*$', ''), '^(.+) ([^ ]+)$', '$2')
+  first_name = REGEXP_REPLACE(REGEXP_REPLACE(TRIM(author_name), ',.*$', ''), '^(.+) ([^ ]+)$', '$1'),
+  last_name = REGEXP_REPLACE(REGEXP_REPLACE(TRIM(author_name), ',.*$', ''), '^(.+) ([^ ]+)$', '$2')
 WHERE last_name IS NULL;
 
 
 ----------------------------------------------------------------------------------------------------
--- INTERNAL TABLE : "departments"
+-- INTERNAL TABLE : departments
 -- Department codes used in notes.
--- {bi_redshift_schema_boa_rds_data}.university_depts only has 12 rows vs. 85 distinct dept_codes in boa notes table.
--- May be unnecessary since dept_name is not used in CE3 advising notes dashboard.
+-- {redshift_schema_boa_app_rds_data}.university_depts only has 12 rows vs 85 dist dept_codes in notes table.
 ----------------------------------------------------------------------------------------------------
 
 CREATE TABLE {bi_redshift_schema_boa_advising}.departments AS
@@ -117,13 +125,13 @@ SELECT DISTINCT
   n.author_dept_code as dept_code,
   u.dept_name
 FROM {bi_redshift_schema_boa_advising}.notes n
-LEFT JOIN {bi_redshift_schema_boa_rds_data}.university_depts u ON n.author_dept_code = u.dept_code
+LEFT JOIN {redshift_schema_boa_app_rds_data}.university_depts u ON n.author_dept_code = u.dept_code
 WHERE n.author_dept_code is not null;
 
 
 ----------------------------------------------------------------------------------------------------
--- INTERNAL TABLE : "note_topics"
--- Join table of note_id to topic. Exclude deleted topics and duplicates. Orphaned topics will have null topic_id.
+-- INTERNAL TABLE : note_topics
+-- Join table of note_id to topic. Exclude deleted topics and dups. Orphaned topics will have null topic_id.
 ----------------------------------------------------------------------------------------------------
  
 CREATE TABLE {bi_redshift_schema_boa_advising}.note_topics AS
@@ -133,11 +141,11 @@ SELECT
   topic,
   author_uid::INTEGER,
   deleted_at
-FROM {bi_redshift_schema_boa_rds_data}.note_topics;
+FROM {redshift_schema_boa_app_rds_data}.note_topics;
 
 
 ----------------------------------------------------------------------------------------------------
--- INTERNAL TABLE : "topics"
+-- INTERNAL TABLE : topics
 ----------------------------------------------------------------------------------------------------
  
 CREATE TABLE {bi_redshift_schema_boa_advising}.topics AS
@@ -146,11 +154,11 @@ SELECT
   topic,
   created_at,
   deleted_at
-FROM {bi_redshift_schema_boa_rds_data}.topics;
+FROM {redshift_schema_boa_app_rds_data}.topics;
 
 
 ----------------------------------------------------------------------------------------------------
--- INTERNAL TABLE : "student_groups"
+-- INTERNAL TABLE : student_groups
 -- Join table of student_group_id, student_group_name to sid.
 ----------------------------------------------------------------------------------------------------
 
@@ -159,12 +167,12 @@ SELECT
   sg.id as student_group_id,
   sg.name as student_group_name,
   sgm.sid::BIGINT
-FROM {bi_redshift_schema_boa_rds_data}.student_group_members sgm
-LEFT JOIN {bi_redshift_schema_boa_rds_data}.student_groups sg ON sgm.student_group_id = sg.id;
+FROM {redshift_schema_boa_app_rds_data}.student_group_members sgm
+LEFT JOIN {redshift_schema_boa_app_rds_data}.student_groups sg ON sgm.student_group_id = sg.id;
 
 
 ----------------------------------------------------------------------------------------------------
--- INTERNAL TABLE : "student_cohorts"
+-- INTERNAL TABLE : student_cohorts
 -- Join table of cohort_id, cohort_name to sid.
 ----------------------------------------------------------------------------------------------------
 
@@ -173,11 +181,11 @@ SELECT
   cohorts.id AS cohort_id,
   cohorts.name AS cohort_name,
   sid::BIGINT
-FROM {bi_redshift_schema_boa_rds_data}.cohort_filters cohorts, cohorts.sids AS sid;
+FROM {redshift_schema_boa_app_rds_data}.cohort_filters cohorts, cohorts.sids AS sid;
 
 
 ----------------------------------------------------------------------------------------------------
--- INTERNAL TABLE : "student_degrees"
+-- INTERNAL TABLE : student_degrees
 -- Join table of sid to degree_date, degree_awarded, plan_type, plan_group.
 -- Students can have multiple degrees (major/minor, double major, etc).
 -- May need to add index for degrees and plans to properly associate award date to degree/plan.
@@ -220,10 +228,9 @@ FROM degrees_data d, d.plans AS plan;
 
 
 ----------------------------------------------------------------------------------------------------
--- INTERNAL TABLE : "students"
+-- INTERNAL TABLE : students
 -- Students used in notes.
--- Includes manually_added_advisees boolean, list of cohorts by sid, list of student groups by sid.
--- All sids in manually_added_advisees are in notes. 7764 sids are not in a cohort/group.
+-- Includes list of cohorts by sid, list of student groups by sid.
 -- DO NOT use semicolon as list separator. resolve_sql_template in util.py is not happy with it.
 -- TO DO: will need to handle students that do not have a record in student_profile_index.
 ----------------------------------------------------------------------------------------------------
@@ -269,18 +276,16 @@ SELECT
   student_profile_index.last_name AS last_name,
   student_profile_index.first_name AS first_name,
   student_profile_index.first_name || ' ' || student_profile_index.last_name AS student_name,
-  CASE WHEN added.sid IS NOT NULL THEN TRUE ELSE FALSE END AS is_manually_added,
   cohorts.cohort_list,
   groups.group_list,
   degrees.degree_list
 FROM distinct_sids
 LEFT JOIN student.student_profile_index student_profile_index ON distinct_sids.sid = student_profile_index.sid
-LEFT JOIN {bi_redshift_schema_boa_rds_data}.manually_added_advisees added ON distinct_sids.sid = added.sid
 LEFT JOIN cohorts ON distinct_sids.sid = cohorts.sid
 LEFT JOIN groups ON distinct_sids.sid = groups.sid
 LEFT JOIN degrees ON distinct_sids.sid = degrees.sid;
 
 
 ----------------------------------------------------------------------------------------------------
--- END script for creating and populating REDSHIFT schema/tables for Advising Notes Dashboard
+-- END: Create and Populate Redshift Internal Schema for BI Reports BOA Advising
 ----------------------------------------------------------------------------------------------------

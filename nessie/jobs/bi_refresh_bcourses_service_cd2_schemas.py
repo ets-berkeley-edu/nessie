@@ -29,26 +29,26 @@ from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import resolve_sql_template
 
-"""Logic for BI Reports bCourses Service (CD2) Redshift and RDS schemas refresh job."""
+"""Logic for BI Reports bCourses Service (CD2) Redshift internal and RDS schemas refresh job."""
 
 
-class RefreshBiBcoursesServiceCD2Schemas(BackgroundJob):
+class BiRefreshBcoursesServiceCd2Schemas(BackgroundJob):
 
     def run(self):
-        app.logger.info('Starting BI Reports bCourses Service CD2 Redshift and RDS schemas refresh job...')
+        app.logger.info('Starting BI Reports bCourses Service CD2 Redshift internal and RDS schemas refresh job...')
         app.logger.info('Executing SQL...')
 
         resolved_ddl_redshift = resolve_sql_template('bi_create_bcourses_service_cd2_redshift_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl_redshift):
-            app.logger.info('bCourses Service CD2 Redshift schema refreshed.')
+            app.logger.info('BI Reports bCourses Service CD2 Redshift internal schema refreshed.')
 
             resolved_ddl_rds = resolve_sql_template('bi_create_bcourses_service_cd2_rds_schema.template.sql')
             bi_rds_uri_la_reports = app.config['BI_RDS_URI_LA_REPORTS']
             if rds.execute(resolved_ddl_rds, rds_uri=bi_rds_uri_la_reports):
-                app.logger.info('bCourses Service CD2 RDS schema refreshed.')
+                app.logger.info('BI Reports bCourses Service CD2 RDS schema refreshed.')
             else:
-                raise BackgroundJobError('Failed to refresh BOA Advising Notes RDS schema.')
+                raise BackgroundJobError('Failed to refresh BI Reports bCourses Service CD2 RDS schema.')
         else:
-            raise BackgroundJobError('Failed to refresh BOA Advising Notes Redshift schema.')
+            raise BackgroundJobError('Failed to refresh BI Reports bCourses Service CD2 Redshift internal schema.')
 
-        return 'BI Reports BOA Advising Notes Redshift and RDS schemas refresh job completed.'
+        return 'BI Reports bCourses Service CD2 Redshift internal and RDS schemas refresh job completed.'
