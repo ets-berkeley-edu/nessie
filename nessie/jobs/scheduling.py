@@ -96,6 +96,7 @@ def schedule_all_jobs(force=False):  # noqa: PLR0915
     from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
     from nessie.jobs.create_terms_schema import CreateTermsSchema
     from nessie.jobs.create_ycbm_schema import CreateYcbmSchema
+    from nessie.jobs.curate_boa_notes_search import CurateBoaNotesSearch
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
     from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
     from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
@@ -192,6 +193,7 @@ def schedule_all_jobs(force=False):  # noqa: PLR0915
             MigrateSisAdvisingNoteAttachments,
             VerifySisAdvisingNoteAttachments,
             RefreshBoaAppRdsDataSchema,
+            CurateBoaNotesSearch,
         ],
         force,
     )
