@@ -52,7 +52,7 @@ BEGIN TRANSACTION;
 -- Create table advising_notes
 --   generate new id as (sid || '-' || id)
 --   author name changes over time as it changes in CalNet
---   first_name and last_name are parsed from author_name
+--   first_name and last_name are parsed from notes.author_name
 --     remove everything following comma, if exists
 --     last_name is everything that follows last space in author_name
 --     first_name is everything that precedes last space in author_name
@@ -123,6 +123,9 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes (
 CREATE INDEX idx_advising_notes_sid
   ON {rds_schema_boa_app_rds_data}.advising_notes (sid);
 
+CREATE INDEX idx_advising_notes_boa_id
+  ON {rds_schema_boa_app_rds_data}.advising_notes (boa_id);
+
 CREATE INDEX idx_advising_notes_advisor_uid
   ON {rds_schema_boa_app_rds_data}.advising_notes (advisor_uid);
 
@@ -163,6 +166,57 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_note_topics (
   AS rs_nt (note_id VARCHAR, topic VARCHAR)
     ON n.boa_id = rs_nt.note_id
 );
+
+CREATE INDEX idx_advising_notes_topics_sid
+  ON {rds_schema_boa_app_rds_data}.advising_note_topics (sid);
+
+CREATE INDEX idx_advising_notes_topics_boa_id
+  ON {rds_schema_boa_app_rds_data}.advising_note_topics (boa_id);
+
+CREATE INDEX idx_advising_notes_topics_topic
+  ON {rds_schema_boa_app_rds_data}.advising_note_topics (topic);
+
+
+-----------------------------------------------------------------------------------------------------
+-- Create table author_depts
+-- one:many uid:dept_code and retain deleted records to show prior relationships
+-----------------------------------------------------------------------------------------------------
+
+CREATE TABLE {rds_schema_boa_app_rds_data}.author_depts (
+  uid INTEGER,
+  dept_code VARCHAR(80)
+);
+
+
+INSERT INTO {rds_schema_boa_app_rds_data}.author_depts (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}', $REDSHIFT$
+    SELECT
+      au.uid,
+      ud.dept_code
+    FROM {redshift_schema_boa_app_rds_data}.authorized_users au
+    JOIN {redshift_schema_boa_app_rds_data}.university_dept_members udm ON au.id = udm.authorized_user_id
+    JOIN {redshift_schema_boa_app_rds_data}.university_depts ud ON udm.university_dept_id = ud.id
+    UNION
+    SELECT
+      au.uid,
+      ud.dept_code
+    FROM {redshift_schema_boa_app_rds_data}.authorized_users au
+    JOIN {redshift_schema_boa_app_rds_data}.peer_advising_department_members pdm ON au.id = pdm.authorized_user_id
+    JOIN {redshift_schema_boa_app_rds_data}.peer_advising_departments pd ON pdm.peer_advising_department_id = pd.id
+    JOIN {redshift_schema_boa_app_rds_data}.university_depts ud ON pd.university_dept_id = ud.id
+  $REDSHIFT$)
+  AS rs_ad (
+    uid INTEGER,
+    dept_code VARCHAR(80)
+  )
+);
+
+CREATE INDEX idx_author_depts_uid
+  ON {rds_schema_boa_app_rds_data}.author_depts (uid);
+
+CREATE INDEX idx_author_depts_dept_code
+  ON {rds_schema_boa_app_rds_data}.author_depts (dept_code);
 
 
 -----------------------------------------------------------------------------------------------------

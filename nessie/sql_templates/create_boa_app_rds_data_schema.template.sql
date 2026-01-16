@@ -439,6 +439,54 @@ LOCATION '{loch_s3_boa_app_rds_data_path_daily}/notes_read/';
 
 
 --------------------------------------------------------------------------------------
+-- External Table : peer_advising_department_members
+--------------------------------------------------------------------------------------
+
+CREATE EXTERNAL TABLE {redshift_schema_boa_app_rds_data}.peer_advising_department_members (
+    peer_advising_department_id INTEGER,
+    authorized_user_id INTEGER,
+    role_type VARCHAR(50),
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP
+)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe'
+STORED AS PARQUET 
+LOCATION '{loch_s3_boa_app_rds_data_path_daily}/peer_advising_department_members/';
+
+
+--------------------------------------------------------------------------------------
+-- External Table : peer_advising_departments
+--------------------------------------------------------------------------------------
+
+CREATE EXTERNAL TABLE {redshift_schema_boa_app_rds_data}.peer_advising_departments (
+    id INTEGER,
+    name VARCHAR(255),
+    university_dept_id INTEGER,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe'
+STORED AS PARQUET 
+LOCATION '{loch_s3_boa_app_rds_data_path_daily}/peer_advising_departments/';
+
+
+--------------------------------------------------------------------------------------
+-- External Table : peer_advising_topics
+--------------------------------------------------------------------------------------
+
+CREATE EXTERNAL TABLE {redshift_schema_boa_app_rds_data}.peer_advising_topics (
+    id INTEGER,
+    topic VARCHAR(50), 
+    created_at TIMESTAMP,
+    deleted_at TIMESTAMP
+)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe'
+STORED AS PARQUET 
+LOCATION '{loch_s3_boa_app_rds_data_path_daily}/peer_advising_topics/';
+
+
+--------------------------------------------------------------------------------------
 -- External Table : student_group_members
 --------------------------------------------------------------------------------------
 
