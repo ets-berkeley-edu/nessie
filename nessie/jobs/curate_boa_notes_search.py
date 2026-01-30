@@ -27,7 +27,8 @@ from flask import current_app as app
 
 from nessie.externals import calnet, rds
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.util import resolve_sql_template
+from nessie.jobs.refresh_boa_app_rds_data_schema import RefreshBoaAppRdsDataSchema
+from nessie.lib.util import get_redshift_schema_boa_app_rds_data, resolve_sql_template
 
 """Logic for BOA Advising Notes Search Curation Job."""
 
@@ -37,6 +38,7 @@ class CurateBoaNotesSearch(BackgroundJob):
     def run(self):
         app.logger.info('Starting Daily BOA Advising Notes Search Curation job...')
         app.logger.info('Executing SQL...')
+        RefreshBoaAppRdsDataSchema().run()
         self.create_schema()
         self.import_note_authors()
         self.index_advising_notes()
@@ -44,9 +46,11 @@ class CurateBoaNotesSearch(BackgroundJob):
         return 'BOA Advising Notes Search Curation job completed.'
 
 
-    def create_schema(self):
+    def create_schema(self, job_source='search'):
         rds_template = 'create_boa_app_rds_data_advising_notes_schema.template.sql'
-        resolved_ddl_rds = resolve_sql_template(rds_template)
+        external_schema = get_redshift_schema_boa_app_rds_data(job_source)
+
+        resolved_ddl_rds = resolve_sql_template(rds_template, redshift_schema_boa_app_rds_data=external_schema)
         if rds.execute(resolved_ddl_rds):
             app.logger.info('Created BOA App RDS Data Advising Notes RDS schema and indexes.')
         else:

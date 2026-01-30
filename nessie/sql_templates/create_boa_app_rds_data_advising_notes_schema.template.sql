@@ -182,6 +182,8 @@ CREATE INDEX idx_advising_notes_topics_topic
 -- one:many uid:dept_code and retain deleted records to show prior relationships
 -----------------------------------------------------------------------------------------------------
 
+DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.author_depts CASCADE;
+
 CREATE TABLE {rds_schema_boa_app_rds_data}.author_depts (
   uid INTEGER,
   dept_code VARCHAR(80)
