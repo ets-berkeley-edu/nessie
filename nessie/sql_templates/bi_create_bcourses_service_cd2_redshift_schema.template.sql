@@ -48,27 +48,67 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {bi_redshift_schema_bcourses_service_cd2}
 
 ----------------------------------------------------------------------------------------------------
 -- INTERNAL TABLE : "bcourses_accounts"
+-- account hierarchy with parent_account_id of root = 129410, 'Official Courses'
+-- remove non-alpha from name to match student_course_academic_hierarchy_data.course_subject_cd
 ----------------------------------------------------------------------------------------------------
 
 CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.bcourses_accounts AS
-  SELECT
-    a.id AS account_id,
-    a.name,
-    a.sis_source_id,
-    s.course_subject_cd AS subject_cd,
-    s.course_subject_nm AS subject_nm,
-    s.course_academic_dept_cd AS dept_cd,
-    s.course_academic_dept_nm AS dept_nm,
-    s.course_academic_division_cd AS division_cd,
-    s.course_academic_division_nm AS division_nm,
-    s.course_reporting_college_school_cd AS college_school_cd,
-    s.course_reporting_college_school_nm AS college_school_nm,
-    a.workflow_state
-  FROM {redshift_schema_canvas_data_2}.accounts a
-  LEFT OUTER JOIN {redshift_schema_edl_external}.student_course_academic_hierarchy_data s
-    ON regexp_replace(a.name, '[^A-Za-z]', '') = s.course_subject_cd
-  WHERE a.parent_account_id = (SELECT id FROM {redshift_schema_canvas_data_2}.accounts WHERE name = 'Official Courses')
-  AND a.workflow_state <> 'deleted';
+WITH RECURSIVE accounts_hierarchy (
+  level,
+  root_id,
+  parent_id,
+  account_id,
+  sis_source_id,
+  name,
+  subject_cd,
+  workflow_state
+) AS (
+  SELECT -- get root records (Official Courses)
+    0 AS level,
+    r.id AS root_id,
+    r.parent_account_id AS parent_id,
+    r.id AS account_id,
+    r.sis_source_id,
+    r.name,
+    regexp_replace(r.name, '[^A-Za-z]', '') AS subject_cd,
+    r.workflow_state
+  FROM {redshift_schema_canvas_data_2}.accounts r
+  WHERE r.parent_account_id = (
+    SELECT id FROM {redshift_schema_canvas_data_2}.accounts WHERE name = 'Official Courses')
+  AND r.workflow_state <> 'deleted'
+  UNION ALL
+  SELECT -- get descendant records (subaccounts of Official Courses)
+    anc.level + 1 AS level,
+    anc.root_id,
+    dsc.parent_account_id AS parent_id,
+    dsc.id AS account_id,
+    dsc.sis_source_id,
+    dsc.name,
+    anc.subject_cd,
+    dsc.workflow_state
+  FROM {redshift_schema_canvas_data_2}.accounts dsc
+  JOIN accounts_hierarchy anc ON dsc.parent_account_id = anc.account_id
+  WHERE dsc.workflow_state <> 'deleted'
+)
+SELECT
+  h.level,
+  h.root_id,
+  h.parent_id,
+  h.account_id,
+  h.name,
+  h.sis_source_id,
+  s.course_subject_cd AS subject_cd,
+  s.course_subject_nm AS subject_nm,
+  s.course_academic_dept_cd AS dept_cd,
+  s.course_academic_dept_nm AS dept_nm,
+  s.course_academic_division_cd AS division_cd,
+  s.course_academic_division_nm AS division_nm,
+  s.course_reporting_college_school_cd AS college_school_cd,
+  s.course_reporting_college_school_nm AS college_school_nm,
+  h.workflow_state
+FROM accounts_hierarchy h
+LEFT OUTER JOIN {redshift_schema_edl_external}.student_course_academic_hierarchy_data s
+  ON h.subject_cd = s.course_subject_cd;
 
 
 ----------------------------------------------------------------------------------------------------
