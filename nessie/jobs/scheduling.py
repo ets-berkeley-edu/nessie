@@ -62,8 +62,8 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_SYNC_AND_REFRESH_CD2_SNAPSHOTS': 1400,
     'JOB_UPDATE_ACADEMIC_PARTICIPATION': 8000,
     'JOB_BI_GRANT_READONLY_ACCESS': 9100,
-    'JOB_BI_REFRESH_BOA_ADVISING_SCHEMAS': 9200,
-    'JOB_BI_REFRESH_BCOURSES_SERVICE_CD2_SCHEMAS': 9300,
+    'JOB_BI_REFRESH_BCOURSES_SERVICE_CD2': 9200,
+    'JOB_BI_REFRESH_BOA_ADVISING': 9300,
 }
 
 
@@ -219,8 +219,8 @@ def schedule_all_jobs(force=False):  # noqa: PLR0915
         force,
     )
     schedule_job(sched, 'JOB_BI_GRANT_READONLY_ACCESS', BiGrantReadonlyAccess, force)
-    schedule_job(sched, 'JOB_BI_REFRESH_BOA_ADVISING_SCHEMAS', BiRefreshBoaAdvisingSchemas, force)
-    schedule_job(sched, 'JOB_BI_REFRESH_BCOURSES_SERVICE_CD2_SCHEMAS', BiRefreshBcoursesServiceCd2Schemas, force)
+    schedule_job(sched, 'JOB_BI_REFRESH_BCOURSES_SERVICE_CD2', BiRefreshBcoursesServiceCd2Schemas, force)
+    schedule_job(sched, 'JOB_BI_REFRESH_BOA_ADVISING', BiRefreshBoaAdvisingSchemas, force)
 
 
 def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):
