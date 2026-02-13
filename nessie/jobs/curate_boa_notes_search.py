@@ -99,7 +99,7 @@ class CurateBoaNotesSearch(BackgroundJob):
     def _advisor_attributes_by_uid(self):
         boa_notes_schema = app.config['RDS_SCHEMA_BOA_APP_RDS_DATA']
         advisor_uids_from_notes = set(
-            [r['advisor_uid'] for r in rds.fetch(f'SELECT DISTINCT advisor_uid FROM {boa_notes_schema}.advising_notes')],
+            [r['advisor_uid'] for r in rds.fetch(f'SELECT DISTINCT advisor_uid FROM {boa_notes_schema}.advising_notes_nightly')],
         )
         advisor_uids = list(advisor_uids_from_notes)
         return calnet.client(app).search_uids(advisor_uids)
