@@ -24,14 +24,16 @@
  */
 
 ----------------------------------------------------------------------------------------------------
--- Create curated tables and indexes for Fulltext Search for Advising Notes.
+-- BEGIN TRANSACTION: Create curated tables and indexes for Fulltext Search for Advising Notes.
 --   Union BOA records to existing ASC, Data Science, E & I, EOP, History, and SIS records.
 ----------------------------------------------------------------------------------------------------
 
 BEGIN TRANSACTION;
 
 ----------------------------------------------------------------------------------------------------
--- Add BOA App RDS Data author names to boac_advising_notes.advising_note_author_names.
+-- Add BOA App RDS Data author names added to boac_advising_notes.advising_note_authors
+--   via CurateBoaNotesSearch().import_note_authors()
+--   to boac_advising_notes.advising_note_author_names.
 ----------------------------------------------------------------------------------------------------
 
 INSERT INTO {rds_schema_advising_notes}.advising_note_author_names (uid, name) (
@@ -50,7 +52,7 @@ ON CONFLICT DO NOTHING;
 ----------------------------------------------------------------------------------------------------
 
 ----------------------------------------------------------------------------------------------------
--- Create table advising_notes_curated and indexes.
+-- Drop, create, and index table advising_notes_curated
 ----------------------------------------------------------------------------------------------------
 
 DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_notes_curated CASCADE;
@@ -86,33 +88,39 @@ SELECT
   advisor_uid AS created_by,
   created_at,
   updated_at
-FROM {rds_schema_boa_app_rds_data}.advising_notes
+FROM {rds_schema_boa_app_rds_data}.advising_notes_vw
 );
 
-CREATE INDEX idx_advising_notes_curated_id ON {rds_schema_advising_notes}.advising_notes_curated (id);
-CREATE INDEX idx_advising_notes_curated_sid ON {rds_schema_advising_notes}.advising_notes_curated (sid);
-CREATE INDEX idx_advising_notes_curated_advisor_sid ON {rds_schema_advising_notes}.advising_notes_curated (advisor_sid);
-CREATE INDEX idx_advising_notes_curated_advisor_uid ON {rds_schema_advising_notes}.advising_notes_curated (advisor_uid);
-CREATE INDEX idx_advising_notes_curated_created_at ON {rds_schema_advising_notes}.advising_notes_curated (created_at);
-CREATE INDEX idx_advising_notes_curated_created_by ON {rds_schema_advising_notes}.advising_notes_curated (created_by);
-CREATE INDEX idx_advising_notes_curated_updated_at ON {rds_schema_advising_notes}.advising_notes_curated (updated_at);
+CREATE INDEX advising_notes_curated_id_idx ON {rds_schema_advising_notes}.advising_notes_curated (id);
+CREATE INDEX advising_notes_curated_sid_idx ON {rds_schema_advising_notes}.advising_notes_curated (sid);
+CREATE INDEX advising_notes_curated_advisor_sid_idx ON {rds_schema_advising_notes}.advising_notes_curated (advisor_sid);
+CREATE INDEX advising_notes_curated_advisor_uid_idx ON {rds_schema_advising_notes}.advising_notes_curated (advisor_uid);
+CREATE INDEX advising_notes_curated_created_at_idx ON {rds_schema_advising_notes}.advising_notes_curated (created_at);
+CREATE INDEX advising_notes_curated_created_by_idx ON {rds_schema_advising_notes}.advising_notes_curated (created_by);
+CREATE INDEX advising_notes_curated_updated_at_idx ON {rds_schema_advising_notes}.advising_notes_curated (updated_at);
 
 ----------------------------------------------------------------------------------------------------
--- Create table advising_notes_search_index_curated and GIN index.
+-- Create and index table advising_notes_search_index_curated
 ----------------------------------------------------------------------------------------------------
 
 DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_notes_search_index_curated CASCADE;
 
-CREATE TABLE {rds_schema_advising_notes}.advising_notes_search_index_curated AS (
+CREATE TABLE IF NOT EXISTS {rds_schema_advising_notes}.advising_notes_search_index_curated AS (
   SELECT id, fts_index
   FROM {rds_schema_advising_notes}.advising_notes_search_index
   UNION
   SELECT id, fts_index
-  FROM {rds_schema_boa_app_rds_data}.advising_notes_search_index
+  FROM {rds_schema_boa_app_rds_data}.advising_notes_search_index_vw
 );
 
-CREATE INDEX idx_advising_notes_ft_search_curated
+CREATE INDEX advising_notes_search_curated_fts_index_idx
   ON {rds_schema_advising_notes}.advising_notes_search_index_curated
   USING GIN (fts_index);
 
+
+----------------------------------------------------------------------------------------------------
+-- COMMIT TRANSACTION
+----------------------------------------------------------------------------------------------------
+
 COMMIT TRANSACTION;
+
