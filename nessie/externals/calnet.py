@@ -33,8 +33,8 @@ from nessie.lib import mockingbird
 
 SCHEMA_DICT = {
     'berkeleyEduAffiliations': 'affiliations',
+    'berkeleyEduAlternateID': 'campus_email',
     'berkeleyEduCSID': 'csid',
-    'berkeleyEduOfficialEmail': 'campus_email',
     'berkeleyEduPrimaryDeptUnit': 'primary_dept_code',
     'cn': 'sortable_name',
     'departmentNumber': 'dept_code',
@@ -83,7 +83,7 @@ class Client:
         return self._search(uids, 'uid', 'uid')
 
     def search_emails(self, emails):
-        return self._search(emails, 'berkeleyEduOfficialEmail', 'campus_email')
+        return self._search(emails, 'berkeleyEduAlternateID', 'campus_email')
 
     def _search(self, ids, ldap_id_type, id_key_in_ldap_result):
         all_out = []
