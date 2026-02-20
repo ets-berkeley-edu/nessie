@@ -7,6 +7,9 @@
                     "AFFILIATE-TYPE-ADVCON-STUDENT",
                     "FORMER-STUDENT"
                 ],
+                "berkeleyEduAlternateID": [
+                    "obear@example.edu"
+                ],
                 "berkeleyEduCSID": "11667051",
                 "berkeleyEduConfidentialFlag": false,
                 "berkeleyEduEmailRelFlag": false,
@@ -31,9 +34,6 @@
                     "11667051"
                 ],
                 "berkeleyEduModDate": "2016-08-29 14:51:46+00:00",
-                "berkeleyEduOfficialEmail": [
-                    "obear@example.edu"
-                ],
                 "berkeleyEduStuID": "11667051",
                 "cn": [
                     "Bear, Oski"
@@ -74,6 +74,9 @@
                     "AFFILIATE-TYPE-ADVCON-STUDENT",
                     "FORMER-STUDENT"
                 ],
+                "berkeleyEduAlternateID": [
+                    "obear@example.edu"
+                ],
                 "berkeleyEduCSID": [
                     "11667051"
                 ],
@@ -107,9 +110,6 @@
                 ],
                 "berkeleyEduModDate": [
                     "20160829145146Z"
-                ],
-                "berkeleyEduOfficialEmail": [
-                    "obear@example.edu"
                 ],
                 "berkeleyEduStuID": [
                     "11667051"
