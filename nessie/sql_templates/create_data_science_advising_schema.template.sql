@@ -72,22 +72,6 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_data_science_advising_intern
 -- Internal tables
 --------------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION {redshift_schema_data_science_advising_internal}.to_utc_iso_string(date_string VARCHAR)
-RETURNS VARCHAR
-STABLE
-AS $$
-  from datetime import datetime
-  import pytz
-
-  d = datetime.strptime(date_string, '%m/%d/%Y %H:%M:%S')
-  d = pytz.timezone('America/Los_Angeles').localize(d)
-  return d.astimezone(pytz.utc).isoformat()
-$$ language plpythonu;
-
-GRANT EXECUTE
-ON function {redshift_schema_data_science_advising_internal}.to_utc_iso_string(VARCHAR)
-TO GROUP {redshift_app_boa_user}_group;
-
 CREATE TABLE {redshift_schema_data_science_advising_internal}.advising_notes
 SORTKEY (id)
 AS (
@@ -100,8 +84,6 @@ AS (
       n.reason_for_appointment,
       n.conversation_type,
       n.notes AS body,
-      TO_TIMESTAMP({redshift_schema_data_science_advising_internal}.to_utc_iso_string(n.timestamp), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at
+      TO_TIMESTAMP(n.timestamp, 'MM/DD/YYYY HH24:MI:SS') AT TIME ZONE 'UTC' AT TIME ZONE 'America/Los_Angeles' AS created_at
     FROM {redshift_schema_data_science_advising}.advising_notes n
 );
-
-DROP FUNCTION {redshift_schema_data_science_advising_internal}.to_utc_iso_string(VARCHAR);
