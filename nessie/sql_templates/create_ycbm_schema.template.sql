@@ -68,22 +68,6 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_ycbm_internal} GRANT SELECT 
 -- Internal tables
 --------------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION {redshift_schema_ycbm_internal}.to_utc_iso_string(date_string VARCHAR)
-RETURNS VARCHAR
-STABLE
-AS $$
-  from datetime import datetime
-  import pytz
-
-  d = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S')
-  d = pytz.timezone('America/Los_Angeles').localize(d)
-  return d.astimezone(pytz.utc).isoformat()
-$$ language plpythonu;
-
-GRANT EXECUTE
-ON function {redshift_schema_ycbm_internal}.to_utc_iso_string(VARCHAR)
-TO GROUP {redshift_app_boa_user}_group;
-
 CREATE TABLE {redshift_schema_ycbm_internal}.bookings
 SORTKEY (id)
 AS (
@@ -94,8 +78,8 @@ AS (
     t.answers.email AS ycbm_student_email,
     t.answers.fname AS ycbm_student_name,
     t.title,
-    TO_TIMESTAMP({redshift_schema_ycbm_internal}.to_utc_iso_string(t.startsat), 'YYYY-MM-DD"T"HH.MI.SS%z') AS starts_at,
-    TO_TIMESTAMP({redshift_schema_ycbm_internal}.to_utc_iso_string(t.endsat), 'YYYY-MM-DD"T"HH.MI.SS%z') AS ends_at,
+    TO_TIMESTAMP(t.startsat, 'YYYY-MM-DD HH24:MI:SS') AT TIME ZONE 'UTC' AT TIME ZONE 'America/Los_Angeles' AS starts_at,
+    TO_TIMESTAMP(t.endsat, 'YYYY-MM-DD HH24:MI:SS') AT TIME ZONE 'UTC' AT TIME ZONE 'America/Los_Angeles' AS ends_at,
     t.cancelled,
     t.cancellationreason AS cancellation_reason,
     t.teammember.id AS advisor_id,
@@ -110,8 +94,6 @@ AS (
     t.teammember.id, t.teammember.name, t.teammember.email,
     t.answers.sid, t.answers.email, t.answers.fname, t.answers.q5, t.answers.q6
 );
-
-DROP FUNCTION {redshift_schema_ycbm_internal}.to_utc_iso_string(VARCHAR);
 
 -- First pass: fill in UIDs from CalNet matches on SID.
 UPDATE {redshift_schema_ycbm_internal}.bookings
