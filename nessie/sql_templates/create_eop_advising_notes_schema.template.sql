@@ -74,22 +74,6 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_eop_advising_notes_internal}
 -- Internal tables
 --------------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION {redshift_schema_eop_advising_notes_internal}.to_utc_iso_string(date_string VARCHAR)
-RETURNS VARCHAR
-STABLE
-AS $$
-  from datetime import datetime
-  import pytz
-
-  d = datetime.strptime(date_string, '%m/%d/%Y %H:%M:%S')
-  d = pytz.timezone('America/Los_Angeles').localize(d)
-  return d.astimezone(pytz.utc).isoformat()
-$$ language plpythonu;
-
-GRANT EXECUTE
-ON function {redshift_schema_eop_advising_notes_internal}.to_utc_iso_string(VARCHAR)
-TO GROUP {redshift_app_boa_user}_group;
-
 CREATE TABLE {redshift_schema_eop_advising_notes_internal}.advising_notes
 SORTKEY (sid)
 AS (
@@ -107,7 +91,7 @@ AS (
       meeting_date,
       attachment,
       ARRAY(topic_1, topic_2, topic_3) AS topics,
-      TO_TIMESTAMP({redshift_schema_eop_advising_notes_internal}.to_utc_iso_string(meeting_date || ' 12:00:00'), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at
+      TO_TIMESTAMP((meeting_date || ' 12:00:00'), 'MM/DD/YYYY HH24:MI:SS') AT TIME ZONE 'UTC' AT TIME ZONE 'America/Los_Angeles' AS created_at
     FROM {redshift_schema_eop_advising_notes}.advising_notes
 );
 
@@ -122,5 +106,4 @@ AS (
     JOIN n.topics AS t ON TRUE
     WHERE t IS NOT NULL
 );
-
-DROP FUNCTION {redshift_schema_eop_advising_notes_internal}.to_utc_iso_string(VARCHAR);
+ d

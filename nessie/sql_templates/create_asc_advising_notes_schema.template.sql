@@ -96,22 +96,6 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_asc_advising_notes_internal}
 -- Internal tables
 --------------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION {redshift_schema_asc_advising_notes_internal}.to_utc_iso_string(date_string VARCHAR)
-RETURNS VARCHAR
-STABLE
-AS $$
-  from datetime import datetime
-  import pytz
-
-  d = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%S')
-  d = pytz.timezone('America/Los_Angeles').localize(d)
-  return d.astimezone(pytz.utc).isoformat()
-$$ language plpythonu;
-
-GRANT EXECUTE
-ON function {redshift_schema_asc_advising_notes_internal}.to_utc_iso_string(VARCHAR)
-TO GROUP {redshift_app_boa_user}_group;
-
 CREATE TABLE {redshift_schema_asc_advising_notes_internal}.advising_notes
 SORTKEY (id)
 AS (
@@ -127,8 +111,8 @@ AS (
       annbn.advisorLastName AS advisor_last_name,
       NULL AS subject,
       NULL AS body,
-      TO_TIMESTAMP({redshift_schema_asc_advising_notes_internal}.to_utc_iso_string(annbn.createdDate), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
-      TO_TIMESTAMP({redshift_schema_asc_advising_notes_internal}.to_utc_iso_string(annbn.lastModifiedDate), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at
+      TO_TIMESTAMP(annbn.createdDate, 'YYYY-MM-DD HH24:MI:SS') AT TIME ZONE 'UTC' AT TIME ZONE 'America/Los_Angeles' AS created_at,
+      TO_TIMESTAMP(annbn.lastModifiedDate, 'YYYY-MM-DD HH24:MI:SS') AT TIME ZONE 'UTC' AT TIME ZONE 'America/Los_Angeles' AS updated_at
     FROM {redshift_schema_asc_advising_notes}.advising_notes_no_bodies annb, annb.notes annbn
     UNION
     SELECT
@@ -143,8 +127,8 @@ AS (
       n.advisorLastName AS advisor_last_name,
       n.overview AS subject,
       n.note AS body,
-      TO_TIMESTAMP({redshift_schema_asc_advising_notes_internal}.to_utc_iso_string(n.createdDate), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
-      TO_TIMESTAMP({redshift_schema_asc_advising_notes_internal}.to_utc_iso_string(n.lastModifiedDate), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at
+      TO_TIMESTAMP(n.createdDate, 'YYYY-MM-DD HH24:MI:SS') AT TIME ZONE 'UTC' AT TIME ZONE 'America/Los_Angeles' AS created_at,
+      TO_TIMESTAMP(n.lastModifiedDate, 'YYYY-MM-DD HH24:MI:SS') AT TIME ZONE 'UTC' AT TIME ZONE 'America/Los_Angeles' AS updated_at
     FROM {redshift_schema_asc_advising_notes}.advising_notes a, a.notes n
 );
 
@@ -165,5 +149,3 @@ AS (
       t AS topic
     FROM {redshift_schema_asc_advising_notes}.advising_notes a, a.notes n, n.topics t
 );
-
-DROP FUNCTION {redshift_schema_asc_advising_notes_internal}.to_utc_iso_string(VARCHAR);
