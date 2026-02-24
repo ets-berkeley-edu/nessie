@@ -62,25 +62,9 @@ ALTER default PRIVILEGES IN SCHEMA {redshift_schema_history_dept_advising_intern
 GRANT USAGE ON SCHEMA {redshift_schema_history_dept_advising_internal} TO GROUP {redshift_dblink_group};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_history_dept_advising_internal} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
 
---------------------------------------------------------------------
+-------------------------------------------------------------------- d
 -- Internal tables
 --------------------------------------------------------------------
-
-CREATE OR REPLACE FUNCTION {redshift_schema_history_dept_advising_internal}.to_utc_iso_string(date_string VARCHAR)
-RETURNS VARCHAR
-STABLE
-AS $$
-  from datetime import datetime
-  import pytz
-
-  d = datetime.strptime(date_string, '%m/%d/%y %H:%M:%S')
-  d = pytz.timezone('America/Los_Angeles').localize(d)
-  return d.astimezone(pytz.utc).isoformat()
-$$ language plpythonu;
-
-GRANT EXECUTE
-ON function {redshift_schema_history_dept_advising_internal}.to_utc_iso_string(VARCHAR)
-TO GROUP {redshift_app_boa_user}_group;
 
 CREATE TABLE {redshift_schema_history_dept_advising_internal}.advising_notes
 SORTKEY (id)
@@ -90,10 +74,8 @@ AS (
       student_id AS sid,
       student_first_name,
       student_last_name,
-      TO_TIMESTAMP({redshift_schema_history_dept_advising_internal}.to_utc_iso_string(created_at || ' 12:00:00'), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
+      TO_TIMESTAMP((meeting_date || ' 12:00:00'), 'MM/DD/YY HH24:MI:SS') AT TIME ZONE 'UTC' AT TIME ZONE 'America/Los_Angeles' AS created_at,
       note
     FROM {redshift_schema_history_dept_advising}.advising_notes
     WHERE created_at <> ''
 );
-
-DROP FUNCTION {redshift_schema_history_dept_advising_internal}.to_utc_iso_string(VARCHAR);
