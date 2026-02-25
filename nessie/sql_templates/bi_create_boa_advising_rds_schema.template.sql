@@ -76,9 +76,9 @@ INSERT INTO {bi_rds_schema_boa_advising}.authors (
   )
 );
 
-CREATE INDEX idx_bi_authors_author_name_sort ON {bi_rds_schema_boa_advising}.authors (author_name_sort);
-CREATE INDEX idx_bi_authors_author_name ON {bi_rds_schema_boa_advising}.authors (author_name);
-CREATE INDEX idx_bi_authors_author_aliases ON {bi_rds_schema_boa_advising}.authors (author_aliases);
+CREATE INDEX idx_authors_author_name_sort ON {bi_rds_schema_boa_advising}.authors (author_name_sort);
+CREATE INDEX idx_authors_author_name ON {bi_rds_schema_boa_advising}.authors (author_name);
+CREATE INDEX idx_authors_author_aliases ON {bi_rds_schema_boa_advising}.authors (author_aliases);
 
 
 ----------------------------------------------------------------------------------------------------
@@ -106,7 +106,7 @@ INSERT INTO {bi_rds_schema_boa_advising}.departments (
   )
 );
 
-CREATE INDEX idx_bi_departments_dept_name ON {bi_rds_schema_boa_advising}.departments (dept_name);
+CREATE INDEX idx_departments_dept_name ON {bi_rds_schema_boa_advising}.departments (dept_name);
 
 
 ----------------------------------------------------------------------------------------------------
@@ -154,8 +154,8 @@ INSERT INTO {bi_rds_schema_boa_advising}.students (
   )
 );
 
-CREATE INDEX idx_bi_students_student_name_sort ON {bi_rds_schema_boa_advising}.students (student_name_sort);
-CREATE INDEX idx_bi_students_student_name ON {bi_rds_schema_boa_advising}.students (student_name);
+CREATE INDEX idx_students_student_name_sort ON {bi_rds_schema_boa_advising}.students (student_name_sort);
+CREATE INDEX idx_students_student_name ON {bi_rds_schema_boa_advising}.students (student_name);
 
 
 ----------------------------------------------------------------------------------------------------
@@ -216,15 +216,14 @@ INSERT INTO {bi_rds_schema_boa_advising}.notes (
   )
 );
 
-CREATE INDEX idx_bi_notes_created_at ON {bi_rds_schema_boa_advising}.notes (created_at);
-CREATE INDEX idx_bi_notes_set_date ON {bi_rds_schema_boa_advising}.notes (set_date);
-CREATE INDEX idx_bi_notes_contact_type ON {bi_rds_schema_boa_advising}.notes (contact_type);
-CREATE INDEX idx_bi_notes_is_private ON {bi_rds_schema_boa_advising}.notes (is_private);
+CREATE INDEX idx_notes_created_at ON {bi_rds_schema_boa_advising}.notes (created_at);
+CREATE INDEX idx_notes_set_date ON {bi_rds_schema_boa_advising}.notes (set_date);
+CREATE INDEX idx_notes_contact_type ON {bi_rds_schema_boa_advising}.notes (contact_type);
+CREATE INDEX idx_notes_is_private ON {bi_rds_schema_boa_advising}.notes (is_private);
 
 
 ----------------------------------------------------------------------------------------------------
 -- CREATE TABLE: note_topics
--- Exlcude deleted topics.
 ----------------------------------------------------------------------------------------------------
 
 DROP TABLE IF EXISTS {bi_rds_schema_boa_advising}.note_topics CASCADE;
@@ -259,8 +258,8 @@ INSERT INTO {bi_rds_schema_boa_advising}.note_topics (
   )
 );
 
-CREATE INDEX idx_bi_note_topics_note_id ON {bi_rds_schema_boa_advising}.note_topics (note_id);
-CREATE INDEX idx_bi_note_topics_topic ON {bi_rds_schema_boa_advising}.note_topics (topic);
+CREATE INDEX idx_note_topics_note_id ON {bi_rds_schema_boa_advising}.note_topics (note_id);
+CREATE INDEX idx_note_topics_topic ON {bi_rds_schema_boa_advising}.note_topics (topic);
 
 
 ----------------------------------------------------------------------------------------------------
@@ -294,7 +293,7 @@ INSERT INTO {bi_rds_schema_boa_advising}.topics (
   )
 );
 
-CREATE INDEX idx_bi_topics_topic ON {bi_rds_schema_boa_advising}.topics (topic);
+CREATE INDEX idx_topics_topic ON {bi_rds_schema_boa_advising}.topics (topic);
   
 
 ----------------------------------------------------------------------------------------------------
@@ -326,8 +325,8 @@ INSERT INTO {bi_rds_schema_boa_advising}.student_groups (
   )
 );
 
-CREATE INDEX idx_bi_student_groups_student_group_name ON {bi_rds_schema_boa_advising}.student_groups (student_group_name);
-CREATE INDEX idx_bi_student_groups_sid ON {bi_rds_schema_boa_advising}.student_groups (sid);
+CREATE INDEX idx_student_groups_student_group_name ON {bi_rds_schema_boa_advising}.student_groups (student_group_name);
+CREATE INDEX idx_student_groups_sid ON {bi_rds_schema_boa_advising}.student_groups (sid);
 
 
 ----------------------------------------------------------------------------------------------------
@@ -359,8 +358,8 @@ INSERT INTO {bi_rds_schema_boa_advising}.student_cohorts (
   )
 );
 
-CREATE INDEX idx_bi_student_cohorts_cohort_name ON {bi_rds_schema_boa_advising}.student_cohorts (cohort_name);
-CREATE INDEX idx_bi_student_cohorts_sid ON {bi_rds_schema_boa_advising}.student_cohorts (sid);
+CREATE INDEX idx_student_cohorts_cohort_name ON {bi_rds_schema_boa_advising}.student_cohorts (cohort_name);
+CREATE INDEX idx_student_cohorts_sid ON {bi_rds_schema_boa_advising}.student_cohorts (sid);
 
 
 ----------------------------------------------------------------------------------------------------
@@ -399,9 +398,9 @@ INSERT INTO {bi_rds_schema_boa_advising}.student_degrees (
   )   
 );
 
-CREATE INDEX idx_bi_student_degrees_sid ON {bi_rds_schema_boa_advising}.student_degrees (sid);
-CREATE INDEX idx_bi_student_degrees_degree_date ON {bi_rds_schema_boa_advising}.student_degrees (degree_date);
-CREATE INDEX idx_bi_student_degrees_degree_awarded ON {bi_rds_schema_boa_advising}.student_degrees (degree_awarded);
+CREATE INDEX idx_student_degrees_sid ON {bi_rds_schema_boa_advising}.student_degrees (sid);
+CREATE INDEX idx_student_degrees_degree_date ON {bi_rds_schema_boa_advising}.student_degrees (degree_date);
+CREATE INDEX idx_student_degrees_degree_awarded ON {bi_rds_schema_boa_advising}.student_degrees (degree_awarded);
 
 
 ----------------------------------------------------------------------------------------------------
@@ -412,6 +411,8 @@ CREATE INDEX idx_bi_student_degrees_degree_awarded ON {bi_rds_schema_boa_advisin
 ----------------------------------------------------------------------------------------------------
 -- CREATE MATERIALIZED VIEW: ce3_notes_mv
 ----------------------------------------------------------------------------------------------------
+
+DROP MATERIALIZED VIEW IF EXISTS {bi_rds_schema_boa_advising}.ce3_notes_mv CASCADE;
 
 CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_notes_mv AS
   WITH note_topics AS (
@@ -439,70 +440,21 @@ CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_notes_mv AS
   WHERE (notes.author_dept_code = 'ZCEEE' OR notes.author_uid in ({bi_rds_ce3_add_users}))
   AND notes.sid IS NOT NULL;
 
-CREATE INDEX idx_bi_ce3_notes_note_id ON {bi_rds_schema_boa_advising}.ce3_notes_mv (note_id);
-CREATE INDEX idx_bi_ce3_notes_author_uid ON {bi_rds_schema_boa_advising}.ce3_notes_mv (author_uid);
-CREATE INDEX idx_bi_ce3_notes_sid ON {bi_rds_schema_boa_advising}.ce3_notes_mv (sid);
-CREATE INDEX idx_bi_ce3_notes_contact_type ON {bi_rds_schema_boa_advising}.ce3_notes_mv (contact_type);
-CREATE INDEX idx_bi_ce3_notes_create_date ON {bi_rds_schema_boa_advising}.ce3_notes_mv (create_date);
-CREATE INDEX idx_bi_ce3_notes_set_date ON {bi_rds_schema_boa_advising}.ce3_notes_mv (set_date);
-CREATE INDEX idx_bi_ce3_notes_private ON {bi_rds_schema_boa_advising}.ce3_notes_mv (private);
-CREATE INDEX idx_bi_ce3_notes_subject ON {bi_rds_schema_boa_advising}.ce3_notes_mv (subject);
-
-
-----------------------------------------------------------------------------------------------------
--- CREATE TABLE: ce3_author_contacts
--- counts by author_id of 1) distinct student count, 2) note count (total), 3) contact type count
-----------------------------------------------------------------------------------------------------
-DO $$
-  DECLARE 
-    trow RECORD;
-    sqlstr TEXT;
-
-  BEGIN
-    DROP TABLE IF EXISTS {bi_rds_schema_boa_advising}.ce3_author_contacts CASCADE;
-
-    CREATE TABLE IF NOT EXISTS {bi_rds_schema_boa_advising}.ce3_author_contacts AS
-      SELECT
-        author_uid,
-        COUNT(DISTINCT sid) AS student_count,
-        COUNT(*) AS note_count
-      FROM {bi_rds_schema_boa_advising}.ce3_notes_mv
-      GROUP BY author_uid;
-
-    CREATE TEMP TABLE types_temp AS
-      SELECT
-        author_uid, 
-        coalesce(contact_type, 'Unknown') AS contact_type,
-        COUNT(contact_type) AS contact_count
-      FROM {bi_rds_schema_boa_advising}.ce3_notes_mv
-      GROUP BY 1, 2;
-  
-    FOR trow IN SELECT DISTINCT COALESCE(contact_type, 'Unknown') AS contact_type
-                FROM {bi_rds_schema_boa_advising}.ce3_notes_mv
-      LOOP
-        sqlstr := 'ALTER TABLE {bi_rds_schema_boa_advising}.ce3_author_contacts ';
-        sqlstr := sqlstr || 'ADD COLUMN ' || quote_ident(trow.contact_type) || ' INTEGER';
-  
-        EXECUTE sqlstr;
-      
-        sqlstr := 'UPDATE {bi_rds_schema_boa_advising}.ce3_author_contacts ac ';
-        sqlstr := sqlstr || 'SET ' || quote_ident(trow.contact_type) || ' = t.contact_count ';
-        sqlstr := sqlstr || 'FROM types_temp t ';
-        sqlstr := sqlstr || 'WHERE ac.author_uid = t.author_uid ';
-        sqlstr := sqlstr || 'AND COALESCE(t.contact_type, ''Unknown'') = ' || quote_literal(trow.contact_type);
-
-        EXECUTE sqlstr;
-
-      END LOOP;
-
-    CREATE INDEX idx_bi_ce3_author_contacts_author_uid ON {bi_rds_schema_boa_advising}.ce3_author_contacts (author_uid);
-  END
-$$;
+CREATE INDEX idx_ce3_notes_mv_note_id ON {bi_rds_schema_boa_advising}.ce3_notes_mv (note_id);
+CREATE INDEX idx_ce3_notes_mv_author_uid ON {bi_rds_schema_boa_advising}.ce3_notes_mv (author_uid);
+CREATE INDEX idx_ce3_notes_mv_sid ON {bi_rds_schema_boa_advising}.ce3_notes_mv (sid);
+CREATE INDEX idx_ce3_notes_mv_contact_type ON {bi_rds_schema_boa_advising}.ce3_notes_mv (contact_type);
+CREATE INDEX idx_ce3_notes_mv_create_date ON {bi_rds_schema_boa_advising}.ce3_notes_mv (create_date);
+CREATE INDEX idx_ce3_notes_mv_set_date ON {bi_rds_schema_boa_advising}.ce3_notes_mv (set_date);
+CREATE INDEX idx_ce3_notes_mv_private ON {bi_rds_schema_boa_advising}.ce3_notes_mv (private);
+CREATE INDEX idx_ce3_notes_mv_subject ON {bi_rds_schema_boa_advising}.ce3_notes_mv (subject);
 
 
 ----------------------------------------------------------------------------------------------------
 -- CREATE MATERIALIZED VIEW: ce3_authors_mv
 ----------------------------------------------------------------------------------------------------
+
+DROP MATERIALIZED VIEW IF EXISTS {bi_rds_schema_boa_advising}.ce3_authors_mv CASCADE;
 
 CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_authors_mv AS
   WITH ce3_authors AS (
@@ -519,16 +471,111 @@ CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_authors_mv AS
   JOIN {bi_rds_schema_boa_advising}.authors authors
     ON ce3_authors.author_uid = authors.author_uid;
 
-CREATE INDEX idx_bi_ce3_authors_author_uid ON {bi_rds_schema_boa_advising}.ce3_authors_mv (author_uid);
-CREATE INDEX idx_bi_ce3_authors_sort_name ON {bi_rds_schema_boa_advising}.ce3_authors_mv (sort_name);
-CREATE INDEX idx_bi_ce3_authors_full_name ON {bi_rds_schema_boa_advising}.ce3_authors_mv (full_name);
+CREATE INDEX idx_ce3_authors_mv_author_uid ON {bi_rds_schema_boa_advising}.ce3_authors_mv (author_uid);
+CREATE INDEX idx_ce3_authors_mv_sort_name ON {bi_rds_schema_boa_advising}.ce3_authors_mv (sort_name);
+CREATE INDEX idx_ce3_authors_mv_full_name ON {bi_rds_schema_boa_advising}.ce3_authors_mv (full_name);
+
+
+----------------------------------------------------------------------------------------------------
+-- CREATE TEMP TABLES to build TABLE ce3_author_contacts_counts
+----------------------------------------------------------------------------------------------------
+
+DO $$
+  DECLARE
+    trow RECORD;
+    sqlstr TEXT;
+
+  BEGIN
+
+    -- get daily note count and student count for each note author
+    CREATE TEMP TABLE tt_total_counts AS
+      SELECT
+        n.author_uid,
+        a.full_name as author_name,
+        n.create_date,
+        COUNT(n.note_id) AS note_count,
+        COUNT(DISTINCT(n.sid)) AS sid_count
+      FROM {bi_rds_schema_boa_advising}.ce3_notes_mv n
+      LEFT OUTER JOIN {bi_rds_schema_boa_advising}.ce3_authors_mv a ON (n.author_uid = a.author_uid)
+      GROUP BY 1, 2, 3;
+
+    -- get daily contact type counts for each note author and contact_type
+    CREATE TEMP TABLE tt_author_date_contact_counts AS
+      SELECT
+        author_uid,
+        create_date,
+        COALESCE(contact_type, 'Unknown') AS contact_type,
+        COUNT(note_id) AS ct_count
+      FROM {bi_rds_schema_boa_advising}.ce3_notes_mv
+      GROUP BY 1, 2, 3;
+
+    -- loop through contact_types to get daily note count for each note author by contact_type
+    FOR trow IN
+      SELECT DISTINCT
+        COALESCE(contact_type, 'Unknown') AS contact_type,
+        COALESCE(REGEXP_REPLACE(LOWER(contact_type), '[^A-Za-z]', '', 'g'), 'unknown') as ct_name
+      FROM tt_author_date_contact_counts
+    LOOP
+        sqlstr := 'CREATE TEMP TABLE tt_' || trow.ct_name || ' AS ';
+        sqlstr := sqlstr || 'SELECT author_uid, create_date, ct_count FROM tt_author_date_contact_counts ';
+        sqlstr := sqlstr || 'WHERE contact_type = ''' || trow.contact_type || '''';
+
+        -- RAISE NOTICE 'sqlstr: %', sqlstr;
+        EXECUTE sqlstr;
+
+    END LOOP;
+
+  END
+$$;
+
+
+----------------------------------------------------------------------------------------------------
+-- CREATE TABLE: ce3_author_contact_counts
+-- Current contact_type values from note_contact_type_enum 
+--   'Email', 'Phone', 'Online same day', 'Online scheduled',
+--   'In-person same day', 'In-person scheduled', 'Group event', 'Admin',
+--   NULL is converted to 'Unknown'
+----------------------------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS {bi_rds_schema_boa_advising}.ce3_author_contact_counts CASCADE;
+
+CREATE TABLE {bi_rds_schema_boa_advising}.ce3_author_contact_counts AS
+  SELECT
+    tc.author_uid, tc.author_name, tc.create_date,
+    COALESCE(a.ct_count, 0) AS admin,
+    COALESCE(e.ct_count, 0) AS email,
+    COALESCE(g.ct_count, 0) AS group,
+    COALESCE(ipsd.ct_count, 0) AS inperson_sd,
+    COALESCE(ips.ct_count, 0) AS inperson_sch,
+    COALESCE(osd.ct_count, 0) AS online_sd,
+    COALESCE(os.ct_count, 0) AS online_sch,
+    COALESCE(p.ct_count, 0) AS phone,
+    COALESCE(u.ct_count, 0) AS unknown,
+    COALESCE(tc.note_count, 0) AS note_count,
+    COALESCE(tc.sid_count, 0) AS sid_count
+  FROM tt_total_counts tc
+  LEFT OUTER JOIN tt_admin a ON (tc.author_uid = a.author_uid AND tc.create_date = a.create_date)
+  LEFT OUTER JOIN tt_email e ON (tc.author_uid = e.author_uid AND tc.create_date = e.create_date)
+  LEFT OUTER JOIN tt_groupevent g ON (tc.author_uid = g.author_uid AND tc.create_date = g.create_date)
+  LEFT OUTER JOIN tt_inpersonscheduled ips ON (tc.author_uid = ips.author_uid AND tc.create_date = ips.create_date)
+  LEFT OUTER JOIN tt_inpersonsameday ipsd ON (tc.author_uid = ipsd.author_uid AND tc.create_date = ipsd.create_date)
+  LEFT OUTER JOIN tt_onlinesameday osd ON (tc.author_uid = osd.author_uid AND tc.create_date = osd.create_date)
+  LEFT OUTER JOIN tt_onlinescheduled os ON (tc.author_uid = os.author_uid AND tc.create_date = os.create_date)
+  LEFT OUTER JOIN tt_phone p ON (tc.author_uid = p.author_uid AND tc.create_date = p.create_date)
+  LEFT OUTER JOIN tt_unknown u ON (tc.author_uid = u.author_uid AND tc.create_date = u.create_date);
+
+CREATE UNIQUE INDEX idx_ce3_author_contact_counts_auid_crdate ON {bi_rds_schema_boa_advising}.ce3_author_contact_counts (author_uid, create_date);
+CREATE INDEX idx_ce3_author_contact_counts_author_name ON {bi_rds_schema_boa_advising}.ce3_author_contact_counts (author_name);
+CREATE INDEX idx_ce3_author_contact_counts_create_date ON {bi_rds_schema_boa_advising}.ce3_author_contact_counts (create_date);
 
 
 ----------------------------------------------------------------------------------------------------
 -- CREATE MATERIALIZED VIEW: ce3_topics_mv
--- exclude duplicate and deleted topics
--- includes orphaned topics (in note_topics but not in topics)
+-- Exclude duplicate and deleted topics.
+-- Include orphaned topics (in note_topics but not in topics).
 ----------------------------------------------------------------------------------------------------
+
+DROP MATERIALIZED VIEW IF EXISTS {bi_rds_schema_boa_advising}.ce3_topics_mv CASCADE;
 
 CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_topics_mv AS
   SELECT DISTINCT
@@ -540,13 +587,15 @@ CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_topics_mv AS
   WHERE (notes.author_dept_code = 'ZCEEE' OR notes.author_uid in ({bi_rds_ce3_add_users}))
   AND topics.deleted_at IS NULL;
 
-CREATE INDEX idx_bi_ce3_topics_note_id ON {bi_rds_schema_boa_advising}.ce3_topics_mv (note_id);
-CREATE INDEX idx_bi_ce3_topics_topic ON {bi_rds_schema_boa_advising}.ce3_topics_mv (topic);
+CREATE INDEX idx_ce3_topics_mv_note_id ON {bi_rds_schema_boa_advising}.ce3_topics_mv (note_id);
+CREATE INDEX idx_ce3_topics_mv_topic ON {bi_rds_schema_boa_advising}.ce3_topics_mv (topic);
 
 
 ----------------------------------------------------------------------------------------------------
 -- CREATE MATERIALIZED VIEW: ce3_students_mv
 ----------------------------------------------------------------------------------------------------
+
+DROP MATERIALIZED VIEW IF EXISTS {bi_rds_schema_boa_advising}.ce3_students_mv CASCADE;
 
 CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_students_mv AS
   WITH ce3_students AS (
@@ -559,20 +608,22 @@ CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_students_mv AS
     students.sid,
     students.student_name_sort AS sort_name,
     students.student_name AS full_name,
-    regexp_replace(students.cohort_list, '\|', CHR(10), 'g') as cohorts,
-    regexp_replace(students.group_list, '\|', CHR(10), 'g') as groups,
-    regexp_replace(students.degree_list, '\|', CHR(10), 'g') as degrees
+    REGEXP_REPLACE(students.cohort_list, '\|', CHR(10), 'g') as cohorts,
+    REGEXP_REPLACE(students.group_list, '\|', CHR(10), 'g') as groups,
+    REGEXP_REPLACE(students.degree_list, '\|', CHR(10), 'g') as degrees
   FROM ce3_students
   JOIN {bi_rds_schema_boa_advising}.students students
     ON ce3_students.sid = students.sid;
 
-CREATE INDEX idx_bi_ce3_students_sid ON {bi_rds_schema_boa_advising}.ce3_students_mv (sid);
-CREATE INDEX idx_bi_ce3_students_sort_name ON {bi_rds_schema_boa_advising}.ce3_students_mv (sort_name);
+CREATE INDEX idx_ce3_students_mv_sid ON {bi_rds_schema_boa_advising}.ce3_students_mv (sid);
+CREATE INDEX idx_ce3_students_mv_sort_name ON {bi_rds_schema_boa_advising}.ce3_students_mv (sort_name);
 
 
 ----------------------------------------------------------------------------------------------------
 -- CREATE MATERIALIZED VIEW: ce3_student_cohorts_mv
 ----------------------------------------------------------------------------------------------------
+
+DROP MATERIALIZED VIEW IF EXISTS {bi_rds_schema_boa_advising}.ce3_student_cohorts_mv CASCADE;
 
 CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_student_cohorts_mv AS
   WITH ce3_students AS (
@@ -588,13 +639,15 @@ CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_student_cohorts_mv AS
   JOIN {bi_rds_schema_boa_advising}.student_cohorts cohorts
     ON ce3_students.sid = cohorts.sid;
 
-CREATE INDEX idx_bi_ce3_student_cohorts_sid ON {bi_rds_schema_boa_advising}.ce3_student_cohorts_mv (sid);
-CREATE INDEX idx_bi_ce3_student_cohorts_cohort_name ON {bi_rds_schema_boa_advising}.ce3_student_cohorts_mv (cohort_name);
+CREATE INDEX idx_ce3_student_cohorts_mv_sid ON {bi_rds_schema_boa_advising}.ce3_student_cohorts_mv (sid);
+CREATE INDEX idx_ce3_student_cohorts_mv_cohort_name ON {bi_rds_schema_boa_advising}.ce3_student_cohorts_mv (cohort_name);
 
 
 ----------------------------------------------------------------------------------------------------
 -- CREATE MATERIALIZED VIEW: ce3_student_groups_mv
 ----------------------------------------------------------------------------------------------------
+
+DROP MATERIALIZED VIEW IF EXISTS {bi_rds_schema_boa_advising}.ce3_student_groups_mv CASCADE;
 
 CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_student_groups_mv AS
   WITH ce3_students AS (
@@ -610,13 +663,15 @@ CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_student_groups_mv AS
   JOIN {bi_rds_schema_boa_advising}.student_groups groups
     ON ce3_students.sid = groups.sid;
 
-CREATE INDEX idx_bi_ce3_student_groups_sid ON {bi_rds_schema_boa_advising}.ce3_student_groups_mv (sid);
-CREATE INDEX idx_bi_ce3_student_groups_group_name ON {bi_rds_schema_boa_advising}.ce3_student_groups_mv (group_name);
+CREATE INDEX idx_ce3_student_groups_mv_sid ON {bi_rds_schema_boa_advising}.ce3_student_groups_mv (sid);
+CREATE INDEX idx_ce3_student_groups_mv_group_name ON {bi_rds_schema_boa_advising}.ce3_student_groups_mv (group_name);
 
 
 ----------------------------------------------------------------------------------------------------
 -- CREATE MATERIALIZED VIEW: ce3_student_degrees_mv
 ----------------------------------------------------------------------------------------------------
+
+DROP MATERIALIZED VIEW IF EXISTS {bi_rds_schema_boa_advising}.ce3_student_degrees_mv CASCADE;
 
 CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_student_degrees_mv AS
   WITH ce3_students AS (
@@ -633,9 +688,9 @@ CREATE MATERIALIZED VIEW {bi_rds_schema_boa_advising}.ce3_student_degrees_mv AS
   JOIN {bi_rds_schema_boa_advising}.student_degrees degrees
     ON ce3_students.sid = degrees.sid;
 
-CREATE INDEX idx_bi_ce3_student_degrees_sid ON {bi_rds_schema_boa_advising}.ce3_student_degrees_mv (sid);
-CREATE INDEX idx_bi_ce3_student_degrees_degree ON {bi_rds_schema_boa_advising}.ce3_student_degrees_mv (degree_awarded);
-CREATE INDEX idx_bi_ce3_student_degrees_date ON {bi_rds_schema_boa_advising}.ce3_student_degrees_mv (degree_date);
+CREATE INDEX idx_ce3_student_degrees_mv_sid ON {bi_rds_schema_boa_advising}.ce3_student_degrees_mv (sid);
+CREATE INDEX idx_ce3_student_degrees_mv_degree ON {bi_rds_schema_boa_advising}.ce3_student_degrees_mv (degree_awarded);
+CREATE INDEX idx_ce3_student_degrees_mv_date ON {bi_rds_schema_boa_advising}.ce3_student_degrees_mv (degree_date);
 
 
 ----------------------------------------------------------------------------------------------------
