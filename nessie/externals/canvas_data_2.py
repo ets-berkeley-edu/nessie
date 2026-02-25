@@ -25,9 +25,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from base64 import b64encode
 
-from flask import current_app as app
-from nessie.externals import secrets_manager
 import requests
+from flask import current_app as app
+
+from nessie.externals import secrets_manager
 
 
 def get_cd2_secret():

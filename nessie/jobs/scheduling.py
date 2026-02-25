@@ -25,6 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
+
 from nessie.jobs.background_job import check_for_stalled_job
 from nessie.jobs.create_calendly_schema import CreateCalendlySchema
 from nessie.jobs.import_calendly_api import ImportCalendlyApi
@@ -40,9 +41,10 @@ sched = None
 PG_ADVISORY_LOCK_IDS = {
     'JOB_SYNC_CANVAS_SNAPSHOTS': 1000,
     'JOB_RESYNC_CANVAS_SNAPSHOTS': 1500,
-    'JOB_SYNC_CANVAS_DATA_2_SNAPSHOTS': 1750,
-    'JOB_REFRESH_SISEDO_FULL': 1600,
-    'JOB_REFRESH_SISEDO_INCREMENTAL': 1700,
+    'JOB_SYNC_CANVAS_DATA_2_SNAPSHOTS': 1600,
+    'JOB_RESYNC_AND_REFRESH_CD2_SNAPSHOTS': 1650,
+    'JOB_REFRESH_SISEDO_FULL': 1700,
+    'JOB_REFRESH_SISEDO_INCREMENTAL': 1750,
     'JOB_IMPORT_ADVISORS': 1800,
     'JOB_IMPORT_ADMISSIONS': 1850,
     'JOB_IMPORT_CALENDLY': 7600,
@@ -59,9 +61,9 @@ PG_ADVISORY_LOCK_IDS = {
     'JOB_RETRIEVE_CD2_SNAPSHOT': 1300,
     'JOB_SYNC_AND_REFRESH_CD2_SNAPSHOTS': 1400,
     'JOB_UPDATE_ACADEMIC_PARTICIPATION': 8000,
-    'JOB_REFRESH_BI_BOA_ADVISING': 9100,
-    'JOB_REFRESH_BI_BCOURSES_SERVICE_CD2': 9200,
-    'JOB_GRANT_BI_READONLY_ACCESS': 9300,
+    'JOB_BI_GRANT_READONLY_ACCESS': 9100,
+    'JOB_BI_REFRESH_BCOURSES_SERVICE_CD2': 9200,
+    'JOB_BI_REFRESH_BOA_ADVISING': 9300,
 }
 
 
@@ -82,10 +84,9 @@ def initialize_job_schedules(_app, force=False):
 
 
 def schedule_all_jobs(force=False):  # noqa: PLR0915
-    from nessie.jobs.bi_grant_readonly_access import GrantBiReadonlyAccess
-    from nessie.jobs.bi_refresh_boa_rds_data_schema import RefreshBiBoaRdsDataSchema
-    from nessie.jobs.bi_refresh_boa_advising_schemas import RefreshBiBoaAdvisingSchemas
-    from nessie.jobs.bi_refresh_bcourses_service_cd2_schemas import RefreshBiBcoursesServiceCD2Schemas
+    from nessie.jobs.bi_grant_readonly_access import BiGrantReadonlyAccess
+    from nessie.jobs.bi_refresh_bcourses_service_cd2_schemas import BiRefreshBcoursesServiceCd2Schemas
+    from nessie.jobs.bi_refresh_boa_advising_schemas import BiRefreshBoaAdvisingSchemas
     from nessie.jobs.chained_import_student_population import ChainedImportStudentPopulation
     from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
     from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
@@ -95,6 +96,7 @@ def schedule_all_jobs(force=False):  # noqa: PLR0915
     from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesSchema
     from nessie.jobs.create_terms_schema import CreateTermsSchema
     from nessie.jobs.create_ycbm_schema import CreateYcbmSchema
+    from nessie.jobs.curate_boa_notes_search import CurateBoaNotesSearch
     from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
     from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
     from nessie.jobs.generate_merged_student_feeds import GenerateMergedStudentFeeds
@@ -189,6 +191,7 @@ def schedule_all_jobs(force=False):  # noqa: PLR0915
             IndexAdvisingNotes,
             MigrateSisAdvisingNoteAttachments,
             VerifySisAdvisingNoteAttachments,
+            CurateBoaNotesSearch,
         ],
         force,
     )
@@ -202,6 +205,7 @@ def schedule_all_jobs(force=False):  # noqa: PLR0915
         [
             ImportCalendlyApi,
             CreateCalendlySchema,
+            IndexAdvisingNotes,
         ],
         force,
     )
@@ -214,17 +218,9 @@ def schedule_all_jobs(force=False):  # noqa: PLR0915
         ],
         force,
     )
-    schedule_chained_job(
-        sched,
-        'JOB_REFRESH_BI_BOA_ADVISING',
-        [
-            RefreshBiBoaRdsDataSchema,
-            RefreshBiBoaAdvisingSchemas,
-        ],
-        force,
-    )
-    schedule_job(sched, 'JOB_REFRESH_BI_BCOURSES_SERVICE_CD2', RefreshBiBcoursesServiceCD2Schemas, force)
-    schedule_job(sched, 'JOB_GRANT_BI_READONLY_ACCESS', GrantBiReadonlyAccess, force)
+    schedule_job(sched, 'JOB_BI_GRANT_READONLY_ACCESS', BiGrantReadonlyAccess, force)
+    schedule_job(sched, 'JOB_BI_REFRESH_BCOURSES_SERVICE_CD2', BiRefreshBcoursesServiceCd2Schemas, force)
+    schedule_job(sched, 'JOB_BI_REFRESH_BOA_ADVISING', BiRefreshBoaAdvisingSchemas, force)
 
 
 def add_job(sched, job_func, job_arg, job_id, force=False, **job_opts):

@@ -25,11 +25,12 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import os
 import re
-from threading import Thread
 import time
 import traceback
+from threading import Thread
 
 from flask import current_app as app
+
 from nessie.externals import redshift
 from nessie.jobs.queue import get_job_queue
 from nessie.lib.berkeley import send_system_error_email

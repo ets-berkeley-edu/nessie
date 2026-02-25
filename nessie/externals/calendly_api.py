@@ -23,14 +23,15 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import time
+
+import pytz
+import requests
 from flask import current_app as app
 
 from nessie.jobs.background_job import BackgroundJobError
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
-import pytz
-import requests
-
 
 """Calendly API."""
 
@@ -116,15 +117,32 @@ def _make_calendly_api_request(path, query=None):
 @fixture('calendly_scheduled_events')
 def _get_authorized_response(url, mock=None):
     with mock(url):
-        response = requests.get(  # noqa: S113
-            headers={
-                'Authorization': f"Bearer {app.config['CALENDLY_AUTH_TOKEN']}",
-                'Content-Type': 'application/json',
-            },
-            url=url,
-        )
-        if response.status_code != 200:
-            raise BackgroundJobError(f'Failed GET {url} (status_code: {response.status_code}) due to {response.text}')
+        # If 'RETRY' is enabled then we pause and retry one time.
+        retry_if_api_error = app.config['CALENDLY_RETRY_IF_API_ERROR']
+        api_attempts = 2 if retry_if_api_error else 1
+        response_status_code = None
+        for attempt in range(api_attempts):
+            response = requests.get(  # noqa: S113
+                headers={
+                    'Authorization': f"Bearer {app.config['CALENDLY_AUTH_TOKEN']}",
+                    'Content-Type': 'application/json',
+                },
+                url=url,
+            )
+            response_status_code = response.status_code
+            retry_the_api_call = response_status_code != 200 and retry_if_api_error and attempt < api_attempts - 1
+            if retry_the_api_call:
+                time.sleep(2)
+                app.logger.warning(f'Retrying Calendly API request: {url}')
+
+        if response_status_code != 200:
+            app.logger.warning(f'Calendly API call failed: {url}')
+            raise BackgroundJobError(f"""
+                Calendly API call failed {'(twice with retry)' if retry_if_api_error else ''}
+                URL: {url}
+                HTTP status code: {response_status_code}
+                {response.text}
+            """)
         return response
 
 

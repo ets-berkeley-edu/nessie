@@ -28,14 +28,15 @@ import datetime
 import json
 import re
 
-from flask import current_app as app, request
+from flask import current_app as app
+from flask import request
+
 from nessie.api.auth_helper import auth_required
 from nessie.api.errors import BadRequestError
 from nessie.jobs.background_job import ChainedBackgroundJob
-from nessie.jobs.bi_grant_readonly_access import GrantBiReadonlyAccess
-from nessie.jobs.bi_refresh_bcourses_service_cd2_schemas import RefreshBiBcoursesServiceCD2Schemas
-from nessie.jobs.bi_refresh_boa_advising_schemas import RefreshBiBoaAdvisingSchemas
-from nessie.jobs.bi_refresh_boa_rds_data_schema import RefreshBiBoaRdsDataSchema
+from nessie.jobs.bi_grant_readonly_access import BiGrantReadonlyAccess
+from nessie.jobs.bi_refresh_bcourses_service_cd2_schemas import BiRefreshBcoursesServiceCd2Schemas
+from nessie.jobs.bi_refresh_boa_advising_schemas import BiRefreshBoaAdvisingSchemas
 from nessie.jobs.chained_import_student_population import ChainedImportStudentPopulation
 from nessie.jobs.create_advisor_schema import CreateAdvisorSchema
 from nessie.jobs.create_asc_advising_notes_schema import CreateAscAdvisingNotesSchema
@@ -55,6 +56,7 @@ from nessie.jobs.create_sis_advising_notes_schema import CreateSisAdvisingNotesS
 from nessie.jobs.create_student_schema import CreateStudentSchema
 from nessie.jobs.create_terms_schema import CreateTermsSchema
 from nessie.jobs.create_ycbm_schema import CreateYcbmSchema
+from nessie.jobs.curate_boa_notes_search import CurateBoaNotesSearch
 from nessie.jobs.generate_asc_profiles import GenerateAscProfiles
 from nessie.jobs.generate_boac_analytics import GenerateBoacAnalytics
 from nessie.jobs.generate_intermediate_tables import GenerateIntermediateTables
@@ -69,6 +71,7 @@ from nessie.jobs.index_advising_notes import IndexAdvisingNotes
 from nessie.jobs.index_enrollments import IndexEnrollments
 from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
 from nessie.jobs.query_canvas_data_2_snapshot import QueryCanvasData2Snapshot
+from nessie.jobs.refresh_boa_app_rds_data_schema import RefreshBoaAppRdsDataSchema
 from nessie.jobs.refresh_boac_cache import RefreshBoacCache
 from nessie.jobs.refresh_canvas_data_2_schema import RefreshCanvasData2Schema
 from nessie.jobs.refresh_canvas_data_catalog import RefreshCanvasDataCatalog
@@ -88,6 +91,27 @@ from nessie.jobs.verify_sis_advising_note_attachments import VerifySisAdvisingNo
 from nessie.lib.http import tolerant_jsonify
 from nessie.lib.metadata import update_canvas_sync_status
 from nessie.lib.util import to_boolean
+
+
+@app.route('/api/job/bi_grant_readonly_access', methods=['POST'])
+@auth_required
+def bi_grant_readonly_access():
+    job_started = BiGrantReadonlyAccess().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/bi_refresh_bcourses_service_cd2_schemas', methods=['POST'])
+@auth_required
+def bi_refresh_bcourses_service_cd2_schemas():
+    job_started = BiRefreshBcoursesServiceCd2Schemas().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/bi_refresh_boa_advising_schemas', methods=['POST'])
+@auth_required
+def bi_refresh_boa_advising_schemas():
+    job_started = BiRefreshBoaAdvisingSchemas().run_async()
+    return respond_with_status(job_started)
 
 
 @app.route('/api/job/create_advisor_schema', methods=['POST'])
@@ -213,6 +237,13 @@ def create_calendly_schema():
 @auth_required
 def create_ycbm_schema():
     job_started = CreateYcbmSchema().run_async()
+    return respond_with_status(job_started)
+
+
+@app.route('/api/job/curate_boa_notes_search', methods=['POST'])
+@auth_required
+def curate_boa_notes_search():
+    job_started = CurateBoaNotesSearch().run_async()
     return respond_with_status(job_started)
 
 
@@ -357,31 +388,10 @@ def verify_sis_advising_note_attachments(datestamp):
     return respond_with_status(job_started)
 
 
-@app.route('/api/job/bi_grant_readonly_access', methods=['POST'])
+@app.route('/api/job/refresh_boa_app_rds_data_schema', methods=['POST'])
 @auth_required
-def bi_grant_readonly_access():
-    job_started = GrantBiReadonlyAccess().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/bi_refresh_bcourses_service_cd2_schemas', methods=['POST'])
-@auth_required
-def refresh_bi_bcourses_service_cd2_schemas():
-    job_started = RefreshBiBcoursesServiceCD2Schemas().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/bi_refresh_boa_rds_data_schema', methods=['POST'])
-@auth_required
-def refresh_bi_boa_rds_data_schema():
-    job_started = RefreshBiBoaRdsDataSchema().run_async()
-    return respond_with_status(job_started)
-
-
-@app.route('/api/job/bi_refresh_boa_advising_schemas', methods=['POST'])
-@auth_required
-def refresh_bi_boa_advising_schemas():
-    job_started = RefreshBiBoaAdvisingSchemas().run_async()
+def refresh_boa_app_rds_data_schema():
+    job_started = RefreshBoaAppRdsDataSchema().run_async()
     return respond_with_status(job_started)
 
 

@@ -24,11 +24,11 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
+
 from nessie.externals import s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.metadata import most_recent_background_job_status
 from nessie.lib.util import get_s3_sis_attachment_current_paths, get_s3_sis_attachment_path, normalize_sis_note_attachment_file_name
-
 
 """Logic for migrating SIS advising note attachments. Expects a full or partial datestamp parameter in the form YYYY-MM-DD."""
 

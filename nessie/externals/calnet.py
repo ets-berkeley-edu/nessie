@@ -28,12 +28,13 @@ import os
 import ssl
 
 import ldap3
+
 from nessie.lib import mockingbird
 
 SCHEMA_DICT = {
     'berkeleyEduAffiliations': 'affiliations',
+    'berkeleyEduAlternateID': 'campus_email',
     'berkeleyEduCSID': 'csid',
-    'berkeleyEduOfficialEmail': 'campus_email',
     'berkeleyEduPrimaryDeptUnit': 'primary_dept_code',
     'cn': 'sortable_name',
     'departmentNumber': 'dept_code',
@@ -67,7 +68,13 @@ class Client:
         self.server = server
 
     def connect(self):
-        return ldap3.Connection(self.server, user=self.bind, password=self.password, auto_bind=ldap3.AUTO_BIND_TLS_BEFORE_BIND)
+        return ldap3.Connection(
+            self.server,
+            user=self.bind,
+            password=self.password,
+            client_strategy=ldap3.SAFE_SYNC,
+            auto_bind=ldap3.AUTO_BIND_TLS_BEFORE_BIND,
+        )
 
     def search_csids(self, csids):
         return self._search(csids, 'berkeleyeducsid', 'csid')
@@ -76,7 +83,7 @@ class Client:
         return self._search(uids, 'uid', 'uid')
 
     def search_emails(self, emails):
-        return self._search(emails, 'berkeleyEduOfficialEmail', 'campus_email')
+        return self._search(emails, 'berkeleyEduAlternateID', 'campus_email')
 
     def _search(self, ids, ldap_id_type, id_key_in_ldap_result):
         all_out = []
@@ -100,8 +107,8 @@ class Client:
     @classmethod
     def _ldap_search(cls, conn, ids, ldap_id_type, search_expired=False):
         search_filter = cls._ldap_search_filter(ids, ldap_id_type, search_expired)
-        conn.search('dc=berkeley,dc=edu', search_filter, attributes=ldap3.ALL_ATTRIBUTES)
-        return [_attributes_to_dict(entry) for entry in conn.entries]
+        status, result, response, _ = conn.search('dc=berkeley,dc=edu', search_filter, attributes=ldap3.ALL_ATTRIBUTES)
+        return [_attributes_to_dict(entry) for entry in response]
 
     @classmethod
     def _ldap_search_filter(cls, ids, ldap_id_type, search_expired=False):
@@ -162,10 +169,15 @@ def split_sortable_name(entry):
 
 def _attributes_to_dict(entry):
     out = dict.fromkeys(SCHEMA_DICT.values(), None)
-    # ldap3's entry.entry_attributes_as_dict would work for us, except that it wraps a single value as a list.
     for attr in SCHEMA_DICT:
-        if attr in entry.entry_attributes:
-            out[SCHEMA_DICT[attr]] = entry[attr].value
+        if attr in entry.get('attributes', {}):
+            attr_value = entry['attributes'][attr]
+            if type(attr_value) is list and attr != 'berkeleyEduAffiliations':
+                if len(attr_value):
+                    attr_value = attr_value[0]
+                else:
+                    attr_value = None
+            out[SCHEMA_DICT[attr]] = attr_value
     return out
 
 

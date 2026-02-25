@@ -92,6 +92,9 @@ CREATE TABLE {rds_schema_oua}.student_admits (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
+GRANT USAGE ON SCHEMA {rds_schema_oua} TO {rds_app_ripley_user};
+GRANT SELECT ON TABLE {rds_schema_oua}.student_admits TO {rds_app_ripley_user};
+
 INSERT INTO {rds_schema_oua}.student_admits (
   SELECT
     *

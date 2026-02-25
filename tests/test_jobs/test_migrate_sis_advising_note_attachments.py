@@ -24,13 +24,15 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-from datetime import datetime
 import logging
+from datetime import datetime
 from unittest import mock
 
-from botocore.exceptions import ClientError as BotoClientError, ConnectionError as BotoConnectionError
-from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
 import pytest
+from botocore.exceptions import ClientError as BotoClientError
+from botocore.exceptions import ConnectionError as BotoConnectionError
+
+from nessie.jobs.migrate_sis_advising_note_attachments import MigrateSisAdvisingNoteAttachments
 from tests.util import capture_app_logs, mock_s3
 
 

@@ -25,9 +25,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from contextlib import contextmanager
 
-from flask import current_app as app
-from nessie.lib import http
 import requests
+from flask import current_app as app
+
+from nessie.lib import http
 
 """BOAC auth API."""
 

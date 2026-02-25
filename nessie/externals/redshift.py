@@ -23,18 +23,19 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from contextlib import contextmanager
-from datetime import datetime
 import io
 import re
+from contextlib import contextmanager
+from datetime import datetime
 
-from flask import current_app as app
-from nessie.externals import s3
-from nessie.lib.db import get_psycopg_cursor, get_psycopg_cursor_streaming
-from nessie.lib.util import get_s3_sis_daily_path
 import psycopg2
 import psycopg2.extras
 import psycopg2.sql
+from flask import current_app as app
+
+from nessie.externals import s3
+from nessie.lib.db import get_psycopg_cursor, get_psycopg_cursor_streaming
+from nessie.lib.util import get_s3_sis_daily_path
 
 """Client code to run queries against Redshift."""
 

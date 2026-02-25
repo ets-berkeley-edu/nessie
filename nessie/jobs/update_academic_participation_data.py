@@ -25,23 +25,25 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import csv
 import os
+import re
 import tempfile
+from itertools import groupby
 
 from csv_diff import compare, load_csv
 from flask import current_app as app
+
 from nessie.externals import blue_sftp, canvas_api, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import current_term_id, term_code_for_sis_id
 from nessie.lib.queries import get_sis_default_meeting_dates, get_sis_enrollments, get_sis_instructors, get_sis_sections
 from nessie.lib.util import get_s3_explorance_term_export_previous_path, get_s3_explorance_term_export_timestamped_path, get_s3_explorance_term_path
 
-
 """Logic for current-term enrollments index job."""
 
 
 class UpdateAcademicParticipationData(BackgroundJob):
 
-    def run(self, use_canvas=False):  # noqa: C901, PLR0915
+    def run(self, use_canvas=False):  # noqa: C901, PLR0912, PLR0915
         term_id = current_term_id()
         term_prefix = term_code_for_sis_id(term_id)
 
@@ -66,12 +68,30 @@ class UpdateAcademicParticipationData(BackgroundJob):
         course_sites_by_section_id = {}
         if use_canvas:
             app.logger.info('Retrieving Canvas data...')
+
+            canvas_sections_file = tempfile.NamedTemporaryFile()
+            sections_report = canvas_api.get_csv_report('sections', download_path=canvas_sections_file.name, term_id=term_prefix)
+            if not sections_report:
+                raise BackgroundJobError(f'Could not retrieve sections report for term {term_id}')
+
+            def _extract_section_id(row):
+                if row.get('section_id'):
+                    match = re.match(r'SEC:\d{4}-\w-\d{5}', row['section_id'])
+                    if match:
+                        return match[0]
+
+            sections_by_id = {}
+            with open(canvas_sections_file.name, 'r') as f:
+                sorted_rows = sorted(csv.DictReader(f), key=lambda r: (_extract_section_id(r) or '', r['canvas_course_id']))
+                for section_id, csv_rows in groupby(sorted_rows, key=_extract_section_id):
+                    sections_by_id[section_id] = next(csv_rows)
+
             for section_id in section_ids:
                 # Check for a published course site associated with the section.
                 course_id = _get_course_id(section_id)
-                canvas_section = canvas_api.get_section_by_sis_id('SEC:' + course_id)
+                canvas_section = sections_by_id.get('SEC:' + course_id)
                 if canvas_section:
-                    course_site = canvas_api.get_course_site(canvas_section['course_id'])
+                    course_site = canvas_api.get_course_site(canvas_section['canvas_course_id'])
                     if course_site and course_site.get('workflow_state') == 'available':
                         course_sites_by_section_id[course_id] = canvas_section['sis_course_id']
             app.logger.info(f'Found {len(course_sites_by_section_id)} course sites for {len(section_ids)} sections')

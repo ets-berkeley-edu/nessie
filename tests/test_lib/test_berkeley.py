@@ -23,10 +23,11 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import pytest
+
 from nessie.externals import rds
 from nessie.lib import berkeley
 from nessie.lib.util import resolve_sql_template
-import pytest
 
 
 @pytest.fixture

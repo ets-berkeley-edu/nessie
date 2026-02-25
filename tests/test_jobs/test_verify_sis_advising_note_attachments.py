@@ -24,12 +24,13 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
-from contextlib import contextmanager
 import logging
+from contextlib import contextmanager
+
+import pytest
 
 from nessie.jobs.background_job import BackgroundJobError
 from nessie.jobs.verify_sis_advising_note_attachments import VerifySisAdvisingNoteAttachments
-import pytest
 from tests.util import capture_app_logs, mock_s3
 
 

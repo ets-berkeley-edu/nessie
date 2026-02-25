@@ -183,6 +183,55 @@ CREATE INDEX idx_bi_bcs_courses_name ON {bi_rds_schema_bcourses_service_cd2}.can
 
 
 ----------------------------------------------------------------------------------------------------
+-- CREATE TABLE: bcourses_enrollment_terms
+----------------------------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS {bi_rds_schema_bcourses_service_cd2}.bcourses_enrollment_terms CASCADE;
+
+CREATE TABLE IF NOT EXISTS {bi_rds_schema_bcourses_service_cd2}.bcourses_enrollment_terms (
+  enrollment_term_id BIGINT PRIMARY KEY,
+  term_name VARCHAR(255),
+  year VARCHAR(255),
+  term VARCHAR(255),
+  academic_year VARCHAR(264),
+  sis_source_id VARCHAR(255),
+  date_start DATE,
+  date_start_range_padded DATE,
+  date_end_range_padded DATE
+);
+
+INSERT INTO {bi_rds_schema_bcourses_service_cd2}.bcourses_enrollment_terms (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}', $REDSHIFT$
+    SELECT
+      enrollment_term_id,
+      term_name,
+      year,
+      term,
+      academic_year,
+      sis_source_id,
+      date_start,
+      date_start_range_padded,
+      date_end_range_padded
+    FROM {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms
+  $REDSHIFT$)
+  AS bcourses_enrollment_terms (
+   enrollment_term_id BIGINT,
+    term_name VARCHAR(255),
+    year VARCHAR(255),
+    term VARCHAR(255),
+    academic_year VARCHAR(264),
+    sis_source_id VARCHAR(255),
+    date_start TIMESTAMP WITHOUT TIME ZONE,
+    date_start_range_padded DATE,
+    date_end_range_padded DATE
+  )
+);
+
+CREATE INDEX idx_bi_bcs_enrollment_terms_term_name ON {bi_rds_schema_bcourses_service_cd2}.bcourses_enrollment_terms (term_name);
+
+
+----------------------------------------------------------------------------------------------------
 -- CREATE TABLE: bcourses_assignments
 -- removed PRIMARY KEY on assignment_id
 -- duplicate key (assignment_id)=(4355026) possibly due to multiple workflow states?
@@ -196,10 +245,10 @@ CREATE TABLE IF NOT EXISTS {bi_rds_schema_bcourses_service_cd2}.bcourses_assignm
   course_id BIGINT,
   enrollment_term_id BIGINT,
   title VARCHAR(255),
-  created_at TIMESTAMP WITHOUT TIME ZONE,
-  corrected_created_at TIMESTAMP WITHOUT TIME ZONE,
-  updated_at TIMESTAMP WITHOUT TIME ZONE,
-  due_at TIMESTAMP WITHOUT TIME ZONE,
+  created_at DATE,
+  corrected_created_at DATE,
+  updated_at DATE,
+  due_at DATE,
   points_possible DOUBLE PRECISION,
   grading_type VARCHAR(255),
   submission_types VARCHAR(256),
@@ -239,10 +288,10 @@ INSERT INTO {bi_rds_schema_bcourses_service_cd2}.bcourses_assignments (
     course_id BIGINT,
     enrollment_term_id BIGINT,
     title VARCHAR(255),
-    created_at TIMESTAMP WITHOUT TIME ZONE,
-    corrected_created_at TIMESTAMP WITHOUT TIME ZONE,
-    updated_at TIMESTAMP WITHOUT TIME ZONE,
-    due_at TIMESTAMP WITHOUT TIME ZONE,
+    created_at DATE,
+    corrected_created_at DATE,
+    updated_at DATE,
+    due_at DATE,
     points_possible DOUBLE PRECISION,
     grading_type VARCHAR(255),
     submission_types VARCHAR(256),
@@ -258,55 +307,6 @@ INSERT INTO {bi_rds_schema_bcourses_service_cd2}.bcourses_assignments (
 CREATE INDEX idx_bi_bcs_assignments_course_id ON {bi_rds_schema_bcourses_service_cd2}.bcourses_assignments (course_id);
 CREATE INDEX idx_bi_bcs_assignments_enrollment_term_id ON {bi_rds_schema_bcourses_service_cd2}.bcourses_assignments (enrollment_term_id);
 CREATE INDEX idx_bi_bcs_assignments_title ON {bi_rds_schema_bcourses_service_cd2}.bcourses_assignments (title);
-
-
-----------------------------------------------------------------------------------------------------
--- CREATE TABLE: bcourses_enrollment_terms
-----------------------------------------------------------------------------------------------------
-
-DROP TABLE IF EXISTS {bi_rds_schema_bcourses_service_cd2}.bcourses_enrollment_terms CASCADE;
-
-CREATE TABLE IF NOT EXISTS {bi_rds_schema_bcourses_service_cd2}.bcourses_enrollment_terms (
-  enrollment_term_id BIGINT PRIMARY KEY,
-  term_name VARCHAR(255),
-  year VARCHAR(255),
-  term VARCHAR(255),
-  academic_year VARCHAR(264),
-  sis_source_id VARCHAR(255),
-  date_start TIMESTAMP WITHOUT TIME ZONE,
-  date_start_range_padded DATE,
-  date_end_range_padded DATE
-);
-
-INSERT INTO {bi_rds_schema_bcourses_service_cd2}.bcourses_enrollment_terms (
-  SELECT *
-  FROM dblink('{rds_dblink_to_redshift}', $REDSHIFT$
-    SELECT
-      enrollment_term_id,
-      term_name,
-      year,
-      term,
-      academic_year,
-      sis_source_id,
-      date_start,
-      date_start_range_padded,
-      date_end_range_padded
-    FROM {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms
-  $REDSHIFT$)
-  AS bcourses_enrollment_terms (
-   enrollment_term_id BIGINT,
-    term_name VARCHAR(255),
-    year VARCHAR(255),
-    term VARCHAR(255),
-    academic_year VARCHAR(264),
-    sis_source_id VARCHAR(255),
-    date_start TIMESTAMP WITHOUT TIME ZONE,
-    date_start_range_padded DATE,
-    date_end_range_padded DATE
-  )
-);
-
-CREATE INDEX idx_bi_bcs_enrollment_terms_term_name ON {bi_rds_schema_bcourses_service_cd2}.bcourses_enrollment_terms (term_name);
 
 
 ----------------------------------------------------------------------------------------------------

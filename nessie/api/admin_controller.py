@@ -27,7 +27,9 @@ from datetime import datetime
 from random import randint
 
 import dateutil.parser
-from flask import current_app as app, request
+from flask import current_app as app
+from flask import request
+
 from nessie.api.auth_helper import auth_required
 from nessie.lib import http, metadata
 from nessie.lib.http import tolerant_jsonify

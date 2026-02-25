@@ -23,25 +23,33 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import json
+import pickle
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
 from itertools import groupby, islice, repeat
-import json
 from operator import itemgetter
-import pickle
 from tempfile import TemporaryFile
 from threading import current_thread
 
 from flask import current_app as app
+
 from nessie.externals import redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.berkeley import career_code_to_name, current_term_id, term_info_for_sis_term_id, term_name_for_sis_id
-from nessie.lib.queries import stream_edl_degrees, stream_edl_demographics, stream_edl_holds, stream_edl_plans,\
-    stream_edl_profile_terms, stream_edl_profiles, stream_edl_registrations
+from nessie.lib.queries import (
+    stream_edl_degrees,
+    stream_edl_demographics,
+    stream_edl_holds,
+    stream_edl_plans,
+    stream_edl_profile_terms,
+    stream_edl_profiles,
+    stream_edl_registrations,
+)
 from nessie.lib.util import get_s3_edl_daily_path, resolve_sql_template, write_to_tsv_file
-from nessie.merged.student_demographics import GENDER_CODE_MAP, merge_from_details, UNDERREPRESENTED_GROUPS
+from nessie.merged.student_demographics import GENDER_CODE_MAP, UNDERREPRESENTED_GROUPS, merge_from_details
 
 """Logic for EDL SIS schema creation job."""
 

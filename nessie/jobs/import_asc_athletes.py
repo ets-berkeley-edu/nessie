@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
+
 from nessie.externals import redshift, s3
 from nessie.externals.asc_athletes_api import get_asc_academic_year, get_asc_feed
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError

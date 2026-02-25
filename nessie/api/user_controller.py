@@ -26,8 +26,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from urllib.parse import urlencode, urlparse
 
 import cas
-from flask import current_app as app, flash, redirect, request, url_for
+from flask import current_app as app
+from flask import flash, redirect, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
+
 from nessie.lib.http import add_param_to_url, tolerant_jsonify
 from nessie.models.user import find_by_uid
 

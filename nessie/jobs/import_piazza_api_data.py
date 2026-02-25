@@ -26,12 +26,13 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import json
 from re import split
 
+import requests
 from flask import current_app as app
+
 from nessie.externals import s3
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.metadata import update_background_job_status
 from nessie.lib.util import get_s3_piazza_data_path
-import requests
 
 """Piazza API import."""
 

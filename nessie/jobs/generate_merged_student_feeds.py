@@ -23,13 +23,14 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from contextlib import ExitStack
-from itertools import groupby
 import json
 import operator
 import tempfile
+from contextlib import ExitStack
+from itertools import groupby
 
 from flask import current_app as app
+
 from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib import berkeley, queries
@@ -282,7 +283,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         redshift.execute(
             f"""TRUNCATE {self.student_schema}.academic_standing;
             INSERT INTO {self.student_schema}.academic_standing
-                SELECT sid, term_id, acad_standing_action, acad_standing_status, action_date
+                SELECT sid, term_id, acad_standing_action, acad_standing_description, acad_standing_status, action_date
                 FROM {app.config['REDSHIFT_SCHEMA_EDL']}.academic_standing;""",
         )
 

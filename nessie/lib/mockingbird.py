@@ -23,17 +23,17 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from contextlib import contextmanager
-from functools import partial, wraps
 import json
 import os
 import re
 import urllib
+from contextlib import contextmanager
+from functools import partial, wraps
 
-from flask import current_app as app
-from nessie.lib.util import fill_pattern_from_args
 import responses
+from flask import current_app as app
 
+from nessie.lib.util import fill_pattern_from_args
 
 """This module wraps the responses package to return fake external API responses in test or demo mode.
 

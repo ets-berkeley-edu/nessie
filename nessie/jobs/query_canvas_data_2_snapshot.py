@@ -26,9 +26,9 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import time
 
 from flask import current_app as app
+
 from nessie.externals import canvas_data_2, lambda_service
 from nessie.jobs.background_job import BackgroundJob
-
 
 """Logic to trigger query Canvas Data 2 snapshot job with Instructure."""
 

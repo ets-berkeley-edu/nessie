@@ -20,7 +20,7 @@
             variant="outlined"
           >
             <template #item="{ props: itemProps }">
-              <v-list-item v-bind="itemProps" :disabled="!isAvailable(itemProps) || starting"></v-list-item>
+              <v-list-item v-bind="itemProps" :disabled="!isAvailable(itemProps) || starting" />
             </template>
           </v-select>
           <div v-if="get(selected, 'required.length')" class="mr-3 pt-2">
@@ -55,7 +55,7 @@
             hide-details
             placeholder="Select Date (UTC)"
             variant="outlined"
-            @update:modelValue="refresh"
+            @update:model-value="refresh"
           />
           <v-badge inline color="red" :content="jobs.errored.length" />
           <v-badge inline color="yellow" :content="jobs.started.length" />
@@ -182,7 +182,7 @@
             :alt="get(alert, 'xkcd.alt')"
             :src="get(alert, 'xkcd.img')"
             :title="get(alert, 'xkcd.title')"
-          />
+          >
         </div>
         <v-divider />
         <v-card-actions>

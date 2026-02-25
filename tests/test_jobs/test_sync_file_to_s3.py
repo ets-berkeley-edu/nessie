@@ -25,12 +25,13 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import logging
 
+import pytest
+import responses
+
 from nessie.externals import rds
 from nessie.jobs.sync_file_to_s3 import SyncFileToS3
 from nessie.lib import metadata
 from nessie.lib.mockingbird import _get_fixtures_path
-import pytest
-import responses
 from tests.util import capture_app_logs, mock_s3
 
 

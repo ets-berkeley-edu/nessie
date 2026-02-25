@@ -27,6 +27,7 @@ import re
 import threading
 
 from flask import current_app as app
+
 from nessie.externals import rds
 from nessie.externals.b_connected import BConnected
 

@@ -23,10 +23,11 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from botocore.exceptions import ConnectionError as BotoConnectionError
-from nessie.externals import s3
 import pytest
 import responses
+from botocore.exceptions import ConnectionError as BotoConnectionError
+
+from nessie.externals import s3
 from tests.util import capture_app_logs, mock_s3
 
 

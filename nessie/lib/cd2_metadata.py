@@ -26,6 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from datetime import datetime, timezone
 
 from flask import current_app as app
+
 from nessie.externals import dynamodb
 
 

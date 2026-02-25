@@ -23,25 +23,55 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 from datetime import datetime, timedelta
+
 import pytest
+import pytz
 
 from nessie.externals import calendly_api
 from nessie.jobs.background_job import BackgroundJobError
 from nessie.lib.mockingbird import MockResponse, register_mock
-import pytz
+from tests.util import override_config
 
 
 class TestCalendlyApi:
     """Calendly API client."""
 
-    def test_calendly_server_error(self, app):
-        """Logs unexpected Calendly server errors."""
+    def test_calendly_server_error_with_retry(self, app):
+        """Retry Calendly API if error."""
         with app.app_context():
             calendly_error = MockResponse(500, {}, '{"message": "Internal server error."}')
-            with register_mock(calendly_api._get_authorized_response, calendly_error):
+            with (
+                register_mock(calendly_api._get_authorized_response, calendly_error),
+                override_config(app, 'CALENDLY_RETRY_IF_API_ERROR', True),
+            ):
                 with pytest.raises(BackgroundJobError) as error:
                     calendly_api.get_scheduled_events(
                         min_start_time=datetime.now(pytz.utc),
                         max_start_time=datetime.now(pytz.utc) + timedelta(days=1),
                     )
-                assert 'Failed GET https://api.calendly.com/organizations' in str(error.value)
+                # Verify that retry DID happen.
+                for snippet in (
+                    'Calendly API call failed (twice with retry)',
+                    'URL: https://api.calendly.com/organizations',
+                ):
+                    assert snippet in str(error.value)
+
+    def test_calendly_server_error_without_retry(self, app):
+        """Do NOT retry Calendly API if error."""
+        with app.app_context():
+            calendly_error = MockResponse(500, {}, '{"message": "Internal server error."}')
+            with (
+                register_mock(calendly_api._get_authorized_response, calendly_error),
+                override_config(app, 'CALENDLY_RETRY_IF_API_ERROR', False),
+            ):
+                with pytest.raises(BackgroundJobError) as error:
+                    calendly_api.get_scheduled_events(
+                        min_start_time=datetime.now(pytz.utc),
+                        max_start_time=datetime.now(pytz.utc) + timedelta(days=1),
+                    )
+                # Verify that retry DID NOT happen.
+                for snippet in (
+                    'Calendly API call failed',
+                    'URL: https://api.calendly.com/organizations',
+                ):
+                    assert snippet in str(error.value)

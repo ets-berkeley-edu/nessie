@@ -48,27 +48,67 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {bi_redshift_schema_bcourses_service_cd2}
 
 ----------------------------------------------------------------------------------------------------
 -- INTERNAL TABLE : "bcourses_accounts"
+-- account hierarchy with parent_account_id of root = 129410, 'Official Courses'
+-- remove non-alpha from name to match student_course_academic_hierarchy_data.course_subject_cd
 ----------------------------------------------------------------------------------------------------
 
 CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.bcourses_accounts AS
-  SELECT
-    a.id AS account_id,
-    a.name,
-    a.sis_source_id,
-    s.course_subject_cd as subject_cd,
-    s.course_subject_nm as subject_nm,
-    s.course_academic_dept_cd as dept_cd,
-    s.course_academic_dept_nm as dept_nm,
-    s.course_academic_division_cd as division_cd,
-    s.course_academic_division_nm as division_nm,
-    s.course_reporting_college_school_cd as college_school_cd,
-    s.course_reporting_college_school_nm as college_school_nm,
-    a.workflow_state
-  FROM {redshift_schema_canvas_data_2}.accounts a
-  LEFT OUTER JOIN {redshift_schema_edl_external}.student_course_academic_hierarchy_data s
-    ON (regexp_replace(a.name, '[^A-Za-z]', '') = s.course_subject_cd)
-  WHERE a.parent_account_id = (SELECT id FROM {redshift_schema_canvas_data_2}.accounts WHERE name = 'Official Courses')
-  AND a.workflow_state <> 'deleted';
+WITH RECURSIVE accounts_hierarchy (
+  level,
+  root_id,
+  parent_id,
+  account_id,
+  sis_source_id,
+  name,
+  subject_cd,
+  workflow_state
+) AS (
+  SELECT -- get root records (Official Courses)
+    0 AS level,
+    r.id AS root_id,
+    r.parent_account_id AS parent_id,
+    r.id AS account_id,
+    r.sis_source_id,
+    r.name,
+    regexp_replace(r.name, '[^A-Za-z]', '') AS subject_cd,
+    r.workflow_state
+  FROM {redshift_schema_canvas_data_2}.accounts r
+  WHERE r.parent_account_id = (
+    SELECT id FROM {redshift_schema_canvas_data_2}.accounts WHERE name = 'Official Courses')
+  AND r.workflow_state <> 'deleted'
+  UNION ALL
+  SELECT -- get descendant records (subaccounts of Official Courses)
+    anc.level + 1 AS level,
+    anc.root_id,
+    dsc.parent_account_id AS parent_id,
+    dsc.id AS account_id,
+    dsc.sis_source_id,
+    dsc.name,
+    anc.subject_cd,
+    dsc.workflow_state
+  FROM {redshift_schema_canvas_data_2}.accounts dsc
+  JOIN accounts_hierarchy anc ON dsc.parent_account_id = anc.account_id
+  WHERE dsc.workflow_state <> 'deleted'
+)
+SELECT
+  h.level,
+  h.root_id,
+  h.parent_id,
+  h.account_id,
+  h.name,
+  h.sis_source_id,
+  s.course_subject_cd AS subject_cd,
+  s.course_subject_nm AS subject_nm,
+  s.course_academic_dept_cd AS dept_cd,
+  s.course_academic_dept_nm AS dept_nm,
+  s.course_academic_division_cd AS division_cd,
+  s.course_academic_division_nm AS division_nm,
+  s.course_reporting_college_school_cd AS college_school_cd,
+  s.course_reporting_college_school_nm AS college_school_nm,
+  h.workflow_state
+FROM accounts_hierarchy h
+LEFT OUTER JOIN {redshift_schema_edl_external}.student_course_academic_hierarchy_data s
+  ON h.subject_cd = s.course_subject_cd;
 
 
 ----------------------------------------------------------------------------------------------------
@@ -93,7 +133,7 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.canvas_courses AS
       cd2c.wiki_id,
       CASE WHEN cd2c.syllabus_body IS NULL THEN NULL ELSE 'yes' END AS syllabus
     FROM {redshift_schema_canvas_data_2}.courses cd2c
-    JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_accounts a ON (cd2c.account_id = a.account_id)
+    JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_accounts a ON cd2c.account_id = a.account_id
     WHERE cd2c.workflow_state <> 'deleted'
   ),
   quizzes AS (
@@ -165,54 +205,6 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.canvas_courses AS
 
 
 ----------------------------------------------------------------------------------------------------
--- INTERNAL TABLE : "bcourses_assignments"
--- check for 'quiz', 'discussion_topic', 'non quiz'
---   via cd2_ext_dev.assignments.submission_types, which is formatted as json
---   ["discussion_topic"], "online_quiz"
-----------------------------------------------------------------------------------------------------
-
-CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.bcourses_assignments AS
-  WITH
-  subtypes AS (
-    SELECT
-      id,
-      CASE
-        WHEN submission_types ~ 'discussion_topics' THEN 'discussion_topics'
-        WHEN submission_types ~ 'online_quiz' THEN 'quiz' 
-        ELSE 'non quiz' END AS sub_type
-    FROM {redshift_schema_canvas_data_2}.assignments
-    WHERE workflow_state <> 'deleted'
-  )
-  SELECT
-    a.id AS assignment_id,
-    a.context_id AS course_id,
-    c.enrollment_term_id,
-    a.title,
-    a.created_at,
-    a.created_at AS corrected_created_at,
-    a.updated_at,
-    a.due_at,
-    a.points_possible,
-    a.grading_type,
-    a.submission_types,
-    a.workflow_state,
-    DECODE(a.only_visible_to_overrides, TRUE, 'only_visible_to_overrides', 'everyone') AS visibility,
-    ct.content_id AS external_tool_id,
-    DECODE(s.sub_type, 'quiz', 'quiz', NULL) AS quizzes,
-    DECODE(s.sub_type, 'discussion_topics', 'discussion_topics', NULL) AS discussion_topics,
-    DECODE(s.sub_type, 'non quiz', 'non quiz', NULL) AS non_quiz_assignments
-  FROM {redshift_schema_canvas_data_2}.assignments a
-  JOIN {bi_redshift_schema_bcourses_service_cd2}.canvas_courses c ON a.context_id = c.course_id
-  LEFT OUTER JOIN {redshift_schema_canvas_data_2}.content_tags ct ON (
-    a.id = ct.context_id
-    AND ct.context_type = 'Assignment'
-    AND ct.content_type = 'ContextExternalTool'
-    AND ct.workflow_state = 'active')
-  LEFT OUTER JOIN subtypes s ON a.id = s.id
-  WHERE a.workflow_state <> 'deleted';
-
-
-----------------------------------------------------------------------------------------------------
 -- INTERNAL TABLE : "bcourses_enrollment_terms"
 -- Set padded start_at and end_at dates to -1 and +1 month from term start and end dates as follows
 --   Fall: set start_at = 7/20 + term_year, end_at = 1/21 + (term_year + 1)
@@ -232,7 +224,7 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms
   )
   SELECT
     et.id AS enrollment_term_id,
-    ty.year || ' ' || ty.term as term_name,
+    TRIM(ty.year || ' ' || ty.term) AS term_name,
     ty.year,
     CASE WHEN ty.term IN ('Fall', 'Spring', 'Summer') THEN ty.term ELSE NULL END AS term,
     CASE
@@ -240,7 +232,7 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms
       WHEN ty.term IN ('Spring', 'Summer') THEN (ty.year::int - 1)::text || '-' || SUBSTRING(ty.year, 3, 2)
       ELSE NULL END AS academic_year,
     et.sis_source_id,
-    et.start_at AS date_start,
+    et.start_at::DATE AS date_start,
     CASE
       WHEN ty.term = 'Fall' THEN TO_DATE(ty.year ||'0720', 'YYYYMMDD')
       WHEN ty.term = 'Spring' THEN DATEADD(YEAR, -1, TO_DATE(ty.year ||'1215', 'YYYYMMDD'))::DATE
@@ -258,7 +250,62 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms
 
 
 ----------------------------------------------------------------------------------------------------
+-- INTERNAL TABLE : "bcourses_assignments"
+-- check for 'quiz', 'discussion_topic', 'non quiz'
+--   via cd2_ext_dev.assignments.submission_types, which is formatted AS json
+--   ["discussion_topic"], "online_quiz"
+-- add corrected_created_at exclude (set date to null) when date falls outside padded range
+----------------------------------------------------------------------------------------------------
+
+CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.bcourses_assignments AS
+  WITH
+  subtypes AS (
+    SELECT
+      id,
+      CASE
+        WHEN submission_types ~ 'discussion_topics' THEN 'discussion_topics'
+        WHEN submission_types ~ 'online_quiz' THEN 'quiz' 
+        ELSE 'non quiz' END AS sub_type
+    FROM {redshift_schema_canvas_data_2}.assignments
+    WHERE workflow_state <> 'deleted'
+  )
+  SELECT
+    a.id AS assignment_id,
+    a.context_id AS course_id,
+    c.enrollment_term_id,
+    a.title,
+    a.created_at::DATE AS created_at,
+    CASE
+      WHEN a.created_at::DATE BETWEEN et.date_start_range_padded AND et.date_end_range_padded
+      THEN a.created_at::DATE
+      ELSE NULL END AS corrected_created_at,
+    a.updated_at::DATE AS updated_at,
+    a.due_at::DATE AS due_at,
+    a.points_possible,
+    a.grading_type,
+    a.submission_types,
+    a.workflow_state,
+    DECODE(a.only_visible_to_overrides, TRUE, 'only_visible_to_overrides', 'everyone') AS visibility,
+    ct.content_id AS external_tool_id,
+    DECODE(s.sub_type, 'quiz', 'quiz', NULL) AS quizzes,
+    DECODE(s.sub_type, 'discussion_topics', 'discussion_topics', NULL) AS discussion_topics,
+    DECODE(s.sub_type, 'non quiz', 'non quiz', NULL) AS non_quiz_assignments
+  FROM {redshift_schema_canvas_data_2}.assignments a
+  JOIN {bi_redshift_schema_bcourses_service_cd2}.canvas_courses c ON a.context_id = c.course_id
+  JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms et
+    ON c.enrollment_term_id = et.enrollment_term_id
+  LEFT OUTER JOIN {redshift_schema_canvas_data_2}.content_tags ct
+    ON (a.id = ct.context_id
+    AND ct.context_type = 'Assignment'
+    AND ct.content_type = 'ContextExternalTool'
+    AND ct.workflow_state = 'active')
+  LEFT OUTER JOIN subtypes s ON a.id = s.id
+  WHERE a.workflow_state <> 'deleted';
+
+
+----------------------------------------------------------------------------------------------------
 -- INTERNAL TABLE : "discussion_posts_daily_agg"
+-- add corrected_created_at exclude (set date to null) when date falls outside padded range
 ----------------------------------------------------------------------------------------------------
 
 CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.discussion_posts_daily_agg AS
@@ -269,26 +316,24 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.discussion_posts_daily_ag
     c.enrollment_term_id,
     a.name AS department,
     c.course_id,
-    de.created_at::DATE AS corrected_created_at,
+    CASE
+      WHEN de.created_at::DATE BETWEEN et.date_start_range_padded AND et.date_end_range_padded
+      THEN de.created_at::DATE
+      ELSE NULL END AS corrected_created_at,
     count(de.id) AS discussion_entry_count
   FROM {redshift_schema_canvas_data_2}.discussion_entries de
   JOIN {redshift_schema_canvas_data_2}.discussion_topics dt ON de.discussion_topic_id = dt.id
   JOIN {bi_redshift_schema_bcourses_service_cd2}.canvas_courses c ON dt.context_id = c.course_id
   JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_accounts a ON c.account_id = a.account_id
-  JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms et ON c.enrollment_term_id = et.enrollment_term_id
+  JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms et
+    ON c.enrollment_term_id = et.enrollment_term_id
   WHERE de.workflow_state <> 'deleted'
-  GROUP BY
-    et.year,
-    et.term,
-    et.term_name,
-    c.enrollment_term_id,
-    a.name,
-    c.course_id,
-    de.created_at::DATE;
+  GROUP BY 1, 2, 3, 4, 5, 6, 7;
 
 
 ----------------------------------------------------------------------------------------------------
 -- INTERNAL TABLE : "discussion_topics_daily_agg"
+-- add corrected_created_at exclude (set date to null) when date falls outside padded range
 ----------------------------------------------------------------------------------------------------
 
 CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.discussion_topics_daily_agg AS
@@ -301,23 +346,18 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.discussion_topics_daily_a
     c.course_id,
     dt.type AS announcements,
     CASE WHEN dt.type IS NULL then 'discussion_topic' END AS discussion_topic,
-    dt.created_at::DATE AS corrected_created_at,
+    CASE
+      WHEN dt.created_at::DATE BETWEEN et.date_start_range_padded AND et.date_end_range_padded
+      THEN dt.created_at::DATE
+      ELSE NULL END AS corrected_created_at,
     count(dt.id) AS discussion_topic_count
   FROM {redshift_schema_canvas_data_2}.discussion_topics dt
   JOIN {bi_redshift_schema_bcourses_service_cd2}.canvas_courses c ON dt.context_id = c.course_id
   JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_accounts a ON c.account_id = a.account_id
-  JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms et ON c.enrollment_term_id = et.enrollment_term_id
+  JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms et
+    ON c.enrollment_term_id = et.enrollment_term_id
   WHERE dt.workflow_state <> 'deleted'
-  GROUP BY
-    et.year,
-    et.term,
-    et.term_name,
-    c.enrollment_term_id,
-    dt.type,
-    a.name,
-    c.course_id,
-    CASE WHEN dt.type IS NULL then 'discussion_topic' END,
-    dt.created_at::DATE;
+  GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9;
 
 
 ----------------------------------------------------------------------------------------------------
@@ -336,19 +376,15 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.enrollment_agg_by_role AS
   FROM {redshift_schema_canvas_data_2}.enrollments e
   JOIN {redshift_schema_canvas_data_2}.roles r ON e.role_id = r.id
   JOIN {bi_redshift_schema_bcourses_service_cd2}.canvas_courses c ON e.course_id = c.course_id
-  JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms et ON c.enrollment_term_id = et.enrollment_term_id
+  JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms et
+    ON c.enrollment_term_id = et.enrollment_term_id
   WHERE e.workflow_state <> 'deleted'
-  GROUP BY
-    et.year,
-    et.term,
-    et.term_name,
-    c.enrollment_term_id,
-    c.course_id,
-    r.base_role_type;
+  GROUP BY 1, 2, 3, 4, 5, 6;
 
 
 ----------------------------------------------------------------------------------------------------
 -- INTERNAL TABLE : "file_upload_daily_agg"
+-- add corrected_created_at exclude (set date to null) when date falls outside padded range
 ----------------------------------------------------------------------------------------------------
 
 CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.file_upload_daily_agg AS
@@ -360,26 +396,23 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.file_upload_daily_agg AS
     ba.name AS department,
     a.context_type AS owner_entity_type,
     c.course_id,
-    a.created_at::DATE AS corrected_created_at,
+    CASE
+      WHEN a.created_at::DATE BETWEEN et.date_start_range_padded AND et.date_end_range_padded
+      THEN a.created_at::DATE
+      ELSE NULL END AS corrected_created_at,
     count(a.id) AS file_upload_count
   FROM {redshift_schema_canvas_data_2}.attachments a
   JOIN {bi_redshift_schema_bcourses_service_cd2}.canvas_courses c ON a.context_id = c.course_id
   JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_accounts ba ON c.account_id = ba.account_id
-  JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms et ON c.enrollment_term_id = et.enrollment_term_id
+  JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms et
+    ON c.enrollment_term_id = et.enrollment_term_id
   WHERE a.workflow_state <> 'deleted'
-  GROUP BY
-    et.year,
-    et.term,
-    et.term_name,
-    c.enrollment_term_id,
-    ba.name,
-    a.context_type,
-    c.course_id,
-    a.created_at::DATE;
+  GROUP BY 1, 2, 3, 4, 5, 6, 7, 8;
 
 
 ----------------------------------------------------------------------------------------------------
 -- INTERNAL TABLE : "submission_daily_agg"
+-- add corrected_created_at exclude (set date to null) when date falls outside padded range
 ----------------------------------------------------------------------------------------------------
 
 CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.submission_daily_agg AS
@@ -389,26 +422,23 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.submission_daily_agg AS
     TRIM(et.year || ' ' || et.term) AS term_name,
     c.enrollment_term_id,
     ba.name AS department,
-    a.submission_types AS submission_type,
-    a.workflow_state,
+    s.submission_type AS submission_type,
+    s.workflow_state,
     a.course_id,
-    a.created_at::DATE AS corrected_created_at,
-    count(a.assignment_id) AS submission_count
-  FROM {bi_redshift_schema_bcourses_service_cd2}.bcourses_assignments a
+    CASE
+      WHEN s.created_at::DATE BETWEEN et.date_start_range_padded AND et.date_end_range_padded
+      THEN s.created_at::DATE
+      ELSE NULL END AS corrected_created_at,
+    count(s.assignment_id) AS submission_count
+  FROM {redshift_schema_canvas_data_2}.submissions s
+  JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_assignments a ON s.assignment_id = a.assignment_id
   JOIN {bi_redshift_schema_bcourses_service_cd2}.canvas_courses c ON a.course_id = c.course_id
   JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_accounts ba ON c.account_id = ba.account_id
-  JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms et ON c.enrollment_term_id = et.enrollment_term_id
+  JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms et
+    ON c.enrollment_term_id = et.enrollment_term_id
   WHERE a.workflow_state <> 'deleted'
-  GROUP BY
-    et.year,
-    et.term,
-    et.term_name,
-    c.enrollment_term_id,
-    ba.name,
-    a.submission_types,
-    a.workflow_state,
-    a.course_id,
-    a.created_at::DATE;
+  GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9;
+
   
 ----------------------------------------------------------------------------------------------------
 -- END OF TABLES

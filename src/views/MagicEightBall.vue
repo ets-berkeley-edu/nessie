@@ -112,12 +112,12 @@
           v-model="hideOldProjects"
           label="Hide old projects"
           @change="refreshProjects"
-        ></v-checkbox>
+        />
       </v-col>
     </v-row>
     <v-row v-if="chartOptions">
       <v-col cols="12">
-        <highcharts :key="chartTimestamp" :options="chartOptions"></highcharts>
+        <highcharts :key="chartTimestamp" :options="chartOptions" />
       </v-col>
     </v-row>
   </v-container>
@@ -204,7 +204,7 @@ const refreshProjects = () => {
 }
 
 const renderTimeline = () => {
-  let series = {
+  const series = {
     design: [],
     development: [],
     qa: []
@@ -257,8 +257,8 @@ const renderTimeline = () => {
           `<span style="color:'${this.series.lowColor}">●</span> ${seriesNames[1]}: <b>${new Date(this.low).toUTCString().slice(0, -13)}</b>`)
       },
       positioner: function(labelWidth, labelHeight, point) {
-        var tooltipX = Math.max(point.plotX, 0) + 500
-        var tooltipY = point.plotY - 60
+        const tooltipX = Math.max(point.plotX, 0) + 500
+        const tooltipY = point.plotY - 60
         return {
           x: tooltipX,
           y: tooltipY

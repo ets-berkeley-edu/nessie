@@ -26,6 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from datetime import datetime
 
 from flask import current_app as app
+
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
 

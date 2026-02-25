@@ -24,12 +24,13 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import base64
-from datetime import datetime
 import hashlib
 import hmac
+from datetime import datetime
 from urllib.parse import urlparse, urlunparse
 
 from flask import current_app as app
+
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
 

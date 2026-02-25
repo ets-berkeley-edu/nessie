@@ -23,8 +23,10 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from botocore.exceptions import ClientError as BotoClientError, ConnectionError as BotoConnectionError
+from botocore.exceptions import ClientError as BotoClientError
+from botocore.exceptions import ConnectionError as BotoConnectionError
 from flask import current_app as app
+
 from nessie.externals import s3
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.metadata import create_canvas_snapshot, update_canvas_sync_status

@@ -24,10 +24,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
-from nessie.lib import http
-from nessie.lib.mockingbird import fixture
 from requests.auth import HTTPBasicAuth
 
+from nessie.lib import http
+from nessie.lib.mockingbird import fixture
 
 """YouCanBookMe API."""
 

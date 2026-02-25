@@ -25,11 +25,12 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 import json
 
+import pytest
+
 from nessie.externals import asc_athletes_api
 from nessie.jobs.background_job import BackgroundJobError
 from nessie.jobs.import_asc_athletes import ImportAscAthletes
 from nessie.lib.mockingbird import MockResponse, register_mock
-import pytest
 from tests.util import mock_s3
 
 

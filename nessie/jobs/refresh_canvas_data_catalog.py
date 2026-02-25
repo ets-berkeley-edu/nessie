@@ -26,13 +26,13 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from datetime import datetime, timedelta
 
+import pandas as pd
 from flask import current_app as app
+
 from nessie.externals import canvas_data, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib import berkeley
 from nessie.lib.util import get_s3_canvas_daily_path
-import pandas as pd
-
 
 """Logic for generate canvas data catalog job."""
 

@@ -24,10 +24,11 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import json
-from operator import itemgetter
 import re
+from operator import itemgetter
 
 from flask import current_app as app
+
 from nessie.lib.berkeley import career_code_to_name, degree_program_url_for_major, term_name_for_sis_id
 from nessie.lib.util import to_float, vacuum_whitespace
 

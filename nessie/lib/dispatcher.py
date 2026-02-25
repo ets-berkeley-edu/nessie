@@ -27,6 +27,7 @@ import base64
 from urllib.parse import urlunparse
 
 from flask import current_app as app
+
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
 

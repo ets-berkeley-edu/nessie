@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.academic_standing
     sid VARCHAR NOT NULL,
     term_id VARCHAR NOT NULL,
     acad_standing_action VARCHAR,
+    acad_standing_description VARCHAR,
     acad_standing_status VARCHAR,
     action_date VARCHAR
 )

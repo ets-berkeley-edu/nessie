@@ -24,36 +24,47 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
+
 from nessie.externals import rds, redshift
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.util import resolve_sql_template
+from nessie.jobs.refresh_boa_app_rds_data_schema import RefreshBoaAppRdsDataSchema
+from nessie.lib.util import get_redshift_schema_boa_app_rds_data, resolve_sql_template
 
-"""Logic for BI Reports BOA Advising Notes Redshift and RDS schema refresh job."""
+"""Logic for BI Reports BOA Advising Notes Redshift internal and RDS Schemas Refresh Job."""
 
 
-class RefreshBiBoaAdvisingSchemas(BackgroundJob):
+class BiRefreshBoaAdvisingSchemas(BackgroundJob):
 
-    def run(self):
-        app.logger.info('Starting BI Reports BOA Advising Notes Redshift and RDS schemas refresh job...')
+    def run(self, job_source='bi'):
+        app.logger.info('Starting BI Reports BOA Advising Notes schema refresh job...')
         app.logger.info('Executing SQL...')
+        RefreshBoaAppRdsDataSchema().run(job_source)
+        self.create_schema()
 
+        return 'BI Reports BOA Advising Notes schema refresh job completed.'
+
+
+    def create_schema(self, job_source='bi'):
         rs_template = 'bi_create_boa_advising_redshift_schema.template.sql'
-        resolved_ddl_redshift = resolve_sql_template(rs_template)
+        external_schema = get_redshift_schema_boa_app_rds_data(job_source)
+
+        resolved_ddl_redshift = resolve_sql_template(rs_template, redshift_schema_boa_app_rds_data=external_schema)
 
         if redshift.execute_ddl_script(resolved_ddl_redshift):
-            app.logger.info('BOA Advising Notes Redshift schema refreshed.')
+            app.logger.info('BI Reports BOA Advising Notes Redshift internal schema refreshed.')
 
             bi_rds_uri_la_reports = app.config['BI_RDS_URI_LA_REPORTS']
             users_arr = app.config['BI_RDS_CE3_ADD_USERS']
             users_str = ', '.join([str(u) for u in users_arr])
             rds_template = 'bi_create_boa_advising_rds_schema.template.sql'
+
             resolved_ddl_rds = resolve_sql_template(rds_template, bi_rds_ce3_add_users=users_str)
 
             if rds.execute(resolved_ddl_rds, rds_uri=bi_rds_uri_la_reports):
-                app.logger.info('BOA Advising Notes RDS schema refreshed.')
+                app.logger.info('BI Reports BOA Advising Notes RDS schema refreshed.')
             else:
-                raise BackgroundJobError('Failed to refresh BOA Advising Notes RDS schema.')
+                raise BackgroundJobError('Failed to refresh BI Reports BOA Advising Notes RDS schema.')
         else:
-            raise BackgroundJobError('Failed to refresh BOA Advising Notes Redshift schema.')
+            raise BackgroundJobError('Failed to refresh BI Reports BOA Advising Notes Redshift internal schema.')
 
-        return 'BI Reports BOA Advising Notes Redshift and RDS schemas refresh job completed.'
+        return 'BI Reports BOA Advising Notes Redshift internal and RDS schemas refresh job completed.'

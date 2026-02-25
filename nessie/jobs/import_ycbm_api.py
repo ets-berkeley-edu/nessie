@@ -23,12 +23,12 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
-from datetime import datetime, timedelta
 import json
+from datetime import datetime, timedelta
 
 from flask import current_app as app
-from nessie.externals import s3
-from nessie.externals import ycbm_api
+
+from nessie.externals import s3, ycbm_api
 from nessie.jobs.background_job import BackgroundJob
 from nessie.lib.util import get_s3_ycbm_daily_path, hashed_datestamp, localize_datetime, utc_now
 

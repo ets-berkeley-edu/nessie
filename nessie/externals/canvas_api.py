@@ -24,12 +24,16 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 
+import csv
+import io
 import random
+from time import sleep
 
+from canvasapi import Canvas
 from flask import current_app as app
+
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
-
 
 """Client code to connect to the Canvas API."""
 
@@ -64,6 +68,51 @@ def get_section_by_sis_id(sis_section_id, mock=None):
         path=path,
         mock=mock,
     )
+
+
+BACKGROUND_STATUS_CHECK_INTERVAL = 20
+MAX_REPORT_RETRIEVAL_ATTEMPTS = 180
+
+
+def get_csv_report(report_type, download_path=None, term_id=None):
+    canvas = _get_canvas_client()
+    account = canvas.get_account(app.config['CANVAS_BERKELEY_ACCOUNT_ID'])
+    parameters = {report_type: 1}
+    if term_id:
+        parameters['enrollment_term'] = f'sis_term_id:TERM:{term_id}'
+
+    r = account.create_report('provisioning_csv', parameters=parameters)
+    if not r:
+        app.logger.error(f'Failed to request CSV {report_type} report')
+        return None
+
+    app.logger.info(f'Requested CSV {report_type} report: {r}')
+    attempts = 0
+
+    while attempts < MAX_REPORT_RETRIEVAL_ATTEMPTS:
+        report = account.get_report('provisioning_csv', r.id)
+
+        if report.status == 'complete':
+            file = canvas.get_file(report.attachment['id'])
+            if not download_path:
+                return csv.DictReader(io.StringIO(file.get_contents()))
+            else:
+                # We use this lower-level workaround to canvasapi's File.download in order to avoid memory-intensive
+                # logging on a large file response.
+                file_response = canvas._Canvas__requester._get_request(file.url, {})
+                with open(download_path, 'wb') as f:
+                    f.write(file_response.content)
+                return True
+
+        elif report.status == 'error':
+            app.logger.error(f'Failed to generate CSV {report_type} report: {report}')
+            return None
+
+        else:
+            attempts += 1
+            sleep(BACKGROUND_STATUS_CHECK_INTERVAL)
+
+    app.logger.error(f'Failed to retrieve CSV {report_type} report after {MAX_REPORT_RETRIEVAL_ATTEMPTS} attempts')
 
 
 def build_url(path, query=None):
@@ -101,6 +150,13 @@ def paged_request(path, mock, query=None):
             results.extend(response.json())
             url = http.get_next_page(response)
     return results
+
+
+def _get_canvas_client():
+    return Canvas(
+        base_url=app.config['CANVAS_HTTP_URL'],
+        access_token=_get_token(),
+    )
 
 
 def _get_token():

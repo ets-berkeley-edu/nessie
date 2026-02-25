@@ -23,9 +23,9 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import logging
 from smtplib import SMTP
 
 from flask import current_app as app
