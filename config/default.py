@@ -76,6 +76,7 @@ ASC_ATHLETES_API_KEY = 'secret'
 ASC_ACAD_YR_CUTOVER = 214
 
 # BI Reports Configs
+BI_RDS_BCOURSES_USAGE = 'BI bCourses Usage schemaname'
 BI_RDS_BOA_ADVISING_ROLE = 'bi_boa_advising_role'
 BI_RDS_CE3_ADD_USERS = [0000000, 1111111, 2222222]
 BI_RDS_SCHEMA_BCOURSES_SERVICE_CD2 = 'bi_bcourses_service_cd2'
@@ -83,6 +84,7 @@ BI_RDS_SCHEMA_BOA_ADVISING = 'bi_boa_advising'
 BI_RDS_TABLEAU_USER = 'Tableau Username'
 BI_RDS_URI_LA_REPORTS = 'postgresql://reports:reports@localhost:5432/reports'
 BI_READONLY_GROUP = 'dla_readonly_group'
+BI_REDSHIFT_BCOURSES_USAGE = 'BI bCourses Usage schemaname'
 BI_REDSHIFT_LA_REPORTS_DBLINK_GROUP = 'la_reports_dblink_group'
 BI_REDSHIFT_SCHEMA_BCOURSES_SERVICE_CD2 = 'bi_bcourses_service_cd2'
 BI_REDSHIFT_SCHEMA_BOA_ADVISING = 'bi_boa_advising'
