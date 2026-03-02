@@ -30,26 +30,15 @@
 
 
 ----------------------------------------------------------------------------------------------------
--- CREATE SCHEMA: "{bi_rds_schema_bcourses_usage}"
+-- CREATE TABLE: student_course_activity_post_completion
 ----------------------------------------------------------------------------------------------------
 
-CREATE SCHEMA IF NOT EXISTS {bi_rds_schema_bcourses_usage};
-GRANT USAGE ON SCHEMA {bi_rds_schema_bcourses_usage} TO {bi_rds_tableau_user};
-ALTER DEFAULT PRIVILEGES IN SCHEMA {bi_rds_schema_bcourses_usage}
-  GRANT SELECT ON TABLES TO {bi_rds_tableau_user};
+DROP TABLE IF EXISTS {bi_rds_schema_bcourses_service_cd2}.student_course_activity_post_completion CASCADE;
 
-----------------------------------------------------------------------------------------------------
--- CREATE TABLE: course_activity
-----------------------------------------------------------------------------------------------------
-
-DROP TABLE IF EXISTS {bi_rds_schema_bcourses_usage}.course_activity CASCADE;
-
-CREATE TABLE IF NOT EXISTS {bi_rds_schema_bcourses_usage}.course_activity (
+CREATE TABLE IF NOT EXISTS {bi_rds_schema_bcourses_service_cd2}.student_course_activity_post_completion (
     id	numeric,
-    sis_source_id	varchar,
-    term_id	varchar,
-    subject_cd	varchar,
-    college_school_nm	varchar,
+    account_id	numeric,
+    enrollment_term_id	numeric,
     anchor_date	date,
     total_unique_students	numeric,
     last_active_30_days_after_course_end	numeric,
@@ -58,28 +47,24 @@ CREATE TABLE IF NOT EXISTS {bi_rds_schema_bcourses_usage}.course_activity (
     PRIMARY KEY (id)
 );
 
-INSERT INTO {bi_rds_schema_bcourses_usage}.course_activity (
+INSERT INTO {bi_rds_schema_bcourses_service_cd2}.student_course_activity_post_completion (
   SELECT *
   FROM dblink('{rds_dblink_to_redshift}', $REDSHIFT$
     SELECT
         id,
-        sis_source_id,
-        term_id,
-        subject_cd,
-        college_school_nm,
+        account_id,
+        enrollment_term_id,
         anchor_date,
         total_unique_students,
         last_active_30_days_after_course_end,
         last_active_60_days_after_course_end,
         last_active_90_days_after_course_end
-    FROM {bi_redshift_schema_bcourses_usage}.course_activity
+    FROM {bi_redshift_schema_bcourses_service_cd2}.student_course_activity_post_completion
   $REDSHIFT$)
   AS enrollments (
     id	numeric,
-    sis_source_id	varchar,
-    term_id	varchar,
-    subject_cd	varchar,
-    college_school_nm	varchar,
+    account_id	numeric,
+    enrollment_term_id	numeric,
     anchor_date	date,
     total_unique_students	numeric,
     last_active_30_days_after_course_end	numeric,
@@ -88,7 +73,7 @@ INSERT INTO {bi_rds_schema_bcourses_usage}.course_activity (
   )
 );
 
-CREATE INDEX idx_term_id ON {bi_rds_schema_bcourses_usage}.course_activity (id);
+CREATE INDEX idx_term_id ON {bi_rds_schema_bcourses_service_cd2}.student_course_activity_post_completion (id);
 
 ----------------------------------------------------------------------------------------------------
 -- END script for creating and populating RDS schema/tables for bCourses Usage Data Dashboard

@@ -32,22 +32,22 @@
 -- CREATE nessie INTERNAL REDSHIFT SCHEMA
 ----------------------------------------------------------------------------------------------------
 
-DROP SCHEMA IF EXISTS {bi_redshift_schema_bcourses_usage} CASCADE;
-
-CREATE SCHEMA {bi_redshift_schema_bcourses_usage};
-
-GRANT USAGE ON SCHEMA {bi_redshift_schema_bcourses_usage} TO GROUP {bi_redshift_la_reports_dblink_group};
-
-ALTER DEFAULT PRIVILEGES IN SCHEMA {bi_redshift_schema_bcourses_usage}
-  GRANT SELECT ON TABLES TO GROUP {bi_redshift_la_reports_dblink_group};
-
 ----------------------------------------------------------------------------------------------------
--- INTERNAL TABLE : course_activity
+-- INTERNAL TABLE : student_course_activity_post_completion
 ----------------------------------------------------------------------------------------------------
 
-DROP TABLE IF EXISTS {bi_redshift_schema_bcourses_usage}.course_activity;
+DROP TABLE IF EXISTS {bi_rds_schema_bcourses_service_cd2}.student_course_activity_post_completion;
 
-CREATE TABLE {bi_redshift_schema_bcourses_usage}.course_activity AS
+/*
+ * This query builds a table with a row for each Canvas course site and then calculates the percent
+ * of enrolled students who have accessed/viewed the site within 30/60/90 days of the end date.
+ */
+
+CREATE TABLE {bi_rds_schema_bcourses_service_cd2}.student_course_activity_post_completion AS
+/*
+ * Not all courses have an end date. If a course site does not have an end date listed, we build the
+ * TermDefaults table to identify the most common end date for other courses in that term.
+ */
 WITH TermDefaults AS (
     SELECT sis_term_id, meeting_end_date
     FROM (
@@ -61,6 +61,10 @@ WITH TermDefaults AS (
     )
     WHERE rank = 1
 ),
+/*
+ * CourseDates gets the meeting end date for courses that do have that value listed. If a course site
+ * is linked to multiple sections with different meeting end dates, we get the latest/max date.
+ */
 CourseDates AS (
     SELECT
         cs.canvas_course_id,
@@ -75,36 +79,47 @@ CourseDates AS (
 
 SELECT
     c.id,
-    c.sis_source_id,
-    et.sis_source_id AS term_id,
-    -- New columns from the accounts metadata table
-    acc_meta.subject_cd,
-    acc_meta.college_school_nm,
+    c.account_id,
+    c.enrollment_term_id,
+    /*
+     * Use the actual meeting end date, unless it's null, in which case use the most common end date for the term.
+     */
     COALESCE(cd.max_meeting_end_date, td.meeting_end_date) AS anchor_date,
     COUNT(DISTINCT e.user_id) AS total_unique_students,
 
-    -- Percent of students STILL ACTIVE at least 30 days after the end date
+    /*
+     * Each course has one or more student enrollment and each enrollment has a last_activity_at value.
+     * The following three blocks calculate the percent of student enrollments that are within 30/60/90 days of
+     * the meeting end date.
+     */
+
     COALESCE(ROUND(100.0 * COUNT(DISTINCT CASE
         WHEN e.last_activity_at >= COALESCE(cd.max_meeting_end_date, td.meeting_end_date) + INTERVAL '30 days'
         THEN e.user_id END) / NULLIF(COUNT(DISTINCT e.user_id), 0), 2), 0) AS last_active_30_days_after_course_end,
 
-    -- Percent of students STILL ACTIVE at least 60 days after the end date
     COALESCE(ROUND(100.0 * COUNT(DISTINCT CASE
         WHEN e.last_activity_at >= COALESCE(cd.max_meeting_end_date, td.meeting_end_date) + INTERVAL '60 days'
         THEN e.user_id END) / NULLIF(COUNT(DISTINCT e.user_id), 0), 2), 0) AS last_active_60_days_after_course_end,
 
-    -- Percent of students STILL ACTIVE at least 90 days after the end date
     COALESCE(ROUND(100.0 * COUNT(DISTINCT CASE
         WHEN e.last_activity_at >= COALESCE(cd.max_meeting_end_date, td.meeting_end_date) + INTERVAL '90 days'
         THEN e.user_id END) / NULLIF(COUNT(DISTINCT e.user_id), 0), 2), 0) AS last_active_90_days_after_course_end
 
 FROM {redshift_schema_canvas_data_2}.courses c
 LEFT JOIN {redshift_schema_canvas_data_2}.enrollments e ON c.id = e.course_id
+/*
+ * Join the canvas sites to the bcourses_accounts and enrollment_terms tables to allow us to group by department
+ * or college.
+ */
 LEFT JOIN {redshift_schema_canvas_data_2}.enrollment_terms et ON c.enrollment_term_id = et.id
-LEFT JOIN {redshift_schema_canvas_data_2}.accounts a ON c.account_id = a.id
 LEFT JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_accounts acc_meta ON c.account_id = acc_meta.account_id
 LEFT JOIN CourseDates cd ON c.id = cd.canvas_course_id
 LEFT JOIN TermDefaults td ON cd.best_sis_term_id = td.sis_term_id
+
+/*
+ * We want to exclude courses that belong to a non-standard term, such as PROJECTS, ignore non-student enrollments,
+ * dropped/deleted enrollments, and any pre-Fall 2016 data.
+ */
 
 WHERE et.sis_source_id ~ '^TERM:[0-9]{{4}}-[A-Z]$'
   AND e.type = 'StudentEnrollment'
@@ -115,11 +130,8 @@ WHERE et.sis_source_id ~ '^TERM:[0-9]{{4}}-[A-Z]$'
   )
 GROUP BY
     c.id,
-    c.sis_source_id,
-    et.sis_source_id,
-    a.sis_source_id,
-    acc_meta.subject_cd,
-    acc_meta.college_school_nm,
+    c.account_id,
+    c.enrollment_term_id,
     cd.max_meeting_end_date,
     td.meeting_end_date;
 

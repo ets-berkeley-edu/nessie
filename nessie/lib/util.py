@@ -238,11 +238,9 @@ def resolve_sql_template_string(template_string, **kwargs):
     template_data = {
         'bi_rds_boa_advising_role': app.config['BI_RDS_BOA_ADVISING_ROLE'],
         'bi_rds_schema_bcourses_service_cd2': app.config['BI_RDS_SCHEMA_BCOURSES_SERVICE_CD2'],
-        'bi_rds_schema_bcourses_usage': app.config['BI_RDS_BCOURSES_USAGE'],
         'bi_rds_schema_boa_advising': app.config['BI_RDS_SCHEMA_BOA_ADVISING'],
         'bi_rds_tableau_user': app.config['BI_RDS_TABLEAU_USER'],
         'bi_readonly_group': app.config['BI_READONLY_GROUP'],
-        'bi_redshift_schema_bcourses_usage' : app.config['BI_REDSHIFT_BCOURSES_USAGE'],
         'bi_redshift_la_reports_dblink_group': app.config['BI_REDSHIFT_LA_REPORTS_DBLINK_GROUP'],
         'bi_redshift_schema_bcourses_service_cd2': app.config['BI_REDSHIFT_SCHEMA_BCOURSES_SERVICE_CD2'],
         'bi_redshift_schema_boa_advising': app.config['BI_REDSHIFT_SCHEMA_BOA_ADVISING'],
