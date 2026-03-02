@@ -50,6 +50,8 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {bi_redshift_schema_bcourses_service_cd2}
 -- INTERNAL TABLE : "bcourses_accounts"
 -- account hierarchy with parent_account_id of root = 129410, 'Official Courses'
 -- remove non-alpha from name to match student_course_academic_hierarchy_data.course_subject_cd
+-- account name 'HAAS' requires special case to match to course_subject_cd 'BUSADM'
+-- course_reporting_college_school_cd is numeric and course_reporting_college_school_letter_cd is alpha
 ----------------------------------------------------------------------------------------------------
 
 CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.bcourses_accounts AS
@@ -70,7 +72,7 @@ WITH RECURSIVE accounts_hierarchy (
     r.id AS account_id,
     r.sis_source_id,
     r.name,
-    regexp_replace(r.name, '[^A-Za-z]', '') AS subject_cd,
+    CASE WHEN r.name = 'HAAS' THEN 'BUSADM' ELSE regexp_replace(r.name, '[^A-Za-z]', '') END AS subject_cd,
     r.workflow_state
   FROM {redshift_schema_canvas_data_2}.accounts r
   WHERE r.parent_account_id = (
@@ -103,7 +105,7 @@ SELECT
   s.course_academic_dept_nm AS dept_nm,
   s.course_academic_division_cd AS division_cd,
   s.course_academic_division_nm AS division_nm,
-  s.course_reporting_college_school_cd AS college_school_cd,
+  s.course_reporting_college_school_letter_cd AS college_school_cd,
   s.course_reporting_college_school_nm AS college_school_nm,
   h.workflow_state
 FROM accounts_hierarchy h
