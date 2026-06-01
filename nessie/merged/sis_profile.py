@@ -264,8 +264,6 @@ def merge_sis_profile_phones(sis_profile_feed, sis_profile):
 def merge_sis_profile_plans(academic_status, sis_profile):
     plans = []
     plans_minor = []
-    # TODO: Remove this line after BOAC-4985 lands in production
-    subplans = set()
     for student_plan in academic_status.get('studentPlans', []):
         academic_plan = student_plan.get('academicPlan', {})
         # SIS majors come in five flavors, plus a sixth for minors.
@@ -302,8 +300,6 @@ def merge_sis_profile_plans(academic_status, sis_profile):
         # Add any subplans.
         if student_plan.get('academicSubPlan', None):
             plan_feed['subplan'] = student_plan['academicSubPlan']
-            # TODO: Remove this line after BOAC-4985 lands in production
-            subplans.add(student_plan['academicSubPlan'])
 
         # Add plan unless it's a duplicate.
         if academic_plan.get('type', {}).get('code') == 'MIN':
@@ -315,8 +311,6 @@ def merge_sis_profile_plans(academic_status, sis_profile):
 
     sis_profile['plans'] = sorted(plans, key=itemgetter('description'))
     sis_profile['plansMinor'] = sorted(plans_minor, key=itemgetter('description'))
-    # TODO: Remove this line after BOAC-4985 lands in production
-    sis_profile['subplans'] = sorted(list(subplans))  # noqa: C414
 
 
 def merge_sis_profile_pronouns(sis_profile_feed, sis_profile):
