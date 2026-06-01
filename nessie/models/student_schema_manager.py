@@ -58,6 +58,7 @@ def refresh_from_staging(table, term_id, transaction):
         'student_enrollment_terms',
         'student_holds',
         'student_incompletes',
+        'subplans',
         'visas',
     ):
         refresh_conditions.append('TRUE')
