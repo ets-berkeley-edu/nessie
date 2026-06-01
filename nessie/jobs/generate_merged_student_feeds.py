@@ -95,7 +95,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     def generate_student_profile_tables(self, all_student_feed_elements):
         tables = [
             'student_profiles', 'student_profile_index', 'student_majors', 'student_holds',
-            'demographics', 'ethnicities', 'intended_majors', 'minors', 'visas',
+            'demographics', 'ethnicities', 'intended_majors', 'minors', 'subplans', 'visas',
         ]
         for table in tables:
             truncate_staging_table(table)
@@ -128,7 +128,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                     write_file_to_staging(table, feed_files[table], feed_counts[table])
         return tables
 
-    def generate_student_profile_feed(self, feed_elements, advisors, feed_files, feed_counts, major_divisions):
+    def generate_student_profile_feed(self, feed_elements, advisors, feed_files, feed_counts, major_divisions):  #noqa: C901
         sid = feed_elements['sid']
         uid = feed_elements['ldap_uid']
         if not uid:
@@ -208,6 +208,9 @@ class GenerateMergedStudentFeeds(BackgroundJob):
             for plan in sis_profile.get('plansMinor', []):
                 if plan.get('status') == 'Active':
                     feed_counts['minors'] += write_to_tsv_file(feed_files['minors'], [sid, plan.get('description', None)])
+            for plan in sis_profile.get('plans', []):
+                if plan.get('status') == 'Active' and plan.get('subplan'):
+                    feed_counts['subplans'] += write_to_tsv_file(feed_files['subplans'], [sid, plan.get('subplan')])
 
         return True
 
