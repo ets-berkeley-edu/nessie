@@ -87,6 +87,14 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.minors
 DISTKEY (sid)
 SORTKEY (sid, minor);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.subplans
+(
+    sid VARCHAR NOT NULL,
+    subplan VARCHAR NOT NULL
+)
+DISTKEY (sid)
+SORTKEY (sid, subplan);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_academic_programs (
     sid VARCHAR NOT NULL,
     academic_career_code VARCHAR,

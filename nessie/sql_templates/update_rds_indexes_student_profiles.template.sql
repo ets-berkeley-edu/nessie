@@ -176,6 +176,20 @@ INSERT INTO {rds_schema_student}.minors (
   )
 );
 
+TRUNCATE {rds_schema_student}.subplans;
+
+INSERT INTO {rds_schema_student}.subplans (
+  SELECT DISTINCT *
+      FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+          SELECT sid, subplan
+          FROM {redshift_schema_student}.subplans
+    $REDSHIFT$)
+  AS redshift_subplans (
+      sid VARCHAR,
+      subplan VARCHAR
+  )
+);
+
 TRUNCATE {rds_schema_student}.student_academic_programs;
 
 INSERT INTO {rds_schema_student}.student_academic_programs (
