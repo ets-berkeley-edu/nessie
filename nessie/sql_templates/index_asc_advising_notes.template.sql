@@ -112,10 +112,11 @@ CREATE MATERIALIZED VIEW {rds_schema_asc}.advising_notes_search_index AS (
     n.id,
     to_tsvector(
       'english',
-      CASE
-        WHEN n.body IS NOT NULL THEN COALESCE(n.subject || ' ', '') || n.body
-        ELSE COALESCE(t.topic || ' ', '') || n.advisor_first_name || ' ' || n.advisor_last_name
-      END
+      COALESCE(n.subject, '') || ' ' ||
+      COALESCE(n.body, '') || ' ' ||
+      COALESCE(t.topic, '') || ' ' ||
+      COALESCE(n.advisor_first_name, '') || ' ' ||
+      COALESCE(n.advisor_last_name, '')
     ) AS fts_index
   FROM {rds_schema_asc}.advising_notes n
   LEFT OUTER JOIN {rds_schema_asc}.advising_note_topics t

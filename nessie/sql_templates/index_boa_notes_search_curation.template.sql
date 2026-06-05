@@ -77,7 +77,7 @@ UNION
 SELECT
   sid,
   id,
-  COALESCE(subject || ' ', '') || COALESCE(note_body, '') AS note_body,
+  COALESCE(subject, '') || ' ' || COALESCE(note_body, '') AS note_body,
   NULL AS advisor_sid,
   advisor_uid,
   advisor_first_name,
