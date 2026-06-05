@@ -66,7 +66,7 @@ SELECT sis.sid, sis.id, sis.note_body, sis.advisor_sid,
 FROM {rds_schema_sis_advising_notes}.advising_notes sis
 UNION
 SELECT ascn.sid, ascn.id,
-       COALESCE(ascn.subject || ' ', '') || COALESCE(ascn.body, '') AS note_body,
+       COALESCE(ascn.subject, '') || ' ' || COALESCE(ascn.body, '') AS note_body,
        NULL AS advisor_sid, ascn.advisor_uid, ascn.advisor_first_name, ascn.advisor_last_name,
        NULL AS note_category, NULL AS note_subcategory, FALSE AS is_private, NULL AS created_by,
        ascn.created_at, ascn.updated_at

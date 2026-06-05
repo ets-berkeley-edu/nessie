@@ -101,7 +101,7 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes_nightly (
         is_private,
         TO_TIMESTAMP(DATE_TRUNC('minute', created_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
         TO_TIMESTAMP(DATE_TRUNC('minute', updated_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at
-      FROM {redshift_schema_boa_app_rds_data}.notes 
+      FROM {redshift_schema_boa_app_rds_data}.notes
       WHERE is_draft IS FALSE
       AND deleted_at IS NULL
       AND sid IS NOT NULL
@@ -298,10 +298,9 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes_search_index_nightly A
     n.id,
     TO_TSVECTOR(
       'english',
-      CASE
-        WHEN n.note_body IS NOT NULL THEN COALESCE(n.subject || ' ', '') || n.note_body
-        ELSE COALESCE(t.topic || ' ', '') || n.advisor_first_name || ' ' || n.advisor_last_name
-      END
+      COALESCE(n.subject, '') || ' ' ||
+      COALESCE(n.note_body, '') || ' ' ||
+      COALESCE(t.topic, '') || ' ' || n.author_name
     ) AS fts_index
   FROM {rds_schema_boa_app_rds_data}.advising_notes_nightly n
   LEFT OUTER JOIN {rds_schema_boa_app_rds_data}.advising_note_topics_vw t ON n.id = t.id;
