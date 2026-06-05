@@ -242,7 +242,12 @@ CREATE INDEX idx_student_late_drop_eforms_updated_at ON {rds_schema_sis_advising
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.student_late_drop_eforms_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.student_late_drop_eforms_search_index AS (
-  SELECT id, to_tsvector('english', COALESCE(course_display_name || ' ' || course_title || ' ' || eform_type || ' ' || requested_action, '')) AS fts_index
+  SELECT id, to_tsvector('english',
+      COALESCE(grading_basis_description, '') || ' ' ||
+      COALESCE(requested_grading_basis_description, '') || ' ' ||
+      course_display_name || ' ' || course_title || ' ' || requested_action || ' ' ||
+      eform_type || ' ' || eform_id || ' ' || eform_status
+    ) AS fts_index
   FROM {rds_schema_sis_advising_notes}.student_late_drop_eforms
 );
 
@@ -322,7 +327,11 @@ CREATE INDEX idx_student_course_load_eforms_updated_at ON {rds_schema_sis_advisi
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.student_course_load_eforms_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.student_course_load_eforms_search_index AS (
-  SELECT id, to_tsvector('english', COALESCE(eform_type || ' ' || request_type || ' ' || request_type_description, '')) AS fts_index
+  SELECT id, to_tsvector('english',
+      COALESCE(academic_standing_description, '') || ' ' ||
+      request_type || ' ' || request_type_description || ' ' ||
+      eform_type || ' ' || eform_id || ' ' || eform_status
+    ) AS fts_index
   FROM {rds_schema_sis_advising_notes}.student_course_load_eforms
 );
 
@@ -437,7 +446,15 @@ CREATE INDEX idx_student_cpp_change_eforms_updated_at ON {rds_schema_sis_advisin
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.student_cpp_change_eforms_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.student_cpp_change_eforms_search_index AS (
-  SELECT id, to_tsvector('english', COALESCE(academic_plan_name || ' ' || academic_subplan_name || ' ' || to_academic_plan_name || ' ' || to_academic_subplan_name || ' ' || eform_type || ' ' || eform_action_description, '')) AS fts_index
+  SELECT id, to_tsvector('english',
+      COALESCE(academic_program_name, '') || ' ' ||
+      COALESCE(academic_plan_name, '') || ' ' ||
+      COALESCE(academic_subplan_name, '') || ' ' ||
+      COALESCE(to_academic_program_name, '') || ' ' ||
+      COALESCE(to_academic_plan_name, '') || ' ' ||
+      COALESCE(to_academic_subplan_name, '') || ' ' ||
+      eform_type || ' ' || eform_action_description || ' ' || eform_id || ' ' || eform_status
+    ) AS fts_index
   FROM {rds_schema_sis_advising_notes}.student_cpp_change_eforms
 );
 
@@ -515,14 +532,7 @@ ON {rds_schema_sis_advising_notes}.advising_appointment_advisors (sid);
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.advising_appointments_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.advising_appointments_search_index AS (
-  SELECT id, to_tsvector(
-    'english',
-    CASE
-      WHEN note_body IS NOT NULL and TRIM(note_body) != '' THEN note_body
-      WHEN note_subcategory IS NOT NULL THEN note_category || ' ' || note_subcategory
-      ELSE note_category
-    END
-  ) AS fts_index
+  SELECT id, to_tsvector('english', COALESCE(note_body, '') || ' ' || note_subcategory) AS fts_index
   FROM {rds_schema_sis_advising_notes}.advising_appointments
 );
 
