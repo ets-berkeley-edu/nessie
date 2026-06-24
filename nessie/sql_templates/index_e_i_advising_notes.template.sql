@@ -107,15 +107,21 @@ INSERT INTO {rds_schema_e_i}.advising_note_topics (
 
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_e_i}.advising_notes_search_index CASCADE;
 
+-- aggregate topics as space delimited list to prevent duplicate note id rows
+--
 CREATE MATERIALIZED VIEW {rds_schema_e_i}.advising_notes_search_index AS (
+  WITH topics AS (
+    SELECT id, STRING_AGG(DISTINCT topic, ' ' ORDER BY topic) AS topics
+    FROM {rds_schema_asc}.advising_note_topics
+    GROUP BY id
   SELECT n.id, to_tsvector('english',
-      COALESCE(t.topic, '') || ' ' ||
+      COALESCE(t.topics, '') || ' ' ||
       COALESCE(n.overview, '') || ' ' ||
       COALESCE(n.advisor_first_name, '') || ' ' ||
       COALESCE(n.advisor_last_name, '')
     ) AS fts_index
   FROM {rds_schema_e_i}.advising_notes n
-  LEFT OUTER JOIN {rds_schema_e_i}.advising_note_topics t
+  LEFT OUTER JOIN topics t
   ON n.id = t.id
 );
 

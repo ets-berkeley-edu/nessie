@@ -164,7 +164,7 @@ CREATE OR REPLACE VIEW {rds_schema_boa_app_rds_data}.advising_notes_vw AS
 -- Drop and create table advising_note_topics_nightly
 --   use generated id (sid || '-' || id) from advising_notes as identifier
 --   remove duplicate topics for each note
---   exclude deleted note_topic records
+--   exclude deleted note_topics records
 -----------------------------------------------------------------------------------------------------
 
 DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.advising_note_topics_nightly CASCADE;
@@ -236,7 +236,7 @@ CREATE OR REPLACE VIEW {rds_schema_boa_app_rds_data}.advising_note_topics_vw AS
 
 -----------------------------------------------------------------------------------------------------
 -- Drop and create table author_depts
--- one:many uid:dept_code and retain deleted records to show prior relationships
+--   one:many uid:dept_code and retain deleted records to show prior relationships
 -----------------------------------------------------------------------------------------------------
 
 DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.author_depts CASCADE;
@@ -289,21 +289,27 @@ CREATE INDEX author_depts_dept_code_idx
 
 -----------------------------------------------------------------------------------------------------
 -- Create table advising_notes_search_index_nightly
+--   aggregate topics as space delimited list to prevent duplicate note id rows
 -----------------------------------------------------------------------------------------------------
 
 DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.advising_notes_search_index_nightly CASCADE;
 
 CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes_search_index_nightly AS
+  WITH topics AS (
+    SELECT id, STRING_AGG(DISTINCT topic, ' ' ORDER BY topic) AS topics
+    FROM {rds_schema_boa_app_rds_data}.advising_note_topics_nightly
+    GROUP BY id
+  )
   SELECT
     n.id,
     TO_TSVECTOR(
       'english',
       COALESCE(n.subject, '') || ' ' ||
       COALESCE(n.note_body, '') || ' ' ||
-      COALESCE(t.topic, '') || ' ' || n.author_name
+      COALESCE(t.topics, '') || ' ' || n.author_name
     ) AS fts_index
   FROM {rds_schema_boa_app_rds_data}.advising_notes_nightly n
-  LEFT OUTER JOIN {rds_schema_boa_app_rds_data}.advising_note_topics_vw t ON n.id = t.id;
+  LEFT OUTER JOIN {rds_schema_boa_app_rds_data}.advising_note_topics_nightly t ON n.id = t.id;
 
 
 -----------------------------------------------------------------------------------------------------
