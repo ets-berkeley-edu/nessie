@@ -309,7 +309,7 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes_search_index_nightly A
       COALESCE(t.topics, '') || ' ' || n.author_name
     ) AS fts_index
   FROM {rds_schema_boa_app_rds_data}.advising_notes_nightly n
-  LEFT OUTER JOIN {rds_schema_boa_app_rds_data}.advising_note_topics_nightly t ON n.id = t.id;
+  LEFT OUTER JOIN topics t ON n.id = t.id;
 
 
 -----------------------------------------------------------------------------------------------------
