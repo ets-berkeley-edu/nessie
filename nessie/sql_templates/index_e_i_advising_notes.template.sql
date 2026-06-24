@@ -112,7 +112,7 @@ DROP MATERIALIZED VIEW IF EXISTS {rds_schema_e_i}.advising_notes_search_index CA
 CREATE MATERIALIZED VIEW {rds_schema_e_i}.advising_notes_search_index AS (
   WITH topics AS (
     SELECT id, STRING_AGG(DISTINCT topic, ' ' ORDER BY topic) AS topics
-    FROM {rds_schema_asc}.advising_note_topics
+    FROM {rds_schema_e_i}.advising_note_topics
     GROUP BY id
   SELECT n.id, to_tsvector('english',
       COALESCE(t.topics, '') || ' ' ||
