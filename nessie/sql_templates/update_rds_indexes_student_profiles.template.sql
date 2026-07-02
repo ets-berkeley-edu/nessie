@@ -283,7 +283,21 @@ INSERT INTO {rds_schema_student}.student_names (
     WHERE academic_career_status = 'active'
 );
 
-COMMIT TRANSACTION;
+TRUNCATE {rds_schema_student}.term_unit_limits;
+
+INSERT INTO {rds_schema_student}.term_unit_limits (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+      SELECT sid, term_id, min_term_units_allowed, max_term_units_allowed
+      FROM {redshift_schema_student}.term_unit_limits
+    $REDSHIFT$)
+  AS redshift_term_unit_limits (
+      sid VARCHAR,
+      term_id VARCHAR(4),
+      min_term_units_allowed DECIMAL (5,3),
+      max_term_units_allowed DECIMAL (5,3)
+  )
+);
 
 TRUNCATE {rds_schema_student}.visas;
 
@@ -299,3 +313,5 @@ INSERT INTO {rds_schema_student}.visas (
       visa_type VARCHAR
   )
 );
+
+COMMIT TRANSACTION;

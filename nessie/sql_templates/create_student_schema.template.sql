@@ -181,6 +181,16 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_profiles
 DISTKEY (sid)
 SORTKEY (sid);
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.term_unit_limits
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    min_term_units_allowed DECIMAL (5,3),
+    max_term_units_allowed DECIMAL (5,3)
+)
+DISTKEY (sid)
+SORTKEY (sid);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.visas
 (
     sid VARCHAR NOT NULL,
