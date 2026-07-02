@@ -37,7 +37,14 @@ from nessie.lib import berkeley, queries
 from nessie.lib.util import encoded_tsv_row, resolve_sql_template, to_boolean, write_to_tsv_file
 from nessie.merged.sis_profile import parse_merged_sis_profile
 from nessie.merged.student_demographics import add_demographics_rows
-from nessie.merged.student_terms import append_drops, append_term_gpa, empty_term_feed, merge_canvas_site_memberships, merge_enrollment
+from nessie.merged.student_terms import (
+    append_drops,
+    append_term_gpa,
+    empty_term_feed,
+    get_term_unit_limits,
+    merge_canvas_site_memberships,
+    merge_enrollment,
+)
 from nessie.models.student_schema_manager import refresh_all_from_staging, truncate_staging_table, write_file_to_staging
 
 """Logic for merged student profile and term generation."""
@@ -95,7 +102,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     def generate_student_profile_tables(self, all_student_feed_elements):
         tables = [
             'student_profiles', 'student_profile_index', 'student_majors', 'student_holds',
-            'demographics', 'ethnicities', 'intended_majors', 'minors', 'subplans', 'visas',
+            'demographics', 'ethnicities', 'intended_majors', 'minors', 'subplans',
+            'term_unit_limits', 'visas',
         ]
         for table in tables:
             truncate_staging_table(table)
@@ -309,7 +317,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     def generate_student_enrollments_table(self):
         table_name_terms = 'student_enrollment_terms'
         table_name_incompletes = 'student_incompletes'
-        tables = (table_name_terms, table_name_incompletes)
+        table_name_term_unit_limits = 'term_unit_limits'
+        tables = (table_name_terms, table_name_incompletes, table_name_term_unit_limits)
         for table in tables:
             truncate_staging_table(table)
         row_count = self.generate_term_feeds(*tables)
@@ -318,7 +327,7 @@ class GenerateMergedStudentFeeds(BackgroundJob):
         app.logger.info(f'Enrollment term feed generation complete ({row_count} feeds).')
         return row_count
 
-    def generate_term_feeds(self, table_name_terms, table_name_incompletes):
+    def generate_term_feeds(self, table_name_terms, table_name_incompletes, table_name_term_unit_limits):
         enrollment_stream = queries.stream_sis_enrollments()
         term_gpa_stream = queries.stream_term_gpas()
         canvas_site_stream = queries.stream_canvas_memberships()
@@ -338,12 +347,14 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
                 app.logger.info(f'Generating enrollment feeds for term {term_id}...')
                 term_row_count = 0
+                term_unit_limits_row_count = 0
                 incompletes_row_count = 0
 
-                with tempfile.TemporaryFile() as term_feed_file, tempfile.TemporaryFile() as incompletes_feed_file:
+                with tempfile.TemporaryFile() as term_feed_file, tempfile.TemporaryFile() as incompletes_feed_file, \
+                      tempfile.TemporaryFile() as term_unit_limits_feed_file:
                     for sid, enrollments_grp in groupby(term_enrollments_grp, operator.itemgetter('sid')):
-                        term_feed, term_incompletes_count_for_sid = self.generate_term_feed_for_sid(
-                            sid, term_id, term_name, enrollments_grp, incompletes_feed_file)
+                        term_feed, term_incompletes_count_for_sid, min_term_units_allowed, max_term_units_allowed =\
+                              self.generate_term_feed_for_sid(sid, term_id, term_name, enrollments_grp, incompletes_feed_file)
 
                         while term_gpa_tracker['term_id'] > term_id or (term_gpa_tracker['term_id'] == term_id and term_gpa_tracker['sid'] < sid):
                             (term_gpa_tracker['term_id'], term_gpa_tracker['sid']), term_gpa_tracker['term_gpas'] =\
@@ -360,11 +371,15 @@ class GenerateMergedStudentFeeds(BackgroundJob):
 
                         term_feed_file.write(encoded_tsv_row([sid, term_id, json.dumps(term_feed)]) + b'\n')
                         term_row_count += 1
+                        term_unit_limits_feed_file.write(encoded_tsv_row([sid, term_id, min_term_units_allowed, max_term_units_allowed]) + b'\n')
+                        term_unit_limits_row_count += 1
                         incompletes_row_count += term_incompletes_count_for_sid
 
                     if term_row_count:
                         write_file_to_staging(table_name_terms, term_feed_file, term_row_count, term_id=term_id)
                         row_count += term_row_count
+                    if term_unit_limits_row_count:
+                        write_file_to_staging(table_name_term_unit_limits, term_unit_limits_feed_file, term_unit_limits_row_count, term_id=term_id)
                     if incompletes_row_count:
                         write_file_to_staging(table_name_incompletes, incompletes_feed_file, incompletes_row_count, term_id=term_id)
                         row_count += term_row_count
@@ -378,6 +393,8 @@ class GenerateMergedStudentFeeds(BackgroundJob):
     def generate_term_feed_for_sid(self, sid, term_id, term_name, enrollments_grp, incompletes_feed_file):
         term_feed = None
         incompletes_row_count = 0
+        min_term_units_allowed = None
+        max_term_units_allowed = None
         for is_dropped, enrollments_subgroup in groupby(enrollments_grp, operator.itemgetter('dropped')):
             if not to_boolean(is_dropped):
                 term_feed, incompletes = merge_enrollment(enrollments_subgroup, term_id, term_name)
@@ -392,11 +409,16 @@ class GenerateMergedStudentFeeds(BackgroundJob):
                             incomplete['grade'],
                         ]) + b'\n')
                     incompletes_row_count += len(incompletes)
+                min_term_units_allowed = term_feed['minTermUnitsAllowed']
+                max_term_units_allowed = term_feed['maxTermUnitsAllowed']
             else:
                 if not term_feed:
                     term_feed = empty_term_feed(term_id, term_name)
                 append_drops(term_feed, enrollments_subgroup)
-        return term_feed, incompletes_row_count
+        if max_term_units_allowed is None or min_term_units_allowed is None:
+            enrollment = next(enrollments_grp)
+            min_term_units_allowed, max_term_units_allowed = get_term_unit_limits(enrollment)
+        return term_feed, incompletes_row_count, min_term_units_allowed, max_term_units_allowed
 
     def refresh_rds_enrollment_terms(self):
         resolved_ddl_rds = resolve_sql_template('update_rds_indexes_student_enrollment_terms.template.sql')

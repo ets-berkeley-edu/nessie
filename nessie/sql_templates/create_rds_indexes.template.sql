@@ -241,7 +241,7 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.ethnicities
 );
 
 CREATE INDEX IF NOT EXISTS students_ethnicities_sid_idx ON {rds_schema_student}.ethnicities (sid);
-CREATE INDEX IF NOT EXISTS students_ethnicities_sid_idx ON {rds_schema_student}.ethnicities (ethnicity);
+CREATE INDEX IF NOT EXISTS students_ethnicities_ethnicity_idx ON {rds_schema_student}.ethnicities (ethnicity);
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.intended_majors
 (
@@ -272,6 +272,17 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.subplans
 
 CREATE INDEX IF NOT EXISTS student_subplans_sid_idx ON {rds_schema_student}.subplans (sid);
 CREATE INDEX IF NOT EXISTS student_subplans_subplan_idx ON {rds_schema_student}.subplans (subplan);
+
+CREATE TABLE IF NOT EXISTS {rds_schema_student}.term_unit_limits
+(
+    sid VARCHAR NOT NULL,
+    term_id VARCHAR(4) NOT NULL,
+    min_term_units_allowed DECIMAL (5,3),
+    max_term_units_allowed DECIMAL (5,3),
+    PRIMARY KEY (sid)
+);
+
+CREATE INDEX IF NOT EXISTS students_term_units_min_idx ON {rds_schema_student}.term_unit_limits (term_id, min_term_units_allowed);
 
 CREATE TABLE IF NOT EXISTS {rds_schema_student}.visas
 (

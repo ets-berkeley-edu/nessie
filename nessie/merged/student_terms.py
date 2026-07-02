@@ -38,7 +38,7 @@ def empty_term_feed(term_id, term_name):
     }
 
 
-def append_drops(term_feed, drops):
+def  append_drops(term_feed, drops):
     term_feed['droppedSections'] = []
     for row in drops:
         term_feed['droppedSections'].append({
@@ -106,6 +106,12 @@ def check_for_multiple_primary_sections(enrollment, class_name, enrollments_by_c
         enrollments_by_class[class_name] = sis_enrollment_class_feed(enrollment)
         enrollments_by_class[class_name]['displayName'] = class_name
     return class_name
+
+
+def get_term_unit_limits(enrollment):
+    min_term_units_allowed = to_float(enrollment['min_term_units_allowed'])
+    max_term_units_allowed = to_float(enrollment['max_term_units_allowed'])
+    return min_term_units_allowed, max_term_units_allowed
 
 
 def is_enrolled_primary_section(section_feed):
@@ -185,7 +191,7 @@ def merge_enrollment(enrollments, term_id, term_name):
             enrollments_by_class[class_name]['gradingBasis'] = section_feed['gradingBasis']
             enrollments_by_class[class_name]['units'] = section_feed['units']
         if max_term_units_allowed is None:
-            max_term_units_allowed = to_float(enrollment['max_term_units_allowed'])
+            min_term_units_allowed, max_term_units_allowed = get_term_unit_limits(enrollment)
             min_term_units_allowed = to_float(enrollment['min_term_units_allowed'])
 
     enrollments_feed = sorted(enrollments_by_class.values(), key=lambda x: x['displayName'])
