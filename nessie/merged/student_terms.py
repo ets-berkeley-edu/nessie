@@ -38,8 +38,10 @@ def empty_term_feed(term_id, term_name):
     }
 
 
-def  append_drops(term_feed, drops):
+def append_drops(term_feed, drops):
     term_feed['droppedSections'] = []
+    max_term_units_allowed = None
+    min_term_units_allowed = None
     for row in drops:
         term_feed['droppedSections'].append({
             'component': row['sis_instruction_format'],
@@ -49,6 +51,10 @@ def  append_drops(term_feed, drops):
             'sectionNumber': row['sis_section_num'],
             'withdrawAfterDeadline': (row['grade'] == 'W'),
         })
+        if max_term_units_allowed is None or min_term_units_allowed is None:
+            min_term_units_allowed, max_term_units_allowed = get_term_unit_limits(row)
+    term_feed['maxTermUnitsAllowed'] = max_term_units_allowed
+    term_feed['minTermUnitsAllowed'] = min_term_units_allowed
 
 
 def append_term_gpa(term_feed, term_gpa_rows):
@@ -109,8 +115,8 @@ def check_for_multiple_primary_sections(enrollment, class_name, enrollments_by_c
 
 
 def get_term_unit_limits(enrollment):
-    min_term_units_allowed = to_float(enrollment['min_term_units_allowed'])
-    max_term_units_allowed = to_float(enrollment['max_term_units_allowed'])
+    min_term_units_allowed = to_float(enrollment.get('min_term_units_allowed'))
+    max_term_units_allowed = to_float(enrollment.get('max_term_units_allowed'))
     return min_term_units_allowed, max_term_units_allowed
 
 
@@ -192,7 +198,6 @@ def merge_enrollment(enrollments, term_id, term_name):
             enrollments_by_class[class_name]['units'] = section_feed['units']
         if max_term_units_allowed is None:
             min_term_units_allowed, max_term_units_allowed = get_term_unit_limits(enrollment)
-            min_term_units_allowed = to_float(enrollment['min_term_units_allowed'])
 
     enrollments_feed = sorted(enrollments_by_class.values(), key=lambda x: x['displayName'])
     # Whenever we have floating arithmetic, we can expect floating errors.
