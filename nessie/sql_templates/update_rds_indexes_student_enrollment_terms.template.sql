@@ -110,4 +110,20 @@ SELECT
 FROM {rds_schema_student}.student_enrollment_terms
 WHERE term_gpa IS NOT NULL;
 
+TRUNCATE {rds_schema_student}.term_unit_limits;
+
+INSERT INTO {rds_schema_student}.term_unit_limits (
+  SELECT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+      SELECT sid, term_id, min_term_units_allowed, max_term_units_allowed
+      FROM {redshift_schema_student}.term_unit_limits
+    $REDSHIFT$)
+  AS redshift_term_unit_limits (
+      sid VARCHAR,
+      term_id VARCHAR(4),
+      min_term_units_allowed DECIMAL (5,3),
+      max_term_units_allowed DECIMAL (5,3)
+  )
+);
+
 COMMIT TRANSACTION;
