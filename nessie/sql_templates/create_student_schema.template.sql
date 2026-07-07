@@ -189,7 +189,7 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.term_unit_limits
     max_term_units_allowed DECIMAL (5,3)
 )
 DISTKEY (sid)
-SORTKEY (sid);
+SORTKEY (sid, term_id);
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.visas
 (

@@ -279,7 +279,7 @@ CREATE TABLE IF NOT EXISTS {rds_schema_student}.term_unit_limits
     term_id VARCHAR(4) NOT NULL,
     min_term_units_allowed DECIMAL (5,3),
     max_term_units_allowed DECIMAL (5,3),
-    PRIMARY KEY (sid)
+    PRIMARY KEY (sid, term_id)
 );
 
 CREATE INDEX IF NOT EXISTS students_term_units_min_idx ON {rds_schema_student}.term_unit_limits (term_id, min_term_units_allowed);
