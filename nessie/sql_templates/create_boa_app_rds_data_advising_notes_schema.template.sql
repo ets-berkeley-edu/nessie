@@ -52,7 +52,7 @@ BEGIN TRANSACTION;
 
 -----------------------------------------------------------------------------------------------------
 -- Drop and create table advising_notes_nightly
---   generate new id as (sid || '-' || id)
+--   keep id as id since (sid || '-' || id) produces 2 duplicates with E&I
 --   author name changes over time as it changes in CalNet
 --   first_name and last_name are parsed from notes.author_name
 --     remove everything following comma, if exists
@@ -67,7 +67,6 @@ DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.advising_notes_nightly CASCAD
 CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes_nightly (
   id VARCHAR PRIMARY KEY,
   sid VARCHAR NOT NULL,
-  boa_id VARCHAR NOT NULL,
   advisor_uid VARCHAR,
   author_name VARCHAR,
   advisor_first_name VARCHAR,
@@ -89,9 +88,8 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes_nightly (
   FROM dblink('{rds_dblink_to_redshift}',
     $REDSHIFT$
       SELECT
-        sid || '-' || id AS id,
+        id::VARCHAR AS id,
         sid,
-        id::VARCHAR AS boa_id,
         author_uid AS advisor_uid,
         TRIM(author_name) AS author_name,
         REGEXP_REPLACE(REGEXP_REPLACE(TRIM(author_name), ',.*$', ''), '^(.+) ([^ ]+)$', '$1') AS advisor_first_name,
@@ -109,7 +107,6 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes_nightly (
   AS rs_notes (
     id VARCHAR,
     sid VARCHAR,
-    boa_id VARCHAR,
     advisor_uid VARCHAR,
     author_name VARCHAR,
     advisor_first_name VARCHAR,
@@ -129,9 +126,6 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes_nightly (
 
 CREATE INDEX advising_notes_nightly_sid_idx
   ON {rds_schema_boa_app_rds_data}.advising_notes_nightly (sid);
-
-CREATE INDEX advising_notes_nightly_boa_id_idx
-  ON {rds_schema_boa_app_rds_data}.advising_notes_nightly (boa_id);
 
 CREATE INDEX advising_notes_nightly_advisor_uid_idx
   ON {rds_schema_boa_app_rds_data}.advising_notes_nightly (advisor_uid);
@@ -172,7 +166,6 @@ DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.advising_note_topics_nightly 
 CREATE TABLE {rds_schema_boa_app_rds_data}.advising_note_topics_nightly (
   id VARCHAR NOT NULL,
   sid VARCHAR NOT NULL,
-  boa_id VARCHAR NOT NULL,
   topic VARCHAR NOT NULL,
   PRIMARY KEY (id, topic)
 );
@@ -186,7 +179,6 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_note_topics_nightly (
   SELECT DISTINCT
     n.id,
     n.sid,
-    n.boa_id,
     rs_nt.topic
   FROM {rds_schema_boa_app_rds_data}.advising_notes_nightly n
   JOIN dblink('{rds_dblink_to_redshift}',
@@ -196,7 +188,7 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_note_topics_nightly (
       WHERE deleted_at IS NULL
     $REDSHIFT$)
   AS rs_nt (note_id VARCHAR, topic VARCHAR)
-    ON n.boa_id = rs_nt.note_id
+    ON n.id = rs_nt.note_id
 );
 
 
@@ -206,9 +198,6 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_note_topics_nightly (
 
 CREATE INDEX advising_notes_topics_nightly_sid_idx
   ON {rds_schema_boa_app_rds_data}.advising_note_topics_nightly (sid);
-
-CREATE INDEX advising_notes_topics_nightly_boa_id_idx
-  ON {rds_schema_boa_app_rds_data}.advising_note_topics_nightly (boa_id);
 
 CREATE INDEX advising_notes_topics_nightly_topic_idx
   ON {rds_schema_boa_app_rds_data}.advising_note_topics_nightly (topic);
