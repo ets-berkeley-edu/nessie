@@ -25,9 +25,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 
-from nessie.externals import calnet, rds
+from nessie.externals import rds
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
-from nessie.lib.queries import get_advisor_sids
 from nessie.lib.util import resolve_sql_template
 
 """Logic for SIS Advising Notes schema creation job."""
@@ -41,8 +40,6 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
         app.logger.info('Executing SQL...')
         app.logger.info('Creating RDS indexes...')
         self.create_indexes()
-        self.import_appointment_advisors()
-        self.index_appointment_advisors()
         app.logger.info('RDS indexes created.')
 
         return 'SIS Advising Notes schema creation job completed.'
@@ -56,41 +53,3 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
             app.logger.info('Created SIS Advising Notes RDS indexes.')
         else:
             raise BackgroundJobError('SIS Advising Notes schema creation job failed to create indexes.')
-
-    def import_appointment_advisors(self):
-        sis_notes_schema = app.config['RDS_SCHEMA_SIS_ADVISING_NOTES']
-        advisor_sids_from_sis_appointments = set(
-            [r['advisor_sid'] for r in rds.fetch(f'SELECT DISTINCT advisor_sid FROM {sis_notes_schema}.advising_appointments')],
-        )
-        advisor_sids_from_advisors = set([r['sid'] for r in get_advisor_sids()])
-        advisor_sids = list(advisor_sids_from_sis_appointments | advisor_sids_from_advisors)
-
-        advisor_attributes = calnet.client(app).search_csids(advisor_sids)
-        if not advisor_attributes:
-            raise BackgroundJobError('Failed to fetch note author attributes.')
-
-        unique_advisor_attributes = list({adv['uid']: adv for adv in advisor_attributes}.values())
-
-        with rds.transaction() as transaction:
-            insertable_rows = []
-            for entry in unique_advisor_attributes:
-                first_name, last_name = calnet.split_sortable_name(entry)
-                insertable_rows.append(tuple((entry.get('uid'), entry.get('csid'), first_name, last_name)))  # noqa: C409
-
-            result = transaction.insert_bulk(
-                f'INSERT INTO {sis_notes_schema}.advising_appointment_advisors (uid, sid, first_name, last_name) VALUES %s',
-                insertable_rows,
-            )
-            if result:
-                transaction.commit()
-                app.logger.info('Imported appointment advisor attributes.')
-            else:
-                transaction.rollback()
-                raise BackgroundJobError('Failed to import appointment advisor attributes.')
-
-    def index_appointment_advisors(self):
-        resolved_ddl = resolve_sql_template('index_sis_appointment_advisors.template.sql')
-        if rds.execute(resolved_ddl):
-            app.logger.info('Indexed appointment advisors.')
-        else:
-            raise BackgroundJobError('Failed to index appointment advisors.')
