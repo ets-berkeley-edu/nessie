@@ -143,3 +143,16 @@ CREATE TABLE {redshift_schema_advisor_internal}.advisor_attributes(
     campus_email VARCHAR
 )
 SORTKEY (ldap_uid);
+
+CREATE TABLE {redshift_schema_advisor_internal}.instructor_advisor
+SORTKEY (sid)
+AS (
+    SELECT DISTINCT
+        ADVISOR_ID AS sid,
+        CAMPUS_ID AS uid,
+        ADVISOR_TYPE AS advisor_type_code,
+        ADVISOR_TYPE_DESCR AS advisor_type,
+        ACADEMIC_PROGRAM AS academic_program_code,
+        ACADEMIC_PROGRAM_DESCR AS academic_program
+    FROM {redshift_schema_advisor}.instructor_advisor
+);

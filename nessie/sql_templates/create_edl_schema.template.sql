@@ -180,19 +180,21 @@ CREATE TABLE {redshift_schema_edl}.basic_attributes
 SORTKEY (ldap_uid)
 AS (
   SELECT
-    calnet_uid::varchar AS ldap_uid,
-    givenname AS first_name,
-    sn AS last_name,
-    COALESCE(officialemail, mail, alternateid) AS email_address,
-    stuid::varchar AS sid,
-    affiliations,
-    CASE ou
+    ecp.calnet_uid::varchar AS ldap_uid,
+    ecp.givenname AS first_name,
+    ecp.sn AS last_name,
+    COALESCE(ecp.officialemail, spd.campus_email_address_nm, ecp.mail, ecp.alternateid) AS email_address,
+    COALESCE(ecp.stuid::varchar, spd.student_id) AS sid,
+    ecp.affiliations,
+    CASE ecp.ou
       WHEN 'people' THEN 'S'
       WHEN 'advcon people' THEN 'A'
       WHEN 'guests' THEN 'G'
       ELSE NULL END AS person_type,
-      namepronouns AS pronouns
-  FROM {redshift_schema_edl_external_edw}.edw_caldap_person
+    ecp.namepronouns AS pronouns
+  FROM {redshift_schema_edl_external_edw}.edw_caldap_person ecp
+  LEFT JOIN {redshift_schema_edl_external}.student_personal_data spd
+  ON ecp.calnet_uid::varchar = spd.calnet_uid
 );
 
 CREATE TABLE {redshift_schema_edl}.course_requirements

@@ -515,20 +515,6 @@ CREATE INDEX idx_sis_advising_appointments_updated_at ON {rds_schema_sis_advisin
 
 --
 
-DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_appointment_advisors CASCADE;
-
-CREATE TABLE {rds_schema_sis_advising_notes}.advising_appointment_advisors
-(
-    uid VARCHAR NOT NULL,
-    sid VARCHAR NOT NULL,
-    first_name VARCHAR NOT NULL,
-    last_name VARCHAR NOT NULL,
-    PRIMARY KEY (uid)
-);
-
-CREATE INDEX IF NOT EXISTS advising_appointment_advisors_sid_idx
-ON {rds_schema_sis_advising_notes}.advising_appointment_advisors (sid);
-
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.advising_appointments_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.advising_appointments_search_index AS (
@@ -539,5 +525,73 @@ CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.advising_appointments_s
 CREATE INDEX idx_advising_appointments_ft_search
 ON {rds_schema_sis_advising_notes}.advising_appointments_search_index
 USING gin(fts_index);
+
+--
+
+DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advisors CASCADE;
+
+CREATE TABLE {rds_schema_sis_advising_notes}.advisors
+(
+    uid VARCHAR NOT NULL,
+    sid VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    last_name VARCHAR NOT NULL,
+    PRIMARY KEY (uid)
+);
+
+CREATE INDEX IF NOT EXISTS advisors_sid_idx
+ON {rds_schema_sis_advising_notes}.advisors (sid);
+
+INSERT INTO {rds_schema_sis_advising_notes}.advisors (
+  SELECT DISTINCT *
+  FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
+    SELECT DISTINCT ba.ldap_uid as uid, ba.sid, first_name, last_name
+      FROM {redshift_schema}.advising_notes an
+      JOIN {redshift_schema}.basic_attributes ba ON ba.sid = an.advisor_sid
+    UNION
+    SELECT ba.ldap_uid as uid, ba.sid, first_name, last_name
+      FROM {redshift_schema_advisor_internal}.instructor_advisor ia
+      JOIN {redshift_schema}.basic_attributes ba ON ba.ldap_uid = ia.uid
+    UNION
+    SELECT ba.ldap_uid as uid, ba.sid, first_name, last_name
+      FROM {redshift_schema_advisor_internal}.advisor_roles ar
+      JOIN {redshift_schema}.basic_attributes ba ON ba.ldap_uid = ar.uid
+    UNION
+    SELECT ldap_uid as uid, csid as sid, first_name, last_name
+      FROM {redshift_schema_advisor_internal}.advisor_attributes
+  $REDSHIFT$)
+  AS redshift_appointment_advisors (
+    uid VARCHAR,
+    sid VARCHAR,
+    first_name VARCHAR,
+    last_name VARCHAR
+  )
+);
+
+--
+
+DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advisor_names CASCADE;
+
+CREATE TABLE {rds_schema_sis_advising_notes}.advisor_names
+(
+    uid VARCHAR NOT NULL,
+    name VARCHAR NOT NULL,
+    PRIMARY KEY (uid, name)
+);
+
+CREATE INDEX IF NOT EXISTS advisor_names_name_idx
+ON {rds_schema_sis_advising_notes}.advisor_names (name);
+
+INSERT INTO {rds_schema_sis_advising_notes}.advisor_names (
+    SELECT DISTINCT uid, unnest(string_to_array(
+        regexp_replace(upper(first_name), '[^\w ]', '', 'g'),
+        ' '
+    )) AS name FROM {rds_schema_sis_advising_notes}.advisors
+    UNION
+    SELECT DISTINCT uid, unnest(string_to_array(
+        regexp_replace(upper(last_name), '[^\w ]', '', 'g'),
+        ' '
+    )) AS name FROM {rds_schema_sis_advising_notes}.advisors
+);
 
 COMMIT TRANSACTION;
