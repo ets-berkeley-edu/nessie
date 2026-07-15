@@ -536,6 +536,7 @@ CREATE TABLE {rds_schema_sis_advising_notes}.advisors
     sid VARCHAR NOT NULL,
     first_name VARCHAR NOT NULL,
     last_name VARCHAR NOT NULL,
+    campus_email VARCHAR,
     PRIMARY KEY (uid)
 );
 
@@ -545,26 +546,27 @@ ON {rds_schema_sis_advising_notes}.advisors (sid);
 INSERT INTO {rds_schema_sis_advising_notes}.advisors (
   SELECT DISTINCT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
-    SELECT DISTINCT ba.ldap_uid as uid, ba.sid, first_name, last_name
+    SELECT DISTINCT ba.ldap_uid as uid, ba.sid, ba.first_name, ba.last_name, ba.email_address as campus_email
       FROM {redshift_schema}.advising_notes an
       JOIN {redshift_schema}.basic_attributes ba ON ba.sid = an.advisor_sid
     UNION
-    SELECT ba.ldap_uid as uid, ba.sid, first_name, last_name
+    SELECT ba.ldap_uid as uid, ba.sid, ba.first_name, ba.last_name, ba.email_address as campus_email
       FROM {redshift_schema_advisor_internal}.instructor_advisor ia
       JOIN {redshift_schema}.basic_attributes ba ON ba.ldap_uid = ia.uid
     UNION
-    SELECT ba.ldap_uid as uid, ba.sid, first_name, last_name
+    SELECT ba.ldap_uid as uid, ba.sid, ba.first_name, ba.last_name, ba.email_address as campus_email
       FROM {redshift_schema_advisor_internal}.advisor_roles ar
       JOIN {redshift_schema}.basic_attributes ba ON ba.ldap_uid = ar.uid
     UNION
-    SELECT ldap_uid as uid, csid as sid, first_name, last_name
+    SELECT ldap_uid as uid, csid as sid, first_name, last_name, campus_email
       FROM {redshift_schema_advisor_internal}.advisor_attributes
   $REDSHIFT$)
   AS redshift_appointment_advisors (
     uid VARCHAR,
     sid VARCHAR,
     first_name VARCHAR,
-    last_name VARCHAR
+    last_name VARCHAR,
+    campus_email VARCHAR
   )
 );
 
