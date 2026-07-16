@@ -55,7 +55,7 @@ class MockRows:
         )
         # `pandas` also likes to store its numbers as numpy.int64, which is not JSON serializable, so we have
         # to pipe the dataframe through JSON conversion before returning.
-        result = json.loads(df.to_json(None, 'records'))
+        result = json.loads(df.to_json(path_or_buf=None, orient='records'))
         # Be kind, rewind.
         if hasattr(self.csv_in, 'seek'):
             self.csv_in.seek(0)
