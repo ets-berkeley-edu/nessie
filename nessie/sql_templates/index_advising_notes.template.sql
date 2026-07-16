@@ -33,6 +33,52 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {rds_schema_advising_appointments} GRANT SELE
 
 BEGIN TRANSACTION;
 
+DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_note_authors CASCADE;
+
+CREATE TABLE {rds_schema_advising_notes}.advising_note_authors
+(
+    uid VARCHAR NOT NULL,
+    sid VARCHAR,
+    first_name VARCHAR NOT NULL,
+    last_name VARCHAR NOT NULL,
+    campus_email VARCHAR,
+    PRIMARY KEY (uid)
+);
+
+CREATE INDEX IF NOT EXISTS advising_note_authors_uid_idx ON {rds_schema_advising_notes}.advising_note_authors (uid);
+CREATE INDEX IF NOT EXISTS advising_note_authors_sid_idx ON {rds_schema_advising_notes}.advising_note_authors (sid);
+CREATE INDEX IF NOT EXISTS advising_note_authors_campus_email_idx ON {rds_schema_advising_notes}.advising_note_authors (campus_email);
+
+INSERT INTO {rds_schema_advising_notes}.advising_note_authors (
+  SELECT DISTINCT uid, MAX(sid) AS sid, first_name, last_name, MAX(campus_email) AS campus_email FROM (
+    SELECT DISTINCT uid, sid, first_name, last_name, campus_email
+      FROM {rds_schema_sis_advising_notes}.advisors
+    UNION
+    SELECT DISTINCT ba.ldap_uid as uid, ba.sid, ba.first_name, ba.last_name, ba.email_address AS campus_email
+      FROM {rds_schema_asc}.advising_notes an
+      JOIN {rds_schema_sis_internal}.basic_attributes ba ON an.advisor_uid = ba.ldap_uid
+    UNION
+    SELECT DISTINCT ba.ldap_uid as uid, ba.sid, ba.first_name, ba.last_name, ba.email_address AS campus_email
+      FROM {rds_schema_e_i}.advising_notes an
+      JOIN {rds_schema_sis_internal}.basic_attributes ba ON an.advisor_uid = ba.ldap_uid
+    UNION
+    SELECT DISTINCT ba.ldap_uid as uid, ba.sid, ba.first_name, ba.last_name, ba.email_address AS campus_email
+      FROM {rds_schema_eop}.advising_notes an
+      JOIN {rds_schema_sis_internal}.basic_attributes ba ON an.advisor_uid = ba.ldap_uid
+    UNION
+    SELECT DISTINCT ba.ldap_uid as uid, ba.sid, ba.first_name, ba.last_name, ba.email_address AS campus_email
+      FROM {rds_schema_history_dept}.advising_notes an
+      JOIN {rds_schema_sis_internal}.basic_attributes ba ON an.advisor_uid = ba.ldap_uid
+    UNION
+    SELECT DISTINCT ba.ldap_uid as uid, ba.sid, ba.first_name, ba.last_name, ba.email_address AS campus_email
+      FROM {rds_schema_data_science}.advising_notes an
+      JOIN {rds_schema_sis_internal}.basic_attributes ba ON an.advisor_email = ba.email_address
+     WHERE advisor_email IS NOT NULL
+  ) a GROUP BY uid, first_name, last_name
+);
+
+--
+
 DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_note_author_names CASCADE;
 
 CREATE TABLE {rds_schema_advising_notes}.advising_note_author_names
@@ -56,6 +102,8 @@ INSERT INTO {rds_schema_advising_notes}.advising_note_author_names (
         ' '
     )) AS name FROM {rds_schema_advising_notes}.advising_note_authors
 );
+
+--
 
 DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_notes CASCADE;
 
@@ -104,6 +152,8 @@ CREATE INDEX idx_advising_notes_created_at ON {rds_schema_advising_notes}.advisi
 CREATE INDEX idx_advising_notes_created_by ON {rds_schema_advising_notes}.advising_notes(created_by);
 CREATE INDEX idx_advising_notes_updated_at ON {rds_schema_advising_notes}.advising_notes(updated_at);
 
+--
+
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_advising_notes}.advising_notes_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_advising_notes}.advising_notes_search_index AS (
@@ -121,6 +171,8 @@ CREATE MATERIALIZED VIEW {rds_schema_advising_notes}.advising_notes_search_index
 CREATE INDEX idx_advising_notes_ft_search
 ON {rds_schema_advising_notes}.advising_notes_search_index
 USING gin(fts_index);
+
+--
 
 DROP TABLE IF EXISTS {rds_schema_advising_appointments}.ycbm_advising_appointments CASCADE;
 
@@ -176,6 +228,8 @@ INSERT INTO {rds_schema_advising_appointments}.ycbm_advising_appointments (
 
 CREATE INDEX idx_ycbm_advising_appointments_student_sid ON {rds_schema_advising_appointments}.ycbm_advising_appointments(student_sid);
 CREATE INDEX idx_ycbm_advising_appointments_starts_at ON {rds_schema_advising_appointments}.ycbm_advising_appointments(starts_at);
+
+--
 
 DROP TABLE IF EXISTS {rds_schema_advising_appointments}.calendly_advising_appointments CASCADE;
 
