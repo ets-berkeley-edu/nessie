@@ -25,7 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 
 from flask import current_app as app
 
-from nessie.externals import calnet, rds
+from nessie.externals import rds
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.util import resolve_sql_template
 
@@ -38,34 +38,7 @@ class IndexAdvisingNotes(BackgroundJob):
         app.logger.info('Starting advising note index job...')
         app.logger.info('Executing SQL...')
         self.index_advising_notes()
-
         return 'Advising note index job completed.'
-
-    def import_note_authors(self):
-        notes_schema = app.config['RDS_SCHEMA_ADVISING_NOTES']
-
-        advisor_attributes = self._advisor_attributes_by_sid() + self._advisor_attributes_by_uid() + self._advisor_attributes_by_email()
-        if not advisor_attributes:
-            raise BackgroundJobError('Failed to fetch note author attributes.')
-
-        unique_advisor_attributes = list({adv['uid']: adv for adv in advisor_attributes}.values())
-
-        with rds.transaction() as transaction:
-            insertable_rows = []
-            for entry in unique_advisor_attributes:
-                first_name, last_name = calnet.split_sortable_name(entry)
-                insertable_rows.append(tuple((entry.get('uid'), entry.get('csid'), first_name, last_name, entry.get('campus_email'))))  # noqa: C409
-
-            result = transaction.insert_bulk(
-                f'INSERT INTO {notes_schema}.advising_note_authors (uid, sid, first_name, last_name, campus_email) VALUES %s',
-                insertable_rows,
-            )
-            if result:
-                transaction.commit()
-                app.logger.info('Imported advising note author attributes.')
-            else:
-                transaction.rollback()
-                raise BackgroundJobError('Failed to import advising note author attributes.')
 
     def index_advising_notes(self):
         resolved_ddl = resolve_sql_template('index_advising_notes.template.sql')
