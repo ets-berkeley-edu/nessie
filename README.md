@@ -37,6 +37,11 @@ createdb nessie_redshift_test --owner=nessie
 createdb nessie_test --owner=nessie
 ```
 
+Seed the metadata schema that `tox -e test` expects to already exist:
+```
+psql -h localhost -U nessie -d nessie_test -f fixtures/metadata.sql
+```
+
 ### Create local configurations
 
 If you plan to use any resources outside localhost, put your configurations in a separately encrypted area:

@@ -29,7 +29,6 @@ from itertools import groupby
 
 import pandas
 from flask import current_app as app
-from numpy import nan
 from scipy.stats import percentileofscore
 
 from nessie.externals.redshift import copy_for_pandas
@@ -141,7 +140,7 @@ def _generate_submission_analytics(canvas_course_id, canvas_user_id, submission_
 
 
 def append_missing_row(df, canvas_user_id, student_row):
-    df = df.append(student_row, ignore_index=True)  # noqa: PD901
+    df = pandas.concat([df, student_row], ignore_index=True)  # noqa: PD901
     # Fetch newly appended row, mostly for the sake of its properly set-up index.
     student_row = df.loc[df['canvas_user_id'].values == int(canvas_user_id)]  # noqa: PD011
     return df, student_row
@@ -157,14 +156,14 @@ def get_distributions_for_metric(df, metrics):
         # However, some feeds (such as Canvas student summaries) return (mostly) zero values rather than empty lists,
         # and we've also seen some Canvas feeds which mix nulls and zeroes.
         # Setting non-numbers to zero works acceptably for most current analyzed feeds, apart from lastActivity (see below).
-        distributions[metric]['dfcol'].fillna(0, inplace=True)  # noqa: PD002
+        distributions[metric]['dfcol'] = distributions[metric]['dfcol'].fillna(0)
         distributions[metric]['unique_scores'] = distributions[metric]['dfcol'].unique().tolist()
         # When calculating z-scores and means for lastActivity, zeroed-out "no activity" values must be dropped, since zeros
         # and Unix timestamps don't play well in the same distribution. We retain the original dataset for intuitive-percentile
         # calculation: the course mean's intuitive percentile must match that of any real student who happens to have the same
         # raw value.
         if metric == 'last_activity_at':
-            distributions[metric]['dfcol_normalized'] = distributions[metric]['dfcol'].replace(0, nan).dropna()
+            distributions[metric]['dfcol_normalized'] = distributions[metric]['dfcol'].replace(0, math.nan).dropna()
         else:
             distributions[metric]['dfcol_normalized'] = distributions[metric]['dfcol']
     return distributions
