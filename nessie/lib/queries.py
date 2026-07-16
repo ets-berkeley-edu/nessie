@@ -245,14 +245,6 @@ def get_sids_with_photos():
     return rds.fetch(sql)
 
 
-def get_advisor_sids():
-    sql = f"""SELECT advisor_sid AS sid
-        FROM {advisor_schema_internal()}.advisor_students
-        UNION SELECT advisor_id AS sid
-        FROM {advisor_schema()}.instructor_advisor"""
-    return redshift.fetch(sql)
-
-
 @fixture('query_advisee_enrolled_canvas_sites_{term_id}.csv')
 def stream_canvas_sites(term_id):
     sql = f"""SELECT enr.canvas_course_id, enr.canvas_course_name, enr.canvas_course_code, enr.canvas_course_term,
