@@ -74,7 +74,8 @@ INSERT INTO {rds_schema_advising_notes}.advising_note_authors (
       FROM {rds_schema_data_science}.advising_notes an
       JOIN {rds_schema_sis_internal}.basic_attributes ba ON an.advisor_email = ba.email_address
      WHERE advisor_email IS NOT NULL
-  ) a GROUP BY uid, first_name, last_name
+  ) a
+  GROUP BY uid, first_name, last_name
 );
 
 --

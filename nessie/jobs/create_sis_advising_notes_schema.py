@@ -36,20 +36,13 @@ class CreateSisAdvisingNotesSchema(BackgroundJob):
 
     def run(self):
         app.logger.info('Starting SIS Advising Notes schema creation job...')
-
         app.logger.info('Executing SQL...')
-        app.logger.info('Creating RDS indexes...')
         self.create_indexes()
-        app.logger.info('RDS indexes created.')
-
         return 'SIS Advising Notes schema creation job completed.'
 
     def create_indexes(self):
-        resolved_ddl = resolve_sql_template(
-            'index_sis_advising_notes.template.sql',
-            redshift_schema=app.config['REDSHIFT_SCHEMA_EDL'],
-        )
+        resolved_ddl = resolve_sql_template('create_sis_advising_notes_schema.template.sql')
         if rds.execute(resolved_ddl):
             app.logger.info('Created SIS Advising Notes RDS indexes.')
         else:
-            raise BackgroundJobError('SIS Advising Notes schema creation job failed to create indexes.')
+            raise BackgroundJobError('SIS Advising Notes schema creation job failed.')
