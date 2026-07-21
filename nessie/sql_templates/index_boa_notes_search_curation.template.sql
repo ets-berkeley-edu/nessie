@@ -99,7 +99,7 @@ SELECT
   advisor_uid AS created_by,
   created_at,
   updated_at
-FROM {rds_schema_boa_app_rds_data}.advising_notes_vw
+FROM {rds_schema_boa_app_rds_data}.advising_notes
 );
 
 CREATE INDEX advising_notes_curated_id_idx ON {rds_schema_advising_notes}.advising_notes_curated (id);
@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS {rds_schema_advising_notes}.advising_notes_search_ind
   FROM {rds_schema_advising_notes}.advising_notes_search_index
   UNION
   SELECT id, fts_index
-  FROM {rds_schema_boa_app_rds_data}.advising_notes_search_index_vw
+  FROM {rds_schema_boa_app_rds_data}.advising_notes_search_index
 );
 
 CREATE INDEX advising_notes_search_curated_fts_index_idx
