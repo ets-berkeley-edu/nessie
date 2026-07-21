@@ -38,7 +38,7 @@ BEGIN TRANSACTION;
 
 INSERT INTO {rds_schema_advising_notes}.advising_note_authors (uid, sid, first_name, last_name, campus_email)
   SELECT DISTINCT ba.ldap_uid AS uid, ba.sid, ba.first_name, ba.last_name, ba.email_address AS campus_email
-  FROM {rds_schema_boa_app_rds_data}.advising_notes_nightly ann
+  FROM {rds_schema_boa_app_rds_data}.advising_notes ann
   JOIN {rds_schema_sis_internal}.basic_attributes ba ON ann.advisor_uid = ba.ldap_uid
 ON CONFLICT DO NOTHING;
 
