@@ -46,7 +46,9 @@ def register_routes(app):
     import nessie.api.magic_eight_ball_controller
     import nessie.api.schedule_controller
     import nessie.api.status_controller
+    import nessie.api.upload_controller
     import nessie.api.user_controller
+
 
     @app.login_manager.unauthorized_handler
     def unauthorized_handler():

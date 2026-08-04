@@ -44,6 +44,11 @@ def handle_resource_not_found(error):
     return error.to_json(), 404
 
 
+@app.errorhandler(nessie.api.errors.InternalServerError)
+def handle_internal_server_error(error):
+    return error.to_json(), 500
+
+
 @app.errorhandler(Exception)
 def handle_unexpected_error(error):
     app.logger.exception(error)

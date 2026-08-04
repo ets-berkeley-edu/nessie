@@ -118,6 +118,10 @@ def get_redshift_schema_boa_app_rds_data(job_source='search'):
         return app.config['REDSHIFT_SCHEMA_BOA_APP_RDS_DATA_SEARCH']
 
 
+def get_s3_asc_advising_notes_incremental_path():
+    return app.config['LOCH_S3_ASC_DATA_SFTP_PATH'] + '/incremental/advising_notes'
+
+
 def get_s3_asc_daily_path(cutoff=None):
     return app.config['LOCH_S3_ASC_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 
