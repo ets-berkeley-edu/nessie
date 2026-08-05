@@ -43,5 +43,19 @@ def auth_required(f):
     return decorated
 
 
+def api_key_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not _api_key_ok():
+            raise UnauthorizedRequestError('Invalid credentials.')
+        return f(*args, **kwargs)
+    return decorated
+
+
 def valid_worker_credentials(username, password):
     return username == app.config['API_USERNAME'] and password == app.config['API_PASSWORD']
+
+
+def _api_key_ok():
+    api_key = request.headers.get('app-key')
+    return bool(api_key) and api_key in app.config['API_UPLOAD_KEYS']

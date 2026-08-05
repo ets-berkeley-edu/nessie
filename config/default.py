@@ -52,6 +52,9 @@ SECRET_KEY = 'secret'  # noqa: S105
 # Used to authorize administrative API.
 API_USERNAME = 'username'
 API_PASSWORD = 'password'  # noqa: S105
+API_UPLOAD_KEYS = []
+API_UPLOAD_BUCKETS = []
+API_UPLOAD_BUCKETS_PROTECTED = []
 # UIDs of authorized 'Admin' users
 AUTHORIZED_USERS = [0000000, 1111111, 2222222]
 

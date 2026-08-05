@@ -48,3 +48,7 @@ class UnauthorizedRequestError(JsonableError):
 
 class ResourceNotFoundError(JsonableError):
     pass
+
+
+class InternalServerError(JsonableError):
+    pass
