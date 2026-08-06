@@ -164,6 +164,10 @@ def get_s3_coe_daily_path(cutoff=None):
     return app.config['LOCH_S3_COE_DATA_PATH']
 
 
+def get_s3_coe_students_path():
+    return app.config['LOCH_S3_COE_DATA_PATH'] + '/students'
+
+
 def get_s3_edl_daily_path(cutoff=None):
     return app.config['LOCH_S3_EDL_DATA_PATH'] + '/daily/' + hashed_datestamp(cutoff)
 

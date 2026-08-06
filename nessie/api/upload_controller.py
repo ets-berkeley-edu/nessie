@@ -23,6 +23,8 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import csv
+import io
 import json
 
 from flask import current_app as app
@@ -32,7 +34,7 @@ from nessie.api.auth_helper import api_key_required
 from nessie.api.errors import BadRequestError, InternalServerError
 from nessie.externals import s3
 from nessie.lib.http import tolerant_jsonify
-from nessie.lib.util import get_s3_asc_advising_notes_incremental_path, localized_datestamp
+from nessie.lib.util import get_s3_asc_advising_notes_incremental_path, get_s3_coe_students_path, localized_datestamp
 
 
 @app.route('/api/upload/asc_advising_notes', methods=['POST'])
@@ -43,6 +45,21 @@ def upload_asc_advising_notes():
     filename = f'asc_advising_notes_{localized_datestamp()}.json'
     s3_key = f'{get_s3_asc_advising_notes_incremental_path()}/{filename}'
     return _upload_to_all_buckets(file, s3_key, app.config['API_UPLOAD_BUCKETS'])
+
+
+@app.route('/api/upload/coe_advisees', methods=['POST'])
+@api_key_required
+def upload_coe_advisees():
+    file = _get_uploaded_file()
+    _verify_tsv(file)
+    path = get_s3_coe_students_path()
+    filename = f'coe_student_adviser_{localized_datestamp()}.tsv'
+    s3_key = f'{path}/{filename}'
+    buckets = app.config['API_UPLOAD_BUCKETS']
+    response = _upload_to_all_buckets(file, s3_key, buckets)
+    # The COE external table reads the whole students/ directory, so files left behind would duplicate rows.
+    _delete_keys_with_prefix(f'{path}/coe_student_adviser_', buckets, whitelist=(filename,))
+    return response
 
 
 def _get_uploaded_file():
@@ -59,6 +76,15 @@ def _verify_json(file):
         raise BadRequestError('Uploaded file is not valid JSON.') from e
 
 
+def _verify_tsv(file):
+    try:
+        rows = list(csv.reader(io.StringIO(file.read().decode('utf-8')), delimiter='\t'))
+    except (csv.Error, UnicodeDecodeError) as e:
+        raise BadRequestError('Uploaded file is not valid TSV.') from e
+    if not rows:
+        raise BadRequestError('Uploaded file contains no rows.')
+
+
 def _upload_to_all_buckets(file, s3_key, buckets):
     if not buckets:
         raise InternalServerError('No API upload destination buckets configured.')
@@ -66,3 +92,21 @@ def _upload_to_all_buckets(file, s3_key, buckets):
         if not s3.upload_file(file, s3_key, bucket=bucket):
             raise InternalServerError(f'Failed to upload {s3_key} to bucket {bucket}')
     return tolerant_jsonify({'key': s3_key, 'buckets': buckets})
+
+
+def _delete_keys_with_prefix(prefix, buckets, whitelist=()):
+    success = True
+    for bucket in buckets:
+        existing_keys = s3.get_keys_with_prefix(prefix, bucket=bucket)
+        if existing_keys is None:
+            app.logger.error(f'Error listing keys with prefix "{prefix}" in bucket {bucket}')
+            success = False
+            continue
+        keys_to_delete = [key for key in existing_keys if key.split('/')[-1] not in whitelist]
+        app.logger.info(
+            f'Found {len(existing_keys)} key(s) matching prefix "{prefix}" in bucket {bucket}, '
+            f'{len(existing_keys) - len(keys_to_delete)} key(s) in whitelist, will delete {len(keys_to_delete)} object(s)')
+        if keys_to_delete and not s3.delete_objects(keys_to_delete, bucket=bucket):
+            app.logger.error(f'Error deleting keys with prefix "{prefix}" in bucket {bucket}')
+            success = False
+    return success
