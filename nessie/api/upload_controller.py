@@ -26,6 +26,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import csv
 import io
 import json
+from datetime import datetime
 
 from flask import current_app as app
 from flask import request
@@ -34,7 +35,13 @@ from nessie.api.auth_helper import api_key_required
 from nessie.api.errors import BadRequestError, InternalServerError
 from nessie.externals import s3
 from nessie.lib.http import tolerant_jsonify
-from nessie.lib.util import get_s3_asc_advising_notes_incremental_path, get_s3_coe_students_path, localized_datestamp
+from nessie.lib.util import (
+    get_s3_asc_advising_notes_incremental_path,
+    get_s3_coe_students_path,
+    get_s3_slate_sftp_daily_path,
+    localize_datetime,
+    localized_datestamp,
+)
 
 
 @app.route('/api/upload/asc_advising_notes', methods=['POST'])
@@ -51,7 +58,7 @@ def upload_asc_advising_notes():
 @api_key_required
 def upload_coe_advisees():
     file = _get_uploaded_file()
-    _verify_tsv(file)
+    _verify_delimited(file, '\t', 'TSV')
     path = get_s3_coe_students_path()
     filename = f'coe_student_adviser_{localized_datestamp()}.tsv'
     s3_key = f'{path}/{filename}'
@@ -62,6 +69,17 @@ def upload_coe_advisees():
     return response
 
 
+@app.route('/api/upload/oua_admissions', methods=['POST'])
+@api_key_required
+def upload_oua_admissions():
+    file = _get_uploaded_file()
+    _verify_delimited(file, ',', 'CSV')
+    timestamp = localize_datetime(datetime.now())
+    filename = f'oua_admissions_{timestamp.strftime("%Y%m%dT%H%M%S")}.csv'
+    s3_key = f'{get_s3_slate_sftp_daily_path(timestamp)}/{filename}'
+    return _upload_to_all_buckets(file, s3_key, app.config['API_UPLOAD_BUCKETS_PROTECTED'])
+
+
 def _get_uploaded_file():
     files = list(request.files.values())
     if len(files) != 1:
@@ -69,20 +87,20 @@ def _get_uploaded_file():
     return files[0]
 
 
+def _verify_delimited(file, delimiter, file_type):
+    try:
+        rows = list(csv.reader(io.StringIO(file.read().decode('utf-8')), delimiter=delimiter))
+    except (csv.Error, UnicodeDecodeError) as e:
+        raise BadRequestError(f'Uploaded file is not valid {file_type}.') from e
+    if not rows:
+        raise BadRequestError('Uploaded file contains no rows.')
+
+
 def _verify_json(file):
     try:
         json.loads(file.read())
     except json.JSONDecodeError as e:
         raise BadRequestError('Uploaded file is not valid JSON.') from e
-
-
-def _verify_tsv(file):
-    try:
-        rows = list(csv.reader(io.StringIO(file.read().decode('utf-8')), delimiter='\t'))
-    except (csv.Error, UnicodeDecodeError) as e:
-        raise BadRequestError('Uploaded file is not valid TSV.') from e
-    if not rows:
-        raise BadRequestError('Uploaded file contains no rows.')
 
 
 def _upload_to_all_buckets(file, s3_key, buckets):
