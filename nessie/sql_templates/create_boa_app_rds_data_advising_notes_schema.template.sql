@@ -289,12 +289,15 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes_search_index AS
 
 
 -----------------------------------------------------------------------------------------------------
--- Create GIN index on table advising_notes_search_index
+-- Create indexes on table advising_notes_search_index
 -----------------------------------------------------------------------------------------------------
 
 CREATE INDEX advising_notes_search_index_fts_index_idx
   ON {rds_schema_boa_app_rds_data}.advising_notes_search_index
   USING GIN (fts_index);
+
+CREATE UNIQUE INDEX advising_notes_search_index_pkey
+  ON {rds_schema_boa_app_rds_data}.advising_notes_search_index(id text_ops);
 
 
 -----------------------------------------------------------------------------------------------------
@@ -321,7 +324,7 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes_cdc_log (
   error_message TEXT,
   handler_version VARCHAR
 );
- 
+
 
 -----------------------------------------------------------------------------------------------------
 -- Create indexes on table advising_notes_cdc_log
