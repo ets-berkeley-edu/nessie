@@ -49,7 +49,8 @@ from nessie.lib.util import (
 def upload_asc_advising_notes():
     file = _get_uploaded_file()
     _verify_json(file)
-    filename = f'asc_advising_notes_{localized_datestamp()}.json'
+    timestamp = localize_datetime(datetime.now())
+    filename = f'asc_advising_notes_{timestamp.strftime("%Y%m%dT%H%M%S")}.json'
     s3_key = f'{get_s3_asc_advising_notes_incremental_path()}/{filename}'
     return _upload_to_all_buckets(file, s3_key, app.config['API_UPLOAD_BUCKETS'])
 
