@@ -90,11 +90,29 @@ def _get_uploaded_file():
 
 def _verify_delimited(file, delimiter, file_type):
     try:
-        rows = list(csv.reader(io.StringIO(file.read().decode('utf-8')), delimiter=delimiter))
-    except (csv.Error, UnicodeDecodeError) as e:
+        content = file.read().decode('utf-8')
+    except UnicodeDecodeError as e:
+        raise BadRequestError(f'Uploaded file is not valid {file_type}.') from e
+    # csv.reader will happily parse just about anything, including other structured formats
+    # (e.g. JSON) that merely happen to contain the delimiter character. Explicitly rule out
+    # JSON before trusting the csv module's read.
+    try:
+        json.loads(content)
+    except (json.JSONDecodeError, ValueError):
+        pass
+    else:
+        raise BadRequestError(f'Uploaded file is not valid {file_type}.')
+    try:
+        rows = [row for row in csv.reader(io.StringIO(content), delimiter=delimiter) if row]
+    except csv.Error as e:
         raise BadRequestError(f'Uploaded file is not valid {file_type}.') from e
     if not rows:
         raise BadRequestError('Uploaded file contains no rows.')
+    column_count = len(rows[0])
+    if column_count < 2:
+        raise BadRequestError(f'Uploaded file does not appear to be {file_type}: no "{delimiter}" delimiter found.')
+    if any(len(row) != column_count for row in rows):
+        raise BadRequestError(f'Uploaded file is not valid {file_type}: rows have an inconsistent number of columns.')
 
 
 def _verify_json(file):
