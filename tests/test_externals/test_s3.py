@@ -23,8 +23,13 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+import gzip
+from unittest import mock
+
+import botocore.response
 import pytest
 import responses
+from botocore.exceptions import ClientError as BotoClientError
 from botocore.exceptions import ConnectionError as BotoConnectionError
 
 from nessie.externals import s3
@@ -37,6 +42,36 @@ def bad_bucket(app):
     app.config['LOCH_S3_BUCKET'] = 'not-a-bucket-nohow'
     yield
     app.config['LOCH_S3_BUCKET'] = _bucket
+
+
+class FakeStreamingBody:
+    """Stands in for a botocore StreamingBody, yielding one queued chunk (or raising a queued error) per read()."""
+
+    def __init__(self, chunks):
+        self._chunks = list(chunks)
+
+    def read(self, amt=None):  # noqa: ARG002
+        if not self._chunks:
+            return b''
+        item = self._chunks.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+    def set_socket_timeout(self, timeout):
+        pass
+
+
+class FakeS3Client:
+    """Returns queued FakeStreamingBody instances from get_object, recording the kwargs of each call."""
+
+    def __init__(self, bodies):
+        self._bodies = list(bodies)
+        self.get_object_calls = []
+
+    def get_object(self, **kwargs):
+        self.get_object_calls.append(kwargs)
+        return {'Body': self._bodies.pop(0)}
 
 
 class TestS3:
@@ -58,6 +93,88 @@ class TestS3:
             assert f'{prefix}/requests-aaa.gz' in response
             assert f'{prefix}/requests-bbb.gz' in response
             assert f'{prefix}/requests-ccc.gz' in response
+
+
+class TestResilientS3ObjectStream:
+    """A streaming S3 read survives a mid-stream connection reset by reopening at the last byte read."""
+
+    def test_resumes_with_range_request_after_connection_reset(self, app):  # noqa: ARG002
+        """On a reset, reopens the object with a Range request picking up where the last read left off."""
+        client = FakeS3Client([
+            FakeStreamingBody([b'first-chunk-', ConnectionResetError(104, 'Connection reset by peer')]),
+            FakeStreamingBody([b'second-chunk', b'']),
+        ])
+        stream = s3._ResilientS3ObjectStream(client, 'a-bucket', 'a-key')
+        stream.retry_backoff_seconds = 0
+
+        assert stream.read(1024) == b'first-chunk-'
+        assert stream.read(1024) == b'second-chunk'
+        assert stream.read(1024) == b''
+
+        assert len(client.get_object_calls) == 2
+        assert 'Range' not in client.get_object_calls[0]
+        assert client.get_object_calls[1]['Range'] == 'bytes=12-'
+
+    def test_gives_up_after_max_retries(self, app):  # noqa: ARG002
+        """Re-raises once the retry budget for a single read is exhausted."""
+        always_broken = ConnectionResetError(104, 'Connection reset by peer')
+        client = FakeS3Client([FakeStreamingBody([always_broken]) for _ in range(10)])
+        stream = s3._ResilientS3ObjectStream(client, 'a-bucket', 'a-key')
+        stream.retry_backoff_seconds = 0
+
+        with pytest.raises(ConnectionResetError):
+            stream.read(1024)
+        assert len(client.get_object_calls) == stream.max_retries + 1
+
+    def test_treats_invalid_range_after_reset_as_eof(self, app):  # noqa: ARG002
+        """If a reset happens right at EOF, a Range reopen past the object's end is treated as end of stream."""
+        invalid_range_error = BotoClientError({'Error': {'Code': 'InvalidRange'}}, 'GetObject')
+
+        class RaisingClient(FakeS3Client):
+            def get_object(self, **kwargs):
+                self.get_object_calls.append(kwargs)
+                if 'Range' in kwargs:
+                    raise invalid_range_error
+                return {'Body': self._bodies.pop(0)}
+
+        client = RaisingClient([FakeStreamingBody([b'only-chunk', ConnectionResetError(104, 'Connection reset by peer')])])
+        stream = s3._ResilientS3ObjectStream(client, 'a-bucket', 'a-key')
+        stream.retry_backoff_seconds = 0
+
+        assert stream.read(1024) == b'only-chunk'
+        assert stream.read(1024) == b''
+
+
+class TestGetTsvStream:
+    """The higher-level TSV streaming helpers recover from a connection reset via the resilient stream."""
+
+    def test_get_tsv_stream_recovers_from_connection_reset(self, app):
+        """A reset on the very first read is retried transparently, and all rows still come through."""
+        bucket = app.config['LOCH_S3_BUCKET']
+        prefix = 'unloads/term_gpas'
+        key = f'{prefix}/0000_part_00.gz'
+        rows = [('1234567', '2232', '3.750'), ('7654321', '2232', '3.200')]
+        tsv = 'sid\tterm_id\tgpa\n' + ''.join(f'{sid}\t{term_id}\t{gpa}\n' for sid, term_id, gpa in rows)
+
+        with mock_s3(app) as m:
+            m.Object(bucket, key).put(Body=gzip.compress(tsv.encode('utf-8')))
+
+            original_read = botocore.response.StreamingBody.read
+            calls = {'n': 0}
+
+            def flaky_read(self, amt=None):
+                calls['n'] += 1
+                if calls['n'] == 1:
+                    raise ConnectionResetError(104, 'Connection reset by peer')
+                return original_read(self, amt)
+
+            with mock.patch.object(s3._ResilientS3ObjectStream, 'retry_backoff_seconds', 0), \
+                    mock.patch.object(botocore.response.StreamingBody, 'read', flaky_read), \
+                    mock.patch.object(botocore.response.StreamingBody, 'set_socket_timeout'):
+                # moto's mocked HTTP response doesn't expose a real socket to set a timeout on.
+                result = list(s3.get_tsv_stream(prefix))
+
+        assert [(r['sid'], r['term_id'], r['gpa']) for r in result] == rows
 
 
 # TODO: @pytest.mark.testext
