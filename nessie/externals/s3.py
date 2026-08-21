@@ -27,6 +27,7 @@ import csv
 import io
 import json
 import tempfile
+import time
 from gzip import GzipFile
 from zipfile import ZipFile
 
@@ -35,11 +36,89 @@ import requests
 import smart_open
 from botocore.exceptions import ClientError as BotoClientError
 from botocore.exceptions import ConnectionError as BotoConnectionError
+from botocore.exceptions import ReadTimeoutError as BotoReadTimeoutError
+from botocore.exceptions import ResponseStreamingError as BotoResponseStreamingError
 from flask import current_app as app
+from urllib3.exceptions import ProtocolError as Urllib3ProtocolError
 
 from nessie.lib import metadata
 
 """Client code to run file operations against S3."""
+
+
+class _ResilientS3ObjectStream(io.RawIOBase):
+    """A raw byte stream for a single S3 object that survives a mid-read connection reset.
+
+    Some Nessie jobs (e.g. GenerateMergedStudentFeeds) hold a single streaming GetObject open for
+    tens of minutes, pulling from it in bursts while a slow consumer (a merge-join against another
+    stream) works through the data. A transient network blip anywhere along that path would
+    kill the whole job. This wrapper catches that class of error and transparently reopens the
+    connection with a Range request picking up at the last byte we successfully read, so callers
+    (GzipFile, TextIOWrapper) never see the interruption.
+    """
+
+    _RETRYABLE_ERRORS = (
+        BotoConnectionError,
+        BotoReadTimeoutError,
+        BotoResponseStreamingError,
+        Urllib3ProtocolError,
+        ConnectionResetError,
+    )
+
+    max_retries = 3
+    retry_backoff_seconds = 2
+
+    def __init__(self, client, bucket, key):
+        super().__init__()
+        self.client = client
+        self.bucket = bucket
+        self.key = key
+        self.bytes_read = 0
+        self._body = self._open()
+
+    def _open(self):
+        kwargs = {'Bucket': self.bucket, 'Key': self.key}
+        if self.bytes_read:
+            kwargs['Range'] = f'bytes={self.bytes_read}-'
+        try:
+            body = self.client.get_object(**kwargs)['Body']
+        except BotoClientError as e:
+            # We already read to (or past) the end of the object; the interrupted read was for trailing EOF bytes.
+            if kwargs.get('Range') and e.response.get('Error', {}).get('Code') == 'InvalidRange':
+                return None
+            raise
+        body.set_socket_timeout(app.config['AWS_S3_SESSION_DURATION'])
+        return body
+
+    def readable(self):
+        return True
+
+    def readinto(self, b):
+        if self._body is None:
+            return 0
+        size = len(b)
+        chunk = None
+        for attempt in range(1, self.max_retries + 2):
+            try:
+                chunk = self._body.read(size)
+                break
+            except self._RETRYABLE_ERRORS as e:
+                if attempt > self.max_retries:
+                    raise
+                app.logger.warning(
+                    f'S3 stream read interrupted (bucket={self.bucket}, key={self.key}, bytes_read={self.bytes_read}); '
+                    f'reopening connection at that offset, attempt {attempt}/{self.max_retries}.',
+                    exc_info=e,
+                )
+                time.sleep(self.retry_backoff_seconds * attempt)
+                self._body = self._open()
+                if self._body is None:
+                    # The interrupted read turned out to be for trailing EOF bytes; nothing left to deliver.
+                    return 0
+        n = len(chunk)
+        b[:n] = chunk
+        self.bytes_read += n
+        return n
 
 
 def build_s3_url(key):
@@ -215,9 +294,7 @@ def get_text_reader(key):
     client = get_client()
     bucket = app.config['LOCH_S3_BUCKET']
     try:
-        _object = client.get_object(Bucket=bucket, Key=key)
-        fileobj = _object['Body']
-        fileobj.set_socket_timeout(app.config['AWS_S3_SESSION_DURATION'])
+        fileobj = io.BufferedReader(_ResilientS3ObjectStream(client, bucket, key))
         return io.TextIOWrapper(fileobj, encoding='utf-8')
     except (BotoClientError, BotoConnectionError, ValueError) as e:
         app.logger.exception(f'Error retrieving S3 object text: bucket={bucket}, key={key}', exc_info=e)
@@ -229,9 +306,7 @@ def get_unzipped_text_reader(key):
     client = get_client()
     bucket = app.config['LOCH_S3_BUCKET']
     try:
-        _object = client.get_object(Bucket=bucket, Key=key)
-        fileobj = _object['Body']
-        fileobj.set_socket_timeout(app.config['AWS_S3_SESSION_DURATION'])
+        fileobj = io.BufferedReader(_ResilientS3ObjectStream(client, bucket, key))
         gzipped = GzipFile(None, 'rb', fileobj=fileobj)
         return io.TextIOWrapper(gzipped)
     except (BotoClientError, BotoConnectionError, ValueError) as e:
