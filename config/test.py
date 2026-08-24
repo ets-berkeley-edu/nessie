@@ -29,6 +29,10 @@ AWS_APP_ROLE_ARN = 'arn:aws:iam::123456789012:role/test-role'
 
 TESTING = True
 
+API_UPLOAD_KEYS = ['test-upload-key']
+API_UPLOAD_BUCKETS = ['mock-bucket', 'mock-bucket-2']
+API_UPLOAD_BUCKETS_PROTECTED = ['mock-protected-bucket']
+
 EARLIEST_LEGACY_TERM = 'Summer 1995'
 
 EDL_SCHEMA_MAX_THREADS = 1
