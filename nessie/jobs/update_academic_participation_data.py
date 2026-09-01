@@ -93,7 +93,7 @@ class UpdateAcademicParticipationData(BackgroundJob):
                 if canvas_section:
                     course_site = canvas_api.get_course_site(canvas_section['canvas_course_id'])
                     if course_site and course_site.get('workflow_state') == 'available':
-                        course_sites_by_section_id[course_id] = canvas_section['sis_course_id']
+                        course_sites_by_section_id[course_id] = canvas_section['course_id']
             app.logger.info(f'Found {len(course_sites_by_section_id)} course sites for {len(section_ids)} sections')
 
         # sources/canvasproject.csv is an export of responses from Blue, from which we collect instructor opt-outs.
