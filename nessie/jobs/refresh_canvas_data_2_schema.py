@@ -66,9 +66,9 @@ class RefreshCanvasData2Schema(BackgroundJob):
 
 
 def _get_yesterdays_cd2_data():
-    s3_cd2_daily = get_s3_canvas_data_2_daily_path(datetime.now() - timedelta(days=1))
+    s3_cd2_daily = get_s3_canvas_data_2_daily_path(datetime.utcnow() - timedelta(days=1))
     if not s3.get_keys_with_prefix(s3_cd2_daily):
-        raise BackgroundJobError('No timely Canvas Data 2 S3 data found for today and previous day')
+        raise BackgroundJobError('No timely Canvas Data 2 S3 data found for today or previous day')
 
-    app.logger.info('Falling back to last stable Canvas Data 2 S3 data ')
+    app.logger.info('Falling back to last stable Canvas Data 2 S3 data')
     return s3_cd2_daily

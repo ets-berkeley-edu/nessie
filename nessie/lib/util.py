@@ -155,7 +155,10 @@ def get_s3_canvas_daily_path(cutoff=None):
 
 
 def get_s3_canvas_data_2_daily_path(cutoff=None):
-    return app.config['LOCH_S3_CANVAS_DATA_2_PATH_DAILY'] + '/' + localized_datestamp(cutoff)
+    # Unlike other pipelines, the CD2 pipeline tracks its dates in UTC, not app timezone.
+    if not cutoff:
+        cutoff = utc_now()
+    return app.config['LOCH_S3_CANVAS_DATA_2_PATH_DAILY'] + '/' + cutoff.strftime('%Y-%m-%d')
 
 
 def get_s3_coe_daily_path(cutoff=None):

@@ -137,14 +137,14 @@ class RetrieveCanvasData2Snapshots(BackgroundJob):
             )
 
             if update_status:
-                app.logger.info('Metatdata updated with CD2 snapshot update status successfully')
+                app.logger.info('Metadata updated with CD2 snapshot update status successfully')
 
             if len(query_job_failures) > 0:
                 app.logger.error(f'Encountered query job failures from source for following tables {query_job_failures}. Aborting ingest.')
                 raise BackgroundJobError(f'Encountered query job failures from source for following tables {query_job_failures}. Aborting ingest.')
             else:
-                app.logger.info('CD2 snapshot objects retrieved and metatdata update completed successfully ')
-                return ('CD2 snapshot objects retrieved and metatdata update completed successfully ')
+                app.logger.info('CD2 snapshot objects retrieved and metadata update completed successfully ')
+                return ('CD2 snapshot objects retrieved and metadata update completed successfully ')
 
         else:
             return ('No CD2 query snapshot job triggered for today. Skipping refresh')
