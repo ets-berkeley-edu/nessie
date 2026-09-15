@@ -41,14 +41,20 @@ class BiRefreshBcoursesServiceCd2Schemas(BackgroundJob):
         resolved_ddl_redshift = resolve_sql_template('bi_create_bcourses_service_cd2_redshift_schema.template.sql')
         if redshift.execute_ddl_script(resolved_ddl_redshift):
             app.logger.info('BI Reports bCourses Service CD2 Redshift internal schema refreshed.')
-
-            resolved_ddl_rds = resolve_sql_template('bi_create_bcourses_service_cd2_rds_schema.template.sql')
-            bi_rds_uri_la_reports = app.config['BI_RDS_URI_LA_REPORTS']
-            if rds.execute(resolved_ddl_rds, rds_uri=bi_rds_uri_la_reports):
-                app.logger.info('BI Reports bCourses Service CD2 RDS schema refreshed.')
-            else:
-                raise BackgroundJobError('Failed to refresh BI Reports bCourses Service CD2 RDS schema.')
         else:
             raise BackgroundJobError('Failed to refresh BI Reports bCourses Service CD2 Redshift internal schema.')
+
+        resolved_ddl_rds = resolve_sql_template('bi_create_bcourses_service_cd2_rds_schema.template.sql')
+        bi_rds_uri_la_reports = app.config['BI_RDS_URI_LA_REPORTS']
+        if rds.execute(resolved_ddl_rds, rds_uri=bi_rds_uri_la_reports):
+            app.logger.info('BI Reports bCourses Service CD2 RDS schema refreshed.')
+        else:
+            raise BackgroundJobError('Failed to refresh BI Reports bCourses Service CD2 RDS schema.')
+
+        resolved_ddl_canvas_rds = resolve_sql_template('update_rds_indexes_canvas.template.sql')
+        if rds.execute(resolved_ddl_canvas_rds):
+            app.logger.info('RDS Canvas schema indexes updated.')
+        else:
+            raise BackgroundJobError('Failed to update RDS indexes for Canvas schema.')
 
         return 'BI Reports bCourses Service CD2 Redshift internal and RDS schemas refresh job completed.'
