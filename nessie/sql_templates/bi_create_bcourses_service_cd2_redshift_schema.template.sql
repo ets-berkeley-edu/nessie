@@ -37,9 +37,12 @@ DROP SCHEMA IF EXISTS {bi_redshift_schema_bcourses_service_cd2} CASCADE;
 CREATE SCHEMA {bi_redshift_schema_bcourses_service_cd2};
 
 GRANT USAGE ON SCHEMA {bi_redshift_schema_bcourses_service_cd2} TO GROUP {bi_redshift_la_reports_dblink_group};
-
 ALTER DEFAULT PRIVILEGES IN SCHEMA {bi_redshift_schema_bcourses_service_cd2}
   GRANT SELECT ON TABLES TO GROUP {bi_redshift_la_reports_dblink_group};
+
+GRANT USAGE ON SCHEMA {bi_redshift_schema_bcourses_service_cd2} TO GROUP {redshift_dblink_group};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {bi_redshift_schema_bcourses_service_cd2}
+  GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
 
 
 ----------------------------------------------------------------------------------------------------
@@ -172,6 +175,11 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.canvas_courses AS
     SELECT DISTINCT e.course_id, 'yes' AS gradebook
     FROM {redshift_schema_canvas_data_2}.scores s
     JOIN {redshift_schema_canvas_data_2}.enrollments e ON s.enrollment_id = e.id
+  ),
+  activity AS (
+    SELECT e.course_id, MAX(e.last_activity_at) AS max_last_activity_at
+    FROM {redshift_schema_canvas_data_2}.enrollments e
+    GROUP BY e.course_id
   )
   SELECT
     c.course_id,
@@ -194,7 +202,8 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.canvas_courses AS
     assn.assignments,
     m.modules,
     p.pages,
-    g.gradebook
+    g.gradebook,
+    act.max_last_activity_at
   FROM courses c
   LEFT OUTER JOIN quizzes q ON c.course_id = q.course_id
   LEFT OUTER JOIN announcements anno ON c.course_id = anno.course_id
@@ -203,7 +212,8 @@ CREATE TABLE {bi_redshift_schema_bcourses_service_cd2}.canvas_courses AS
   LEFT OUTER JOIN assignments assn ON c.course_id = assn.course_id
   LEFT OUTER JOIN modules m ON c.course_id = m.course_id
   LEFT OUTER JOIN pages p ON c.course_id = p.course_id
-  LEFT OUTER JOIN gradebook g ON c.course_id = g.course_id;
+  LEFT OUTER JOIN gradebook g ON c.course_id = g.course_id
+  LEFT OUTER JOIN activity act ON c.course_id = act.course_id;
 
 
 ----------------------------------------------------------------------------------------------------

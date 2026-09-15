@@ -27,7 +27,7 @@ from datetime import datetime, timedelta
 
 from flask import current_app as app
 
-from nessie.externals import redshift, s3
+from nessie.externals import rds, redshift, s3
 from nessie.jobs.background_job import BackgroundJob, BackgroundJobError, verify_external_schema
 from nessie.lib import berkeley
 from nessie.lib.util import get_s3_canvas_daily_path, resolve_sql_template
@@ -61,6 +61,12 @@ class CreateCanvasSchema(BackgroundJob):
         )
         if redshift.execute_ddl_script(resolved_ddl):
             verify_external_schema(external_schema, resolved_ddl)
-            return 'Canvas schema creation job completed.'
+            app.logger.info('Canvas Redshift schemas created.')
         else:
-            raise BackgroundJobError('Canvas schema creation job failed.')
+            raise BackgroundJobError('Canvas Redshift schema creation failed.')
+
+        resolved_ddl_rds = resolve_sql_template('update_rds_indexes_canvas.template.sql')
+        if rds.execute(resolved_ddl_rds):
+            app.logger.info('RDS indexes updated.')
+        else:
+            raise BackgroundJobError('Failed to update RDS indexes for Canvas schema.')
