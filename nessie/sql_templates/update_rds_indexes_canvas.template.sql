@@ -43,13 +43,13 @@ CREATE TABLE {rds_schema_canvas}.course_sites
 );
 
 INSERT INTO {rds_schema_canvas}.course_sites
-(id, account_id, sis_term_id, sis_source_id, course_code, name, workflow_state, last_activity, created_at) 
+(id, account_id, sis_term_id, sis_course_id, course_code, name, workflow_state, last_activity, created_at) 
 (SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT DISTINCT
-      canvas_courses.id,
+      canvas_courses.course_id,
       canvas_courses.account_id,
-      enrollment_terms.sis_source_id,
+      bcourses_enrollment_terms.sis_source_id,
       canvas_courses.sis_source_id,
       canvas_courses.code,
       canvas_courses.name,
