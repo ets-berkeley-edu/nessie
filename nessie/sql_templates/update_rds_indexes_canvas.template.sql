@@ -43,22 +43,23 @@ CREATE TABLE {rds_schema_canvas}.course_sites
 );
 
 INSERT INTO {rds_schema_canvas}.course_sites
-(id, account_id, sis_term_id, sis_course_id, course_code, name, workflow_state, last_activity, created_at) 
+(id, account_id, sis_term_id, sis_course_id, course_code, name, workflow_state, last_activity, created_at)
 (SELECT *
   FROM dblink('{rds_dblink_to_redshift}',$REDSHIFT$
     SELECT DISTINCT
-      canvas_courses.course_id,
-      canvas_courses.account_id,
-      bcourses_enrollment_terms.sis_source_id,
-      canvas_courses.sis_source_id,
-      canvas_courses.code,
-      canvas_courses.name,
-      canvas_courses.workflow_state,
-      canvas_courses.max_last_activity_at,
-      canvas_courses.created_at
-    FROM {bi_redshift_schema_bcourses_service_cd2}.canvas_courses
-    LEFT JOIN {bi_redshift_schema_bcourses_service_cd2}.bcourses_enrollment_terms
-      ON canvas_courses.enrollment_term_id = bcourses_enrollment_terms.enrollment_term_id
+      courses.course_id,
+      courses.account_id,
+      enrollment_terms.sis_source_id,
+      courses.sis_source_id,
+      courses.code,
+      courses.name,
+      courses.workflow_state,
+      courses.max_last_activity_at,
+      courses.created_at
+    FROM {redshift_schema_canvas_internal}.courses
+    LEFT JOIN {redshift_schema_canvas_data_2}.enrollment_terms
+      ON courses.enrollment_term_id = enrollment_terms.id
+      AND enrollment_terms.workflow_state <> 'deleted'
   $REDSHIFT$)
   AS redshift_course_sites (
     id VARCHAR,

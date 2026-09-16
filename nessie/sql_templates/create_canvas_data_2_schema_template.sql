@@ -2426,3 +2426,57 @@ TABLE PROPERTIES ('skip.header.line.count'='1');
 --------------------------------------------------------------------------------------
 -- END OF CANVAS DATA 2 DDL STATEMENTS
 --------------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------------
+-- CREATE nessie INTERNAL REDSHIFT SCHEMA: "{redshift_schema_canvas_internal}"
+--------------------------------------------------------------------------------------
+
+DROP SCHEMA IF EXISTS {redshift_schema_canvas_internal} CASCADE;
+CREATE SCHEMA {redshift_schema_canvas_internal};
+GRANT USAGE ON SCHEMA {redshift_schema_canvas_internal} TO GROUP {redshift_app_boa_user}_group;
+ALTER default PRIVILEGES IN SCHEMA {redshift_schema_canvas_internal} GRANT SELECT ON TABLES TO GROUP {redshift_app_boa_user}_group;
+GRANT USAGE ON SCHEMA {redshift_schema_canvas_internal} TO GROUP {redshift_dblink_group};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_canvas_internal} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
+
+--------------------------------------------------------------------------------------
+-- INTERNAL TABLE : "courses"
+--------------------------------------------------------------------------------------
+
+CREATE TABLE {redshift_schema_canvas_internal}.courses AS
+  WITH
+  courses AS (
+    SELECT
+      cd2c.id AS course_id,
+      cd2c.account_id,
+      cd2c.enrollment_term_id,
+      cd2c.name,
+      cd2c.course_code AS code,
+      cd2c.created_at::DATE AS created_at,
+      cd2c.start_at::DATE AS start_date,
+      cd2c.conclude_at::DATE AS end_date,
+      cd2c.sis_source_id,
+      cd2c.workflow_state
+    FROM {redshift_schema_canvas_data_2}.courses cd2c
+    WHERE cd2c.workflow_state <> 'deleted'
+  ),
+  activity AS (
+    SELECT e.course_id, MAX(e.last_activity_at) AS max_last_activity_at
+    FROM {redshift_schema_canvas_data_2}.enrollments e
+    GROUP BY e.course_id
+  )
+  SELECT
+    c.course_id,
+    c.account_id,
+    c.enrollment_term_id,
+    c.name,
+    c.code,
+    c.created_at,
+    c.start_date,
+    c.end_date,
+    c.sis_source_id,
+    c.workflow_state,
+    act.max_last_activity_at
+  FROM courses c
+  LEFT OUTER JOIN activity act ON c.course_id = act.course_id;
+ 
