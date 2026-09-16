@@ -2460,6 +2460,11 @@ CREATE TABLE {redshift_schema_canvas_internal}.courses AS
     FROM {redshift_schema_canvas_data_2}.courses cd2c
     WHERE cd2c.workflow_state <> 'deleted'
   ),
+  enrollment_terms AS (
+    SELECT id AS enrollment_term_id, sis_source_id AS sis_term_id
+    FROM {redshift_schema_canvas_data_2}.enrollment_terms
+    WHERE workflow_state <> 'deleted'
+  ),
   activity AS (
     SELECT e.course_id, MAX(e.last_activity_at) AS max_last_activity_at
     FROM {redshift_schema_canvas_data_2}.enrollments e
@@ -2469,6 +2474,7 @@ CREATE TABLE {redshift_schema_canvas_internal}.courses AS
     c.course_id,
     c.account_id,
     c.enrollment_term_id,
+    et.sis_term_id,
     c.name,
     c.code,
     c.created_at,
@@ -2478,5 +2484,6 @@ CREATE TABLE {redshift_schema_canvas_internal}.courses AS
     c.workflow_state,
     act.max_last_activity_at
   FROM courses c
+  LEFT OUTER JOIN enrollment_terms et ON c.enrollment_term_id = et.enrollment_term_id
   LEFT OUTER JOIN activity act ON c.course_id = act.course_id;
  
