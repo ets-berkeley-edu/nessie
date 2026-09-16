@@ -49,7 +49,7 @@ INSERT INTO {rds_schema_canvas}.course_sites
     SELECT DISTINCT
       courses.course_id,
       courses.account_id,
-      enrollment_terms.sis_source_id,
+      courses.sis_term_id,
       courses.sis_source_id,
       courses.code,
       courses.name,
@@ -57,9 +57,6 @@ INSERT INTO {rds_schema_canvas}.course_sites
       courses.max_last_activity_at,
       courses.created_at
     FROM {redshift_schema_canvas_internal}.courses
-    LEFT JOIN {redshift_schema_canvas_data_2}.enrollment_terms
-      ON courses.enrollment_term_id = enrollment_terms.id
-      AND enrollment_terms.workflow_state <> 'deleted'
   $REDSHIFT$)
   AS redshift_course_sites (
     id VARCHAR,
