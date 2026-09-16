@@ -300,6 +300,7 @@ def resolve_sql_template_string(template_string, **kwargs):
         'redshift_schema_calendly_internal': app.config['REDSHIFT_SCHEMA_CALENDLY_INTERNAL'],
         'redshift_schema_canvas': app.config['REDSHIFT_SCHEMA_CANVAS'],
         'redshift_schema_canvas_data_2': app.config['REDSHIFT_SCHEMA_CANVAS_DATA_2'],
+        'redshift_schema_canvas_internal': app.config['REDSHIFT_SCHEMA_CANVAS_INTERNAL'],
         'redshift_schema_coe': app.config['REDSHIFT_SCHEMA_COE'],
         'redshift_schema_coe_external': app.config['REDSHIFT_SCHEMA_COE_EXTERNAL'],
         'redshift_schema_data_science_advising': app.config['REDSHIFT_SCHEMA_DATA_SCIENCE_ADVISING'],
