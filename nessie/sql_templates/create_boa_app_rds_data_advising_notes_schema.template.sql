@@ -72,9 +72,12 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes (
   author_name VARCHAR,
   advisor_first_name VARCHAR,
   advisor_last_name VARCHAR,
+  author_dept_codes VARCHAR[] NOT NULL,
   subject VARCHAR,
   note_body TEXT,
   is_private BOOLEAN,
+  contact_type VARCHAR,
+  set_date DATE,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
@@ -85,26 +88,33 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes (
 -----------------------------------------------------------------------------------------------------
 
 INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes (
-  SELECT *
+  SELECT id, sid, boa_id, advisor_uid, author_name, advisor_first_name, advisor_last_name,
+         ARRAY_AGG(author_dept_code) AS author_dept_codes,
+         subject, note_body, is_private, contact_type, set_date, created_at, updated_at
   FROM dblink('{rds_dblink_to_redshift}',
     $REDSHIFT$
       SELECT
-        'boa-' || sid || '-' || id AS id,
-        sid,
-        id::VARCHAR AS boa_id,
-        author_uid AS advisor_uid,
-        TRIM(author_name) AS author_name,
-        REGEXP_REPLACE(REGEXP_REPLACE(TRIM(author_name), ',.*$', ''), '^(.+) ([^ ]+)$', '$1') AS advisor_first_name,
-        REGEXP_REPLACE(REGEXP_REPLACE(TRIM(author_name), ',.*$', ''), '^(.+) ([^ ]+)$', '$2') AS advisor_last_name,
-        subject,
-        body AS note_body,
-        is_private,
-        TO_TIMESTAMP(DATE_TRUNC('minute', created_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
-        TO_TIMESTAMP(DATE_TRUNC('minute', updated_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at
-      FROM {redshift_schema_boa_app_rds_data}.notes
-      WHERE is_draft IS FALSE
-      AND deleted_at IS NULL
-      AND sid IS NOT NULL
+        'boa-' || n.sid || '-' || n.id AS id,
+        n.sid,
+        n.id::VARCHAR AS boa_id,
+        n.author_uid AS advisor_uid,
+        TRIM(n.author_name) AS author_name,
+        REGEXP_REPLACE(REGEXP_REPLACE(TRIM(n.author_name), ',.*$', ''), '^(.+) ([^ ]+)$', '$1') AS advisor_first_name,
+        REGEXP_REPLACE(REGEXP_REPLACE(TRIM(n.author_name), ',.*$', ''), '^(.+) ([^ ]+)$', '$2') AS advisor_last_name,
+        d AS author_dept_code,
+        n.subject,
+        n.body AS note_body,
+        n.is_private,
+        n.contact_type,
+        n.set_date,
+        TO_TIMESTAMP(DATE_TRUNC('minute', n.created_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
+        TO_TIMESTAMP(DATE_TRUNC('minute', n.updated_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at
+      FROM {redshift_schema_boa_app_rds_data}.notes n,
+          n.author_dept_codes d
+      WHERE n.is_draft IS FALSE
+      AND n.deleted_at IS NULL
+      AND n.sid IS NOT NULL
+      ORDER BY n.id
     $REDSHIFT$)
   AS rs_notes (
     id VARCHAR,
@@ -114,12 +124,17 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes (
     author_name VARCHAR,
     advisor_first_name VARCHAR,
     advisor_last_name VARCHAR,
+    author_dept_code VARCHAR,
     subject VARCHAR,
     note_body TEXT,
     is_private BOOLEAN,
+    contact_type VARCHAR,
+    set_date DATE,
     created_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE
   )
+  GROUP BY id, sid, boa_id, advisor_uid, author_name, advisor_first_name, advisor_last_name,
+         subject, note_body, is_private, contact_type, set_date, created_at, updated_at
 );
 
 
@@ -278,12 +293,20 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes_search_index AS
   )
   SELECT
     n.id,
-    TO_TSVECTOR(
-      'english',
-      COALESCE(n.subject, '') || ' ' ||
-      COALESCE(n.note_body, '') || ' ' ||
-      COALESCE(t.topics, '') || ' ' || n.author_name
-    ) AS fts_index
+    CASE
+        WHEN n.is_private
+        THEN TO_TSVECTOR(
+          'english',
+          COALESCE(n.subject, '') || ' ' ||
+          COALESCE(t.topics, '') || ' ' || n.author_name
+        )
+        ELSE TO_TSVECTOR(
+          'english',
+          COALESCE(n.subject, '') || ' ' ||
+          COALESCE(n.note_body, '') || ' ' ||
+          COALESCE(t.topics, '') || ' ' || n.author_name
+        )
+    END AS fts_index
   FROM {rds_schema_boa_app_rds_data}.advising_notes n
   LEFT OUTER JOIN topics t ON n.id = t.id;
 
