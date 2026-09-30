@@ -78,6 +78,8 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes (
   is_private BOOLEAN,
   contact_type VARCHAR,
   set_date DATE,
+  parent_note_id VARCHAR,
+  peer_advising_department_id VARCHAR,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
@@ -89,8 +91,8 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes (
 
 INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes (
   SELECT id, sid, boa_id, advisor_uid, author_name, advisor_first_name, advisor_last_name,
-         ARRAY_AGG(author_dept_code) AS author_dept_codes,
-         subject, note_body, is_private, contact_type, set_date, created_at, updated_at
+         ARRAY_AGG(author_dept_code) AS author_dept_codes, subject, note_body,
+         is_private, contact_type, set_date, parent_note_id, peer_advising_department_id, created_at, updated_at
   FROM dblink('{rds_dblink_to_redshift}',
     $REDSHIFT$
       SELECT
@@ -107,6 +109,8 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes (
         n.is_private,
         n.contact_type,
         n.set_date,
+        n.parent_note_id,
+        n.peer_advising_department_id,
         TO_TIMESTAMP(DATE_TRUNC('minute', n.created_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
         TO_TIMESTAMP(DATE_TRUNC('minute', n.updated_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at
       FROM {redshift_schema_boa_app_rds_data}.notes n,
@@ -130,11 +134,13 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes (
     is_private BOOLEAN,
     contact_type VARCHAR,
     set_date DATE,
+    parent_note_id VARCHAR,
+    peer_advising_department_id VARCHAR,
     created_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE
   )
-  GROUP BY id, sid, boa_id, advisor_uid, author_name, advisor_first_name, advisor_last_name,
-         subject, note_body, is_private, contact_type, set_date, created_at, updated_at
+  GROUP BY id, sid, boa_id, advisor_uid, author_name, advisor_first_name, advisor_last_name, subject, note_body,
+      is_private, contact_type, set_date, parent_note_id, peer_advising_department_id, created_at, updated_at
 );
 
 

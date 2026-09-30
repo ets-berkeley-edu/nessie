@@ -24,7 +24,7 @@
  */
 
 --------------------------------------------------------------------------------------
--- CREATE BOA APP RDS DATA EXTERNAL SCHEMA & DATABASE 
+-- CREATE BOA APP RDS DATA EXTERNAL SCHEMA & DATABASE
 --------------------------------------------------------------------------------------
 
 CREATE EXTERNAL SCHEMA {redshift_schema_boa_app_rds_data}
@@ -416,6 +416,8 @@ CREATE EXTERNAL TABLE {redshift_schema_boa_app_rds_data}.notes (
     deleted_at TIMESTAMP,
     is_private BOOLEAN,
     contact_type VARCHAR(40),
+    parent_note_id INTEGER,
+    peer_advising_department_id INTEGER,
     set_date DATE,
     is_draft BOOLEAN
 )
@@ -451,7 +453,7 @@ CREATE EXTERNAL TABLE {redshift_schema_boa_app_rds_data}.peer_advising_departmen
     deleted_at TIMESTAMP
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe'
-STORED AS PARQUET 
+STORED AS PARQUET
 LOCATION '{loch_s3_boa_app_rds_data_path_daily}/peer_advising_department_members/';
 
 
@@ -467,7 +469,7 @@ CREATE EXTERNAL TABLE {redshift_schema_boa_app_rds_data}.peer_advising_departmen
     updated_at TIMESTAMP
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe'
-STORED AS PARQUET 
+STORED AS PARQUET
 LOCATION '{loch_s3_boa_app_rds_data_path_daily}/peer_advising_departments/';
 
 
@@ -477,12 +479,12 @@ LOCATION '{loch_s3_boa_app_rds_data_path_daily}/peer_advising_departments/';
 
 CREATE EXTERNAL TABLE {redshift_schema_boa_app_rds_data}.peer_advising_topics (
     id INTEGER,
-    topic VARCHAR(50), 
+    topic VARCHAR(50),
     created_at TIMESTAMP,
     deleted_at TIMESTAMP
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe'
-STORED AS PARQUET 
+STORED AS PARQUET
 LOCATION '{loch_s3_boa_app_rds_data_path_daily}/peer_advising_topics/';
 
 
