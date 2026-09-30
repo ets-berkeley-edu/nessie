@@ -85,6 +85,8 @@ SELECT
   is_private,
   NULL::VARCHAR AS contact_type,
   NULL::DATE AS set_date,
+  NULL::VARCHAR AS parent_note_id,
+  NULL::VARCHAR AS peer_advising_department_id,
   created_by,
   created_at,
   updated_at
@@ -106,6 +108,8 @@ SELECT
   is_private,
   contact_type,
   set_date,
+  parent_note_id,
+  peer_advising_department_id,
   advisor_uid AS created_by,
   created_at,
   updated_at
@@ -119,6 +123,25 @@ CREATE INDEX advising_notes_curated_advisor_uid_idx ON {rds_schema_advising_note
 CREATE INDEX advising_notes_curated_created_at_idx ON {rds_schema_advising_notes}.advising_notes_curated (created_at);
 CREATE INDEX advising_notes_curated_created_by_idx ON {rds_schema_advising_notes}.advising_notes_curated (created_by);
 CREATE INDEX advising_notes_curated_updated_at_idx ON {rds_schema_advising_notes}.advising_notes_curated (updated_at);
+
+----------------------------------------------------------------------------------------------------
+-- Create and index table advising_note_topics_curated
+----------------------------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_note_topics_curated CASCADE;
+
+CREATE TABLE {rds_schema_advising_notes}.advising_note_topics_curated AS (
+  SELECT ant.advising_note_id AS id, ant.sid, antm.boa_topic AS topic
+  FROM {rds_schema_sis_advising_notes}.advising_note_topic_mappings antm
+  JOIN {rds_schema_sis_advising_notes}.advising_note_topics ant
+    ON antm.sis_topic = ant.note_topic
+  UNION
+  SELECT id, sid, topic
+  FROM {rds_schema_boa_app_rds_data}.advising_note_topics
+);
+
+CREATE INDEX advising_note_topics_curated_id_idx ON {rds_schema_advising_notes}.advising_note_topics_curated(id);
+CREATE INDEX advising_note_topics_curated_topic_idx ON {rds_schema_advising_notes}.advising_note_topics_curated(topic);
 
 ----------------------------------------------------------------------------------------------------
 -- Create and index table advising_notes_search_index_curated
@@ -137,7 +160,6 @@ CREATE TABLE IF NOT EXISTS {rds_schema_advising_notes}.advising_notes_search_ind
 CREATE INDEX advising_notes_search_curated_fts_index_idx
   ON {rds_schema_advising_notes}.advising_notes_search_index_curated
   USING GIN (fts_index);
-
 
 ----------------------------------------------------------------------------------------------------
 -- COMMIT TRANSACTION
