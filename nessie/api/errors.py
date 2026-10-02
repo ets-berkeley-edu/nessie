@@ -27,6 +27,8 @@ from nessie.lib.http import tolerant_jsonify
 
 
 class JsonableError(Exception):
+    status_code = 500
+
     def __init__(self, message):
         Exception.__init__(self)
         self.message = message
@@ -39,16 +41,16 @@ class JsonableError(Exception):
 
 
 class BadRequestError(JsonableError):
-    pass
+    status_code = 400
 
 
 class UnauthorizedRequestError(JsonableError):
-    pass
+    status_code = 401
 
 
 class ResourceNotFoundError(JsonableError):
-    pass
+    status_code = 404
 
 
 class InternalServerError(JsonableError):
-    pass
+    status_code = 500
