@@ -85,8 +85,8 @@ SELECT
   is_private,
   NULL::VARCHAR AS contact_type,
   NULL::DATE AS set_date,
-  NULL::VARCHAR AS parent_note_id,
-  NULL::VARCHAR AS peer_advising_department_id,
+  NULL::INTEGER AS parent_note_id,
+  NULL::INTEGER AS peer_advising_department_id,
   created_by,
   created_at,
   updated_at
