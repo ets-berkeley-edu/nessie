@@ -67,7 +67,7 @@ DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.advising_notes CASCADE;
 CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes (
   id VARCHAR PRIMARY KEY,
   sid VARCHAR NOT NULL,
-  boa_id VARCHAR NOT NULL,
+  boa_id INTEGER NOT NULL,
   advisor_uid VARCHAR,
   author_name VARCHAR,
   advisor_first_name VARCHAR,
@@ -78,8 +78,8 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes (
   is_private BOOLEAN,
   contact_type VARCHAR,
   set_date DATE,
-  parent_note_id VARCHAR,
-  peer_advising_department_id VARCHAR,
+  parent_note_id INTEGER,
+  peer_advising_department_id INTEGER,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
@@ -98,7 +98,7 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes (
       SELECT
         'boa-' || n.sid || '-' || n.id AS id,
         n.sid,
-        n.id::VARCHAR AS boa_id,
+        n.id::INTEGER AS boa_id,
         n.author_uid AS advisor_uid,
         TRIM(n.author_name) AS author_name,
         REGEXP_REPLACE(REGEXP_REPLACE(TRIM(n.author_name), ',.*$', ''), '^(.+) ([^ ]+)$', '$1') AS advisor_first_name,
@@ -123,7 +123,7 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes (
   AS rs_notes (
     id VARCHAR,
     sid VARCHAR,
-    boa_id VARCHAR,
+    boa_id INTEGER,
     advisor_uid VARCHAR,
     author_name VARCHAR,
     advisor_first_name VARCHAR,
@@ -134,8 +134,8 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes (
     is_private BOOLEAN,
     contact_type VARCHAR,
     set_date DATE,
-    parent_note_id VARCHAR,
-    peer_advising_department_id VARCHAR,
+    parent_note_id INTEGER,
+    peer_advising_department_id INTEGER,
     created_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE
   )
@@ -173,7 +173,7 @@ DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.advising_note_topics CASCADE;
 CREATE TABLE {rds_schema_boa_app_rds_data}.advising_note_topics (
   id VARCHAR NOT NULL,
   sid VARCHAR NOT NULL,
-  boa_id VARCHAR NOT NULL,
+  boa_id INTEGER NOT NULL,
   topic VARCHAR NOT NULL,
   PRIMARY KEY (id, topic)
 );
@@ -196,7 +196,7 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_note_topics (
       FROM {redshift_schema_boa_app_rds_data}.note_topics
       WHERE deleted_at IS NULL
     $REDSHIFT$)
-  AS rs_nt (note_id VARCHAR, topic VARCHAR)
+  AS rs_nt (note_id INTEGER, topic VARCHAR)
     ON n.boa_id = rs_nt.note_id
 );
 
@@ -223,7 +223,7 @@ CREATE INDEX advising_notes_topics_topic_idx
 DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.advising_note_topics_pending CASCADE;
 
 CREATE TABLE {rds_schema_boa_app_rds_data}.advising_note_topics_pending (
-  boa_id VARCHAR NOT NULL,
+  boa_id INTEGER NOT NULL,
   topic VARCHAR NOT NULL,
   author_uid VARCHAR,
   received_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -345,7 +345,7 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes_cdc_log (
   table_name VARCHAR NOT NULL,
   operation VARCHAR NOT NULL,
   effective_operation VARCHAR NOT NULL,
-  boa_id VARCHAR,
+  boa_id INTEGER,
   composite_id VARCHAR,
   payload JSONB NOT NULL,
   prepared_record JSONB,
