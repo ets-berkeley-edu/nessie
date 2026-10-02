@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import current_app as app
+from werkzeug.exceptions import HTTPException
 
 import nessie.api.errors
 from nessie.lib.http import tolerant_jsonify
@@ -31,22 +32,34 @@ from nessie.lib.http import tolerant_jsonify
 
 @app.errorhandler(nessie.api.errors.BadRequestError)
 def handle_bad_request(error):
-    return error.to_json(), 400
+    return error.to_json(), error.status_code
 
 
 @app.errorhandler(nessie.api.errors.UnauthorizedRequestError)
 def handle_unauthorized(error):
-    return error.to_json(), 401
+    return error.to_json(), error.status_code
 
 
 @app.errorhandler(nessie.api.errors.ResourceNotFoundError)
 def handle_resource_not_found(error):
-    return error.to_json(), 404
+    return error.to_json(), error.status_code
 
 
 @app.errorhandler(nessie.api.errors.InternalServerError)
 def handle_internal_server_error(error):
-    return error.to_json(), 500
+    return error.to_json(), error.status_code
+
+
+@app.errorhandler(HTTPException)
+def handle_http_exception(error):
+    # Werkzeug/Flask exceptions (405 Method Not Allowed, 413 Payload Too Large, etc.) keep their own status.
+    if error.code is None or error.code < 400:
+        # Redirects, for example, are passed through untouched.
+        return error
+    if error.code >= 500:
+        app.logger.exception(error)
+    headers = {k: v for k, v in error.get_headers() if k.lower() != 'content-type'}
+    return tolerant_jsonify({'message': error.description}), error.code, headers
 
 
 @app.errorhandler(Exception)

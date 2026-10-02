@@ -27,12 +27,13 @@ import csv
 import io
 import json
 from datetime import datetime
+from functools import wraps
 
 from flask import current_app as app
 from flask import request
 
 from nessie.api.auth_helper import api_key_required
-from nessie.api.errors import BadRequestError, InternalServerError
+from nessie.api.errors import BadRequestError, InternalServerError, JsonableError
 from nessie.externals import s3
 from nessie.lib.http import tolerant_jsonify
 from nessie.lib.util import (
@@ -44,7 +45,20 @@ from nessie.lib.util import (
 )
 
 
+def log_jsonable_errors(f):
+    """Log type, status and message of any JsonableError on its way out to the generic error handlers."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except JsonableError as e:
+            app.logger.warning(f'{request.method} {request.path} raised {type(e).__name__} ({e.status_code}): {e.message}')
+            raise
+    return decorated
+
+
 @app.route('/api/upload/asc_advising_notes', methods=['POST'])
+@log_jsonable_errors
 @api_key_required
 def upload_asc_advising_notes():
     file = _get_uploaded_file()
@@ -56,6 +70,7 @@ def upload_asc_advising_notes():
 
 
 @app.route('/api/upload/coe_advisees', methods=['POST'])
+@log_jsonable_errors
 @api_key_required
 def upload_coe_advisees():
     file = _get_uploaded_file()
@@ -71,6 +86,7 @@ def upload_coe_advisees():
 
 
 @app.route('/api/upload/oua_admissions', methods=['POST'])
+@log_jsonable_errors
 @api_key_required
 def upload_oua_admissions():
     file = _get_uploaded_file()
