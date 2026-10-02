@@ -264,3 +264,20 @@ class TestUploadOuaAdmissions:
             assert response.json['buckets'] == buckets
             for bucket in buckets:
                 assert object_exists(m3, bucket, expected_key)
+
+
+class TestUploadControllerErrorHandling:
+    """Error reporting on the upload API."""
+
+    def test_http_exception_keeps_status(self, client):
+        """A POST to a path that only the GET catch-all matches is a 405, not a generic 500."""
+        response = client.post('/api/upload/asc_advising_notes%20')
+        assert response.status_code == 405
+        assert 'GET' in response.headers['Allow']
+
+    def test_jsonable_error_is_logged(self, client, caplog):
+        """Log error type, status and message before the error is handled."""
+        with caplog.at_level('WARNING'):
+            response = client.post('/api/upload/asc_advising_notes')
+        assert response.status_code == 401
+        assert 'UnauthorizedRequestError (401): Invalid credentials.' in caplog.text
