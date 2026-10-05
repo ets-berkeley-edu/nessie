@@ -285,6 +285,29 @@ CREATE INDEX author_depts_dept_code_idx
 
 
 -----------------------------------------------------------------------------------------------------
+-- Create table advising_note_authors_index
+-----------------------------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.advising_note_authors_index CASCADE;
+
+CREATE TABLE {rds_schema_boa_app_rds_data}.advising_note_authors_index AS
+  SELECT DISTINCT author_name AS advisor_name, advisor_uid
+    FROM {rds_schema_boa_app_rds_data}.advising_notes
+    ORDER BY author_name;
+
+
+-----------------------------------------------------------------------------------------------------
+-- Create index on table advising_note_authors_index
+-----------------------------------------------------------------------------------------------------
+
+CREATE INDEX advising_note_authors_advisor_name_idx
+  ON {rds_schema_boa_app_rds_data}.advising_note_authors_index (advisor_name text_ops);
+
+CREATE INDEX advising_note_authors_name_uid_idx
+  ON {rds_schema_boa_app_rds_data}.advising_note_authors_index (advisor_name text_ops, advisor_uid text_ops);
+
+
+-----------------------------------------------------------------------------------------------------
 -- Create table advising_notes_search_index
 --   aggregate topics as space delimited list to prevent duplicate note id rows
 -----------------------------------------------------------------------------------------------------
