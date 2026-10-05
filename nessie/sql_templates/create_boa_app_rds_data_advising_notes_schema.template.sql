@@ -290,10 +290,16 @@ CREATE INDEX author_depts_dept_code_idx
 
 DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.advising_note_authors_index CASCADE;
 
-CREATE TABLE {rds_schema_boa_app_rds_data}.advising_note_authors_index AS
+CREATE TABLE {rds_schema_boa_app_rds_data}.advising_note_authors_index (
+  advisor_name VARCHAR PRIMARY KEY,
+  advisor_uid VARCHAR
+);
+
+INSERT INTO {rds_schema_boa_app_rds_data}.advising_note_authors_index(
   SELECT DISTINCT author_name AS advisor_name, advisor_uid
     FROM {rds_schema_boa_app_rds_data}.advising_notes
-    ORDER BY author_name;
+    ORDER BY author_name
+);
 
 
 -----------------------------------------------------------------------------------------------------
