@@ -326,4 +326,22 @@ INSERT INTO {rds_schema_advising_appointments}.calendly_advising_appointments (
 CREATE INDEX idx_calendly_advising_appointments_student_sid ON {rds_schema_advising_appointments}.calendly_advising_appointments(student_sid);
 CREATE INDEX idx_calendly_advising_appointments_starts_at ON {rds_schema_advising_appointments}.ycbm_advising_appointments(starts_at);
 
+--
+
+DROP MATERIALIZED VIEW IF EXISTS {rds_schema_advising_notes}.advising_appointments_search_index CASCADE;
+
+CREATE MATERIALIZED VIEW {rds_schema_advising_notes}.advising_appointments_search_index AS (
+  SELECT id, fts_index FROM {rds_schema_sis_advising_notes}.advising_appointments_search_index
+   UNION
+  SELECT id, to_tsvector('english', COALESCE(meeting_notes_plain, '') || ' ' || COALESCE(title, '')) AS fts_index
+    FROM {rds_schema_advising_appointments}.calendly_advising_appointments
+   UNION
+  SELECT id, to_tsvector('english', COALESCE(details, '') || ' ' || COALESCE(title, '')) AS fts_index
+    FROM {rds_schema_advising_appointments}.ycbm_advising_appointments
+);
+
+CREATE INDEX idx_advising_appointments_ft_search
+ON {rds_schema_advising_notes}.advising_appointments_search_index
+USING gin(fts_index);
+
 COMMIT TRANSACTION;

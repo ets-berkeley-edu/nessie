@@ -31,6 +31,108 @@
 BEGIN TRANSACTION;
 
 ----------------------------------------------------------------------------------------------------
+-- Drop, create, and index table advising_appointments_curated
+----------------------------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_appointments_curated CASCADE;
+
+CREATE TABLE {rds_schema_advising_notes}.advising_appointments_curated AS (
+  SELECT
+    id,
+    NULL AS student_uid,
+    sid AS student_sid,
+    NULL AS advisor_uid,
+    advisor_sid,
+    NULL AS advisor_name,
+    NULL AS advisor_role,
+    ARRAY[]::VARCHAR[] AS author_dept_codes,
+    CASE
+      WHEN note_body IS NULL THEN CONCAT_WS(', ', note_category, note_subcategory)
+      ELSE note_body
+    END AS body,
+    created_by,
+    created_at,
+    updated_at
+  FROM {rds_schema_sis_advising_notes}.advising_appointments
+  UNION
+  SELECT
+    id,
+    student_uid,
+    student_sid,
+    NULL AS advisor_uid,
+    NULL AS advisor_sid,
+    advisor_name,
+    NULL AS advisor_role,
+    ARRAY[]::VARCHAR[] AS author_dept_codes,
+    COALESCE(details, title) as body,
+    'YCBM' AS created_by,
+    starts_at AS created_at,
+    NULL AS updated_at
+  FROM {rds_schema_advising_appointments}.ycbm_advising_appointments
+  UNION
+  SELECT
+    id,
+    student_uid,
+    student_sid,
+    host_uid AS advisor_uid,
+    host_sid AS advisor_sid,
+    host_name AS advisor_name,
+    NULL AS advisor_role,
+    ARRAY[]::VARCHAR[] AS author_dept_codes,
+    COALESCE(meeting_notes_plain, title) AS body,
+    'Calendly' AS created_by,
+    created_at,
+    updated_at
+  FROM {rds_schema_advising_appointments}.calendly_advising_appointments
+);
+
+INSERT INTO {rds_schema_advising_notes}.advising_appointments_curated (
+  SELECT
+    'boa-' || boa_comments.id,
+    external_appts.student_uid,
+    external_appts.student_sid,
+    boa_comments.author_uid AS advisor_uid,
+    external_appts.advisor_sid,
+    boa_comments.author_name AS advisor_name,
+    boa_comments.author_role AS advisor_role,
+    boa_comments.author_dept_codes,
+    boa_comments.body,
+    'BOA' AS created_by,
+    boa_comments.created_at,
+    boa_comments.updated_at
+  FROM {rds_schema_boa_app_rds_data}.advising_appointment_comments boa_comments
+  JOIN {rds_schema_advising_notes}.advising_appointments_curated external_appts
+    ON boa_comments.id = external_appts.id
+);
+
+CREATE INDEX advising_appointments_curated_id_idx ON {rds_schema_advising_notes}.advising_appointments_curated (id);
+CREATE INDEX advising_appointments_curated_student_uid_idx ON {rds_schema_advising_notes}.advising_appointments_curated (student_uid);
+CREATE INDEX advising_appointments_curated_advisor_sid_idx ON {rds_schema_advising_notes}.advising_appointments_curated (advisor_sid);
+CREATE INDEX advising_appointments_curated_advisor_uid_idx ON {rds_schema_advising_notes}.advising_appointments_curated (advisor_uid);
+CREATE INDEX advising_appointments_curated_created_at_idx ON {rds_schema_advising_notes}.advising_appointments_curated (created_at);
+CREATE INDEX advising_appointments_curated_created_by_idx ON {rds_schema_advising_notes}.advising_appointments_curated (created_by);
+CREATE INDEX advising_appointments_curated_updated_at_idx ON {rds_schema_advising_notes}.advising_appointments_curated (updated_at);
+
+
+----------------------------------------------------------------------------------------------------
+-- Create and index table advising_appointments_search_index_curated
+----------------------------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_appointments_search_index_curated CASCADE;
+
+CREATE TABLE IF NOT EXISTS {rds_schema_advising_notes}.advising_appointments_search_index_curated AS (
+  SELECT id, fts_index
+  FROM {rds_schema_advising_notes}.advising_appointments_search_index
+  UNION
+  SELECT id, fts_index
+  FROM {rds_schema_boa_app_rds_data}.appointment_comments_search_index
+);
+
+CREATE INDEX advising_appointments_search_curated_fts_index_idx
+  ON {rds_schema_advising_notes}.advising_appointments_search_index_curated
+  USING GIN (fts_index);
+
+----------------------------------------------------------------------------------------------------
 -- Add BOA App RDS Data authors added to boac_advising_notes.advising_note_authors. These advisors
 --   have likely already been added by IndexAdvisingNotes, but this will capture any who may have
 --   created a BOA note in the past but no longer have advisor permissions in SIS.

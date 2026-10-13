@@ -163,6 +163,74 @@ LOCATION '{loch_s3_boa_app_rds_data_path_daily}/cohort_filters/';
 
 
 --------------------------------------------------------------------------------------
+-- External Table : comment_attachments
+--------------------------------------------------------------------------------------
+
+CREATE EXTERNAL TABLE {redshift_schema_boa_app_rds_data}.comment_attachments (
+    id INTEGER,
+    comment_id INTEGER,
+    path_to_attachment VARCHAR(255),
+    uploaded_by_uid VARCHAR(255),
+    created_at TIMESTAMP,
+    deleted_at TIMESTAMP
+)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe'
+STORED AS PARQUET
+LOCATION '{loch_s3_boa_app_rds_data_path_daily}/comment_attachments/';
+
+
+--------------------------------------------------------------------------------------
+-- External Table : comment_parents
+--------------------------------------------------------------------------------------
+
+CREATE EXTERNAL TABLE {redshift_schema_boa_app_rds_data}.comment_parents (
+    id INTEGER,
+    parent_id VARCHAR(255),
+    parent_type VARCHAR(40),
+    deleted_at TIMESTAMP
+)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe'
+STORED AS PARQUET
+LOCATION '{loch_s3_boa_app_rds_data_path_daily}/comment_parents/';
+
+
+--------------------------------------------------------------------------------------
+-- External Table : comments
+--------------------------------------------------------------------------------------
+
+CREATE EXTERNAL TABLE {redshift_schema_boa_app_rds_data}.comments (
+    id INTEGER,
+    comment_parent_id INTEGER,
+    author_uid VARCHAR(255),
+    author_name VARCHAR(255),
+    author_role VARCHAR(255),
+    author_dept_codes ARRAY<VARCHAR(255)>,
+    body VARCHAR(65535),
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP
+)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe'
+STORED AS PARQUET
+LOCATION '{loch_s3_boa_app_rds_data_path_daily}/comments/';
+
+
+--------------------------------------------------------------------------------------
+-- External Table : comments_read
+--------------------------------------------------------------------------------------
+
+CREATE EXTERNAL TABLE {redshift_schema_boa_app_rds_data}.comments_read (
+    comment_id INTEGER,
+    viewer_id INTEGER,
+    created_at TIMESTAMP
+
+)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe'
+STORED AS PARQUET
+LOCATION '{loch_s3_boa_app_rds_data_path_daily}/comments_read/';
+
+
+--------------------------------------------------------------------------------------
 -- External Table : degree_progress_categories
 --------------------------------------------------------------------------------------
 
