@@ -51,6 +51,101 @@ BEGIN TRANSACTION;
 
 
 -----------------------------------------------------------------------------------------------------
+-- Drop and create table advising_appointment_comments
+--   strip seconds from created_at and updated_at timestamps and convert to timestamptz
+--   exclude deleted records
+-----------------------------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.advising_appointment_comments CASCADE;
+
+CREATE TABLE {rds_schema_boa_app_rds_data}.advising_appointment_comments (
+  id VARCHAR NOT NULL,
+  boa_id INTEGER,
+  author_uid VARCHAR NOT NULL,
+  author_name VARCHAR NOT NULL,
+  author_role VARCHAR NOT NULL,
+  author_dept_codes VARCHAR[] NOT NULL,
+  body TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  deleted_at TIMESTAMP WITH TIME ZONE
+);
+
+
+-----------------------------------------------------------------------------------------------------
+-- Populate table advising_appointment_comments from Redshift
+-----------------------------------------------------------------------------------------------------
+
+INSERT INTO {rds_schema_boa_app_rds_data}.advising_appointment_comments (
+  SELECT id, boa_id, author_uid, author_name, author_role,
+         ARRAY_AGG(author_dept_code) AS author_dept_codes, body,
+         created_at, updated_at
+  FROM dblink('{rds_dblink_to_redshift}',
+    $REDSHIFT$
+      SELECT
+        p.parent_id AS id,
+        c.id AS boa_id,
+        c.author_uid,
+        TRIM(c.author_name) AS author_name,
+        c.author_role,
+        d AS author_dept_code,
+        c.body,
+        TO_TIMESTAMP(DATE_TRUNC('minute', c.created_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS created_at,
+        TO_TIMESTAMP(DATE_TRUNC('minute', c.updated_at), 'YYYY-MM-DD"T"HH.MI.SS%z') AS updated_at
+      FROM {redshift_schema_boa_app_rds_data}.comment_parents p
+      JOIN {redshift_schema_boa_app_rds_data}.comments c
+        ON p.id = c.comment_parent_id,
+           c.author_dept_codes d
+      WHERE p.parent_type = 'appointment'
+        AND c.deleted_at IS NULL
+      ORDER BY c.id
+    $REDSHIFT$)
+  AS rs_notes (
+    id VARCHAR,
+    boa_id INTEGER,
+    author_uid VARCHAR,
+    author_name VARCHAR,
+    author_role VARCHAR,
+    author_dept_code VARCHAR,
+    body TEXT,
+    created_at TIMESTAMP WITH TIME ZONE,
+    updated_at TIMESTAMP WITH TIME ZONE
+  )
+  GROUP BY id, boa_id, author_uid, author_name, author_role, body,
+           created_at, updated_at
+);
+
+
+-----------------------------------------------------------------------------------------------------
+-- Create table appointment_comments_search_index
+-----------------------------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.appointment_comments_search_index CASCADE;
+
+CREATE TABLE {rds_schema_boa_app_rds_data}.appointment_comments_search_index AS
+  SELECT
+    id,
+    boa_id,
+    TO_TSVECTOR(
+      'english',
+      COALESCE(body, '') || ' ' || author_name
+    ) AS fts_index
+  FROM {rds_schema_boa_app_rds_data}.advising_appointment_comments;
+
+
+-----------------------------------------------------------------------------------------------------
+-- Create indexes on table appointment_comments_search_index
+-----------------------------------------------------------------------------------------------------
+
+CREATE INDEX appointment_comments_search_index_fts_index_idx
+  ON {rds_schema_boa_app_rds_data}.appointment_comments_search_index
+  USING GIN (fts_index);
+
+CREATE UNIQUE INDEX appointment_comments_search_index_pkey
+  ON {rds_schema_boa_app_rds_data}.appointment_comments_search_index(boa_id);
+
+
+-----------------------------------------------------------------------------------------------------
 -- Drop and create table advising_notes
 --   prefix generated sid || '-' || id with 'boa-' since sid/id combination produces 2 dups with E&I
 --   author name changes over time as it changes in CalNet
