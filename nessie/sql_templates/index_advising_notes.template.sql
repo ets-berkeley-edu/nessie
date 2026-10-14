@@ -173,6 +173,10 @@ CREATE INDEX idx_advising_notes_ft_search
 ON {rds_schema_advising_notes}.advising_notes_search_index
 USING gin(fts_index);
 
+CREATE UNIQUE INDEX idx_advising_notes_search_index_pkey
+  ON {rds_schema_advising_notes}.advising_notes_search_index(id text_ops);
+
+
 --
 
 DROP TABLE IF EXISTS {rds_schema_advising_appointments}.ycbm_advising_appointments CASCADE;
@@ -343,5 +347,9 @@ CREATE MATERIALIZED VIEW {rds_schema_advising_notes}.advising_appointments_searc
 CREATE INDEX idx_advising_appointments_ft_search
 ON {rds_schema_advising_notes}.advising_appointments_search_index
 USING gin(fts_index);
+
+CREATE UNIQUE INDEX idx_advising_appointments_search_index_pkey
+  ON {rds_schema_advising_notes}.advising_appointments_search_index(id text_ops);
+
 
 COMMIT TRANSACTION;

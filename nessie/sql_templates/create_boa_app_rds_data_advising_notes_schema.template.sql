@@ -252,8 +252,8 @@ CREATE INDEX advising_notes_boa_id_idx
 CREATE INDEX advising_notes_advisor_uid_idx
   ON {rds_schema_boa_app_rds_data}.advising_notes (advisor_uid);
 
-CREATE INDEX advising_notes_updated_at_idx
-  ON {rds_schema_boa_app_rds_data}.advising_notes (updated_at);
+CREATE INDEX advising_notes_created_at_idx
+  ON {rds_schema_boa_app_rds_data}.advising_notes (created_at);
 
 
 -----------------------------------------------------------------------------------------------------

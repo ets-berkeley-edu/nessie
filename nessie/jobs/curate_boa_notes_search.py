@@ -58,6 +58,6 @@ class CurateBoaNotesSearch(BackgroundJob):
     def index_advising_notes(self):
         resolved_ddl = resolve_sql_template('index_boa_notes_search_curation.template.sql')
         if rds.execute(resolved_ddl):
-            app.logger.info('Indexed BOA advising notes.')
+            app.logger.info('Indexed curated advising notes.')
         else:
-            raise BackgroundJobError('Failed to index BOA advising notes.')
+            raise BackgroundJobError('Failed to index curated advising notes.')
