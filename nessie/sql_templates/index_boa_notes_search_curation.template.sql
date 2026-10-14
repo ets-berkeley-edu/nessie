@@ -88,7 +88,7 @@ CREATE TABLE {rds_schema_advising_notes}.advising_appointments_curated AS (
 
 INSERT INTO {rds_schema_advising_notes}.advising_appointments_curated (
   SELECT
-    'boa-' || boa_comments.id,
+    'boa-' || boa_comments.boa_id,
     external_appts.student_uid,
     external_appts.student_sid,
     boa_comments.author_uid AS advisor_uid,
@@ -124,13 +124,17 @@ CREATE TABLE IF NOT EXISTS {rds_schema_advising_notes}.advising_appointments_sea
   SELECT id, fts_index
   FROM {rds_schema_advising_notes}.advising_appointments_search_index
   UNION
-  SELECT id, fts_index
+  SELECT 'boa-' || boa_id AS id, fts_index
   FROM {rds_schema_boa_app_rds_data}.appointment_comments_search_index
 );
 
 CREATE INDEX advising_appointments_search_curated_fts_index_idx
   ON {rds_schema_advising_notes}.advising_appointments_search_index_curated
   USING GIN (fts_index);
+
+CREATE UNIQUE INDEX advising_appointments_search_curated_index_pkey
+  ON {rds_schema_advising_notes}.advising_appointments_search_index_curated(id text_ops);
+
 
 ----------------------------------------------------------------------------------------------------
 -- Add BOA App RDS Data authors added to boac_advising_notes.advising_note_authors. These advisors
@@ -262,6 +266,10 @@ CREATE TABLE IF NOT EXISTS {rds_schema_advising_notes}.advising_notes_search_ind
 CREATE INDEX advising_notes_search_curated_fts_index_idx
   ON {rds_schema_advising_notes}.advising_notes_search_index_curated
   USING GIN (fts_index);
+
+CREATE UNIQUE INDEX advising_notes_search_curated_index_pkey
+  ON {rds_schema_advising_notes}.advising_notes_search_index_curated(id text_ops);
+
 
 ----------------------------------------------------------------------------------------------------
 -- COMMIT TRANSACTION
