@@ -60,7 +60,7 @@ DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.advising_appointment_comments
 
 CREATE TABLE {rds_schema_boa_app_rds_data}.advising_appointment_comments (
   id VARCHAR NOT NULL,
-  boa_id INTEGER,
+  boa_id INTEGER PRIMARY KEY,
   author_uid VARCHAR NOT NULL,
   author_name VARCHAR NOT NULL,
   author_role VARCHAR NOT NULL,
