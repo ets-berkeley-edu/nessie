@@ -59,7 +59,7 @@ BEGIN TRANSACTION;
 DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.advising_appointment_comments CASCADE;
 
 CREATE TABLE {rds_schema_boa_app_rds_data}.advising_appointment_comments (
-  id VARCHAR NOT NULL,
+  parent_appointment_id VARCHAR NOT NULL,
   boa_id INTEGER PRIMARY KEY,
   author_uid VARCHAR NOT NULL,
   author_name VARCHAR NOT NULL,
@@ -67,8 +67,7 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_appointment_comments (
   author_dept_codes VARCHAR[] NOT NULL,
   body TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  deleted_at TIMESTAMP WITH TIME ZONE
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
 
@@ -77,13 +76,13 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_appointment_comments (
 -----------------------------------------------------------------------------------------------------
 
 INSERT INTO {rds_schema_boa_app_rds_data}.advising_appointment_comments (
-  SELECT id, boa_id, author_uid, author_name, author_role,
+  SELECT parent_appointment_id, boa_id, author_uid, author_name, author_role,
          ARRAY_AGG(author_dept_code) AS author_dept_codes, body,
          created_at, updated_at
   FROM dblink('{rds_dblink_to_redshift}',
     $REDSHIFT$
       SELECT
-        p.parent_id AS id,
+        p.parent_id AS parent_appointment_id,
         c.id AS boa_id,
         c.author_uid,
         TRIM(c.author_name) AS author_name,
@@ -101,7 +100,7 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_appointment_comments (
       ORDER BY c.id
     $REDSHIFT$)
   AS rs_notes (
-    id VARCHAR,
+    parent_appointment_id VARCHAR,
     boa_id INTEGER,
     author_uid VARCHAR,
     author_name VARCHAR,
@@ -111,20 +110,20 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_appointment_comments (
     created_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE
   )
-  GROUP BY id, boa_id, author_uid, author_name, author_role, body,
+  GROUP BY parent_appointment_id, boa_id, author_uid, author_name, author_role, body,
            created_at, updated_at
 );
 
 
 -----------------------------------------------------------------------------------------------------
--- Create table appointment_comments_search_index
+-- Create table advising_appointment_comments_search_index
 -----------------------------------------------------------------------------------------------------
 
-DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.appointment_comments_search_index CASCADE;
+DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.advising_appointment_comments_search_index CASCADE;
 
-CREATE TABLE {rds_schema_boa_app_rds_data}.appointment_comments_search_index AS
+CREATE TABLE {rds_schema_boa_app_rds_data}.advising_appointment_comments_search_index AS
   SELECT
-    id,
+    parent_appointment_id,
     boa_id,
     TO_TSVECTOR(
       'english',
@@ -134,15 +133,15 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.appointment_comments_search_index AS
 
 
 -----------------------------------------------------------------------------------------------------
--- Create indexes on table appointment_comments_search_index
+-- Create indexes on table advising_appointment_comments_search_index
 -----------------------------------------------------------------------------------------------------
 
 CREATE INDEX appointment_comments_search_index_fts_index_idx
-  ON {rds_schema_boa_app_rds_data}.appointment_comments_search_index
+  ON {rds_schema_boa_app_rds_data}.advising_appointment_comments_search_index
   USING GIN (fts_index);
 
 CREATE UNIQUE INDEX appointment_comments_search_index_pkey
-  ON {rds_schema_boa_app_rds_data}.appointment_comments_search_index(boa_id);
+  ON {rds_schema_boa_app_rds_data}.advising_appointment_comments_search_index(boa_id);
 
 
 -----------------------------------------------------------------------------------------------------
@@ -162,8 +161,7 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.eform_comments (
   author_dept_codes VARCHAR[] NOT NULL,
   body TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  deleted_at TIMESTAMP WITH TIME ZONE
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
 

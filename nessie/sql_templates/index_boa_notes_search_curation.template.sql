@@ -24,8 +24,10 @@
  */
 
 ----------------------------------------------------------------------------------------------------
--- BEGIN TRANSACTION: Create curated tables and indexes for Fulltext Search for Advising Notes.
---   Union BOA records to existing ASC, Data Science, E & I, EOP, History, and SIS records.
+-- BEGIN TRANSACTION: Create curated tables and indexes for Fulltext Search.
+--   For Advising Appointments: union BOA comment records to Calendly, YCBM, and SIS records.
+--   For eForms: union BOA comment records to SIS records.
+--   For Advising Notes: union BOA records to existing ASC, Data Science, E & I, EOP, History, and SIS records.
 ----------------------------------------------------------------------------------------------------
 
 BEGIN TRANSACTION;
@@ -34,61 +36,31 @@ BEGIN TRANSACTION;
 -- Drop, create, and index table advising_appointments_curated
 ----------------------------------------------------------------------------------------------------
 
-DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_appointments_curated CASCADE;
+DROP TABLE IF EXISTS {rds_schema_advising_appointments}.advising_appointments_curated CASCADE;
 
-CREATE TABLE {rds_schema_advising_notes}.advising_appointments_curated AS (
+CREATE TABLE {rds_schema_advising_appointments}.advising_appointments_curated AS (
   SELECT
     id,
-    NULL AS student_uid,
-    sid AS student_sid,
-    NULL AS advisor_uid,
-    advisor_sid,
-    NULL AS advisor_name,
-    NULL AS advisor_role,
-    ARRAY[]::VARCHAR[] AS author_dept_codes,
-    CASE
-      WHEN note_body IS NULL THEN CONCAT_WS(', ', note_category, note_subcategory)
-      ELSE note_body
-    END AS body,
-    created_by,
-    created_at,
-    updated_at
-  FROM {rds_schema_sis_advising_notes}.advising_appointments
-  UNION
-  SELECT
-    id,
+    NULL AS parent_appointment_id,
     student_uid,
     student_sid,
-    NULL AS advisor_uid,
-    NULL AS advisor_sid,
+    advisor_uid,
+    advisor_sid,
     advisor_name,
     NULL AS advisor_role,
     ARRAY[]::VARCHAR[] AS author_dept_codes,
-    COALESCE(details, title) as body,
-    'YCBM' AS created_by,
-    starts_at AS created_at,
-    NULL AS updated_at
-  FROM {rds_schema_advising_appointments}.ycbm_advising_appointments
-  UNION
-  SELECT
-    id,
-    student_uid,
-    student_sid,
-    host_uid AS advisor_uid,
-    host_sid AS advisor_sid,
-    host_name AS advisor_name,
-    NULL AS advisor_role,
-    ARRAY[]::VARCHAR[] AS author_dept_codes,
-    COALESCE(meeting_notes_plain, title) AS body,
-    'Calendly' AS created_by,
+    subject,
+    body,
+    created_by,
     created_at,
     updated_at
-  FROM {rds_schema_advising_appointments}.calendly_advising_appointments
+  FROM {rds_schema_advising_appointments}.advising_appointments
 );
 
-INSERT INTO {rds_schema_advising_notes}.advising_appointments_curated (
+INSERT INTO {rds_schema_advising_appointments}.advising_appointments_curated (
   SELECT
-    'boa-' || boa_comments.boa_id,
+    'boa-' || boa_comments.boa_id AS id,
+    boa_comments.parent_appointment_id,
     external_appts.student_uid,
     external_appts.student_sid,
     boa_comments.author_uid AS advisor_uid,
@@ -96,44 +68,44 @@ INSERT INTO {rds_schema_advising_notes}.advising_appointments_curated (
     boa_comments.author_name AS advisor_name,
     boa_comments.author_role AS advisor_role,
     boa_comments.author_dept_codes,
+    NULL AS subject,
     boa_comments.body,
     'BOA' AS created_by,
     boa_comments.created_at,
     boa_comments.updated_at
   FROM {rds_schema_boa_app_rds_data}.advising_appointment_comments boa_comments
-  JOIN {rds_schema_advising_notes}.advising_appointments_curated external_appts
-    ON boa_comments.id = external_appts.id
+  JOIN {rds_schema_advising_appointments}.advising_appointments_curated external_appts
+    ON boa_comments.parent_appointment_id = external_appts.id
 );
 
-CREATE INDEX advising_appointments_curated_id_idx ON {rds_schema_advising_notes}.advising_appointments_curated (id);
-CREATE INDEX advising_appointments_curated_student_uid_idx ON {rds_schema_advising_notes}.advising_appointments_curated (student_uid);
-CREATE INDEX advising_appointments_curated_advisor_sid_idx ON {rds_schema_advising_notes}.advising_appointments_curated (advisor_sid);
-CREATE INDEX advising_appointments_curated_advisor_uid_idx ON {rds_schema_advising_notes}.advising_appointments_curated (advisor_uid);
-CREATE INDEX advising_appointments_curated_created_at_idx ON {rds_schema_advising_notes}.advising_appointments_curated (created_at);
-CREATE INDEX advising_appointments_curated_created_by_idx ON {rds_schema_advising_notes}.advising_appointments_curated (created_by);
-CREATE INDEX advising_appointments_curated_updated_at_idx ON {rds_schema_advising_notes}.advising_appointments_curated (updated_at);
+CREATE INDEX advising_appointments_curated_id_idx ON {rds_schema_advising_appointments}.advising_appointments_curated (id);
+CREATE INDEX advising_appointments_curated_student_uid_idx ON {rds_schema_advising_appointments}.advising_appointments_curated (student_uid);
+CREATE INDEX advising_appointments_curated_student_sid_idx ON {rds_schema_advising_appointments}.advising_appointments_curated (student_sid);
+CREATE INDEX advising_appointments_curated_advisor_uid_idx ON {rds_schema_advising_appointments}.advising_appointments_curated (advisor_uid);
+CREATE INDEX advising_appointments_curated_advisor_sid_idx ON {rds_schema_advising_appointments}.advising_appointments_curated (advisor_sid);
+CREATE INDEX advising_appointments_curated_updated_at_idx ON {rds_schema_advising_appointments}.advising_appointments_curated (updated_at);
 
 
 ----------------------------------------------------------------------------------------------------
 -- Create and index table advising_appointments_search_index_curated
 ----------------------------------------------------------------------------------------------------
 
-DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_appointments_search_index_curated CASCADE;
+DROP TABLE IF EXISTS {rds_schema_advising_appointments}.advising_appointments_search_index_curated CASCADE;
 
-CREATE TABLE IF NOT EXISTS {rds_schema_advising_notes}.advising_appointments_search_index_curated AS (
+CREATE TABLE IF NOT EXISTS {rds_schema_advising_appointments}.advising_appointments_search_index_curated AS (
   SELECT id, fts_index
-  FROM {rds_schema_advising_notes}.advising_appointments_search_index
+  FROM {rds_schema_advising_appointments}.advising_appointments_search_index
   UNION
   SELECT 'boa-' || boa_id AS id, fts_index
-  FROM {rds_schema_boa_app_rds_data}.appointment_comments_search_index
+  FROM {rds_schema_boa_app_rds_data}.advising_appointment_comments_search_index
 );
 
 CREATE INDEX advising_appointments_search_curated_fts_index_idx
-  ON {rds_schema_advising_notes}.advising_appointments_search_index_curated
+  ON {rds_schema_advising_appointments}.advising_appointments_search_index_curated
   USING GIN (fts_index);
 
 CREATE UNIQUE INDEX advising_appointments_search_curated_index_pkey
-  ON {rds_schema_advising_notes}.advising_appointments_search_index_curated(id text_ops);
+  ON {rds_schema_advising_appointments}.advising_appointments_search_index_curated(id text_ops);
 
 ----------------------------------------------------------------------------------------------------
 -- Drop, create, and index table eforms_curated
@@ -144,6 +116,7 @@ DROP TABLE IF EXISTS {rds_schema_advising_notes}.eforms_curated CASCADE;
 CREATE TABLE {rds_schema_advising_notes}.eforms_curated AS (
   SELECT
     id,
+    NULL AS parent_eform_id,
     eform_id,
     'late_drop_eform' AS eform_type,
     sid AS student_sid,
@@ -156,6 +129,7 @@ CREATE TABLE {rds_schema_advising_notes}.eforms_curated AS (
   UNION
   SELECT
     id,
+    NULL AS parent_eform_id,
     eform_id,
     'course_load_eform' AS eform_type,
     sid AS student_sid,
@@ -168,6 +142,7 @@ CREATE TABLE {rds_schema_advising_notes}.eforms_curated AS (
   UNION
   SELECT
     id,
+    NULL AS parent_eform_id,
     eform_id,
     'cpp_change_eform' AS eform_type,
     sid AS student_sid,
@@ -182,6 +157,7 @@ CREATE TABLE {rds_schema_advising_notes}.eforms_curated AS (
 INSERT INTO {rds_schema_advising_notes}.eforms_curated (
   SELECT
     'boa-' || boa_comments.boa_id AS id,
+    boa_comments.id AS parent_eform_id,
     NULL AS eform_id,
     sis_eforms.eform_type,
     sis_eforms.student_sid,
@@ -271,6 +247,7 @@ CREATE TABLE {rds_schema_advising_notes}.advising_notes_curated AS (
 SELECT
   sid,
   id,
+  NULL::INTEGER AS parent_note_id,
   note_body,
   advisor_sid,
   advisor_uid,
@@ -284,7 +261,6 @@ SELECT
   is_private,
   NULL::VARCHAR AS contact_type,
   NULL::DATE AS set_date,
-  NULL::INTEGER AS parent_note_id,
   NULL::INTEGER AS peer_advising_department_id,
   created_by,
   created_at,
@@ -294,6 +270,7 @@ UNION
 SELECT
   sid,
   id,
+  parent_note_id,
   note_body,
   NULL AS advisor_sid,
   advisor_uid,
@@ -307,7 +284,6 @@ SELECT
   is_private,
   contact_type,
   set_date,
-  parent_note_id,
   peer_advising_department_id,
   advisor_uid AS created_by,
   created_at,

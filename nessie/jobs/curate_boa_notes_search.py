@@ -40,6 +40,7 @@ class CurateBoaNotesSearch(BackgroundJob):
         RefreshBoaAppRdsDataSchema().run()
         app.logger.info('Executing SQL...')
         self.create_schema()
+        app.logger.info('Indexing curated advising notes...')
         self.index_advising_notes()
         return 'BOA Advising Notes Search Curation job completed.'
 
