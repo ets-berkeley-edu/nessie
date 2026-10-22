@@ -188,6 +188,7 @@ CREATE TABLE {rds_schema_advising_appointments}.ycbm_advising_appointments (
   cancelled BOOLEAN,
   cancellation_reason TEXT,
   advisor_name VARCHAR,
+  advisor_email VARCHAR,
   appointment_type VARCHAR,
   details VARCHAR,
   PRIMARY KEY (id)
@@ -206,6 +207,7 @@ INSERT INTO {rds_schema_advising_appointments}.ycbm_advising_appointments (
       b.cancelled,
       b.cancellation_reason,
       b.advisor_name,
+      b.advisor_email,
       b.q5 AS appointment_type,
       b.q6 AS details
     FROM {redshift_schema_ycbm_internal}.bookings b
@@ -223,6 +225,7 @@ INSERT INTO {rds_schema_advising_appointments}.ycbm_advising_appointments (
     cancelled BOOLEAN,
     cancellation_reason TEXT,
     advisor_name VARCHAR,
+    advisor_email VARCHAR,
     appointment_type VARCHAR,
     details VARCHAR
   )
@@ -329,9 +332,76 @@ CREATE INDEX idx_calendly_advising_appointments_starts_at ON {rds_schema_advisin
 
 --
 
-DROP MATERIALIZED VIEW IF EXISTS {rds_schema_advising_notes}.advising_appointments_search_index CASCADE;
+DROP TABLE IF EXISTS {rds_schema_advising_appointments}.advising_appointments CASCADE;
 
-CREATE MATERIALIZED VIEW {rds_schema_advising_notes}.advising_appointments_search_index AS (
+CREATE TABLE {rds_schema_advising_appointments}.advising_appointments AS (
+  SELECT DISTINCT on (aa.id)
+    aa.id,
+    students.ldap_uid AS student_uid,
+    aa.sid AS student_sid,
+    advisors.ldap_uid AS advisor_uid,
+    aa.advisor_sid,
+    advisors.first_name || ' ' || advisors.last_name AS advisor_name,
+    aa.note_subcategory AS subject,
+    COALESCE(NULLIF(aa.note_body, ' '), aa.note_category) AS body,
+    aa.created_by,
+    aa.created_at,
+    aa.updated_at
+  FROM {rds_schema_sis_advising_notes}.advising_appointments aa
+  LEFT JOIN {rds_schema_sis_internal}.basic_attributes advisors
+    ON aa.advisor_sid = advisors.sid
+  LEFT JOIN {rds_schema_sis_internal}.basic_attributes students
+    ON aa.sid = students.sid
+  UNION
+  SELECT DISTINCT on (aa.id)
+    aa.id,
+    COALESCE(aa.student_uid, students.ldap_uid) AS student_uid,
+    COALESCE(aa.student_sid, students.sid) AS student_sid,
+    advisors.ldap_uid AS advisor_uid,
+    advisors.sid AS advisor_sid,
+    aa.advisor_name,
+    aa.title AS subject,
+    aa.details AS body,
+    'YCBM' AS created_by,
+    aa.starts_at AS created_at,
+    NULL AS updated_at
+  FROM {rds_schema_advising_appointments}.ycbm_advising_appointments aa
+  LEFT JOIN {rds_schema_sis_internal}.basic_attributes advisors
+    ON aa.advisor_email = advisors.email_address
+  LEFT JOIN {rds_schema_sis_internal}.basic_attributes students
+    ON (aa.student_uid = students.ldap_uid OR aa.student_sid = students.sid)
+  UNION
+  SELECT DISTINCT on (aa.id)
+    aa.id,
+    aa.student_uid,
+    students.sid AS student_sid,
+    advisors.ldap_uid AS advisor_uid,
+    advisors.sid AS advisor_sid,
+    aa.host_name AS advisor_name,
+    aa.title AS subject,
+    aa.meeting_notes_plain AS body,
+    'Calendly' AS created_by,
+    aa.created_at,
+    aa.updated_at
+  FROM {rds_schema_advising_appointments}.calendly_advising_appointments aa
+  LEFT JOIN {rds_schema_sis_internal}.basic_attributes advisors
+    ON (aa.host_uid = advisors.ldap_uid OR aa.host_sid = advisors.sid)
+  LEFT JOIN {rds_schema_sis_internal}.basic_attributes students
+    ON (aa.student_uid = students.ldap_uid)
+);
+
+CREATE INDEX advising_appointments_id_idx ON {rds_schema_advising_appointments}.advising_appointments (id);
+CREATE INDEX advising_appointments_student_uid_idx ON {rds_schema_advising_appointments}.advising_appointments (student_uid);
+CREATE INDEX advising_appointments_student_sid_idx ON {rds_schema_advising_appointments}.advising_appointments (student_sid);
+CREATE INDEX advising_appointments_advisor_uid_idx ON {rds_schema_advising_appointments}.advising_appointments (advisor_uid);
+CREATE INDEX advising_appointments_advisor_sid_idx ON {rds_schema_advising_appointments}.advising_appointments (advisor_sid);
+CREATE INDEX advising_appointments_created_at_idx ON {rds_schema_advising_appointments}.advising_appointments (created_at);
+
+--
+
+DROP TABLE IF EXISTS {rds_schema_advising_appointments}.advising_appointments_search_index CASCADE;
+
+CREATE TABLE {rds_schema_advising_appointments}.advising_appointments_search_index AS (
   SELECT id, fts_index FROM {rds_schema_sis_advising_notes}.advising_appointments_search_index
    UNION
   SELECT id, to_tsvector('english', COALESCE(meeting_notes_plain, '') || ' ' || COALESCE(title, '')) AS fts_index
@@ -342,11 +412,11 @@ CREATE MATERIALIZED VIEW {rds_schema_advising_notes}.advising_appointments_searc
 );
 
 CREATE INDEX idx_advising_appointments_ft_search
-ON {rds_schema_advising_notes}.advising_appointments_search_index
+ON {rds_schema_advising_appointments}.advising_appointments_search_index
 USING gin(fts_index);
 
 CREATE UNIQUE INDEX idx_advising_appointments_search_index_pkey
-  ON {rds_schema_advising_notes}.advising_appointments_search_index(id text_ops);
+  ON {rds_schema_advising_appointments}.advising_appointments_search_index(id text_ops);
 
 
 COMMIT TRANSACTION;
