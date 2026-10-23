@@ -153,7 +153,7 @@ CREATE UNIQUE INDEX appointment_comments_search_index_pkey
 DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.eform_comments CASCADE;
 
 CREATE TABLE {rds_schema_boa_app_rds_data}.eform_comments (
-  id VARCHAR NOT NULL,
+  parent_eform_id VARCHAR NOT NULL,
   boa_id INTEGER PRIMARY KEY,
   author_uid VARCHAR NOT NULL,
   author_name VARCHAR NOT NULL,
@@ -170,13 +170,13 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.eform_comments (
 -----------------------------------------------------------------------------------------------------
 
 INSERT INTO {rds_schema_boa_app_rds_data}.eform_comments (
-  SELECT id, boa_id, author_uid, author_name, author_role,
+  SELECT parent_eform_id, boa_id, author_uid, author_name, author_role,
          ARRAY_AGG(author_dept_code) AS author_dept_codes, body,
          created_at, updated_at
   FROM dblink('{rds_dblink_to_redshift}',
     $REDSHIFT$
       SELECT
-        p.parent_id AS id,
+        p.parent_id AS parent_eform_id,
         c.id AS boa_id,
         c.author_uid,
         TRIM(c.author_name) AS author_name,
@@ -194,7 +194,7 @@ INSERT INTO {rds_schema_boa_app_rds_data}.eform_comments (
       ORDER BY c.id
     $REDSHIFT$)
   AS rs_notes (
-    id VARCHAR,
+    parent_eform_id VARCHAR,
     boa_id INTEGER,
     author_uid VARCHAR,
     author_name VARCHAR,
@@ -204,7 +204,7 @@ INSERT INTO {rds_schema_boa_app_rds_data}.eform_comments (
     created_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE
   )
-  GROUP BY id, boa_id, author_uid, author_name, author_role, body,
+  GROUP BY parent_eform_id, boa_id, author_uid, author_name, author_role, body,
            created_at, updated_at
 );
 
@@ -217,7 +217,7 @@ DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.eform_comments_search_index C
 
 CREATE TABLE {rds_schema_boa_app_rds_data}.eform_comments_search_index AS
   SELECT
-    id,
+    parent_eform_id,
     boa_id,
     TO_TSVECTOR(
       'english',

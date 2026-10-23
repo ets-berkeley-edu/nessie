@@ -464,6 +464,73 @@ USING gin(fts_index);
 
 --
 
+DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.student_eforms CASCADE;
+
+CREATE TABLE {rds_schema_sis_advising_notes}.student_eforms AS (
+  SELECT
+    id,
+    eform_id,
+    eform_status,
+    eform_type,
+    sid AS student_sid,
+    (
+      COALESCE(grading_basis_description, '') || ' ' || COALESCE(requested_grading_basis_description, '') || ' ' ||
+      course_display_name || ' ' || course_title || ' ' || requested_action || ' ' ||
+      eform_type || ' ' || eform_id || ' ' || eform_status
+    ) AS body,
+    to_jsonb(student_late_drop_eforms) AS eform,
+    created_at,
+    updated_at
+  FROM {rds_schema_sis_advising_notes}.student_late_drop_eforms
+  UNION
+  SELECT
+    id,
+    eform_id,
+    eform_status,
+    eform_type,
+    sid AS student_sid,
+    (
+      COALESCE(academic_standing_description, '') || ' ' || request_type || ' ' || request_type_description || ' ' ||
+      eform_type || ' ' || eform_id || ' ' || eform_status
+    ) AS body,
+    to_jsonb(student_course_load_eforms) AS eform,
+    created_at,
+    updated_at
+  FROM {rds_schema_sis_advising_notes}.student_course_load_eforms
+  UNION
+  SELECT
+    id,
+    eform_id,
+    eform_status,
+    eform_type,
+    sid AS student_sid,
+    (
+      COALESCE(academic_program_name, '') || ' ' || COALESCE(academic_plan_name, '') || ' ' ||
+      COALESCE(academic_subplan_name, '') || ' ' || COALESCE(to_academic_program_name, '') || ' ' ||
+      COALESCE(to_academic_plan_name, '') || ' ' || COALESCE(to_academic_subplan_name, '') || ' ' ||
+      eform_type || ' ' || eform_action_description || ' ' || eform_id || ' ' || eform_status
+    ) AS body,
+    to_jsonb(student_cpp_change_eforms) AS eform,
+    created_at,
+    updated_at
+  FROM {rds_schema_sis_advising_notes}.student_cpp_change_eforms
+);
+
+--
+
+DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.student_eforms_search_index CASCADE;
+
+CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.student_eforms_search_index AS (
+  SELECT id, to_tsvector('english', body) AS fts_index
+  FROM {rds_schema_sis_advising_notes}.student_eforms
+);
+
+CREATE INDEX idx_student_eforms_ft_search
+ON {rds_schema_sis_advising_notes}.student_eforms_search_index
+USING gin(fts_index);
+
+--
+
 DROP TABLE IF EXISTS {rds_schema_sis_advising_notes}.advising_appointments CASCADE;
 
 CREATE TABLE {rds_schema_sis_advising_notes}.advising_appointments (
