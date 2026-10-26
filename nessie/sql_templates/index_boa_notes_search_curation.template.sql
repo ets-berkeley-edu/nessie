@@ -147,7 +147,7 @@ DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_notes_curated CASCADE;
 
 CREATE TABLE {rds_schema_advising_notes}.advising_notes_curated AS (
 SELECT
-  sid,
+  student_sid,
   id,
   NULL::INTEGER AS parent_note_id,
   note_body,
@@ -170,7 +170,7 @@ SELECT
 FROM {rds_schema_advising_notes}.advising_notes
 UNION
 SELECT
-  sid,
+  student_sid,
   id,
   parent_note_id,
   note_body,
@@ -194,7 +194,7 @@ FROM {rds_schema_boa_app_rds_data}.advising_notes
 );
 
 CREATE INDEX advising_notes_curated_id_idx ON {rds_schema_advising_notes}.advising_notes_curated (id);
-CREATE INDEX advising_notes_curated_sid_idx ON {rds_schema_advising_notes}.advising_notes_curated (sid);
+CREATE INDEX advising_notes_curated_sid_idx ON {rds_schema_advising_notes}.advising_notes_curated (student_sid);
 CREATE INDEX advising_notes_curated_advisor_sid_idx ON {rds_schema_advising_notes}.advising_notes_curated (advisor_sid);
 CREATE INDEX advising_notes_curated_advisor_uid_idx ON {rds_schema_advising_notes}.advising_notes_curated (advisor_uid);
 CREATE INDEX advising_notes_curated_created_at_idx ON {rds_schema_advising_notes}.advising_notes_curated (created_at);
