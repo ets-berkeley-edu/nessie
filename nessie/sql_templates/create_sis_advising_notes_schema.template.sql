@@ -480,7 +480,8 @@ CREATE TABLE {rds_schema_sis_advising_notes}.student_eforms AS (
     ) AS body,
     to_jsonb(student_late_drop_eforms) AS eform,
     created_at,
-    updated_at
+    updated_at,
+    'student_late_drop_eforms' AS data_source
   FROM {rds_schema_sis_advising_notes}.student_late_drop_eforms
   UNION
   SELECT
@@ -495,7 +496,8 @@ CREATE TABLE {rds_schema_sis_advising_notes}.student_eforms AS (
     ) AS body,
     to_jsonb(student_course_load_eforms) AS eform,
     created_at,
-    updated_at
+    updated_at,
+    'student_course_load_eforms' AS data_source
   FROM {rds_schema_sis_advising_notes}.student_course_load_eforms
   UNION
   SELECT
@@ -512,7 +514,8 @@ CREATE TABLE {rds_schema_sis_advising_notes}.student_eforms AS (
     ) AS body,
     to_jsonb(student_cpp_change_eforms) AS eform,
     created_at,
-    updated_at
+    updated_at,
+    'student_cpp_change_eforms' AS data_source
   FROM {rds_schema_sis_advising_notes}.student_cpp_change_eforms
 );
 

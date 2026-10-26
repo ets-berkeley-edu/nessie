@@ -254,7 +254,7 @@ DROP TABLE IF EXISTS {rds_schema_boa_app_rds_data}.advising_notes CASCADE;
 
 CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes (
   id VARCHAR PRIMARY KEY,
-  sid VARCHAR NOT NULL,
+  student_sid VARCHAR NOT NULL,
   boa_id INTEGER NOT NULL,
   advisor_uid VARCHAR,
   author_name VARCHAR,
@@ -278,14 +278,14 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes (
 -----------------------------------------------------------------------------------------------------
 
 INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes (
-  SELECT id, sid, boa_id, advisor_uid, author_name, advisor_first_name, advisor_last_name,
+  SELECT id, student_sid, boa_id, advisor_uid, author_name, advisor_first_name, advisor_last_name,
          ARRAY_AGG(author_dept_code) AS author_dept_codes, subject, note_body,
          is_private, contact_type, set_date, parent_note_id, peer_advising_department_id, created_at, updated_at
   FROM dblink('{rds_dblink_to_redshift}',
     $REDSHIFT$
       SELECT
         'boa-' || n.sid || '-' || n.id AS id,
-        n.sid,
+        n.sid AS student_sid,
         n.id::INTEGER AS boa_id,
         n.author_uid AS advisor_uid,
         TRIM(n.author_name) AS author_name,
@@ -310,7 +310,7 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes (
     $REDSHIFT$)
   AS rs_notes (
     id VARCHAR,
-    sid VARCHAR,
+    student_sid VARCHAR,
     boa_id INTEGER,
     advisor_uid VARCHAR,
     author_name VARCHAR,
@@ -327,7 +327,7 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes (
     created_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE
   )
-  GROUP BY id, sid, boa_id, advisor_uid, author_name, advisor_first_name, advisor_last_name, subject, note_body,
+  GROUP BY id, student_sid, boa_id, advisor_uid, author_name, advisor_first_name, advisor_last_name, subject, note_body,
       is_private, contact_type, set_date, parent_note_id, peer_advising_department_id, created_at, updated_at
 );
 
@@ -337,7 +337,7 @@ INSERT INTO {rds_schema_boa_app_rds_data}.advising_notes (
 -----------------------------------------------------------------------------------------------------
 
 CREATE INDEX advising_notes_sid_idx
-  ON {rds_schema_boa_app_rds_data}.advising_notes (sid);
+  ON {rds_schema_boa_app_rds_data}.advising_notes (student_sid);
 
 CREATE INDEX advising_notes_boa_id_idx
   ON {rds_schema_boa_app_rds_data}.advising_notes (boa_id);
@@ -374,7 +374,7 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_note_topics (
 INSERT INTO {rds_schema_boa_app_rds_data}.advising_note_topics (
   SELECT DISTINCT
     n.id,
-    n.sid,
+    n.student_sid AS sid,
     n.boa_id,
     rs_nt.topic
   FROM {rds_schema_boa_app_rds_data}.advising_notes n
