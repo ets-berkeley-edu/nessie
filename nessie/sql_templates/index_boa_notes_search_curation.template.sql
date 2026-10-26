@@ -108,104 +108,6 @@ CREATE UNIQUE INDEX advising_appointments_search_curated_index_pkey
   ON {rds_schema_advising_appointments}.advising_appointments_search_index_curated(id text_ops);
 
 ----------------------------------------------------------------------------------------------------
--- Drop, create, and index table eforms_curated
-----------------------------------------------------------------------------------------------------
-
-DROP TABLE IF EXISTS {rds_schema_advising_notes}.eforms_curated CASCADE;
-
-CREATE TABLE {rds_schema_advising_notes}.eforms_curated AS (
-  SELECT
-    id,
-    NULL AS parent_eform_id,
-    eform_id,
-    'late_drop_eform' AS eform_type,
-    sid AS student_sid,
-    CONCAT_WS(' - ', 'Late Change of Schedule Request eForm: ' || course_display_name, requested_action, eform_status) AS summary,
-    requested_action AS eform_action,
-    eform_status,
-    created_at,
-    updated_at
-  FROM {rds_schema_sis_advising_notes}.student_late_drop_eforms
-  UNION
-  SELECT
-    id,
-    NULL AS parent_eform_id,
-    eform_id,
-    'course_load_eform' AS eform_type,
-    sid AS student_sid,
-    CONCAT_WS(' - ', 'Reduced Course Load eForm: ' || request_type_description, eform_status) AS summary,
-    request_type_description AS eform_action,
-    eform_status,
-    created_at,
-    updated_at
-  FROM {rds_schema_sis_advising_notes}.student_course_load_eforms
-  UNION
-  SELECT
-    id,
-    NULL AS parent_eform_id,
-    eform_id,
-    'cpp_change_eform' AS eform_type,
-    sid AS student_sid,
-    CONCAT_WS(' - ', 'Career Program Plan eForm: ' || eform_action_description, eform_status) AS summary,
-    eform_action_description AS eform_action,
-    eform_status,
-    created_at,
-    updated_at
-  FROM {rds_schema_sis_advising_notes}.student_cpp_change_eforms
-);
-
-INSERT INTO {rds_schema_advising_notes}.eforms_curated (
-  SELECT
-    'boa-' || boa_comments.boa_id AS id,
-    boa_comments.id AS parent_eform_id,
-    NULL AS eform_id,
-    sis_eforms.eform_type,
-    sis_eforms.student_sid,
-    body AS summary,
-    NULL AS eform_action,
-    NULL AS eform_status,
-    boa_comments.created_at,
-    boa_comments.updated_at
-  FROM {rds_schema_boa_app_rds_data}.eform_comments boa_comments
-  JOIN {rds_schema_advising_notes}.eforms_curated sis_eforms
-    ON boa_comments.id = sis_eforms.id
-);
-
-CREATE INDEX eforms_curated_id_idx ON {rds_schema_advising_notes}.eforms_curated (id);
-CREATE INDEX eforms_curated_student_sid_idx ON {rds_schema_advising_notes}.eforms_curated (student_sid);
-CREATE INDEX eforms_curated_created_at_idx ON {rds_schema_advising_notes}.eforms_curated (created_at);
-CREATE INDEX eforms_curated_updated_at_idx ON {rds_schema_advising_notes}.eforms_curated (updated_at);
-
-
-----------------------------------------------------------------------------------------------------
--- Create and index table advising_appointments_search_index_curated
-----------------------------------------------------------------------------------------------------
-
-DROP TABLE IF EXISTS {rds_schema_advising_notes}.eforms_search_index_curated CASCADE;
-
-CREATE TABLE IF NOT EXISTS {rds_schema_advising_notes}.eforms_search_index_curated AS (
-  SELECT id, fts_index
-  FROM {rds_schema_sis_advising_notes}.student_late_drop_eforms_search_index
-  UNION
-  SELECT id, fts_index
-  FROM {rds_schema_sis_advising_notes}.student_course_load_eforms_search_index
-  UNION
-  SELECT id, fts_index
-  FROM {rds_schema_sis_advising_notes}.student_cpp_change_eforms_search_index
-  UNION
-  SELECT 'boa-' || boa_id AS id, fts_index
-  FROM {rds_schema_boa_app_rds_data}.eform_comments_search_index
-);
-
-CREATE INDEX eforms_search_curated_fts_index_idx
-  ON {rds_schema_advising_notes}.eforms_search_index_curated
-  USING GIN (fts_index);
-
-CREATE UNIQUE INDEX eforms_search_curated_index_pkey
-  ON {rds_schema_advising_notes}.eforms_search_index_curated(id text_ops);
-
-
-----------------------------------------------------------------------------------------------------
 -- Add BOA App RDS Data authors added to boac_advising_notes.advising_note_authors. These advisors
 --   have likely already been added by IndexAdvisingNotes, but this will capture any who may have
 --   created a BOA note in the past but no longer have advisor permissions in SIS.
@@ -339,6 +241,78 @@ CREATE INDEX advising_notes_search_curated_fts_index_idx
 CREATE UNIQUE INDEX advising_notes_search_curated_index_pkey
   ON {rds_schema_advising_notes}.advising_notes_search_index_curated(id text_ops);
 
+----------------------------------------------------------------------------------------------------
+-- Drop, create, and index table eforms_curated
+----------------------------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS {rds_schema_advising_notes}.eforms_curated CASCADE;
+
+CREATE TABLE {rds_schema_advising_notes}.eforms_curated AS (
+  SELECT
+    id,
+    NULL AS parent_eform_id,
+    eform_id,
+    eform_status,
+    eform_type,
+    student_sid,
+    NULL AS advisor_uid,
+    NULL AS advisor_name,
+    NULL AS advisor_role,
+    ARRAY[]::VARCHAR[] AS author_dept_codes,
+    body,
+    eform,
+    created_at,
+    updated_at
+  FROM {rds_schema_sis_advising_notes}.student_eforms
+);
+
+INSERT INTO {rds_schema_advising_notes}.eforms_curated (
+  SELECT
+    'boa-' || boa_comments.boa_id AS id,
+    boa_comments.parent_eform_id,
+    external_eforms.eform_id,
+    external_eforms.eform_status,
+    external_eforms.eform_type,
+    external_eforms.student_sid,
+    boa_comments.author_uid AS advisor_uid,
+    boa_comments.author_name AS advisor_name,
+    boa_comments.author_role AS advisor_role,
+    boa_comments.author_dept_codes,
+    boa_comments.body,
+    external_eforms.eform,
+    boa_comments.created_at,
+    boa_comments.updated_at
+  FROM {rds_schema_boa_app_rds_data}.eform_comments boa_comments
+  JOIN {rds_schema_advising_notes}.eforms_curated external_eforms
+    ON boa_comments.parent_eform_id = external_eforms.id
+);
+
+CREATE INDEX eforms_curated_id_idx ON {rds_schema_advising_notes}.eforms_curated (id);
+CREATE INDEX eforms_curated_student_sid_idx ON {rds_schema_advising_notes}.eforms_curated (student_sid);
+CREATE INDEX eforms_curated_advisor_uid_idx ON {rds_schema_advising_notes}.eforms_curated (advisor_uid);
+CREATE INDEX eforms_curated_created_at_idx ON {rds_schema_advising_notes}.eforms_curated (created_at);
+CREATE INDEX eforms_curated_updated_at_idx ON {rds_schema_advising_notes}.eforms_curated (updated_at);
+
+----------------------------------------------------------------------------------------------------
+-- Create and index table eforms_search_index_curated
+----------------------------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS {rds_schema_advising_notes}.eforms_search_index_curated CASCADE;
+
+CREATE TABLE IF NOT EXISTS {rds_schema_advising_notes}.eforms_search_index_curated AS (
+  SELECT id, fts_index
+  FROM {rds_schema_sis_advising_notes}.student_eforms_search_index
+  UNION
+  SELECT 'boa-' || boa_id AS id, fts_index
+  FROM {rds_schema_boa_app_rds_data}.eform_comments_search_index
+);
+
+CREATE INDEX eforms_search_curated_fts_index_idx
+  ON {rds_schema_advising_notes}.eforms_search_index_curated
+  USING GIN (fts_index);
+
+CREATE UNIQUE INDEX eforms_search_curated_index_pkey
+  ON {rds_schema_advising_notes}.eforms_search_index_curated(id text_ops);
 
 ----------------------------------------------------------------------------------------------------
 -- COMMIT TRANSACTION
