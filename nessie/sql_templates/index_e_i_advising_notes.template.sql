@@ -115,12 +115,21 @@ CREATE MATERIALIZED VIEW {rds_schema_e_i}.advising_notes_search_index AS (
     FROM {rds_schema_e_i}.advising_note_topics
     GROUP BY id
   )
-  SELECT n.id, to_tsvector('english',
+  SELECT
+    n.id,
+    TRIM(
       COALESCE(t.topics, '') || ' ' ||
       COALESCE(n.overview, '') || ' ' ||
       COALESCE(n.advisor_first_name, '') || ' ' ||
       COALESCE(n.advisor_last_name, '')
-    ) AS fts_index
+    ) AS raw_text,
+    to_tsvector('english',
+      COALESCE(t.topics, '') || ' ' ||
+      COALESCE(n.overview, '') || ' ' ||
+      COALESCE(n.advisor_first_name, '') || ' ' ||
+      COALESCE(n.advisor_last_name, '')
+    ) AS fts_index,
+    GREATEST(EXTRACT(EPOCH FROM (now() - n.created_at)), 0) / 86400.0 AS age_days
   FROM {rds_schema_e_i}.advising_notes n
   LEFT OUTER JOIN topics t
   ON n.id = t.id

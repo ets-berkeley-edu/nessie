@@ -72,7 +72,11 @@ CREATE INDEX idx_data_science_advising_notes_created_at ON {rds_schema_data_scie
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_data_science}.advising_notes_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_data_science}.advising_notes_search_index AS (
-  SELECT n.id, to_tsvector('english', COALESCE(n.body || ' ', '') || n.reason_for_appointment || n.conversation_type) AS fts_index
+  SELECT
+    n.id,
+    TRIM(COALESCE(n.body || ' ', '') || n.reason_for_appointment) AS raw_text,
+    to_tsvector('english', COALESCE(n.body || ' ', '') || n.reason_for_appointment || n.conversation_type) AS fts_index,
+    GREATEST(EXTRACT(EPOCH FROM (now() - n.created_at)), 0) / 86400.0 AS age_days
   FROM {rds_schema_data_science}.advising_notes n
 );
 

@@ -73,7 +73,11 @@ CREATE INDEX idx_history_dept_advising_notes_created_at ON {rds_schema_history_d
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_history_dept}.advising_notes_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_history_dept}.advising_notes_search_index AS (
-  SELECT n.id, to_tsvector('english', COALESCE(n.note || ' ', '')) AS fts_index
+  SELECT
+    n.id,
+    n.note AS raw_text,
+    to_tsvector('english', COALESCE(n.note, '')) AS fts_index,
+    GREATEST(EXTRACT(EPOCH FROM (now() - n.created_at)), 0) / 86400.0 AS age_days
   FROM {rds_schema_history_dept}.advising_notes n
 );
 

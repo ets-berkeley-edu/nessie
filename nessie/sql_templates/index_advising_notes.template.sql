@@ -158,12 +158,12 @@ CREATE INDEX idx_advising_notes_updated_at ON {rds_schema_advising_notes}.advisi
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_advising_notes}.advising_notes_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_advising_notes}.advising_notes_search_index AS (
-  SELECT id, fts_index FROM {rds_schema_asc}.advising_notes_search_index
-  UNION SELECT id, fts_index FROM {rds_schema_data_science}.advising_notes_search_index
-  UNION SELECT id, fts_index FROM {rds_schema_e_i}.advising_notes_search_index
-  UNION SELECT id, fts_index FROM {rds_schema_eop}.advising_notes_search_index
-  UNION SELECT id, fts_index FROM {rds_schema_history_dept}.advising_notes_search_index
-  UNION SELECT id, fts_index FROM {rds_schema_sis_advising_notes}.advising_notes_search_index
+  SELECT id, raw_text, fts_index, age_days FROM {rds_schema_asc}.advising_notes_search_index
+  UNION SELECT id, raw_text, fts_index, age_days FROM {rds_schema_data_science}.advising_notes_search_index
+  UNION SELECT id, raw_text, fts_index, age_days FROM {rds_schema_e_i}.advising_notes_search_index
+  UNION SELECT id, raw_text, fts_index, age_days FROM {rds_schema_eop}.advising_notes_search_index
+  UNION SELECT id, raw_text, fts_index, age_days FROM {rds_schema_history_dept}.advising_notes_search_index
+  UNION SELECT id, raw_text, fts_index, age_days FROM {rds_schema_sis_advising_notes}.advising_notes_search_index
 );
 
 CREATE INDEX idx_advising_notes_ft_search
