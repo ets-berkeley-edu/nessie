@@ -149,14 +149,19 @@ CREATE INDEX idx_sis_advising_note_topics_topic ON {rds_schema_sis_advising_note
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.advising_notes_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.advising_notes_search_index AS (
-  SELECT id, to_tsvector(
-    'english',
+  SELECT
+    id,
     CASE
-      WHEN note_body IS NOT NULL and TRIM(note_body) != '' THEN note_body
-      WHEN note_subcategory IS NOT NULL THEN note_category || ' ' || note_subcategory
-      ELSE note_category
-    END
-  ) AS fts_index
+        WHEN note_body IS NOT NULL and TRIM(note_body) != '' THEN note_body
+        ELSE TRIM(COALESCE(note_category, '') || ' ' || COALESCE(note_subcategory, ''))
+    END AS raw_text,
+    to_tsvector('english',
+      CASE
+        WHEN note_body IS NOT NULL and TRIM(note_body) != '' THEN note_body
+        ELSE COALESCE(note_category, '') || ' ' || COALESCE(note_subcategory, '')
+      END
+    ) AS fts_index,
+    GREATEST(EXTRACT(EPOCH FROM (now() - created_at)), 0) / 86400.0 AS age_days
   FROM {rds_schema_sis_advising_notes}.advising_notes
 );
 

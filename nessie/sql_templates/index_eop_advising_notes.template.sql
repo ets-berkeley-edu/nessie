@@ -106,11 +106,19 @@ INSERT INTO {rds_schema_eop}.advising_note_topics (
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_eop}.advising_notes_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_eop}.advising_notes_search_index AS (
-  SELECT n.id, to_tsvector('english',
+  SELECT
+    n.id,
+    TRIM(
       COALESCE(n.searchable_topics, '') || ' ' ||
       COALESCE(n.note, '') || ' ' ||
       n.advisor_first_name || ' ' || n.advisor_last_name || ' ' || n.overview
-    ) AS fts_index
+    ) AS raw_text,
+    to_tsvector('english',
+      COALESCE(n.searchable_topics, '') || ' ' ||
+      COALESCE(n.note, '') || ' ' ||
+      n.advisor_first_name || ' ' || n.advisor_last_name || ' ' || n.overview
+    ) AS fts_index,
+    GREATEST(EXTRACT(EPOCH FROM (now() - n.created_at)), 0) / 86400.0 AS age_days
   FROM {rds_schema_eop}.advising_notes n
 );
 

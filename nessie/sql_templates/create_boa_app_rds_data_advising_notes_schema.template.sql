@@ -518,18 +518,21 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_notes_search_index AS
     n.id,
     CASE
         WHEN n.is_private
-        THEN TO_TSVECTOR(
-          'english',
-          COALESCE(n.subject, '') || ' ' ||
+        THEN TRIM(COALESCE(n.subject, '') || ' ' || COALESCE(t.topics, '') || ' ' || n.author_name)
+        ELSE TRIM(COALESCE(n.subject, '') || ' ' || COALESCE(n.note_body, '') || ' ' ||
+          COALESCE(t.topics, '') || ' ' || n.author_name)
+    END AS raw_text,
+    CASE
+        WHEN n.is_private
+        THEN TO_TSVECTOR('english',
+          COALESCE(n.subject, '') || ' ' || COALESCE(t.topics, '') || ' ' || n.author_name
+        )
+        ELSE TO_TSVECTOR('english',
+          COALESCE(n.subject, '') || ' ' || COALESCE(n.note_body, '') || ' ' ||
           COALESCE(t.topics, '') || ' ' || n.author_name
         )
-        ELSE TO_TSVECTOR(
-          'english',
-          COALESCE(n.subject, '') || ' ' ||
-          COALESCE(n.note_body, '') || ' ' ||
-          COALESCE(t.topics, '') || ' ' || n.author_name
-        )
-    END AS fts_index
+    END AS fts_index,
+    GREATEST(EXTRACT(EPOCH FROM (now() - n.created_at)), 0) / 86400.0 AS age_days
   FROM {rds_schema_boa_app_rds_data}.advising_notes n
   LEFT OUTER JOIN topics t ON n.id = t.id;
 

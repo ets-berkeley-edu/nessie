@@ -227,10 +227,10 @@ CREATE INDEX advising_note_topics_curated_topic_idx ON {rds_schema_advising_note
 DROP TABLE IF EXISTS {rds_schema_advising_notes}.advising_notes_search_index_curated CASCADE;
 
 CREATE TABLE IF NOT EXISTS {rds_schema_advising_notes}.advising_notes_search_index_curated AS (
-  SELECT id, fts_index
+  SELECT id, raw_text, fts_index, age_days
   FROM {rds_schema_advising_notes}.advising_notes_search_index
   UNION
-  SELECT id, fts_index
+  SELECT id, raw_text, fts_index, age_days
   FROM {rds_schema_boa_app_rds_data}.advising_notes_search_index
 );
 

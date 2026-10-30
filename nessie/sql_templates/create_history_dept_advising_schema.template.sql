@@ -62,7 +62,7 @@ ALTER default PRIVILEGES IN SCHEMA {redshift_schema_history_dept_advising_intern
 GRANT USAGE ON SCHEMA {redshift_schema_history_dept_advising_internal} TO GROUP {redshift_dblink_group};
 ALTER DEFAULT PRIVILEGES IN SCHEMA {redshift_schema_history_dept_advising_internal} GRANT SELECT ON TABLES TO GROUP {redshift_dblink_group};
 
--------------------------------------------------------------------- d
+--------------------------------------------------------------------
 -- Internal tables
 --------------------------------------------------------------------
 
@@ -74,7 +74,7 @@ AS (
       student_id AS sid,
       student_first_name,
       student_last_name,
-      TO_TIMESTAMP((meeting_date || ' 12:00:00'), 'MM/DD/YY HH24:MI:SS') AT TIME ZONE 'UTC' AT TIME ZONE 'America/Los_Angeles' AS created_at,
+      TO_TIMESTAMP((created_at || ' 12:00:00'), 'MM/DD/YY HH24:MI:SS') AT TIME ZONE 'UTC' AT TIME ZONE 'America/Los_Angeles' AS created_at,
       note
     FROM {redshift_schema_history_dept_advising}.advising_notes
     WHERE created_at <> ''
