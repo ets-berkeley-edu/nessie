@@ -593,7 +593,11 @@ CREATE INDEX idx_sis_advising_appointments_updated_at ON {rds_schema_sis_advisin
 DROP MATERIALIZED VIEW IF EXISTS {rds_schema_sis_advising_notes}.advising_appointments_search_index CASCADE;
 
 CREATE MATERIALIZED VIEW {rds_schema_sis_advising_notes}.advising_appointments_search_index AS (
-  SELECT id, to_tsvector('english', COALESCE(note_body, '') || ' ' || note_subcategory) AS fts_index
+  SELECT
+    id,
+    COALESCE(note_body, '') || ' ' || note_subcategory AS raw_text,
+    to_tsvector('english', COALESCE(note_body, '') || ' ' || note_subcategory) AS fts_index,
+    GREATEST(EXTRACT(EPOCH FROM (now() - created_at)), 0) / 86400.0 AS age_days
   FROM {rds_schema_sis_advising_notes}.advising_appointments
 );
 

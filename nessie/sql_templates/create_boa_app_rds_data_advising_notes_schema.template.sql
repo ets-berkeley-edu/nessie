@@ -125,10 +125,9 @@ CREATE TABLE {rds_schema_boa_app_rds_data}.advising_appointment_comments_search_
   SELECT
     parent_appointment_id,
     boa_id,
-    TO_TSVECTOR(
-      'english',
-      COALESCE(body, '') || ' ' || author_name
-    ) AS fts_index
+    COALESCE(body, '') || ' ' || author_name AS raw_text,
+    TO_TSVECTOR('english', COALESCE(body, '') || ' ' || author_name) AS fts_index,
+    GREATEST(EXTRACT(EPOCH FROM (now() - created_at)), 0) / 86400.0 AS age_days
   FROM {rds_schema_boa_app_rds_data}.advising_appointment_comments;
 
 
