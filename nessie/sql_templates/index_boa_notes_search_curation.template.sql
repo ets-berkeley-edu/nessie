@@ -93,10 +93,10 @@ CREATE INDEX advising_appointments_curated_updated_at_idx ON {rds_schema_advisin
 DROP TABLE IF EXISTS {rds_schema_advising_appointments}.advising_appointments_search_index_curated CASCADE;
 
 CREATE TABLE IF NOT EXISTS {rds_schema_advising_appointments}.advising_appointments_search_index_curated AS (
-  SELECT id, fts_index
+  SELECT id, raw_text, fts_index, age_days
   FROM {rds_schema_advising_appointments}.advising_appointments_search_index
   UNION
-  SELECT 'boa-' || boa_id AS id, fts_index
+  SELECT 'boa-' || boa_id AS id, raw_text, fts_index, age_days
   FROM {rds_schema_boa_app_rds_data}.advising_appointment_comments_search_index
 );
 

@@ -402,12 +402,20 @@ CREATE INDEX advising_appointments_created_at_idx ON {rds_schema_advising_appoin
 DROP TABLE IF EXISTS {rds_schema_advising_appointments}.advising_appointments_search_index CASCADE;
 
 CREATE TABLE {rds_schema_advising_appointments}.advising_appointments_search_index AS (
-  SELECT id, fts_index FROM {rds_schema_sis_advising_notes}.advising_appointments_search_index
+  SELECT id, raw_text, fts_index, age_days FROM {rds_schema_sis_advising_notes}.advising_appointments_search_index
    UNION
-  SELECT id, to_tsvector('english', COALESCE(meeting_notes_plain, '') || ' ' || COALESCE(title, '')) AS fts_index
+  SELECT
+      id,
+      COALESCE(meeting_notes_plain, '') || ' ' || COALESCE(title, '') AS raw_text,
+      to_tsvector('english', COALESCE(meeting_notes_plain, '') || ' ' || COALESCE(title, '')) AS fts_index,
+      GREATEST(EXTRACT(EPOCH FROM (now() - created_at)), 0) / 86400.0 AS age_days
     FROM {rds_schema_advising_appointments}.calendly_advising_appointments
    UNION
-  SELECT id, to_tsvector('english', COALESCE(details, '') || ' ' || COALESCE(title, '')) AS fts_index
+  SELECT
+      id,
+      COALESCE(details, '') || ' ' || COALESCE(title, '') AS raw_text,
+      to_tsvector('english', COALESCE(details, '') || ' ' || COALESCE(title, '')) AS fts_index,
+      GREATEST(EXTRACT(EPOCH FROM (now() - starts_at)), 0) / 86400.0 AS age_days
     FROM {rds_schema_advising_appointments}.ycbm_advising_appointments
 );
 
